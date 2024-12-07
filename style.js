@@ -9,24 +9,25 @@ export const commonStyles = StyleSheet.create({
   containerContent: {
     flex: 1,
     padding: 16,
+    paddingBottom:0,
     paddingTop: 10,
     backgroundColor: '#EBE5DD',
-    fontFamily:'nunito-medium',
-    justifyContent:'center',
+    fontFamily: 'nunito-medium',
+    // justifyContent:'center',
     // alignItems:'center'
   },
   titleText: {
-    fontFamily:'nunito-bold',
-    margin:25,
+    fontFamily: 'nunito-bold',
+    margin: 25,
     fontSize: 35,
     color: '#A9411D',
     textAlign: 'center',
     marginBottom: 30,
     fontWeight: "bold",
   },
-  subTitleText:{
-    fontFamily:'nunito-bold',
-    margin:25,
+  subTitleText: {
+    fontFamily: 'nunito-bold',
+    margin: 25,
     fontSize: 20,
     color: '#A9411D',
     textAlign: 'center',
@@ -51,35 +52,34 @@ export const commonStyles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 20,
     backgroundColor: '#FFF8EF',
-    borderWidth:2,
-    borderColor:'#383737'
+    borderWidth: 2,
+    borderColor: '#383737'
   },
   subButton: {
     textAlign: 'center',
     color: '#A9411D',
     marginBottom: 20,
   },
-  mainButtonContainer:{
-    alignItems:'center',
-    textAlign:'center'
+  mainButtonContainer: {
+    alignItems: 'center',
+    textAlign: 'center'
   },
-  buttonContainer:{
-    alignItems:'center',
-    justifyContent:'center',
-    flexDirection:'row',
-    gap:50
+  buttonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 50
   },
   mainButton: {
-    backgroundColor: '#EBE5DD',
+    padding: 13,
+    marginTop: 10,
+    borderWidth: 1,
+    backgroundColor: '#383737',
+    borderColor: '#383737',
     borderRadius: 50,
-    height: 45,
-    padding:10,
-    fontSize:18,
-    width:'60%',
-    textAlign: 'center',
-    marginBottom:10,
+    width: 300,
   },
-  textMainButton:{
+  textMainButton: {
     textAlign: 'center',
     fontSize: 18,
     color: '#fff',
@@ -93,8 +93,8 @@ export const commonStyles = StyleSheet.create({
   googleButton: {
     borderRadius: 30,
     height: 50,
-    borderWidth:1,
-    borderColor:'#EBE5DD'
+    borderWidth: 1,
+    borderColor: '#EBE5DD'
   },
   facebookButton: {
     borderRadius: 8,

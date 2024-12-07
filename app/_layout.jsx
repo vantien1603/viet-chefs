@@ -39,7 +39,24 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
-      
+      <Stack.Screen
+        name="screen/signup"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="screen/verify"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="screen/forgot"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

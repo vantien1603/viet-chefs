@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, TextInput, StyleSheet } from 'react-native'
+import { View, Text, Image, TouchableOpacity, TextInput, StyleSheet, ScrollView } from 'react-native'
 import React from 'react'
 import { commonStyles } from '../../style'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -14,7 +14,7 @@ export default function Home() {
         padding: 10,
         borderBottomWidth: 1,
         borderBottomColor: "#ddd",
-        marginBottom: 20,
+        marginBottom: 10,
         // marginTop: 50,
       }}>
         <View style={{ flexDirection: "row" }}>
@@ -32,65 +32,68 @@ export default function Home() {
           <Ionicons name="notifications" size={30} color="#4EA0B7" />
         </TouchableOpacity>
       </View>
-      <View style={{ marginBottom: 20 }}>
-        <Image
-          source={require('../../assets/images/promo.png')}
-          style={{width: '100%', height: 150, borderRadius: 30 }}
-          resizeMode="cover"
-        />
-      </View>
-      <View>
-        <TextInput
-          placeholder="Tìm kiếm cửa hàng"
-          style={styles.searchInput}
-        />
-      </View>
-      <View style={{ flexDirection: 'row', justifyContent: "space-between", marginBottom: 30 }}>
-        <Text style={{ fontSize: 20 }}>Popular  dishes</Text>
-        <Text style={{ fontSize: 18, color: '#968B7B' }}>See all</Text>
-      </View>
-      <View >
-        <View style={{ width: 200, alignItems: 'center', marginBottom: 20 }} >
-          <View style={styles.card}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require('../../assets/images/logo.png')}
-                style={styles.image}
-              />
-            </View>
+      <ScrollView>
+        <View style={{ marginBottom: 20 }}>
+          <Image
+            source={require('../../assets/images/promo.png')}
+            style={{ width: '100%', height: 150, borderRadius: 30 }}
+            resizeMode="cover"
+          />
+        </View>
+        <View>
+          <TextInput
+            placeholder="Tìm kiếm cửa hàng"
+            style={styles.searchInput}
+          />
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: "space-between", marginBottom: 30 }}>
+          <Text style={{ fontSize: 20 }}>Popular dishes</Text>
+          <Text style={{ fontSize: 18, color: '#968B7B' }}>See all</Text>
+        </View>
+        <View >
+          <View style={{ width: 200, alignItems: 'center', marginBottom: 20 }} >
+            <View style={styles.card}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={require('../../assets/images/logo.png')}
+                  style={styles.image}
+                />
+              </View>
 
-            <Text style={styles.title}>Yakisoba Noodles</Text>
-            <Text style={{ color: '#F8BF40' }}>Noodle with Pork</Text>
+              <Text style={styles.title}>Yakisoba Noodles</Text>
+              <Text style={{ color: '#F8BF40' }}>Noodle with Pork</Text>
+            </View>
           </View>
         </View>
-      </View>
-      <View style={{ flexDirection: 'row', justifyContent: "space-between", marginBottom: 30 }}>
-        <Text style={{ fontSize: 20 }}>Recommend chef</Text>
-        <Text style={{ fontSize: 18, color: '#968B7B' }}>See all</Text>
-      </View>
-      <View >
-        <View style={{ width: 200, alignItems: 'center' }} >
-          <View style={styles.card}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={{
-                  uri: 'https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png',
-                }}
-                style={styles.image}
-              />
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: "space-between", marginBottom: 30 }}>
+          <Text style={{ fontSize: 20 }}>Recommend chef</Text>
+          <Text style={{ fontSize: 18, color: '#968B7B' }}>See all</Text>
+        </View>
+        <View style={{marginBottom:30}}>
+          <View style={{ width: 200, alignItems: 'center', backgroundColor: '#A9411D', borderRadius: 16, paddingBottom: 10 }} >
+            <View style={styles.card}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{
+                    uri: 'https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png',
+                  }}
+                  style={styles.image}
+                />
+              </View>
 
-            <Text style={styles.title}>Yakisoba Noodles</Text>
-            <Text style={{ color: '#F8BF40' }}>Noodle with Pork</Text>
-          </View>
-          <View style={{ backgroundColor: '#EBE5DD', marginTop: -20, borderRadius: 30, padding: 5 }}>
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>i</Text>
-            </TouchableOpacity>
+              <Text style={styles.title}>Yakisoba Noodles</Text>
+              <Text style={{ color: '#F8BF40' }}>Noodle with Pork</Text>
+            </View>
+            <View style={{ backgroundColor: '#fff', marginTop: -5, borderRadius: 30, padding: 5, position: 'absolute', bottom: -20 }}>
+              <TouchableOpacity style={styles.button}>
+                <Text style={styles.buttonText}>i</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
+
   )
 }
 const styles = StyleSheet.create({
@@ -138,8 +141,8 @@ const styles = StyleSheet.create({
     marginBottom: 5
   },
   button: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     borderRadius: 20,
     backgroundColor: '#F8BF40',
     justifyContent: 'center',

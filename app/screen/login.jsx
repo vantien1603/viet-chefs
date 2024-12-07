@@ -43,14 +43,19 @@ export default function LoginScreen() {
         placeholder="Password"
         onPasswordChange={handlePasswordChange}
       />
-
-      <View style={{ flex: 1, alignItems:'center' }}>
+      <View style={{ marginBottom: 10, marginTop: -5, alignItems: 'flex-end' }}>
+        <TouchableOpacity onPress={() => navigation.navigate('screen/forgot')}>
+          <Text style={{ color: '#968B7B' }}>Forgot password ?</Text>
+        </TouchableOpacity>
+      </View>
+ 
+      <View style={{ flex: 1, alignItems: 'center' }}>
 
         <TouchableOpacity onPress={handleLogin} style={{
           padding: 13,
           marginTop: 10,
           borderWidth: 1,
-          backgroundColor:'#383737',
+          backgroundColor: '#383737',
           borderColor: '#383737',
           borderRadius: 50,
           width: 300,
