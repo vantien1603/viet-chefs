@@ -67,7 +67,7 @@ export default function WelcomeScreen() {
 
 
       <View >
-        <TouchableOpacity onPress={() => router.push('/screen/signup')} style={{
+        <TouchableOpacity onPress={() => router.push('screen/signup')} style={{
           padding: 13,
           marginTop: 40,
           backgroundColor: '#383737',
@@ -81,7 +81,7 @@ export default function WelcomeScreen() {
             fontSize: 18,
             color: '#fff',
             fontFamily: 'nunito-bold',
-          }}>Tạo tài khoản</Text>
+          }}>SIGN UP</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleLogin} style={{
           padding: 13,
@@ -96,7 +96,7 @@ export default function WelcomeScreen() {
             fontSize: 18,
             color: '#383737',
             fontFamily: 'nunito-bold',
-          }}>Đăng nhập</Text>
+          }}>LOGIN</Text>
         </TouchableOpacity>
       </View>
 
