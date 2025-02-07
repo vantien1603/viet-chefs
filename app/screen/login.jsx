@@ -134,7 +134,7 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-      <Button title="Sign in with Google" onPress={() => promptAsync()}/>
+      {/* <Button title="Sign in with Google" onPress={() => promptAsync()}/> */}
     </SafeAreaView>
   );
 }
