@@ -22,7 +22,8 @@ export default function WelcomeScreen() {
 
   const handleLogin = () => {
     // router.push('screen/login');
-    router.push('screen/Booking/booking');
+    // router.push('screen/Booking/booking');
+    router.push('screen/Cart/cart');
   }
 
 
