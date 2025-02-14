@@ -3,8 +3,10 @@ import React from 'react'
 import { commonStyles } from '../../style'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 
 export default function Home() {
+  const router= useRouter();
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <View style={{
@@ -41,10 +43,13 @@ export default function Home() {
           />
         </View>
         <View>
+          <TouchableOpacity onPress={()=> router.push('/screen/searchResult')}>
           <TextInput
             placeholder="Tìm kiếm cửa hàng"
             style={styles.searchInput}
           />
+          </TouchableOpacity>
+          
         </View>
         <View style={{ flexDirection: 'row', justifyContent: "space-between", marginBottom: 30 }}>
           <Text style={{ fontSize: 20 }}>Popular dishes</Text>
@@ -69,7 +74,7 @@ export default function Home() {
           <Text style={{ fontSize: 20 }}>Recommend chef</Text>
           <Text style={{ fontSize: 18, color: '#968B7B' }}>See all</Text>
         </View>
-        <View style={{marginBottom:30}}>
+        <View style={{ marginBottom: 30 }}>
           <View style={{ width: 200, alignItems: 'center', backgroundColor: '#A9411D', borderRadius: 16, paddingBottom: 10 }} >
             <View style={styles.card}>
               <View style={styles.imageContainer}>
@@ -110,15 +115,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#A9411D',
     borderRadius: 16,
     padding: 16,
+    paddingTop: 50,
     alignItems: 'center',
     width: 200,
     position: 'relative',
     // marginBottom: 20
   },
   imageContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 130,
+    height: 130,
+    borderRadius: 70,
     backgroundColor: '#FFF',
     overflow: 'hidden',
     marginBottom: 8,
