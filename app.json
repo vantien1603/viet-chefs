@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "vietchef",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,14 +14,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anhkhoa14.vietchef"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.thangcayep.vietchef"
+      "package": "com.anhkhoa14.vietchef"
     },
     "web": {
       "bundler": "metro",
@@ -39,7 +40,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "af076336-773f-45ab-a366-b43c92c97da5"
+        "projectId": "7633a8b3-2237-454d-98da-394babd667ae"
       }
     }
   }
