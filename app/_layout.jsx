@@ -80,6 +80,12 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen 
+        name="screen/map"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

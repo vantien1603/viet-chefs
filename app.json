@@ -22,6 +22,11 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCHnI7LoDUsKxgJ4MzhrEcEQbKcoIq6PVg"
+        }
+      },
       "package": "com.anhkhoa14.vietchef"
     },
     "web": {

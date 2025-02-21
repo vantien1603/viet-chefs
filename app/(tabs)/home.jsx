@@ -47,7 +47,7 @@ export default function Home() {
           <TouchableOpacity>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("screen/Cart/cart")}>
             <Ionicons name="cart" size={30} color="#4EA0B7" />
           </TouchableOpacity>
         </View>
