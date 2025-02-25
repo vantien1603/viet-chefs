@@ -28,9 +28,6 @@ export default function WelcomeScreen() {
     // router.push('screen/map')
   }
 
-
-
-
   return (
     <SafeAreaView style={
       {
