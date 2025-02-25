@@ -6,8 +6,6 @@ import { useEffect } from "react";
 // SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-
-
   return (
     <Stack
       screenOptions={{
@@ -76,7 +74,7 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
-      <Stack.Screen 
+      <Stack.Screen
         name="screen/Cart/cart"
         options={{
           headerShown: false,
@@ -85,8 +83,27 @@ export default function RootLayout() {
       <Stack.Screen
         name="screen/searchResult"
         options={{
-          headerShown: false
-        }} />
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="screen/map"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="screen/chefDetail"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="screen/allDish"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
