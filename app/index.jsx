@@ -26,6 +26,7 @@ export default function WelcomeScreen() {
     // router.push('screen/Booking/booking');
     // router.push('screen/Cart/cart');
     // router.push('screen/map')
+    // router.push('screen/Chefs/menu');
   }
 
   return (
