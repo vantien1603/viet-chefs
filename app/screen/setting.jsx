@@ -1,0 +1,206 @@
+import React, { useRef, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { commonStyles } from '../../style';
+import { Modalize } from "react-native-modalize";
+import { AntDesign } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Header from "../../components/header";
+
+const languages = [
+  { id: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
+  { id: "en", name: "English", flag: "🇬🇧" },
+];
+
+const country = [
+  { id: "vi", name: "Việt Nam" },
+  { id: "my", name: "American" },
+
+]
+
+
+
+
+const Setting = () => {
+  const modalLangRef = useRef(null);
+  const modalCountryRef = useRef(null);
+  const [selectedLang, setSelectedLang] = useState("vi");
+  const [selectedCountry, setSelectedCountry] = useState("my");
+  const openModalLang = () => modalLangRef.current?.open();
+  const closeModalLang = () => modalLangRef.current?.close();
+  const openModalCountry = () => modalCountryRef.current?.open();
+  const closeModalCountry = () => modalCountryRef.current?.close();
+
+  const selectLanguage = (id) => {
+    setSelectedLang(id);
+    closeModalLang();
+  };
+  const selectCountry = (id) => {
+    setSelectedCountry(id);
+    closeModalCountry();
+  };
+
+  return (
+    <GestureHandlerRootView style={commonStyles.containerContent}>
+      <Header title={'Setting'}  />
+      <TouchableOpacity
+        onPress={() => openModalCountry()}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: '#ddd'
+        }}
+      >
+        <Ionicons name='flag-outline' size={24} color="black" style={{ marginRight: 16 }} />
+        <Text style={{ flex: 1, fontSize: 16 }}>Country</Text>
+        <View style={{
+          backgroundColor: '#FFA500',
+          paddingHorizontal: 8,
+          borderRadius: 12,
+          marginRight: 8
+        }}>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>{(selectedCountry == 'my' ? 'American' : 'Việt Nam')}</Text>
+        </View>
+
+
+        <Ionicons name="chevron-forward" size={20} color="gray" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => openModalLang()}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: '#ddd'
+        }}
+      >
+        <Ionicons name='language' size={24} color="black" style={{ marginRight: 16 }} />
+        <Text style={{ flex: 1, fontSize: 16 }}>Language</Text>
+        <View style={{
+          backgroundColor: '#FFA500',
+          paddingHorizontal: 8,
+          borderRadius: 12,
+          marginRight: 8
+        }}>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>{(selectedLang == 'en' ? 'English' : 'Tiếng Việt')}</Text>
+        </View>
+
+
+        <Ionicons name="chevron-forward" size={20} color="gray" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: '#ddd'
+        }}
+      >
+        <Ionicons name='log-out-outline' size={24} color="black" style={{ marginRight: 16 }} />
+        <Text style={{ flex: 1, fontSize: 16 }}>Logout</Text>
+
+        <Ionicons name="chevron-forward" size={20} color="gray" />
+      </TouchableOpacity>
+
+
+      <Modalize ref={modalLangRef} adjustToContentHeight>
+        <View style={styles.modalContainer}>
+          <Text style={styles.title}>Chọn ngôn ngữ</Text>
+
+          <TouchableOpacity
+            style={styles.languageItem}
+            onPress={() => selectLanguage('vi')}
+          >
+            <Text style={styles.flag}>🇻🇳</Text>
+            <Text style={styles.languageName}>Tiếng Việt</Text>
+            {selectedLang === 'vi' && (
+              <AntDesign name="check" size={18} color="green" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.languageItem}
+            onPress={() => selectLanguage('en')}
+          >
+            <Text style={styles.flag}>🇬🇧</Text>
+            <Text style={styles.languageName}>English</Text>
+            {selectedLang === 'en' && (
+              <AntDesign name="check" size={18} color="green" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modalize>
+
+      <Modalize ref={modalCountryRef} adjustToContentHeight>
+        <View style={styles.modalContainer}>
+          <Text style={styles.title}>Chọn quốc gia</Text>
+
+          <TouchableOpacity
+            style={styles.languageItem}
+            onPress={() => selectCountry('vi')}
+          >
+            <Text style={styles.flag}>🇻🇳</Text>
+            <Text style={styles.languageName}>Tiếng Việt</Text>
+            {selectedCountry === 'vi' && (
+              <AntDesign name="check" size={18} color="green" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.languageItem}
+            onPress={() => selectCountry('my')}
+          >
+            <Text style={styles.flag}>🇬🇧</Text>
+            <Text style={styles.languageName}>English</Text>
+            {selectedCountry === 'my' && (
+              <AntDesign name="check" size={18} color="green" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modalize>
+    </GestureHandlerRootView>
+  )
+}
+
+export default Setting;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  languageButton: {
+    backgroundColor: "#ddd",
+    padding: 10,
+    borderRadius: 5,
+  },
+  languageText: {
+    fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  languageItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  flag: {
+    fontSize: 22,
+    marginRight: 10,
+  },
+  languageName: {
+    flex: 1,
+    fontSize: 16,
+  },
+});

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 const totalTimeRange = { min: 7, max: 19 };
 const bookedSlots = [
-  { start: 7, end: 9 },
+  { start: 7, end: 12 },
   { start: 14, end: 15 },
 ];
 
@@ -13,17 +13,17 @@ const getAvailableSlots = () => {
 
   bookedSlots.forEach((slot) => {
     if (slot.start > lastEnd) {
-      for (let i = lastEnd; i < slot.start; i++) {
+      for (let i = lastEnd+1; i < slot.start; i++) {
         slots.push({ hour: i, booked: false });
       }
     }
-    for (let i = slot.start; i < slot.end; i++) {
+    for (let i = slot.start; i <= slot.end; i++) {
       slots.push({ hour: i, booked: true });
     }
     lastEnd = slot.end;
   });
 
-  for (let i = lastEnd; i < totalTimeRange.max; i++) {
+  for (let i = lastEnd+1; i <= totalTimeRange.max; i++) {
     slots.push({ hour: i, booked: false });
   }
 
@@ -81,7 +81,7 @@ const Chat = () => {
               selectedStart !== null &&
                 selectedEnd !== null &&
                 slot.hour >= selectedStart &&
-                slot.hour < selectedEnd &&
+                slot.hour <= selectedEnd &&
                 styles.selectedTime,
             ]}
             disabled={slot.booked}

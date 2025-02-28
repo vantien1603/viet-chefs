@@ -16,7 +16,7 @@ const ConfirmBookingScreen = () => {
 
       <View style={styles.content}>
         <Image
-          source={require('../../../assets/images/logo.png')}
+          source={require('../../assets/images/logo.png')}
           style={styles.image}
         />
         <Text style={styles.thankYouText}>Thank you for booking</Text>
