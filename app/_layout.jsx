@@ -2,11 +2,35 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import Toast, {BaseToast} from "react-native-toast-message";
 
 // SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-
+  const toastConfig = {
+    success: (props) => (
+      <BaseToast
+        {...props}
+        style={{
+          borderLeftColor: "#4CAF50",
+          backgroundColor: "#E8F5E9",
+          height: 80,
+          width: "90%", 
+          borderRadius: 10,
+        }}
+        contentContainerStyle={{ paddingHorizontal: 15 }}
+        text1Style={{
+          fontSize: 20,
+          fontWeight: "bold",
+          color: "#2E7D32",
+        }}
+        text2Style={{
+          fontSize: 16,
+          color: "#388E3C",
+        }}
+      />
+    ),
+  };
 
   return (
     <Stack
@@ -118,6 +142,30 @@ export default function RootLayout() {
         options={{
           headerShown: false
         }} />
+        <Stack.Screen
+          name="screen/chefDetail"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/allDish"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/Chefs/menu"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/Chefs/addFood"
+          options={{
+            headerShown: false,
+          }}
+        />
     </Stack>
   );
 }

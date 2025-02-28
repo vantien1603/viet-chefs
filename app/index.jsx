@@ -5,6 +5,7 @@ import { router } from 'expo-router'
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+
 export const useWarmUpBrowser = () => {
   React.useEffect(() => {
 
@@ -24,10 +25,9 @@ export default function WelcomeScreen() {
     // router.push('screen/login');
     router.push('screen/selectFood');
     // router.push('screen/Cart/cart');
+    // router.push('screen/map')
+    // router.push('screen/Chefs/menu');
   }
-
-
-
 
   return (
     <SafeAreaView style={

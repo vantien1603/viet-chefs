@@ -1,12 +1,31 @@
-import { View, Text, Image, TouchableOpacity, TextInput, StyleSheet, ScrollView } from 'react-native'
-import React from 'react'
-import { commonStyles } from '../../style'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import React, { useState } from "react";
+import { commonStyles } from "../../style";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import Icon from "react-native-vector-icons/Ionicons";
 
 export default function Home() {
   const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const handleSearch = () => {
+    const searchQuery = String(query || "");
+    if (searchQuery.trim() !== "") {
+      router.push(`/screen/searchResult/?query=${query}`);
+    } else {
+      router.push("/screen/searchResult");
+    }
+  };
   return (
     <View style={commonStyles.containerContent}>
       <View
@@ -57,15 +76,23 @@ export default function Home() {
             resizeMode="cover"
           />
         </View>
-        <View >
-          <TouchableOpacity onPress={() => router.push('/screen/searchResult')}>
-            <TextInput
-              placeholder="Tìm kiếm cửa hàng"
-              style={styles.searchInput}
-            />
-          </TouchableOpacity>
-
+        <View style={styles.searchContainer}>
+          <Icon
+            name="search"
+            size={24}
+            color="#4EA0B7"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            placeholder="Search..."
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search" 
+          />
         </View>
+
         <View
           style={{
             flexDirection: "row",
@@ -102,20 +129,31 @@ export default function Home() {
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
         <View style={{ marginBottom: 30 }}>
-          <View style={{ width: 200, alignItems: 'center', backgroundColor: '#A9411D', borderRadius: 16, paddingBottom: 10 }} >
-            <View style={styles.card}>
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{
-                    uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                  }}
-                  style={styles.image}
-                />
-              </View>
+          <View
+            style={{
+              width: 200,
+              alignItems: "center",
+              backgroundColor: "#A9411D",
+              borderRadius: 16,
+              paddingBottom: 10,
+            }}
+          >
+            <TouchableOpacity onPress={() => router.push("/screen/chefDetail")}>
+              <View style={styles.card}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{
+                      uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+                    }}
+                    style={styles.image}
+                  />
+                </View>
 
-              <Text style={styles.title}>Yakisoba Noodles</Text>
-              <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
-            </View>
+                <Text style={styles.title}>Yakisoba Noodles</Text>
+                <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
+              </View>
+            </TouchableOpacity>
+
             <View
               style={{
                 backgroundColor: "#fff",
@@ -148,12 +186,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
   },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 50,
+  },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
     padding: 16,
     paddingTop: 50,
-    alignItems: 'center',
+    alignItems: "center",
     width: 200,
     position: "relative",
     // marginBottom: 20
@@ -162,8 +207,8 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
     borderRadius: 70,
-    backgroundColor: '#FFF',
-    overflow: 'hidden',
+    backgroundColor: "#FFF",
+    overflow: "hidden",
     marginBottom: 8,
     position: "absolute",
     top: -20,
@@ -172,7 +217,8 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    // height: '100%',
+    height: "100%",
+    resizeMode: "cover",
   },
   title: {
     fontSize: 18,
