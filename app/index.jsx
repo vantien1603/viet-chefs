@@ -22,8 +22,8 @@ export default function WelcomeScreen() {
   const navigation = useNavigation();
 
   const handleLogin = () => {
-    router.push('screen/login');
-    // router.push('screen/Booking/booking');
+    // router.push('screen/login');
+    router.push('screen/selectFood');
     // router.push('screen/Cart/cart');
     // router.push('screen/map')
     // router.push('screen/Chefs/menu');
@@ -38,7 +38,7 @@ export default function WelcomeScreen() {
         justifyContent: 'center',
       }
     }>
-
+{/* 
       <Text style={{
         fontSize: 30,
         fontWeight: 'bold',
@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
         fontFamily: 'nunito',
         color: '#A9411D',
         textAlign: 'center',
-      }}>Welome</Text>
+      }}>Welome</Text> */}
       <View style={{ alignItems: 'center' }}>
         <Image
           source={require('../assets/images/logo.png')}

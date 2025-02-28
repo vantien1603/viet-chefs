@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Header from "../../components/header";
 
 const VerifyScreen = () => {
   const router = useRouter();
@@ -39,7 +40,7 @@ const VerifyScreen = () => {
   const handleVerify = () => {
     const verificationCode = code.join("");
     if (verificationCode.length === 4) {
-      router.push("screen/login");
+      router.push("screen/setPassword");
       console.log("Entered code:", verificationCode);
     } else {
       alert("Please enter a 4-digit code.");
@@ -48,13 +49,14 @@ const VerifyScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
+      <Header title={'Verify account'}/>
       <View style={commonStyles.containerContent}>
-        <Image
+        {/* <Image
           source={require("../../assets/images/logo.png")}
           style={{ width: 400, height: 250 }}
           resizeMode="cover"
-        />
-        <Text style={commonStyles.subTitleText}>Enter the verification code</Text>
+        /> */}
+        <Text style={{textAlign:'center', fontSize:16, fontWeight:'600'}}>Please enter the 4-digit verification code that has been sent to the phone number</Text>
 
         <View style={styles.inputCode}>
           {code.map((digit, index) => (

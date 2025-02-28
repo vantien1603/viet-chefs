@@ -79,7 +79,7 @@ const HistoryBookingScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Image source={require('../../../assets/images/cancel.png')} style={styles.cancelImage} />            
+            <Image source={require('../../assets/images/cancel.png')} style={styles.cancelImage} />            
             <Text style={styles.modalText}>Are you sure, you want to cancel this booking?</Text>
             <View style={styles.modalActions}>
               <TouchableOpacity onPress={() => setModalVisible(false)}>

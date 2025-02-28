@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, ScrollView, FlatList } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { router, useNavigation } from 'expo-router';
-import { commonStyles } from '../../../style';
-import Header from '../../../components/header';
+import { commonStyles } from '../../style';
+import Header from '../../components/header';
 import moment from 'moment';
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 

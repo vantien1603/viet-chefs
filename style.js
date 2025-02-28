@@ -12,12 +12,12 @@ export const commonStyles = StyleSheet.create({
     paddingBottom:0,
     paddingTop: 10,
     backgroundColor: '#EBE5DD',
-    fontFamily: 'nunito-medium',
+    // fontFamily: 'nunito-medium',
     // justifyContent:'center',
     // alignItems:'center'
   },
   titleText: {
-    fontFamily: 'nunito-bold',
+    // fontFamily: 'nunito-bold',
     margin: 25,
     fontSize: 35,
     color: '#A9411D',
@@ -26,7 +26,7 @@ export const commonStyles = StyleSheet.create({
     fontWeight: "bold",
   },
   subTitleText: {
-    fontFamily: 'nunito-bold',
+    // fontFamily: 'nunito-bold',
     margin: 25,
     fontSize: 20,
     color: '#A9411D',
@@ -43,18 +43,36 @@ export const commonStyles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  labelInput:{
+    fontWeight:'bold',
+    fontSize:16,
+    marginTop:10
+  },
   input: {
     height: 50,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 30,
+    borderRadius: 10,
     marginBottom: 15,
+    marginTop:10,
     paddingLeft: 20,
     paddingRight: 20,
     backgroundColor: '#FFF8EF',
     borderWidth: 2,
-    borderColor: '#383737'
+    borderColor: '#968B7B'
   },
+  // input: {
+  //   height: 50,
+  //   borderWidth: 1,
+  //   borderColor: '#ccc',
+  //   borderRadius: 30,
+  //   marginBottom: 15,
+  //   paddingLeft: 20,
+  //   paddingRight: 20,
+  //   backgroundColor: '#FFF8EF',
+  //   borderWidth: 2,
+  //   borderColor: '#383737'
+  // },
   subButton: {
     textAlign: 'center',
     color: '#A9411D',
@@ -83,7 +101,7 @@ export const commonStyles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
     color: '#fff',
-    fontFamily: 'nunito-bold',
+    // fontFamily: 'nunito-bold',
   },
   orText: {
     textAlign: 'center',
