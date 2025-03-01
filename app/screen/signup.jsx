@@ -1,19 +1,49 @@
-import { View, Text, TextInput, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PasswordInput } from '../../components/PasswordInput/passwordInput'; // Đảm bảo đúng đường dẫn
 import { commonStyles } from '../../style';
+import AXIOS_BASE from '../../config/AXIOS_BASE';
+
 export default function LoginScreen() {
+    const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [mail, setMail] = useState('');
     const [fullName, setFullName] = useState('');
     const [rePassword, setRePassword] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
+    const randomUsername = `user_${Date.now()}`;
 
-    const handleSignUp = () => {
-        router.push('/screen/verify'); 
+    const handleSignUp = async () => {
+        const registerPayload = {
+            username: randomUsername,
+            email: email,
+            phone: phone,
+            fullName: fullName,
+            password: password,
+            dob: "1999-01-01",
+            address: "Ho Chi Minh City",
+            gender: "Male",
+            rePassword: rePassword,
+        };
+
+        try {
+            // console.log('data', registerPayload);
+            const response = await AXIOS_BASE.post('/register', registerPayload);
+            if(response.status === 201) {
+                Alert.alert('Register success', 'Please verify your email');
+                console.log('Register success');
+                router.push(`/screen/verify?email=${encodeURIComponent(email)}`);
+            } else {
+                Alert.alert('Register failed', 'Please try again');
+                console.log('Register failed');
+            }
+        } catch (error) {
+            const message = error.response.data.message;
+            Alert.alert('Register failed', message);
+            console.log('Register failed', message);
+        }
     };
 
     const handlePasswordChange = (value) => {
@@ -22,6 +52,8 @@ export default function LoginScreen() {
     const handleRePasswordChange = (value) => {
         setRePassword(value);
     };
+
+
 
     return (
         <ScrollView style={commonStyles.containerContent}>
@@ -54,8 +86,8 @@ export default function LoginScreen() {
                 placeholder="Mail address"
                 placeholderTextColor="#968B7B"
                 keyboardType="email-address"
-                value={mail}
-                onChangeText={setMail}
+                value={email}
+                onChangeText={setEmail}
             />
 
             <PasswordInput

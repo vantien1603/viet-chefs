@@ -7,6 +7,8 @@ import { commonStyles } from "../../style";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AXIOS_BASE from "../../config/AXIOS_BASE";
+import { jwtDecode } from "jwt-decode";
 
 const webClientId = "522049129852-f9fc597s3c9tqbs9djr5sd94vcdpugmr.apps.googleusercontent.com"
 const iosClientId = "522049129852-21i7b2j5hlf06unknf0i6q5qpk4enln4.apps.googleusercontent.com"
@@ -24,15 +26,16 @@ export default function LoginScreen() {
   }
   const [request, response, promptAsync] = Google.useAuthRequest(config);
 
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   // const router = useRouter();
   const navigation = useNavigation();
 
-  const handleLogin = () => {
-    // router.push('/screen/login'); // Sửa đường dẫn
-    navigation.navigate("(tabs)", { screen: "home" });
-  };
+  // const handleLogin = () => {
+  //   // router.push('/screen/login'); // Sửa đường dẫn
+  //   navigation.navigate("(tabs)", { screen: "home" });
+  // };
 
   const handlePasswordChange = (value) => {
     setPassword(value);
@@ -80,6 +83,30 @@ export default function LoginScreen() {
     }
   }
 
+  const handleLogin = async () => {
+    const loginPayload = {
+      usernameOrEmail: usernameOrEmail,
+      password: password,
+    };
+
+    try {
+      const response = await AXIOS_BASE.post("/login", loginPayload);
+      if(response.status === 200) {
+        const token = response.data.access_token;
+        const decodedToken = jwtDecode(token);
+        const userId = decodedToken.userId;
+        await AsyncStorage.setItem("@token", token);
+        await AsyncStorage.setItem("@userId", userId);
+        console.log("Access token:", token);
+        navigation.navigate("(tabs)", { screen: "home" });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      console.log("Login failed", errorMessage);
+    }
+  }
+
+
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       {/* <Text>{JSON.stringify(userInfo, null, 2)}</Text> */}
@@ -94,11 +121,10 @@ export default function LoginScreen() {
       <Text style={commonStyles.titleText}>VIET CHEFS</Text>
       <TextInput
         style={commonStyles.input}
-        placeholder="Phone number"
+        placeholder="Username or Email"
         placeholderTextColor="#968B7B"
-        keyboardType="numeric"
-        value={phone}
-        onChangeText={setPhone}
+        value={usernameOrEmail}
+        onChangeText={setUsernameOrEmail}
       />
       <PasswordInput
         placeholder="Password"
