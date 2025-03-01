@@ -56,13 +56,14 @@ const VerifyScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
+      <Header title={'Verify account'}/>
       <View style={commonStyles.containerContent}>
-        <Image
+        {/* <Image
           source={require("../../assets/images/logo.png")}
           style={{ width: 400, height: 250 }}
           resizeMode="cover"
-        />
-        <Text style={commonStyles.subTitleText}>Enter the verification code</Text>
+        /> */}
+        <Text style={{textAlign:'center', fontSize:16, fontWeight:'600'}}>Please enter the 4-digit verification code that has been sent to the phone number</Text>
 
         <View style={styles.inputCode}>
           {code.map((digit, index) => (

@@ -38,8 +38,9 @@ const styles = StyleSheet.create({
         padding: 10,
         paddingLeft:0,
         // backgroundColor: '#f9f9f9',
-        borderBottomWidth: 1,
+        borderBottomWidth: 1.5,
         borderBottomColor: '#e0e0e0',
+        marginBottom:20
     },
     iconContainer: {
         width: 60,
@@ -57,7 +58,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     title: {color:"#A9411D",
-        fontSize: 20,
+        fontSize: 26,
         fontWeight: 'bold',
     },
     subtitle: {

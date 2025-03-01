@@ -27,7 +27,7 @@ export default function Home() {
     }
   };
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
+    <View style={commonStyles.containerContent}>
       <View
         style={{
           flexDirection: "row",
@@ -36,25 +36,28 @@ export default function Home() {
           padding: 10,
           borderBottomWidth: 1,
           borderBottomColor: "#ddd",
-          marginBottom: 10,
+          // marginBottom: 10,
           // marginTop: 50,
         }}
       >
-        <View style={{ flexDirection: "row" }}>
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={{ width: 50, height: 50 }}
-            resizeMode="cover"
-          />
-          <View>
-            <Text style={{ fontSize: 18, color: "#383838" }}>
-              Hello Marchele
-            </Text>
-            <Text style={{ fontSize: 12, color: "#968B7B" }}>
-              Jarkata, Indonesia
-            </Text>
+        <TouchableOpacity onPress={() => router.push('screen/editAddress')}>
+          <View style={{ flexDirection: "row" }}>
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={{ width: 50, height: 50 }}
+              resizeMode="cover"
+            />
+            <View>
+              <Text style={{ fontSize: 18, color: "#383838" }}>
+                Hello Marchele
+              </Text>
+              <Text style={{ fontSize: 12, color: "#968B7B" }}>
+                Jarkata, Indonesia
+              </Text>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
+
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
@@ -64,7 +67,8 @@ export default function Home() {
           </TouchableOpacity> */}
         </View>
       </View>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false} style={{ paddingTop: 10 }}>
         <View style={{ marginBottom: 20 }}>
           <Image
             source={require("../../assets/images/promo.png")}
@@ -167,18 +171,19 @@ export default function Home() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 const styles = StyleSheet.create({
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF",
-    borderRadius: 30,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#4EA0B7",
+  searchInput: {
+    backgroundColor: "#FFF8EF",
+    borderColor: '#ddd',
+    borderWidth: 2,
+    // width: '100%',
+    height: 60,
+    borderRadius: 100,
+    padding: 20,
+    fontSize: 16,
     marginBottom: 20,
   },
   searchIcon: {

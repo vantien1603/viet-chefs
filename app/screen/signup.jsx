@@ -1,8 +1,8 @@
 import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { PasswordInput } from '../../components/PasswordInput/passwordInput'; // Đảm bảo đúng đường dẫn
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { PasswordInput } from '../../components/PasswordInput/passwordInput'; 
 import { commonStyles } from '../../style';
 import AXIOS_BASE from '../../config/AXIOS_BASE';
 
@@ -10,8 +10,8 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [fullName, setFullName] = useState('');
-    const [rePassword, setRePassword] = useState('');
-    const [password, setPassword] = useState('');
+    // const [rePassword, setRePassword] = useState('');
+    // const [password, setPassword] = useState('');
     const router = useRouter();
     const randomUsername = `user_${Date.now()}`;
 
@@ -56,6 +56,7 @@ export default function LoginScreen() {
 
 
     return (
+
         <ScrollView style={commonStyles.containerContent}>
             <Image
                 source={require('../../assets/images/logo.png')}
@@ -99,26 +100,28 @@ export default function LoginScreen() {
                 onPasswordChange={handleRePasswordChange}
             />
             
+            <View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
 
-            <View style={{ flex: 1, alignItems: 'center' }}>
-
-                <TouchableOpacity onPress={handleSignUp} style={{
-                    padding: 13,
-                    marginTop: 10,
-                    borderWidth: 1,
-                    backgroundColor: '#383737',
-                    borderColor: '#383737',
-                    borderRadius: 50,
-                    width: 300,
-                }}>
-                    <Text style={{
-                        textAlign: 'center',
-                        fontSize: 18,
-                        color: '#fff',
-                        fontFamily: 'nunito-bold',
-                    }}>REGISTER</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSignUp} style={{
+                        padding: 13,
+                        marginTop: 10,
+                        borderWidth: 1,
+                        backgroundColor: '#383737',
+                        borderColor: '#383737',
+                        borderRadius: 50,
+                        width: 300,
+                    }}>
+                        <Text style={{
+                            textAlign: 'center',
+                            fontSize: 18,
+                            color: '#fff',
+                            fontFamily: 'nunito-bold',
+                        }}>Next</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
+
         </ScrollView>
     );
 }
