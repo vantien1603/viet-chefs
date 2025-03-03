@@ -1,6 +1,6 @@
 import { View, Text, TextInput, Image, TouchableOpacity, Button } from "react-native";
-import React, { useEffect, useState } from "react";
-import { useRouter, useNavigation } from "expo-router";
+import React, { useContext, useEffect, useState } from "react";
+import { useRouter, useNavigation, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Đảm bảo đúng đường dẫn
 import { commonStyles } from "../../style";
@@ -9,6 +9,7 @@ import * as Google from "expo-auth-session/providers/google";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { jwtDecode } from "jwt-decode";
+import { AuthContext } from "../../config/AuthContext";
 
 const webClientId = "522049129852-f9fc597s3c9tqbs9djr5sd94vcdpugmr.apps.googleusercontent.com"
 const iosClientId = "522049129852-21i7b2j5hlf06unknf0i6q5qpk4enln4.apps.googleusercontent.com"
@@ -32,6 +33,17 @@ export default function LoginScreen() {
   // const router = useRouter();
   const navigation = useNavigation();
 
+
+
+  const { user, login } = useContext(AuthContext);
+
+  if (user) {
+    console.log("login roiiiii")
+    // return <Redirect href="/home" />;
+  }
+
+
+
   // const handleLogin = () => {
   //   // router.push('/screen/login'); // Sửa đường dẫn
   //   navigation.navigate("(tabs)", { screen: "home" });
@@ -47,15 +59,15 @@ export default function LoginScreen() {
 
   async function handleSignInWithGoogle() {
     const user = await getLocalUser();
-    if(!user) {
-      if(response?.type === "success") {
+    if (!user) {
+      if (response?.type === "success") {
         await getUserInfo(response?.authentication?.accessToken);
       }
-        
-      } else {
-       setUserInfo(user);
-       console.log("Loaded locally");
-      }
+
+    } else {
+      setUserInfo(user);
+      console.log("Loaded locally");
+    }
   }
 
   const getLocalUser = async () => {
@@ -65,7 +77,7 @@ export default function LoginScreen() {
   };
 
   const getUserInfo = async () => {
-    if(!token) return;
+    if (!token) return;
     try {
       const response = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
         //"https://www.googleapis.com/userinfo/v2/me"
@@ -79,33 +91,42 @@ export default function LoginScreen() {
       await AsyncStorage.setItem("@user", JSON.stringify(user));
       setUserInfo(user);
     } catch (error) {
-      
+
     }
   }
 
-  const handleLogin = async () => {
-    const loginPayload = {
-      usernameOrEmail: usernameOrEmail,
-      password: password,
-    };
+  // const handleLogin = async () => {
+  //   const loginPayload = {
+  //     usernameOrEmail: usernameOrEmail,
+  //     password: password,
+  //   };
 
-    try {
-      const response = await AXIOS_BASE.post("/login", loginPayload);
-      if(response.status === 200) {
-        const token = response.data.access_token;
-        const decodedToken = jwtDecode(token);
-        const userId = decodedToken.userId;
-        await AsyncStorage.setItem("@token", token);
-        await AsyncStorage.setItem("@userId", userId);
-        console.log("Access token:", token);
-        navigation.navigate("(tabs)", { screen: "home" });
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
-      console.log("Login failed", errorMessage);
+  //   try {
+  //     // const response = await AXIOS_BASE.post("/login", loginPayload);
+  //     // if(response.status === 200) {
+  //     //   const token = response.data.access_token;
+  //     //   const decodedToken = jwtDecode(token);
+  //     //   const userId = decodedToken.userId;
+  //     //   await AsyncStorage.setItem("@token", token);
+  //     //   await AsyncStorage.setItem("@userId", userId);
+  //     //   console.log("Access token:", token);
+  //       navigation.navigate("(tabs)", { screen: "home" });
+  //     // }
+  //   } catch (error) {
+  //     const errorMessage = error.response?.data?.message || error.message;
+  //     console.log("Login failed", errorMessage);
+  //   }
+  // }
+
+
+
+  const handleLogin =  async () => {
+    console.log('cc');
+    const result =  await login(usernameOrEmail, password);
+    if (!result) {
+      Alert.alert('Login Failed', 'Invalid username or password');
     }
-  }
-
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>

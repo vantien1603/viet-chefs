@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
+import Header from "../../components/header";
 
 const VerifyScreen = () => {
   const router = useRouter();
@@ -43,11 +44,11 @@ const VerifyScreen = () => {
 
 
     try {
-      const response = await AXIOS_BASE.post(`/verify-code?email=${encodeURIComponent(email)}&code=${encodeURIComponent(verificationCode)}`);
-      if(response.status === 200) {
+      // const response = await AXIOS_BASE.post(`/verify-code?email=${encodeURIComponent(email)}&code=${encodeURIComponent(verificationCode)}`);
+      // if(response.status === 200) {
         console.log("Verify success");
         router.push("screen/login");
-      }
+      // }
     } catch (error) {
       const message = error.response.data.message;
       console.log("Verify failed", message);
