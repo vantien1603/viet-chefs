@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AXIOS_BASE from "../../config/AXIOS_BASE";
 import Header from "../../components/header";
 
 const VerifyScreen = () => {
@@ -37,13 +38,20 @@ const VerifyScreen = () => {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const verificationCode = code.join("");
-    if (verificationCode.length === 4) {
-      router.push("screen/setPassword");
-      console.log("Entered code:", verificationCode);
-    } else {
-      alert("Please enter a 4-digit code.");
+    // console.log("Email:", email);
+
+
+    try {
+      // const response = await AXIOS_BASE.post(`/verify-code?email=${encodeURIComponent(email)}&code=${encodeURIComponent(verificationCode)}`);
+      // if(response.status === 200) {
+        console.log("Verify success");
+        router.push("screen/login");
+      // }
+    } catch (error) {
+      const message = error.response.data.message;
+      console.log("Verify failed", message);
     }
   };
 

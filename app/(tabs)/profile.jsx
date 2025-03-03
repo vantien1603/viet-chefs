@@ -1,8 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { commonStyles } from '../../style';
 import { useRouter } from "expo-router";
+import { AuthContext } from "../../config/AuthContext";
 
 
 const menuItems = [
@@ -27,6 +28,7 @@ const menuItems = [
 
 const Profile = () => {
   const router = useRouter();
+  const { user } = useContext(AuthContext);
 
   const handleSetting = (id) => {
     switch (id) {
