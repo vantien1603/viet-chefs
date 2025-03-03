@@ -89,13 +89,13 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="screen/Booking/booking"
+        name="screen/booking"
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="screen/Booking/confirmBooking"
+        name="screen/confirmBooking"
         options={{
           headerShown: false,
         }}

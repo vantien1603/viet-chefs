@@ -77,12 +77,7 @@ export default function Home() {
           />
         </View>
         <View style={styles.searchContainer}>
-          <Icon
-            name="search"
-            size={24}
-            color="#4EA0B7"
-            style={styles.searchIcon}
-          />
+          
           <TextInput
             placeholder="Search..."
             style={styles.searchInput}
@@ -90,6 +85,12 @@ export default function Home() {
             onChangeText={setQuery}
             onSubmitEditing={handleSearch}
             returnKeyType="search" 
+          />
+          <Icon
+            name="search"
+            size={24}
+            color="#4EA0B7"
+            style={styles.searchIcon}
           />
         </View>
 
@@ -175,6 +176,11 @@ export default function Home() {
   );
 }
 const styles = StyleSheet.create({
+
+  searchContainer:{
+    position:'relative',
+
+  },
   searchInput: {
     backgroundColor: "#FFF8EF",
     borderColor: '#ddd',
@@ -187,11 +193,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 50,
+      position: "absolute",
+      right: 10,
+      top: "50%",
+      transform: [{ translateY: -20 }],
   },
   card: {
     backgroundColor: "#A9411D",

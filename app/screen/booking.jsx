@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, ScrollView, FlatList } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { router, useNavigation } from 'expo-router';
 import { commonStyles } from '../../style';
 import Header from '../../components/header';
 import moment from 'moment';
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import AntDesign from '@expo/vector-icons/AntDesign';
+import { Ionicons } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Modalize } from "react-native-modalize";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Checkbox } from "react-native-paper";
+
 
 const getDaysInMonth = (month, year) => {
   const daysInMonth = moment(`${year}-${month}`, 'YYYY-MM').daysInMonth();
@@ -27,6 +33,21 @@ const bookedSlots = [
   { start: 14, end: 15 },
 ];
 //
+
+const foodList = [
+  { id: 1, name: "Pizza" },
+  { id: 2, name: "Sushi" },
+  { id: 3, name: "Burger" },
+  { id: 4, name: "Pasta" },
+  { id: 5, name: "Pasta" },
+  { id: 6, name: "Pasta" },
+  { id: 7, name: "Pasta" },
+  { id: 8, name: "Pasta" },
+  { id: 9, name: "Pasta" },
+  { id: 10, name: "Pasta" },
+  { id: 11, name: "Pasta" },
+];
+
 
 const getAvailableSlots = () => {
   let slots = [];
@@ -60,6 +81,11 @@ const getValidEndTimes = (start) => {
 
 
 
+
+
+
+
+
 const BookingScreen = () => {
   const [month, setMonth] = useState(moment().format('MM'));
   const [year, setYear] = useState(moment().format('YYYY'));
@@ -77,6 +103,7 @@ const BookingScreen = () => {
   const [selectedStart, setSelectedStart] = useState(null);
   const [selectedEnd, setSelectedEnd] = useState(null);
   const slots = getAvailableSlots();
+  const [loading, setLoading] = useState(false);
 
   const handleSelectTime = (hour) => {
     if (selectedStart === null || selectedEnd !== null) {
@@ -98,127 +125,265 @@ const BookingScreen = () => {
 
 
 
+
+  const modalRef = useRef(null);
+  const [selectedItems, setSelectedItems] = useState([]);
+
+  const toggleSelection = (id) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+
+  const [time, setTime] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+
+  const handleTimeChange = (event, selectedTime) => {
+    setShowPicker(false);
+    if (selectedTime) {
+      setTime(selectedTime);
+    }
+  };
+
+  const [checked, setChecked] = useState(false);
+
+
   return (
-    <ScrollView style={commonStyles.containerContent}>
+    <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" />
 
-      <View style={styles.profileContainer}>
-        <Image source={{ uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600" }} style={styles.profileImage} />
-        <Text style={styles.profileName}>John Doe</Text>
-      </View>
+      <ScrollView style={{ paddingTop: 20 }} showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select Date & Time</Text>
-        <FlatList
-          data={days}
-          keyExtractor={(item) => item.day.toString()}
-          horizontal
-          initialScrollIndex={days.findIndex((item) => isToday(item.date))}
-          showsHorizontalScrollIndicator={false}
-          getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.dayContainer,
-                isBeforeToday(item.date) && styles.disabledDay,
-                isSelectedDay(item.date) && styles.selectedDay,
-              ]}
-              disabled={isBeforeToday(item.date)}
-              onPress={() => setSelectedDay(item.date)}
-            >
-              <Text style={[styles.dayOfWeek, isSelectedDay(item.date) && styles.selectedText]}>
-                {item.dayOfWeek}
-              </Text>
-              <Text style={[styles.day, isSelectedDay(item.date) && styles.selectedText]}>
-                {item.day}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
 
-      {/* thoi gian */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {selectedStart !== null && selectedEnd !== null
-            ? `Đã chọn: ${selectedStart}h - ${selectedEnd}h`
-            : selectedStart !== null
-              ? "Chọn giờ kết thúc"
-              : "Chọn giờ bắt đầu"}
-        </Text>
+
+        <View >
+          <Text style={styles.sectionTitle}>Chef information</Text>
+          <View style={[styles.profileContainer, { marginVertical: 20 }]}>
+            <View style={styles.profileContainer}>
+              <Image source={{ uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600" }} style={styles.profileImage} />
+              <View>
+                <Text style={styles.profileName}>John Doe</Text>
+                <Text style={{ fontSize: 14 }}>20 yearold</Text>
+              </View>
+            </View>
+            <AntDesign name="message1" size={24} color="black" />
+
+          </View>
+        </View>
+
+
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Date & Time</Text>
+          <FlatList
+            data={days}
+            keyExtractor={(item) => item.day.toString()}
+            horizontal
+            initialScrollIndex={days.findIndex((item) => isToday(item.date))}
+            showsHorizontalScrollIndicator={false}
+            getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.dayContainer,
+                  isBeforeToday(item.date) && styles.disabledDay,
+                  isSelectedDay(item.date) && styles.selectedDay,
+                ]}
+                disabled={isBeforeToday(item.date)}
+                onPress={() => setSelectedDay(item.date)}
+              >
+                <Text style={[styles.dayOfWeek, isSelectedDay(item.date) && styles.selectedText]}>
+                  {item.dayOfWeek}
+                </Text>
+                <Text style={[styles.day, isSelectedDay(item.date) && styles.selectedText]}>
+                  {item.day}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
         <View style={styles.timeContainer}>
-          {slots.map((slot, index) => (
+          <Text style={styles.label}>Meal time</Text>
+          <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.timeBox}>
+            <Text style={styles.timeText}>{time.getHours()}</Text>
+            <Text style={styles.separator}>|</Text>
+            <Text style={styles.timeText}>{String(time.getMinutes()).padStart(2, "0")}</Text>
+          </TouchableOpacity>
+          {showPicker && (
+            <DateTimePicker
+              value={time}
+              mode="time"
+              display="spinner"
+              onChange={handleTimeChange}
+            />
+          )}
+        </View>
+        {checked && (
+          <View style={styles.timeContainer}>
+            <Text style={styles.label}>End time</Text>
+            <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.timeBox}>
+              <Text style={styles.timeText}>{time.getHours()}</Text>
+              <Text style={styles.separator}>|</Text>
+              <Text style={styles.timeText}>{String(time.getMinutes()).padStart(2, "0")}</Text>
+            </TouchableOpacity>
+            {showPicker && (
+              <DateTimePicker
+                value={time}
+                mode="time"
+                display="spinner"
+                onChange={handleTimeChange}
+              />
+            )}
+          </View>
+        )}
+
+        <Checkbox.Item
+          labelStyle={{ fontSize: 16 }}
+          label="After-meal cleaning service"
+          status={checked ? "checked" : "unchecked"}
+          onPress={() => setChecked(!checked)}
+        />
+
+        <View style={styles.section}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.sectionTitle, { flex: 1 }]}>Food list</Text>
+            <TouchableOpacity onPress={() => modalRef.current?.open()}>
+              <AntDesign name="plus" size={20} color="black" />
+            </TouchableOpacity>
+          </View>
+
+          <View>
+            <Text>Mon 1</Text>
+            <Text>Mon 2</Text>
+          </View>
+        </View>
+
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Address</Text>
+          <TextInput style={styles.addressText} value="8592 Preston Rd. Inglewood" />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Special Request</Text>
+          <TextInput
+            style={styles.specialRequestInput}
+            placeholder="Enter your request"
+            value={specialRequest}
+            onChangeText={setSpecialRequest}
+            multiline
+          />
+        </View>
+
+        <View style={[styles.section, {marginBottom:100}]}>
+          <Text style={styles.sectionTitle}>Cost details</Text>
+          <Text>Total hourly rent</Text>
+          <Text>Total additional charges</Text>
+          <Text>Total payment</Text>
+        </View>
+      </ScrollView>
+
+      <View style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        // backgroundColor: "#A64B2A",
+        backgroundColor: "#EBE5DD",
+        padding: 20,
+        alignItems: "center",
+      }}>
+
+        <TouchableOpacity
+          style={{
+            // position: "relative",
+            width: '100%',
+            bottom: 10,
+            backgroundColor: "#A64B2A",
+            padding: 15,
+            borderRadius: 10,
+            alignItems: "center",
+          }}
+
+          onPress={() => router.push('screen/confirmBooking')}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+              Confirm booking
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      <Modalize ref={modalRef} adjustToContentHeight>
+        <View style={{ padding: 10, backgroundColor: '#EBE5DD' }}>
+          {foodList.map((item) => (
             <TouchableOpacity
-              key={index}
-              style={[
-                styles.timeBox,
-                slot.booked && styles.bookedTime,
-                selectedStart !== null &&
-                selectedEnd === null &&
-                slot.hour === selectedStart &&
-                styles.selectedTime,
-                selectedStart !== null &&
-                selectedEnd !== null &&
-                slot.hour >= selectedStart &&
-                slot.hour <= selectedEnd &&
-                styles.selectedTime,
-              ]}
-              disabled={slot.booked}
-              onPress={() => handleSelectTime(slot.hour)}
+              key={item.id}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 15,
+                backgroundColor: "#EBE5DD",
+                borderRadius: 12,
+                marginBottom: 10,
+                padding: 5,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.1,
+                shadowRadius: 5,
+                elevation: 1,
+              }}
+              onPress={() => toggleSelection(item.id)}
             >
-              <Text style={[styles.timeText, slot.booked && styles.bookedText]}>
-                {slot.hour}h
-              </Text>
+              {/* Checkbox */}
+              <Checkbox.Android
+                status={selectedItems.includes(item.id) ? "checked" : "unchecked"}
+                onPress={() => toggleSelection(item.id)}
+                color="#4CAF50"
+              />
+
+              <Image
+                source={{
+                  uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
+                }}
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  marginRight: 12,
+                }}
+              />
+              <View>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    color: "#333",
+                  }}
+                >
+                  {item.name}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#777",
+                  }}
+                >
+                  Thoi gian nau
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </Modalize>
 
 
+    </GestureHandlerRootView>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Number of People</Text>
-        <Text style={styles.peopleCount}>{numberOfPeople}</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={1}
-          maximumValue={10}
-          step={1}
-          value={numberOfPeople}
-          onValueChange={setNumberOfPeople}
-          minimumTrackTintColor="#A9411D"
-          maximumTrackTintColor="#D3D3D3"
-          thumbTintColor="#A9411D"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Address</Text>
-        <TextInput style={styles.addressText} value="8592 Preston Rd. Inglewood" editable={false} />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Special Request</Text>
-        <TextInput
-          style={styles.specialRequestInput}
-          placeholder="Enter your request"
-          value={specialRequest}
-          onChangeText={setSpecialRequest}
-          multiline
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Payment details</Text>
-        <Text>Total hourly rent</Text>
-        <Text>Total additional charges</Text>
-        <Text>Total payment</Text>
-      </View>
-
-      <TouchableOpacity style={styles.bookButton} onPress={() => router.push('screen/Booking/confirmBooking')}>
-        <Text style={styles.bookButtonText}>Book</Text>
-      </TouchableOpacity>
-    </ScrollView>
   );
 };
 
@@ -236,17 +401,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   profileContainer: {
-    alignItems: "center",
-    marginVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    // alignItems: "center",
+    // marginVertical: 20,
   },
   profileImage: {
-    width: 90,
-    height: 90,
+    width: 50,
+    height: 50,
     borderRadius: 45,
-    marginBottom: 10,
+    marginRight: 20
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#333",
   },
@@ -297,20 +464,37 @@ const styles = StyleSheet.create({
 
 
   //thoi gian
-  timeContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
-  timeBox: {
-    width: 50,
-    height: 50,
-    margin: 5,
-    justifyContent: "center",
+  timeContainer: {
+    flexDirection: "row",
     alignItems: "center",
     borderRadius: 10,
-    backgroundColor: "#519254",
+    paddingVertical: 10
   },
-  bookedTime: { backgroundColor: "gray" },
-  selectedTime: { backgroundColor: "#FF9800" },
-  timeText: { fontSize: 16, color: "white", fontWeight: "bold" },
-  bookedText: { color: "#CCC" },
+  icon: {
+    marginRight: 10,
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: "bold",
+    flex: 1,
+  },
+  timeBox: {
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  timeText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: '#A9411D'
+  },
+  separator: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginHorizontal: 5,
+  },
   // selectedText: { fontSize: 18, fontWeight: "bold", marginTop: 20 },
 
   //
