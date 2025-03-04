@@ -10,49 +10,16 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [fullName, setFullName] = useState('');
-    // const [rePassword, setRePassword] = useState('');
-    // const [password, setPassword] = useState('');
     const router = useRouter();
-    const randomUsername = `user_${Date.now()}`;
 
     const handleSignUp = async () => {
-        const registerPayload = {
-            username: randomUsername,
-            email: email,
-            phone: phone,
-            fullName: fullName,
-            password: password,
-            dob: "1999-01-01",
-            address: "Ho Chi Minh City",
-            gender: "Male",
-            rePassword: rePassword,
-        };
-
-        try {
-            // console.log('data', registerPayload);
-            const response = await AXIOS_BASE.post('/register', registerPayload);
-            if(response.status === 201) {
-                Alert.alert('Register success', 'Please verify your email');
-                console.log('Register success');
-                router.push(`/screen/verify?email=${encodeURIComponent(email)}`);
-            } else {
-                Alert.alert('Register failed', 'Please try again');
-                console.log('Register failed');
+        router.push({
+            pathname: 'screen/setPassword',
+            params: {
+                email, phone, fullName
             }
-        } catch (error) {
-            const message = error.response.data.message;
-            Alert.alert('Register failed', message);
-            console.log('Register failed', message);
-        }
+        })
     };
-
-    const handlePasswordChange = (value) => {
-        setPassword(value);
-    };
-    const handleRePasswordChange = (value) => {
-        setRePassword(value);
-    };
-
 
 
     return (
@@ -91,14 +58,14 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
             />
 
-            <PasswordInput
+            {/* <PasswordInput
                 placeholder="Password"
                 onPasswordChange={handlePasswordChange}
             />
             <PasswordInput
                 placeholder="Re-Password"
                 onPasswordChange={handleRePasswordChange}
-            />
+            /> */}
             
             <View>
                 <View style={{ flex: 1, alignItems: 'center' }}>

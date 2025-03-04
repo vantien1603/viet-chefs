@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Home() {
   const router = useRouter();
@@ -26,6 +27,8 @@ export default function Home() {
       router.push("/screen/searchResult");
     }
   };
+
+  const fullName = AsyncStorage.getItem("@fullName");
   return (
     <View style={commonStyles.containerContent}>
       <View
@@ -49,7 +52,7 @@ export default function Home() {
             />
             <View>
               <Text style={{ fontSize: 18, color: "#383838" }}>
-                Hello Marchele
+                Hello, {fullName}
               </Text>
               <Text style={{ fontSize: 12, color: "#968B7B" }}>
                 Jarkata, Indonesia
@@ -59,7 +62,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/screen/booking")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
           {/* <TouchableOpacity>
@@ -175,6 +178,16 @@ export default function Home() {
   );
 }
 const styles = StyleSheet.create({
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF",
+    borderRadius: 30,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#4EA0B7",
+    marginBottom: 20,
+  },
   searchInput: {
     backgroundColor: "#FFF8EF",
     borderColor: '#ddd',

@@ -1,24 +1,30 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, ScrollView, FlatList } from 'react-native';
-import Slider from '@react-native-community/slider';
-import { router, useNavigation } from 'expo-router';
-import { commonStyles } from '../../style';
-import Header from '../../components/header';
-import moment from 'moment';
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  Image,
+  ScrollView,
+  FlatList,
+} from "react-native";
+import { router, useNavigation } from "expo-router";
+import { commonStyles } from "../../style";
+import Header from "../../components/header";
+import moment from "moment";
 
 const getDaysInMonth = (month, year) => {
-  const daysInMonth = moment(`${year}-${month}`, 'YYYY-MM').daysInMonth();
+  const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
   return Array.from({ length: daysInMonth }, (_, i) => {
-    const date = moment(`${year}-${month}-${i + 1}`, 'YYYY-MM-DD');
+    const date = moment(`${year}-${month}-${i + 1}`, "YYYY-MM-DD");
     return {
       day: i + 1,
-      dayOfWeek: date.format('ddd'),
+      dayOfWeek: date.format("ddd"),
       date,
     };
   });
 };
-
 
 //data test
 const totalTimeRange = { min: 7, max: 19 };
@@ -58,19 +64,17 @@ const getValidEndTimes = (start) => {
   return totalTimeRange.max;
 };
 
-
-
 const BookingScreen = () => {
-  const [month, setMonth] = useState(moment().format('MM'));
-  const [year, setYear] = useState(moment().format('YYYY'));
+  const [month, setMonth] = useState(moment().format("MM"));
+  const [year, setYear] = useState(moment().format("YYYY"));
   const [selectedDay, setSelectedDay] = useState(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [specialRequest, setSpecialRequest] = useState("");
   const today = moment();
   const days = getDaysInMonth(month, year);
 
-  const isBeforeToday = (date) => date.isBefore(today, 'day');
-  const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, 'day');
+  const isBeforeToday = (date) => date.isBefore(today, "day");
+  const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
 
   // phan thoi gian
@@ -95,27 +99,50 @@ const BookingScreen = () => {
       }
     }
   };
+  const increasePeople = () => {
+    if (numberOfPeople < 10) {
+      setNumberOfPeople(numberOfPeople + 1);
+    }
+  };
 
-
+  const decreasePeople = () => {
+    if (numberOfPeople > 1) {
+      setNumberOfPeople(numberOfPeople - 1);
+    }
+  };
 
   return (
     <ScrollView style={commonStyles.containerContent}>
       <Header title="Booking" />
 
       <View style={styles.profileContainer}>
-        <Image source={{ uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600" }} style={styles.profileImage} />
+        <Image
+          source={{
+            uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
+          }}
+          style={styles.profileImage}
+        />
         <Text style={styles.profileName}>John Doe</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select Date & Time</Text>
+        <View style={styles.headerContainer}>
+          <Text style={styles.sectionTitle}>Select Date & Time</Text>
+          <Text style={styles.monthText}>
+            {new Date().toLocaleString("default", { month: "long" })}
+          </Text>
+        </View>
         <FlatList
           data={days}
           keyExtractor={(item) => item.day.toString()}
           horizontal
           initialScrollIndex={days.findIndex((item) => isToday(item.date))}
           showsHorizontalScrollIndicator={false}
-          getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
+          getItemLayout={(data, index) => ({
+            length: 80,
+            offset: 80 * index,
+            index,
+          })}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
@@ -126,10 +153,20 @@ const BookingScreen = () => {
               disabled={isBeforeToday(item.date)}
               onPress={() => setSelectedDay(item.date)}
             >
-              <Text style={[styles.dayOfWeek, isSelectedDay(item.date) && styles.selectedText]}>
+              <Text
+                style={[
+                  styles.dayOfWeek,
+                  isSelectedDay(item.date) && styles.selectedText,
+                ]}
+              >
                 {item.dayOfWeek}
               </Text>
-              <Text style={[styles.day, isSelectedDay(item.date) && styles.selectedText]}>
+              <Text
+                style={[
+                  styles.day,
+                  isSelectedDay(item.date) && styles.selectedText,
+                ]}
+              >
                 {item.day}
               </Text>
             </TouchableOpacity>
@@ -143,8 +180,8 @@ const BookingScreen = () => {
           {selectedStart !== null && selectedEnd !== null
             ? `Đã chọn: ${selectedStart}h - ${selectedEnd}h`
             : selectedStart !== null
-              ? "Chọn giờ kết thúc"
-              : "Chọn giờ bắt đầu"}
+            ? "Chọn giờ kết thúc"
+            : "Chọn giờ bắt đầu"}
         </Text>
         <View style={styles.timeContainer}>
           {slots.map((slot, index) => (
@@ -154,14 +191,14 @@ const BookingScreen = () => {
                 styles.timeBox,
                 slot.booked && styles.bookedTime,
                 selectedStart !== null &&
-                selectedEnd === null &&
-                slot.hour === selectedStart &&
-                styles.selectedTime,
+                  selectedEnd === null &&
+                  slot.hour === selectedStart &&
+                  styles.selectedTime,
                 selectedStart !== null &&
-                selectedEnd !== null &&
-                slot.hour >= selectedStart &&
-                slot.hour <= selectedEnd &&
-                styles.selectedTime,
+                  selectedEnd !== null &&
+                  slot.hour >= selectedStart &&
+                  slot.hour <= selectedEnd &&
+                  styles.selectedTime,
               ]}
               disabled={slot.booked}
               onPress={() => handleSelectTime(slot.hour)}
@@ -174,27 +211,35 @@ const BookingScreen = () => {
         </View>
       </View>
 
-
-
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Number of People</Text>
-        <Text style={styles.peopleCount}>{numberOfPeople}</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={1}
-          maximumValue={10}
-          step={1}
-          value={numberOfPeople}
-          onValueChange={setNumberOfPeople}
-          minimumTrackTintColor="#A9411D"
-          maximumTrackTintColor="#D3D3D3"
-          thumbTintColor="#A9411D"
-        />
+        <View style={styles.container}>
+          <TouchableOpacity
+            onPress={decreasePeople}
+            style={[
+              styles.button,
+              numberOfPeople === 1 && styles.disabledButton,
+            ]}
+            disabled={numberOfPeople === 1}
+          >
+            <Text style={styles.buttonText}>-</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.peopleCount}>{numberOfPeople}</Text>
+
+          <TouchableOpacity onPress={increasePeople} style={styles.button}>
+            <Text style={styles.buttonText}>+</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Address</Text>
-        <TextInput style={styles.addressText} value="8592 Preston Rd. Inglewood" editable={false} />
+        <TextInput
+          style={styles.addressText}
+          value="8592 Preston Rd. Inglewood"
+          editable={false}
+        />
       </View>
 
       <View style={styles.section}>
@@ -215,7 +260,10 @@ const BookingScreen = () => {
         <Text>Total payment</Text>
       </View>
 
-      <TouchableOpacity style={styles.bookButton} onPress={() => router.push('screen/Booking/confirmBooking')}>
+      <TouchableOpacity
+        style={styles.bookButton}
+        onPress={() => router.push("screen/confirmBooking")}
+      >
         <Text style={styles.bookButtonText}>Book</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -224,7 +272,7 @@ const BookingScreen = () => {
 
 const styles = StyleSheet.create({
   section: {
-    borderTopColor: '#D1D1D1',
+    borderTopColor: "#D1D1D1",
     borderTopWidth: 0.5,
     paddingVertical: 20,
     // paddingHorizontal: 20,
@@ -234,6 +282,58 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 10,
+  },
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#DDDDDD",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    width: "100%",
+    justifyContent: "space-between",
+    height: 60,
+  },
+  button: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  disabledButton: {
+    backgroundColor: "#D3D3D3", // Màu xám khi bị disable
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  disabledText: {
+    color: "#000", // Màu chữ xám khi bị disable
+  },
+  peopleCount: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    flex: 1, // Giúp căn giữa số lượng
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  monthText: {
+    fontSize: 16,
+    color: "gray",
   },
   profileContainer: {
     alignItems: "center",
@@ -254,31 +354,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginRight: 10,
-    alignItems: 'center',
+    alignItems: "center",
     // backgroundColor: '#E2AA97',
-    backgroundColor: '#519254',
+    backgroundColor: "#519254",
     borderRadius: 20,
   },
   disabledDay: {
-    backgroundColor: '#BAB8B8',
+    backgroundColor: "#BAB8B8",
   },
   selectedDay: {
-    backgroundColor: '#A9411D',
+    backgroundColor: "#A9411D",
   },
   selectedText: {
     color: "white",
     fontWeight: "bold",
-  },
-  peopleCount: {
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  slider: {
-    width: "90%",
-    alignSelf: "center",
-    transform: [{ scaleY: 1.5 }],
   },
   bookButton: {
     backgroundColor: "#A9411D",
@@ -295,9 +384,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-
   //thoi gian
-  timeContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
+  timeContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
   timeBox: {
     width: 50,
     height: 50,

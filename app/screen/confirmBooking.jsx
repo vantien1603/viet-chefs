@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ConfirmBookingScreen = () => {
   const handleKeepBooking = () => {
-    router.push('screen/Booking/historyBooking');
+    router.push('screen/historyBooking');
   }
 
   return (

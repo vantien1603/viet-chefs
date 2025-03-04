@@ -95,8 +95,11 @@ export default function LoginScreen() {
         const token = response.data.access_token;
         const decodedToken = jwtDecode(token);
         const userId = decodedToken.userId;
+        const fullName = response.data.fullName; 
         await AsyncStorage.setItem("@token", token);
         await AsyncStorage.setItem("@userId", userId);
+        await AsyncStorage.setItem("@fullName", fullName);
+        console.log(fullName);
         console.log("Access token:", token);
         navigation.navigate("(tabs)", { screen: "home" });
       }

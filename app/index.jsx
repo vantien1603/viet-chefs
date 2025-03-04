@@ -22,8 +22,8 @@ export default function WelcomeScreen() {
   const navigation = useNavigation();
 
   const handleLogin = () => {
-    // router.push('screen/login');
-    router.push('screen/selectFood');
+    router.push('screen/login');
+    // router.push('screen/selectFood');
     // router.push('screen/Cart/cart');
     // router.push('screen/map')
     // router.push('screen/Chefs/menu');
