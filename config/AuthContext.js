@@ -12,12 +12,12 @@ export const AuthProvider = ({ children }) => {
     const bootstrapAsync = async () => {
       const refresh_token = await SecureStore.getItemAsync('refreshToken');
       if (refresh_token) {
-        try {
-          const response = await axios.post('https://example.com/api/refresh', { refresh_token });
-          setUser({ token: response.data.accessToken });
-        } catch (error) {
-          console.log('Không thể refresh token:', error);
-        }
+        // try {
+        //   const response = await axios.post('https://example.com/api/refresh', { refresh_token });
+        //   setUser({ token: response.data.accessToken });
+        // } catch (error) {
+        //   console.log('Không thể refresh token:', error);
+        // }
       }
       setLoading(false);
     };
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
         usernameOrEmail: username,
         password: password,
       };
-      const response = await axios.post('http://192.168.1.11:8080/no-auth/login', loginPayload);
+      const response = await axios.post('http://192.168.1.34:8080/no-auth/login', loginPayload);
       console.log(response.data);
       const { access_token, refresh_token } = response.data;
       console.log(access_token);

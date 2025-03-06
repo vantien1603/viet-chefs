@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { commonStyles } from "../../style";
@@ -25,7 +26,6 @@ const VerifyScreen = () => {
       newCode[index] = value;
       setCode(newCode);
 
-      
       if (value && index < 3) {
         inputRefs.current[index + 1]?.focus();
       }
@@ -40,31 +40,49 @@ const VerifyScreen = () => {
 
   const handleVerify = async () => {
     const verificationCode = code.join("");
-    // console.log("Email:", email);
-
-
     try {
-      // const response = await AXIOS_BASE.post(`/verify-code?email=${encodeURIComponent(email)}&code=${encodeURIComponent(verificationCode)}`);
-      // if(response.status === 200) {
+      const response = await AXIOS_BASE.post(
+        `/verify-code?email=${encodeURIComponent(
+          email
+        )}&code=${encodeURIComponent(verificationCode)}`
+      );
+      if (response.status === 200) {
         console.log("Verify success");
         router.push("screen/login");
-      // }
+      }
     } catch (error) {
       const message = error.response.data.message;
       console.log("Verify failed", message);
     }
   };
 
+  const handleSendAgain = async () => {
+    try {
+      const response = await AXIOS_BASE.post(
+        `/resend-code?email=${encodeURIComponent(email)}`
+      );
+      if (response.status === 200) {
+        Alert.alert("Success", "Resend code. Please check your email");
+      }
+    } catch (error) {
+      const message = error.response.data.message;
+      console.log("Resend failed", message);
+    }
+  };
+
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={'Verify account'}/>
+      <Header title={"Verify account"} />
       <View style={commonStyles.containerContent}>
         {/* <Image
           source={require("../../assets/images/logo.png")}
           style={{ width: 400, height: 250 }}
           resizeMode="cover"
         /> */}
-        <Text style={{textAlign:'center', fontSize:16, fontWeight:'600'}}>Please enter the 4-digit verification code that has been sent to the phone number</Text>
+        <Text style={{ textAlign: "center", fontSize: 16, fontWeight: "600" }}>
+          Please enter the 4-digit verification code that has been sent to the
+          phone number
+        </Text>
 
         <View style={styles.inputCode}>
           {code.map((digit, index) => (
@@ -76,17 +94,25 @@ const VerifyScreen = () => {
               onChangeText={(value) => handleInputChange(value, index)}
               onKeyPress={(e) => handleKeyPress(e, index)}
               keyboardType="numeric"
-              maxLength={1} 
-              autoFocus={index === 0} 
+              maxLength={1}
+              autoFocus={index === 0}
             />
           ))}
         </View>
 
-        <TouchableOpacity style={{ alignItems: "center", marginBottom: 10 }}>
-          <Text style={{ color: "#383737", fontSize: 16 }}>Not receive code?</Text>
+        <TouchableOpacity
+          style={{ alignItems: "center", marginBottom: 10 }}
+          onPress={handleSendAgain}
+        >
+          <Text style={{ color: "#383737", fontSize: 16 }}>
+            Not receive code? Send again
+          </Text>
         </TouchableOpacity>
         <View style={commonStyles.mainButtonContainer}>
-          <TouchableOpacity onPress={handleVerify} style={commonStyles.mainButton}>
+          <TouchableOpacity
+            onPress={handleVerify}
+            style={commonStyles.mainButton}
+          >
             <Text style={commonStyles.textMainButton}>VERIFY</Text>
           </TouchableOpacity>
         </View>
@@ -110,7 +136,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     fontSize: 24,
-    textAlign: "center", 
+    textAlign: "center",
     fontWeight: "bold",
   },
 });

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { commonStyles } from '../../style'
 import Header from '../../components/header'
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router'
 const ForgotPasswordScreen = () => {
     return (
         <SafeAreaView style={commonStyles.containerContent}>
@@ -21,13 +22,13 @@ const ForgotPasswordScreen = () => {
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.optionRow}>
+                <TouchableOpacity style={styles.optionRow} onPress={() => router.push("/screen/forgotPassword")}>
                     <Ionicons name="mail-sharp" size={50} color="#A9411D" />
                     <View style={{ marginLeft: 15 }}>
                         <Text style={styles.contentText}>Via email</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={{ fontSize: 40 }}>•••••••</Text>
-                            <Text style={{ fontSize: 22 }}>@gmil.com</Text>
+                            <Text style={{ fontSize: 22 }}>@gmail.com</Text>
                         </View>
                     </View>
                 </TouchableOpacity>

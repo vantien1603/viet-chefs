@@ -7,58 +7,66 @@ import { commonStyles } from '../../style';
 import Header from '../../components/header';
 export default function LoginScreen() {
     const [phone, setPhone] = useState('');
-    const [mail, setMail] = useState('');
+    const [email, setEmail] = useState('');
     const [fullName, setFullName] = useState('');
-    // const [rePassword, setRePassword] = useState('');
-    // const [password, setPassword] = useState('');
     const router = useRouter();
 
-    const handleSignUp = () => {
-        router.push('/screen/verify');
+    const handleSignUp = async () => {
+        router.push({
+            pathname: 'screen/setPassword',
+            params: {
+                email, phone, fullName
+            }
+        })
     };
 
-    const handlePasswordChange = (value) => {
-        setPassword(value);
-    };
-    const handleRePasswordChange = (value) => {
-        setRePassword(value);
-    };
 
     return (
 
         <ScrollView style={commonStyles.containerContent}>
-            <Header title="Register" />
+            <Image
+                source={require('../../assets/images/logo.png')}
+                style={{ width: 400, height: 250 }}
+                resizeMode="cover"
+            />
+            <Text style={commonStyles.titleText}>
+                VIET CHEFS
+            </Text>
+            <TextInput
+                style={commonStyles.input}
+                placeholder="Full name"
+                placeholderTextColor="#968B7B"
+                keyboardType="default"
+                value={fullName}
+                onChangeText={setFullName}
+            />
+            <TextInput
+                style={commonStyles.input}
+                placeholder="Phone number"
+                placeholderTextColor="#968B7B"
+                keyboardType="numeric"
+                value={phone}
+                onChangeText={setPhone}
+            />
+            <TextInput
+                style={commonStyles.input}
+                placeholder="Mail address"
+                placeholderTextColor="#968B7B"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+            />
+
+            {/* <PasswordInput
+                placeholder="Password"
+                onPasswordChange={handlePasswordChange}
+            />
+            <PasswordInput
+                placeholder="Re-Password"
+                onPasswordChange={handleRePasswordChange}
+            /> */}
+            
             <View>
-
-                <Text style={{ fontSize: 18, fontWeight: 'bold' }}> Pleasure to be at your service!</Text>
-                <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}> Create an account now to experience our services!</Text>
-
-                <Text style={commonStyles.labelInput}>First and last name</Text>
-                <TextInput
-                    style={commonStyles.input}
-                    placeholder='Huynh Van Tien'
-                    value={fullName}
-                    onChangeText={setFullName}
-                />
-                <Text style={commonStyles.labelInput}>Phone number</Text>
-                <TextInput
-                    style={commonStyles.input}
-                    placeholder="123123123"
-                    // placeholderTextColor="#968B7B"
-                    keyboardType="numeric"
-                    value={phone}
-                    onChangeText={setPhone}
-                />
-                <Text style={commonStyles.labelInput}>Mail address</Text>
-                <TextInput
-                    style={commonStyles.input}
-                    placeholder="Mail address"
-                    // placeholderTextColor="#968B7B"
-                    keyboardType="email-address"
-                    value={mail}
-                    onChangeText={setMail}
-                />
-
                 <View style={{ flex: 1, alignItems: 'center' }}>
 
                     <TouchableOpacity onPress={handleSignUp} style={{

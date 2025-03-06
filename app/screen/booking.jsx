@@ -14,17 +14,16 @@ import { Checkbox } from "react-native-paper";
 
 
 const getDaysInMonth = (month, year) => {
-  const daysInMonth = moment(`${year}-${month}`, 'YYYY-MM').daysInMonth();
+  const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
   return Array.from({ length: daysInMonth }, (_, i) => {
-    const date = moment(`${year}-${month}-${i + 1}`, 'YYYY-MM-DD');
+    const date = moment(`${year}-${month}-${i + 1}`, "YYYY-MM-DD");
     return {
       day: i + 1,
-      dayOfWeek: date.format('ddd'),
+      dayOfWeek: date.format("ddd"),
       date,
     };
   });
 };
-
 
 //data test
 const totalTimeRange = { min: 7, max: 19 };
@@ -87,16 +86,16 @@ const getValidEndTimes = (start) => {
 
 
 const BookingScreen = () => {
-  const [month, setMonth] = useState(moment().format('MM'));
-  const [year, setYear] = useState(moment().format('YYYY'));
+  const [month, setMonth] = useState(moment().format("MM"));
+  const [year, setYear] = useState(moment().format("YYYY"));
   const [selectedDay, setSelectedDay] = useState(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [specialRequest, setSpecialRequest] = useState("");
   const today = moment();
   const days = getDaysInMonth(month, year);
 
-  const isBeforeToday = (date) => date.isBefore(today, 'day');
-  const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, 'day');
+  const isBeforeToday = (date) => date.isBefore(today, "day");
+  const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
 
   // phan thoi gian
@@ -389,7 +388,7 @@ const BookingScreen = () => {
 
 const styles = StyleSheet.create({
   section: {
-    borderTopColor: '#D1D1D1',
+    borderTopColor: "#D1D1D1",
     borderTopWidth: 0.5,
     paddingVertical: 20,
     // paddingHorizontal: 20,
@@ -421,31 +420,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginRight: 10,
-    alignItems: 'center',
+    alignItems: "center",
     // backgroundColor: '#E2AA97',
-    backgroundColor: '#519254',
+    backgroundColor: "#519254",
     borderRadius: 20,
   },
   disabledDay: {
-    backgroundColor: '#BAB8B8',
+    backgroundColor: "#BAB8B8",
   },
   selectedDay: {
-    backgroundColor: '#A9411D',
+    backgroundColor: "#A9411D",
   },
   selectedText: {
     color: "white",
     fontWeight: "bold",
-  },
-  peopleCount: {
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  slider: {
-    width: "90%",
-    alignSelf: "center",
-    transform: [{ scaleY: 1.5 }],
   },
   bookButton: {
     backgroundColor: "#A9411D",
@@ -461,7 +449,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-
 
   //thoi gian
   timeContainer: {

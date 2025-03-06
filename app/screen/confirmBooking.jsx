@@ -10,7 +10,7 @@ const ConfirmBookingScreen = () => {
   const [loading, setLoading] = useState(false);
 
   const handleKeepBooking = () => {
-    router.push('screen/Booking/historyBooking');
+    router.push('screen/historyBooking');
   }
 
   return (
