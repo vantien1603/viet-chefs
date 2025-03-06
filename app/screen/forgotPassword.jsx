@@ -41,7 +41,6 @@ const ForgotPasswordScreen = () => {
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Forgot Password" />
       <View style={styles.container}>
-        <Text style={styles.title}>Reset Your Password</Text>
         <Text style={styles.description}>
           Enter your email address and we will send you a code to reset your
           password.
@@ -74,12 +73,6 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     alignItems: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#333",
   },
   description: {
     fontSize: 16,

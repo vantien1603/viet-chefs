@@ -1,22 +1,10 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React,{ useContext, useEffect } from 'react'
 import * as WebBrowser from 'expo-web-browser'
-import { router } from 'expo-router'
+import { Redirect, router } from 'expo-router'
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-
-export const useWarmUpBrowser = () => {
-  React.useEffect(() => {
-
-    void WebBrowser.warmUpAsync()
-    return () => {
-      void WebBrowser.coolDownAsync()
-    }
-  }, [])
-}
-
-WebBrowser.maybeCompleteAuthSession()
+import { AuthContext } from '../config/AuthContext';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
@@ -29,6 +17,16 @@ export default function WelcomeScreen() {
     // router.push('screen/Chefs/menu');
   }
 
+
+  const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    console.log('User:', user);
+  }, [user]);
+
+  if (user) {
+    return <Redirect href="/home" />;
+  }
   return (
     <SafeAreaView style={
       {
@@ -38,16 +36,7 @@ export default function WelcomeScreen() {
         justifyContent: 'center',
       }
     }>
-{/* 
-      <Text style={{
-        fontSize: 30,
-        fontWeight: 'bold',
-        marginLeft: 15,
-        marginRight: 15,
-        fontFamily: 'nunito',
-        color: '#A9411D',
-        textAlign: 'center',
-      }}>Welome</Text> */}
+
       <View style={{ alignItems: 'center' }}>
         <Image
           source={require('../assets/images/logo.png')}

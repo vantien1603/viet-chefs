@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import Toast, { BaseToast } from "react-native-toast-message";
+import { AuthProvider } from "../config/AuthContext";
 
 // SplashScreen.preventAutoHideAsync();
 
@@ -55,7 +56,7 @@ export default function RootLayout() {
   };
 
   return (
-    <>
+    <AuthProvider>
       <Stack
         screenOptions={{
           headerTitleAlign: "center",
@@ -222,6 +223,6 @@ export default function RootLayout() {
       </Stack>
 
       <Toast config={toastConfig} />
-    </>
+    </AuthProvider>
   );
 }

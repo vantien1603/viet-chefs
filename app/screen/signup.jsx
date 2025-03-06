@@ -1,14 +1,13 @@
-import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 // import { SafeAreaView } from 'react-native-safe-area-context';
 // import { PasswordInput } from '../../components/PasswordInput/passwordInput'; 
 import { commonStyles } from '../../style';
-import AXIOS_BASE from '../../config/AXIOS_BASE';
-
+import Header from '../../components/header';
 export default function LoginScreen() {
-    const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
     const [fullName, setFullName] = useState('');
     const router = useRouter();
 

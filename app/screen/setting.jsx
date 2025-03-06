@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { commonStyles } from '../../style';
@@ -6,6 +6,7 @@ import { Modalize } from "react-native-modalize";
 import { AntDesign } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Header from "../../components/header";
+import { AuthContext } from "../../config/AuthContext";
 
 const languages = [
   { id: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
@@ -30,6 +31,9 @@ const Setting = () => {
   const closeModalLang = () => modalLangRef.current?.close();
   const openModalCountry = () => modalCountryRef.current?.open();
   const closeModalCountry = () => modalCountryRef.current?.close();
+
+  const { user, logout } = useContext(AuthContext);
+
 
   const selectLanguage = (id) => {
     setSelectedLang(id);
@@ -100,6 +104,7 @@ const Setting = () => {
           borderBottomWidth: 1,
           borderBottomColor: '#ddd'
         }}
+        onPress={logout}
       >
         <Ionicons name='log-out-outline' size={24} color="black" style={{ marginRight: 16 }} />
         <Text style={{ flex: 1, fontSize: 16 }}>Logout</Text>
