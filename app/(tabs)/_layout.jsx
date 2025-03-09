@@ -7,18 +7,13 @@ import { LinearGradient } from "expo-linear-gradient";
 function CustomTabBar({ state, descriptors, navigation }) {
     return (
         <View style={styles.container}>
-            {/* Gradient Background */}
             <LinearGradient
                 colors={['rgba(24, 24, 24, 1)', 'rgba(42, 42, 40, 1)']}
                 start={{ x: 0, y: 1 }}
                 end={{ x: 0, y: 0 }}
-                locations={[0, 0.8]} // Điều chỉnh tỷ lệ phân chia giữa các màu sắc
+                locations={[0, 0.8]} 
                 style={styles.gradientBackground}
             />
-
-
-
-            {/* Tab Bar */}
             <View style={styles.tabBar}>
                 {state.routes.map((route, index) => {
                     const { options } = descriptors[route.key];
@@ -77,8 +72,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
         </View>
     );
 }
-
-// Tabs Layout (use expo-router Tabs here instead)
 import { Tabs } from "expo-router";
 
 export default function TabLayout() {

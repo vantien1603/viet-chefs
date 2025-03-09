@@ -29,14 +29,14 @@ const ThirdRoute = () => (
 const OrderHistories = () => {
   const [index, setIndex] = useState(1);
   const [routes] = useState([
-    { key: 'new', title: 'New' },
-    { key: 'processing', title: 'Processing' },
+    { key: 'waiting', title: 'Waiting' },
+    { key: 'repeat', title: 'Repeat' },
     { key: 'completed', title: 'Completed' },
   ]);
 
   const renderScene = SceneMap({
-    new: ThirdRoute,
-    processing: FirstRoute,
+    waiting: ThirdRoute,
+    repeat: FirstRoute,
     completed: SecondRoute,
   });
 

@@ -15,10 +15,15 @@ import Header from "../../components/header";
 
 const VerifyScreen = () => {
   const router = useRouter();
-  const { email } = useLocalSearchParams();
+  const { username,fullName,phone , mail, mode } = useLocalSearchParams(); 
   const [code, setCode] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
 
+
+  if(mode=="register"){
+    console.log("register");
+  }else if(mode=="forgot") console.log('forgot');
+  
   const handleInputChange = (value, index) => {
     if (/^\d?$/.test(value)) {
       const newCode = [...code];
@@ -48,6 +53,8 @@ const VerifyScreen = () => {
       // if(response.status === 200) {
         console.log("Verify success");
         router.push("screen/login");
+        router.push({ pathname: "screen/setPassword", params: {username,fullName,phone , mail, mode: "register" } });
+
       // }
     } catch (error) {
       const message = error.response.data.message;

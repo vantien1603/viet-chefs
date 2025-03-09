@@ -7,6 +7,9 @@ import { AntDesign } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Header from "../../components/header";
 import { AuthContext } from "../../config/AuthContext";
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+
 
 const languages = [
   { id: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
@@ -23,6 +26,7 @@ const country = [
 
 
 const Setting = () => {
+  const { t, i18n } = useTranslation();
   const modalLangRef = useRef(null);
   const modalCountryRef = useRef(null);
   const [selectedLang, setSelectedLang] = useState("vi");
@@ -37,6 +41,7 @@ const Setting = () => {
 
   const selectLanguage = (id) => {
     setSelectedLang(id);
+    i18n.changeLanguage(id);
     closeModalLang();
   };
   const selectCountry = (id) => {
@@ -58,7 +63,7 @@ const Setting = () => {
         }}
       >
         <Ionicons name='flag-outline' size={24} color="black" style={{ marginRight: 16 }} />
-        <Text style={{ flex: 1, fontSize: 16 }}>Country</Text>
+        <Text style={{ flex: 1, fontSize: 16 }}>{t('country')}</Text>
         <View style={{
           backgroundColor: '#FFA500',
           paddingHorizontal: 8,
@@ -83,7 +88,7 @@ const Setting = () => {
         }}
       >
         <Ionicons name='language' size={24} color="black" style={{ marginRight: 16 }} />
-        <Text style={{ flex: 1, fontSize: 16 }}>Language</Text>
+        <Text style={{ flex: 1, fontSize: 16 }}>{t('language')}</Text>
         <View style={{
           backgroundColor: '#FFA500',
           paddingHorizontal: 8,
@@ -107,7 +112,7 @@ const Setting = () => {
         onPress={logout}
       >
         <Ionicons name='log-out-outline' size={24} color="black" style={{ marginRight: 16 }} />
-        <Text style={{ flex: 1, fontSize: 16 }}>Logout</Text>
+        <Text style={{ flex: 1, fontSize: 16 }}>{t('logout')}</Text>
 
         <Ionicons name="chevron-forward" size={20} color="gray" />
       </TouchableOpacity>

@@ -13,8 +13,8 @@ export const AuthProvider = ({ children }) => {
       const refresh_token = await SecureStore.getItemAsync('refreshToken');
       if (refresh_token) {
         try {
-          const response = await axios.post('https://example.com/api/refresh', { refresh_token });
-          setUser({ token: response.data.accessToken });
+          // const response = await axios.post('http://192.168.1.11:8080/no-auth/refresh', { refresh_token });
+          // setUser({ token: response.data.accessToken });
         } catch (error) {
           console.log('Không thể refresh token:', error);
         }
@@ -26,7 +26,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      console.log("jjjjjj");
       const loginPayload = {
         usernameOrEmail: username,
         password: password,
@@ -49,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   if (loading) {
-    return null; // Hoặc hiển thị Splash Screen
+    return null; 
   }
 
   return (

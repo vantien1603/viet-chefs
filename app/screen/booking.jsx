@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Checkbox } from "react-native-paper";
+import { Checkbox, ToggleButton } from "react-native-paper";
 
 
 const getDaysInMonth = (month, year) => {
@@ -34,6 +34,9 @@ const bookedSlots = [
 ];
 //
 
+
+const dayInWeek = (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+
 const foodList = [
   { id: 1, name: "Pizza" },
   { id: 2, name: "Sushi" },
@@ -49,43 +52,6 @@ const foodList = [
 ];
 
 
-const getAvailableSlots = () => {
-  let slots = [];
-  let lastEnd = totalTimeRange.min;
-
-  bookedSlots.forEach((slot) => {
-    if (slot.start > lastEnd) {
-      for (let i = lastEnd; i < slot.start; i++) {
-        slots.push({ hour: i, booked: false });
-      }
-    }
-    for (let i = slot.start; i < slot.end; i++) {
-      slots.push({ hour: i, booked: true });
-    }
-    lastEnd = slot.end;
-  });
-
-  for (let i = lastEnd; i < totalTimeRange.max; i++) {
-    slots.push({ hour: i, booked: false });
-  }
-
-  return slots;
-};
-
-const getValidEndTimes = (start) => {
-  for (let slot of bookedSlots) {
-    if (start < slot.start) return slot.start;
-  }
-  return totalTimeRange.max;
-};
-
-
-
-
-
-
-
-
 const BookingScreen = () => {
   const [month, setMonth] = useState(moment().format('MM'));
   const [year, setYear] = useState(moment().format('YYYY'));
@@ -94,37 +60,11 @@ const BookingScreen = () => {
   const [specialRequest, setSpecialRequest] = useState("");
   const today = moment();
   const days = getDaysInMonth(month, year);
-
   const isBeforeToday = (date) => date.isBefore(today, 'day');
   const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, 'day');
   const isToday = (date) => moment(date).isSame(today, "day");
 
-  // phan thoi gian
-  const [selectedStart, setSelectedStart] = useState(null);
-  const [selectedEnd, setSelectedEnd] = useState(null);
-  const slots = getAvailableSlots();
   const [loading, setLoading] = useState(false);
-
-  const handleSelectTime = (hour) => {
-    if (selectedStart === null || selectedEnd !== null) {
-      setSelectedStart(hour);
-      setSelectedEnd(null);
-    } else if (selectedStart === hour) {
-      setSelectedStart(null);
-      setSelectedEnd(null);
-    } else {
-      let maxEnd = getValidEndTimes(selectedStart);
-      if (hour > selectedStart && hour < maxEnd) {
-        setSelectedEnd(hour);
-      } else {
-        setSelectedStart(hour);
-        setSelectedEnd(null);
-      }
-    }
-  };
-
-
-
 
   const modalRef = useRef(null);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -147,8 +87,16 @@ const BookingScreen = () => {
   };
 
   const [checked, setChecked] = useState(false);
+  const [checkedRepeat, setCheckedRepeat] = useState(false);
 
 
+  const [selectedDays, setSelectedDays] = useState([]);
+
+  const toggleDay = (day) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" />
@@ -169,7 +117,6 @@ const BookingScreen = () => {
               </View>
             </View>
             <AntDesign name="message1" size={24} color="black" />
-
           </View>
         </View>
 
@@ -238,13 +185,72 @@ const BookingScreen = () => {
             )}
           </View>
         )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={styles.sectionTitle}>
+            After-meal cleaning service
+          </Text>
+          <ToggleButton
+            size={40}
+            icon={checked ? 'toggle-switch' : 'toggle-switch-off'}
+            value="toggle"
+            status={checked ? 'checked' : 'unchecked'}
+            style={{backgroundColor:'transparent'}}
+            onPress={() => setChecked(!checked)}
+          />
+        </View>
+        <View style={styles.section}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.sectionTitle}>
+              Weekly Schedule
+            </Text>
+            <ToggleButton
+              size={40}
+              icon={checkedRepeat ? 'toggle-switch' : 'toggle-switch-off'}
+              value="toggle"
+              status={checkedRepeat ? 'checked' : 'unchecked'}
+              onPress={() => setCheckedRepeat(!checkedRepeat)}
+              style={{backgroundColor:'transparent'}}
+            />
+          </View>
+          {checkedRepeat && (
+            <View >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  borderColor: '#000',
+                  borderWidth: 0.5,
+                  padding: 10,
+                  borderRadius: 20,
+                }}
+              >
+                {dayInWeek.map((day) => (
+                  <TouchableOpacity
+                    key={day}
+                    onPress={() => toggleDay(day)}
+                    style={{
+                      paddingVertical: 10,
+                      paddingHorizontal: 10,
+                      borderRadius: 16,
+                      backgroundColor: selectedDays.includes(day) ? "#A9411D" : "transparent",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: "bold",
+                        // fontSize:12,
+                        color: selectedDays.includes(day) ? "white" : "black",
+                      }}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
 
-        <Checkbox.Item
-          labelStyle={{ fontSize: 16 }}
-          label="After-meal cleaning service"
-          status={checked ? "checked" : "unchecked"}
-          onPress={() => setChecked(!checked)}
-        />
+        </View>
 
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -277,12 +283,7 @@ const BookingScreen = () => {
           />
         </View>
 
-        <View style={[styles.section, {marginBottom:100}]}>
-          <Text style={styles.sectionTitle}>Cost details</Text>
-          <Text>Total hourly rent</Text>
-          <Text>Total additional charges</Text>
-          <Text>Total payment</Text>
-        </View>
+
       </ScrollView>
 
       <View style={{
@@ -307,7 +308,8 @@ const BookingScreen = () => {
             alignItems: "center",
           }}
 
-          onPress={() => router.push('screen/confirmBooking')}
+          // onPress={() => router.push('screen/confirmBooking')}
+          onPress={() => router.push('screen/chefDetail')}
         >
           {loading ? (
             <ActivityIndicator size="small" color="white" />
@@ -339,7 +341,6 @@ const BookingScreen = () => {
               }}
               onPress={() => toggleSelection(item.id)}
             >
-              {/* Checkbox */}
               <Checkbox.Android
                 status={selectedItems.includes(item.id) ? "checked" : "unchecked"}
                 onPress={() => toggleSelection(item.id)}

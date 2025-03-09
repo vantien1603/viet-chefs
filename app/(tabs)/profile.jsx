@@ -36,6 +36,7 @@ const Profile = () => {
         break;
       }
       case '2': {
+        router.push('/screen/chefRegister');
         break;
 
       }
@@ -52,18 +53,21 @@ const Profile = () => {
   }
   return (
     <ScrollView style={commonStyles.containerContent}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 , padding:10}}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 , padding:10, borderBottomColor:"#ddd",borderBottomWidth:1}}>
         <Image
           source={{
             uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
           }}
-          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
+          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 20 }}
         />
         <View>
           <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Huỳnh Văn Tiến</Text>
           <Text style={{ color: '#A9411D', fontWeight: 'bold', fontSize: 16 }}>Xem hồ sơ {'>'}</Text>
         </View>
       </View>
+      {/* <View style={{backgroundColor:"#fff", paddingVertical:5, marginHorizontal:-20}}> */}
+
+      {/* </View> */}
       {menuItems.map((item) => (
         <TouchableOpacity
           key={item.id}

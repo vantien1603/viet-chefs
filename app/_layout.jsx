@@ -208,6 +208,12 @@ export default function RootLayout() {
             headerShown: false,
           }}
         /> */}
+        <Stack.Screen
+          name="screen/chefRegister"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
 
       <Toast config={toastConfig} />

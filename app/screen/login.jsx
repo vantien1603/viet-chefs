@@ -40,60 +40,55 @@ export default function LoginScreen() {
   if (user) {
     console.log("login roiiiii")
     // return <Redirect href="/home" />;
+            navigation.navigate("(tabs)", { screen: "home" });
+
   }
-
-
-
-  // const handleLogin = () => {
-  //   // router.push('/screen/login'); // Sửa đường dẫn
-  //   navigation.navigate("(tabs)", { screen: "home" });
-  // };
 
   const handlePasswordChange = (value) => {
     setPassword(value);
   };
 
-  useEffect(() => {
-    handleSignInWithGoogle();
-  }, [response, token]);
+  // useEffect(() => {
+  //   handleSignInWithGoogle();
+  // }, [response, token]);
 
-  async function handleSignInWithGoogle() {
-    const user = await getLocalUser();
-    if (!user) {
-      if (response?.type === "success") {
-        await getUserInfo(response?.authentication?.accessToken);
-      }
+  // async function handleSignInWithGoogle() {
+  //   const user = await getLocalUser();
+  //   if (!user) {
+  //     if (response?.type === "success") {
+  //       await getUserInfo(response?.authentication?.accessToken);
+  //     }
 
-    } else {
-      setUserInfo(user);
-      console.log("Loaded locally");
-    }
-  }
+  //   } else {
+  //     setUserInfo(user);
+  //     console.log("Loaded locally");
+  //   }
+  // }
 
-  const getLocalUser = async () => {
-    const data = await AsyncStorage.getItem("@user");
-    if (!data) return null;
-    return JSON.parse(data);
-  };
+  // const getLocalUser = async () => {
+  //   const data = await AsyncStorage.getItem("@user");
+  //   if (!data) return null;
+  //   return JSON.parse(data);
+  // };
 
-  const getUserInfo = async () => {
-    if (!token) return;
-    try {
-      const response = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-        //"https://www.googleapis.com/userinfo/v2/me"
-        //https://www.googleapis.com/oauth2/v1/userinfo?alt=json
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+  // const getUserInfo = async () => {
+  //   if (!token) return;
+  //   try {
+  //     const response = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+  //       //"https://www.googleapis.com/userinfo/v2/me"
+  //       //https://www.googleapis.com/oauth2/v1/userinfo?alt=json
+  //       headers: {
+  //         Authorization: `Bearer ${token}`
+  //       }
+  //     });
 
-      const user = await response.json();
-      await AsyncStorage.setItem("@user", JSON.stringify(user));
-      setUserInfo(user);
-    } catch (error) {
+  //     const user = await response.json();
+  //     await AsyncStorage.setItem("@user", JSON.stringify(user));
+  //     setUserInfo(user);
+  //   } catch (error) {
 
-    }
-  }
+  //   }
+  // }
 
   // const handleLogin = async () => {
   //   const loginPayload = {
@@ -120,17 +115,17 @@ export default function LoginScreen() {
 
 
 
-  const handleLogin =  async () => {
+  const handleLogin =  () => {
     console.log('cc');
-    const result =  await login(usernameOrEmail, password);
-    if (!result) {
-      Alert.alert('Login Failed', 'Invalid username or password');
-    }
+    // const result =  await login(usernameOrEmail, password);
+    navigation.navigate("(tabs)", { screen: "home" });
+    // if (!result) {
+    //   Alert.alert('Login Failed', 'Invalid username or password');
+    // }
   };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      {/* <Text>{JSON.stringify(userInfo, null, 2)}</Text> */}
       <Text style={commonStyles.subTitleText}>
         Login to your account to use...
       </Text>
