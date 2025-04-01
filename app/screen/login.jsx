@@ -1,5 +1,5 @@
-import { View, Text, TextInput, Image, TouchableOpacity } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
+import { View, Text, TextInput, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Đảm bảo đúng đường dẫn
@@ -10,10 +10,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { jwtDecode } from "jwt-decode";
 import { AuthContext } from "../../config/AuthContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Modalize } from "react-native-modalize";
+import { Ionicons } from '@expo/vector-icons'; // Import icon
 
-const webClientId = "522049129852-f9fc597s3c9tqbs9djr5sd94vcdpugmr.apps.googleusercontent.com";
-const iosClientId = "522049129852-21i7b2j5hlf06unknf0i6q5qpk4enln4.apps.googleusercontent.com";
-const androidClientId = "522049129852-dkq8qejqaao9o73hble1e1pv5m43at5g.apps.googleusercontent.com";
+
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -24,136 +25,113 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
   const { user, login } = useContext(AuthContext);
+  const modalRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
-  const config = { webClientId, iosClientId, androidClientId };
-  const [request, response, promptAsync] = Google.useAuthRequest(config);
+  useEffect(() => {
+    if (user) {
+      console.log("login roiiiii")
+      navigation.navigate("(tabs)", { screen: "home" });
 
-  if (user) {
-    console.log("login roiiiii")
-    // return <Redirect href="/home" />;
-            navigation.navigate("(tabs)", { screen: "home" });
+    }
+  }, [user])
 
-  }
 
   const handlePasswordChange = (value) => {
     setPassword(value);
   };
 
-  // useEffect(() => {
-  //   handleSignInWithGoogle();
-  // }, [response, token]);
 
-  // async function handleSignInWithGoogle() {
-  //   const user = await getLocalUser();
-  //   if (!user) {
-  //     if (response?.type === "success") {
-  //       await getUserInfo(response?.authentication?.accessToken);
-  //     }
-
-  //   } else {
-  //     setUserInfo(user);
-  //     console.log("Loaded locally");
-  //   }
-  // }
-
-  // const getLocalUser = async () => {
-  //   const data = await AsyncStorage.getItem("@user");
-  //   if (!data) return null;
-  //   return JSON.parse(data);
-  // };
-
-  // const getUserInfo = async () => {
-  //   if (!token) return;
-  //   try {
-  //     const response = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-  //       //"https://www.googleapis.com/userinfo/v2/me"
-  //       //https://www.googleapis.com/oauth2/v1/userinfo?alt=json
-  //       headers: {
-  //         Authorization: `Bearer ${token}`
-  //       }
-  //     });
-
-  //     const user = await response.json();
-  //     await AsyncStorage.setItem("@user", JSON.stringify(user));
-  //     setUserInfo(user);
-  //   } catch (error) {
-
-  //   }
-  // }
 
   const handleLogin = async () => {
-    const loginPayload = { usernameOrEmail, password };
-
-  //   try {
-  //     // const response = await AXIOS_BASE.post("/login", loginPayload);
-  //     // if(response.status === 200) {
-  //     //   const token = response.data.access_token;
-  //     //   const decodedToken = jwtDecode(token);
-  //     //   const userId = decodedToken.userId;
-  //     //   await AsyncStorage.setItem("@token", token);
-  //     //   await AsyncStorage.setItem("@userId", userId);
-  //     //   console.log("Access token:", token);
-  //       navigation.navigate("(tabs)", { screen: "home" });
-  //     // }
-  //   } catch (error) {
-  //     const errorMessage = error.response?.data?.message || error.message;
-  //     console.log("Login failed", errorMessage);
-  //   }
-  // }
-
-
-
-  const handleLogin =  () => {
     console.log('cc');
-    // const result =  await login(usernameOrEmail, password);
-    navigation.navigate("(tabs)", { screen: "home" });
-    // if (!result) {
-    //   Alert.alert('Login Failed', 'Invalid username or password');
-    // }
+    setLoading(true);
+    const result = await login(usernameOrEmail, password);
+    if (result === true) {
+      navigation.navigate("(tabs)", { screen: "home" });
+    }
+    else {
+      if (modalRef.current) {
+        modalRef.current.open();
+      }
+      // console.log('Login Failed', 'Invalid username or password');
+    }
+    setLoading(false);
   };
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Text style={commonStyles.subTitleText}>
-        Login to your account to use...
-      </Text>
-      <Image
-        source={require("../../assets/images/logo.png")}
-        style={{ width: 400, height: 250 }}
-        resizeMode="cover"
-      />
-      <Text style={commonStyles.titleText}>VIET CHEFS</Text>
-      <TextInput
-        style={commonStyles.input}
-        placeholder="Username or Email"
-        placeholderTextColor="#968B7B"
-        value={usernameOrEmail}
-        onChangeText={setUsernameOrEmail}
-      />
-      <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
-      <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
-        <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
-          <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={{ flex: 1, alignItems: "center" }}>
-        <TouchableOpacity
-          onPress={handleLogin}
-          style={{
-            padding: 13,
-            marginTop: 10,
-            borderWidth: 1,
-            backgroundColor: "#383737",
-            borderColor: "#383737",
-            borderRadius: 50,
-            width: 300,
-          }}
-        >
-          <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
-            Đăng nhập
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    <GestureHandlerRootView style={commonStyles.containerContent}>
+      <SafeAreaView >
+        <Text style={commonStyles.subTitleText}>
+          Login to your account to use...
+        </Text>
+        <Image
+          source={require("../../assets/images/logo.png")}
+          style={{ width: 400, height: 250 }}
+          resizeMode="cover"
+        />
+        <Text style={commonStyles.titleText}>VIET CHEFS</Text>
+        <TextInput
+          style={commonStyles.input}
+          placeholder="Username or Email"
+          placeholderTextColor="#968B7B"
+          value={usernameOrEmail}
+          onChangeText={setUsernameOrEmail}
+        />
+        <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
+        <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
+          <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
+            <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={handleLogin}
+            style={{
+              padding: 13,
+              marginTop: 10,
+              borderWidth: 1,
+              backgroundColor: "#383737",
+              borderColor: "#383737",
+              borderRadius: 50,
+              width: 300,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
+                Login
+              </Text>
+            )}
+
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+      <Modalize ref={modalRef} adjustToContentHeight>
+        <View style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: "bold", textAlign: 'center' }}>Login failed</Text>
+          <Ionicons name="close-circle" size={60} color="red" />
+          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: 'center' }}>Please check your account or password again.</Text>
+          <TouchableOpacity
+            style={{
+              padding: 5,
+              marginTop: 10,
+              borderWidth: 1,
+              backgroundColor: "#383737",
+              borderColor: "#383737",
+              borderRadius: 50,
+              width: '50%',
+            }}
+            onPress={() => modalRef.current?.close()}
+          >
+            <Text style={{ textAlign: "center", fontSize: 16, color: "#fff" }}>
+              Try again
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modalize>
+
+    </GestureHandlerRootView>
   );
 }

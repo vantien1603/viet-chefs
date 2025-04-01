@@ -1,16 +1,73 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles } from '../../style';
 import Header from '../../components/header';
 import { Ionicons } from '@expo/vector-icons';
+import useAxios from '../../config/AXIOS_API';
+import moment from 'moment';
+import DateTimePicker from "@react-native-community/datetimepicker";
+
 
 const ConfirmBookingScreen = () => {
+  const axiosInstance = useAxios();
   const [loading, setLoading] = useState(false);
+  const { chefId, sessionDate, startTime, endTime, address, quantity, menuId } = useLocalSearchParams();
+  const [calculator, setCalculator] = useState(null);
 
-  const handleKeepBooking = () => {
-    router.push('screen/historyBooking');
+
+  const getCalculator = async () => {
+    console.log(chefId, sessionDate, startTime, endTime, address, quantity, menuId)
+    const calcuPayload = {
+      chefId: chefId,
+      isServing: false,
+      bookingDetails: [
+        {
+          sessionDate: sessionDate,
+          startTime: startTime,
+          endTime: endTime ? endTime : null,
+          location: address,
+          guestCount: quantity,
+          menuId: menuId,
+          extraDishIds: []
+        }
+      ]
+    };
+
+    try {
+      const response = await axiosInstance.post('/bookings/calculate-single-booking', calcuPayload);
+      setCalculator(response.data);
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      }
+      else {
+        console.error(error.message);
+      }
+    }
+  }
+  useEffect(() => {
+    getCalculator();
+
+  }, [chefId, sessionDate, startTime, endTime, address, quantity, menuId])
+
+  const handleConfirmBooking = async () => {
+    const confirmPayload = {
+
+    }
+    try {
+      const response = await axiosInstance.post('/bookings', confirmPayload);
+
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      }
+      else {
+        console.error(error.message);
+      }
+    }
+
   }
 
   return (
@@ -27,16 +84,22 @@ const ConfirmBookingScreen = () => {
         </View>
 
         <View>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Job information</Text>
+          {/* <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Job information</Text> */}
           <View style={{ borderColor: '#e0e0e0', borderWidth: 2, borderRadius: 10, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10, margin: -10 }}>Job information</Text>
+
             <Text style={{ fontSize: 16, fontWeight: 'bold', }}>Working time</Text>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>Working days</Text>
-              <Text style={styles.details}>Monday, 03/03/2025 - 12:00</Text>
+              <Text style={styles.details}>{sessionDate}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Work for</Text>
-              <Text style={styles.details}>2 hours, 10:00 to 12:00</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time begin travel</Text>
+              <Text style={styles.details}>{calculator?.timeBeginTravel} </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time begin cook</Text>
+              <Text style={styles.details}>{calculator?.timeBeginCook} </Text>
             </View>
             <Text style={{ fontSize: 16, fontWeight: 'bold', }}>Job details</Text>
             <View style={styles.row}>
@@ -59,6 +122,31 @@ const ConfirmBookingScreen = () => {
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>Palate</Text>
               <Text style={styles.details}>Bac</Text>
+            </View>
+          </View>
+        </View>
+        <View>
+          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Payment details</Text>
+          <View style={{ borderColor: '#e0e0e0', borderWidth: 2, borderRadius: 10, padding: 20 }}>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Arrival fee</Text>
+              <Text style={styles.details}>{calculator?.arrivalFee}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Chef cooking fee</Text>
+              <Text style={styles.details}>{calculator?.chefCookingFee}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Chef serving fee</Text>
+              <Text style={styles.details}>{calculator?.chefServingFee}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Total cheff fee price</Text>
+              <Text sstyle={styles.details}>{calculator?.totalChefFeePrice}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Total price</Text>
+              <Text sstyle={styles.details}>{calculator?.totalPrice}</Text>
             </View>
           </View>
         </View>
@@ -106,6 +194,7 @@ const ConfirmBookingScreen = () => {
             borderRadius: 10,
             alignItems: "center",
           }}
+          onPress={() => handleConfirmBooking()}
         >
           {loading ? (
             <ActivityIndicator size="small" color="white" />

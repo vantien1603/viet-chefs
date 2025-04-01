@@ -1,7 +1,9 @@
 import React, { createContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-
+import { jwtDecode } from "jwt-decode";
+import { doc, setDoc } from 'firebase/firestore';
+import { database } from '../config/firebase';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -30,15 +32,35 @@ export const AuthProvider = ({ children }) => {
         usernameOrEmail: username,
         password: password,
       };
-      const response = await axios.post('http://192.168.1.34:8080/no-auth/login', loginPayload);
-      console.log(response.data);
-      const { access_token, refresh_token } = response.data;
-      console.log(access_token);
-      console.log(refresh_token);
-      await SecureStore.setItemAsync('refreshToken', refresh_token);
-      setUser({ token: access_token });
+      const response = await axios.post('http://192.168.100.10:8080/no-auth/login', loginPayload);
+      if (response.status === 200) {
+        console.log("auth", response.data);
+        const { access_token, refresh_token } = response.data;
+        await SecureStore.setItemAsync('refreshToken', refresh_token);
+        const decoded = jwtDecode(access_token);
+        console.log("decode", decoded);
+        console.log("userID", decoded.userId);
+        setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
+        if (decoded) {
+          const userDocRef = doc(database, 'users', decoded.userId);
+          await setDoc(userDocRef, {
+            _id: decoded.userId,
+            name: response.data.fullName,
+            avatar: 'https://i.pravatar.cc/300',
+          });
+        }
+        return true;
+      }
+      // const response = await axios.post('http://192.168.1.52:8080/no-auth/login', loginPayload);
+
     } catch (error) {
-      console.error('Login failed:', error);
+      // if (error.response) {
+      //   console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      // }
+      // else {
+      //   console.error(error.message);
+      // }
+      return false;
     }
   };
 
@@ -48,7 +70,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   if (loading) {
-    return null; 
+    return null;
   }
 
   return (

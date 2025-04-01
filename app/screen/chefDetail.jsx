@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
-import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { router } from "expo-router";
 import { commonStyles } from "../../style";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams } from "expo-router";
@@ -96,11 +93,11 @@ const ChefDetail = () => {
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
             <Text style={styles.viewAll}>All dishes</Text>
           </TouchableOpacity>
-          
+
         </View>
 
         <View style={styles.dishContainer}>
-        {dishes.slice(0, 3).map((dishes, index) => (
+          {dishes.slice(0, 3).map((dishes, index) => (
             <View key={index} style={styles.dishCard}>
               <Image
                 source={{ uri: dishes.imageUrl }}
@@ -109,7 +106,7 @@ const ChefDetail = () => {
               <Text style={styles.dishName}>{dishes.name}</Text>
               <Text style={styles.dishDescription}>{dishes.description}</Text>
             </View>
-          ))} 
+          ))}
         </View>
       </ScrollView>
 

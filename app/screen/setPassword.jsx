@@ -28,33 +28,29 @@ const SetPassword = () => {
             return;
         }
 
-        const registerPayload = {
-            username: randomUsername,
-            email,
-            phone,
-            fullName,
-            password: password,
-            dob: "1999-01-01",
-            address: "Ho Chi Minh City",
-            gender: "Male",
-            rePassword: rePassword,
+        const setPasswordPayload = {
+            email:mail,
+            newPassword: password,
         };
 
         try {
-            // console.log('data', registerPayload);
-            const response = await AXIOS_BASE.post('/register', registerPayload);
-            if(response.status === 201) {
-                Alert.alert('Register success', 'Please verify your email');
+            console.log('data', setPasswordPayload);
+            const response = await AXIOS_BASE.post('/set-password', setPasswordPayload);
+            if (response.status === 200) {
+                Alert.alert('Register success', 'Please login again');
                 console.log('Register success');
-                router.push(`/screen/verify?email=${encodeURIComponent(email)}`);
+                router.push('/screen/login')
             } else {
                 Alert.alert('Register failed', 'Please try again');
                 console.log('Register failed');
             }
         } catch (error) {
-            const message = error.response.data.message;
-            Alert.alert('Register failed', message);
-            console.log('Register failed', message);
+            if (error.response) {
+                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            }
+            else {
+                console.error(error.message);
+            }
         }
     }
     return (
@@ -66,11 +62,11 @@ const SetPassword = () => {
                 </Text>
                 <PasswordInput
                     placeholder="Password"
-                    onPasswordChange={setPassword}
+                    onPasswordChange={handlePasswordChange}
                 />
                 <PasswordInput
                     placeholder="Re-enter password"
-                    onPasswordChange={setRePassword}
+                    onPasswordChange={handleRePasswordChange}
                 />
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>

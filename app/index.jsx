@@ -1,5 +1,5 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native'
-import React,{ useContext, useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
 import * as WebBrowser from 'expo-web-browser'
 import { Redirect, router } from 'expo-router'
 import { useNavigation } from '@react-navigation/native';
@@ -22,11 +22,14 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     console.log('User:', user);
+    if (user) {
+      // return <Redirect href="/home" />;
+      navigation.navigate("(tabs)", { screen: "home" });
+
+    }
   }, [user]);
 
-  if (user) {
-    return <Redirect href="/home" />;
-  }
+
   return (
     <SafeAreaView style={
       {
@@ -90,7 +93,9 @@ export default function WelcomeScreen() {
           }}>LOGIN</Text>
         </TouchableOpacity>
       </View>
-
+      <TouchableOpacity onPress={() => navigation.navigate("(tabs)", { screen: "home" })} style={{ alignItems: 'center', marginTop: 10, position: 'absolute', bottom: 10, }}>
+        <Text style={{ textDecorationLine: 'underline', }}>Continue as guest</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   )
 }

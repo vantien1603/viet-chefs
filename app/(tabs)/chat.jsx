@@ -1,127 +1,183 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-
-const totalTimeRange = { min: 7, max: 19 };
-const bookedSlots = [
-  { start: 7, end: 12 },
-  { start: 14, end: 15 },
-];
-
-const getAvailableSlots = () => {
-  let slots = [];
-  let lastEnd = totalTimeRange.min;
-
-  bookedSlots.forEach((slot) => {
-    if (slot.start > lastEnd) {
-      for (let i = lastEnd+1; i < slot.start; i++) {
-        slots.push({ hour: i, booked: false });
-      }
-    }
-    for (let i = slot.start; i <= slot.end; i++) {
-      slots.push({ hour: i, booked: true });
-    }
-    lastEnd = slot.end;
-  });
-
-  for (let i = lastEnd+1; i <= totalTimeRange.max; i++) {
-    slots.push({ hour: i, booked: false });
-  }
-
-  return slots;
-};
-
-const getValidEndTimes = (start) => {
-  for (let slot of bookedSlots) {
-    if (start < slot.start) return slot.start;
-  }
-  return totalTimeRange.max;
-};
+import React, { useContext, useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { collection, query, onSnapshot, orderBy, doc, getDoc } from "firebase/firestore";
+import { database } from "../../config/firebase";
+import { commonStyles } from "../../style";
+import { AuthContext } from "../../config/AuthContext";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import Header from "../../components/header";
 
 const Chat = () => {
-  const [selectedStart, setSelectedStart] = useState(null);
-  const [selectedEnd, setSelectedEnd] = useState(null);
-  const slots = getAvailableSlots();
+  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
 
-  const handleSelectTime = (hour) => {
-    if (selectedStart === null || selectedEnd !== null) {
-      // Nếu chưa chọn giờ bắt đầu, hoặc đã có giờ kết thúc, thì đặt lại giờ bắt đầu
-      setSelectedStart(hour);
-      setSelectedEnd(null);
-    } else if (selectedStart === hour) {
-      // Nếu bấm vào chính giờ bắt đầu -> bỏ chọn
-      setSelectedStart(null);
-      setSelectedEnd(null);
-    } else {
-      // Chọn giờ kết thúc nếu chưa có
-      let maxEnd = getValidEndTimes(selectedStart);
-      if (hour > selectedStart && hour < maxEnd) {
-        setSelectedEnd(hour);
-      } else {
-        // Nếu chọn giờ không hợp lệ, đổi giờ bắt đầu
-        setSelectedStart(hour);
-        setSelectedEnd(null);
-      }
+  async function getUserById(userId) {
+    if (typeof userId !== 'string') {
+      console.error('Invalid userId');
+      return null;
     }
-  };
+    const userDocRef = doc(database, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Chọn thời gian</Text>
-      <View style={styles.timeContainer}>
-        {slots.map((slot, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.timeBox,
-              slot.booked && styles.bookedTime,
-              selectedStart !== null &&
-                selectedEnd === null &&
-                slot.hour === selectedStart &&
-                styles.selectedTime,
-              selectedStart !== null &&
-                selectedEnd !== null &&
-                slot.hour >= selectedStart &&
-                slot.hour <= selectedEnd &&
-                styles.selectedTime,
-            ]}
-            disabled={slot.booked}
-            onPress={() => handleSelectTime(slot.hour)}
-          >
-            <Text style={[styles.timeText, slot.booked && styles.bookedText]}>
-              {slot.hour}h
-            </Text>
-          </TouchableOpacity>
-        ))}
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log('User Data:', userData);
+      return userData;
+    } else {
+      console.log('No such document!');
+      return null;
+    }
+  }
+  useEffect(() => {
+    const fetchMessages = () => {
+      const collectionRef = collection(database, 'chats');
+      const q = query(collectionRef, orderBy('createdAt', 'desc'));
+
+      const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+        const messagesData = {};
+        const userPromises = [];
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.sender === user.userId || data.receiver === user.userId) {
+            const key = data.sender === user.userId ? data.receiver : data.sender;
+            console.log("key", key);
+            userPromises.push(getUserById(key).then(userInfo => {
+              if (userInfo) {
+                const currentTime = new Date(data.createdAt.seconds * 1000);
+                if (!messagesData[key]) {
+                  messagesData[key] = {
+                    id: key,
+                    name: userInfo.name,
+                    message: data.text,
+                    time: currentTime.toLocaleTimeString(),
+                    avatar: "https://esx.bigo.sg/eu_live/2u6/2ZuCJH.jpg",
+                    read: false,
+                  };
+                }
+              }
+            }));
+          }
+        });
+
+        await Promise.all(userPromises);
+
+        setMessages(Object.values(messagesData));
+        console.log("Messages Data:", messagesData);
+      });
+
+      return unsubscribe;
+    };
+
+    let unsubscribe;
+
+    if (user?.userId != null) {
+      unsubscribe = fetchMessages();
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user?.userId]);
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.messageItem}
+      onPress={() => navigation.navigate("screen/chat", {
+        contact: {
+          id: item.id,
+          name: item.name,
+          avatar: item.avatar
+        }
+      })}
+    >
+      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+      <View style={styles.messageContent}>
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.message} numberOfLines={1} ellipsizeMode="tail">
+          {item.message}
+        </Text>
       </View>
-      <Text style={styles.selectedText}>
-        {selectedStart !== null && selectedEnd !== null
-          ? `Đã chọn: ${selectedStart}h - ${selectedEnd}h`
-          : selectedStart !== null
-          ? "Chọn giờ kết thúc"
-          : "Chọn giờ bắt đầu"}
-      </Text>
-    </View>
+      <Text style={styles.time}>{item.time}</Text>
+
+    </TouchableOpacity>
+  );
+  return (
+    <SafeAreaView style={commonStyles.container}>
+      <Header title={"Chat"} />
+      <View style={commonStyles.containerContent}>
+        <View style={commonStyles.searchContainer}>
+          <Icon
+            name="search"
+            size={20}
+            color="gray"
+            style={commonStyles.searchIcon}
+          />
+          <TextInput style={commonStyles.searchInput} placeholder="Search" />
+        </View>
+
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+        />
+
+        {/* <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate("screen/newMessage")}
+        >
+          <Ionicons name="add" size={25} color="white" />
+        </TouchableOpacity> */}
+      </View>
+    </SafeAreaView>
+
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF", padding: 20, alignItems: "center", justifyContent: "center" },
-  header: { fontSize: 22, fontWeight: "bold", marginBottom: 20, color: "#333" },
-  timeContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
-  timeBox: {
+  messageItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  avatar: {
     width: 50,
     height: 50,
-    margin: 5,
+    borderRadius: 25,
+    marginRight: 15,
+  },
+  messageContent: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  message: {
+    fontSize: 14,
+    color: "#7F7F7F",
+  },
+  time: {
+    fontSize: 12,
+    color: "#7F7F7F",
+    marginRight: 10,
+  },
+  addButton: {
+    position: "absolute",
+    bottom: 30,
+    right: 30,
+    backgroundColor: "#4EA0B7",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 10,
-    backgroundColor: "#4CAF50",
+    elevation: 5,
   },
-  bookedTime: { backgroundColor: "gray" },
-  selectedTime: { backgroundColor: "#FF9800" },
-  timeText: { fontSize: 16, color: "white", fontWeight: "bold" },
-  bookedText: { color: "#CCC" },
-  selectedText: { fontSize: 18, fontWeight: "bold", marginTop: 20 },
 });
 
 export default Chat;

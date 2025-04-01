@@ -1,39 +1,49 @@
 import { View, Text, TextInput, Image, TouchableOpacity, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-// import { SafeAreaView } from 'react-native-safe-area-context';
-// import { PasswordInput } from '../../components/PasswordInput/passwordInput'; 
 import { commonStyles } from '../../style';
 import Header from '../../components/header';
+import axios from 'axios';
 export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
+    const [mail, setMail] = useState('');
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
-    // const [rePassword, setRePassword] = useState('');
-    // const [password, setPassword] = useState('');
     const router = useRouter();
 
-    const handleSignUp = () => {
-        // router.push('/screen/verify');
-        router.push({ pathname: "screen/verify", params: {username,fullName,phone , mail, mode: "register" } });
+    const handleSignUp = async () => {
+        try {
+            const signUpPayload = {
+                username: username,
+                email: mail,
+                fullName: fullName,
+                dob: "1999-01-01",
+                gender: "male",
+                phone: phone
+            };
+            console.log(signUpPayload);
+
+            const response = await axios.post('http://192.168.100.10:8080/no-auth/register', signUpPayload,
+                {
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+            console.log(response.data);
+            if (response.status === 201) {
+                router.push({
+                    pathname: "screen/verify",
+                    params: { username, fullName, phone, mail, mode: "register" }
+                });
+            }
+
+        } catch (error) {
+            if (error.response) {
+                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            }
+            else {
+                console.error(error.message);
+            }
+        }
     };
-
-    const handlePasswordChange = (value) => {
-        setPassword(value);
-    };
-    const handleRePasswordChange = (value) => {
-        setRePassword(value);
-
-    // const handleSignUp = async () => {
-    //     router.push({
-    //         pathname: 'screen/setPassword',
-    //         params: {
-    //             email, phone, fullName
-    //         }
-    //     })
-    // };
-
 
     return (
 

@@ -38,6 +38,7 @@
     "expo-status-bar": "~2.0.1",
     "expo-system-ui": "~4.0.7",
     "expo-web-browser": "~14.0.2",
+    "firebase": "^11.5.0",
     "i18n": "^0.15.1",
     "i18next": "^24.2.2",
     "jwt-decode": "^4.0.0",
