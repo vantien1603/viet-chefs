@@ -1,8 +1,17 @@
-import { View, Text, TextInput, Image, TouchableOpacity } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Đảm bảo đúng đường dẫn
+import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Ensure correct path
 import { commonStyles } from "../../style";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
@@ -22,15 +31,12 @@ export default function LoginScreen() {
   const [userInfo, setUserInfo] = useState(null);
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(""); // State for error message
   const navigation = useNavigation();
   const { user, login } = useContext(AuthContext);
 
   const config = { webClientId, iosClientId, androidClientId };
   const [request, response, promptAsync] = Google.useAuthRequest(config);
-
-  if (user) {
-    console.log("Đã đăng nhập");
-  }
 
   useEffect(() => {
     checkLoginStatus();
@@ -45,7 +51,6 @@ export default function LoginScreen() {
     const expiresAt = await AsyncStorage.getItem("@expiresAt");
 
     if (!storedToken || !expiresAt || new Date().getTime() > parseInt(expiresAt)) {
-      // Token hết hạn -> Đăng xuất
       await AsyncStorage.removeItem("@token");
       await AsyncStorage.removeItem("@userId");
       await AsyncStorage.removeItem("@fullName");
@@ -76,9 +81,8 @@ export default function LoginScreen() {
     if (!token) return;
     try {
       const response = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const user = await response.json();
       await AsyncStorage.setItem("@user", JSON.stringify(user));
       setUserInfo(user);
@@ -88,6 +92,11 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
+    if (!usernameOrEmail || !password) {
+      setError("Vui lòng nhập đầy đủ username/email và mật khẩu!");
+      return;
+    }
+
     const loginPayload = { usernameOrEmail, password };
 
     try {
@@ -99,7 +108,6 @@ export default function LoginScreen() {
         const fullName = response.data.fullName;
         const roleName = decodedToken.roleName;
 
-        // Lưu token với thời gian hết hạn 10 ngày
         const expiresAt = decodedToken.exp;
 
         await AsyncStorage.setItem("@token", token);
@@ -108,59 +116,96 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("@expiresAt", expiresAt.toString());
         await AsyncStorage.setItem("@roleName", roleName);
 
-        if(roleName === "ROLE_CUSTOMER") {
+        setError(""); // Clear error on success
+        if (roleName === "ROLE_CUSTOMER") {
           navigation.navigate("(tabs)", { screen: "home" });
         } else if (roleName === "ROLE_CHEF") {
           navigation.navigate("(chef)", { screen: "dashboard" });
         }
-
-        console.log("User:", fullName);
-        console.log("Access token:", token);
-        // navigation.navigate("(tabs)", { screen: "home" });
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
+      const errorMessage = "Username/email hoặc mật khẩu không đúng!";
+      setError(errorMessage); // Display error to user
       console.log("Login failed", errorMessage);
     }
-    // navigation.navigate("(tabs)", { screen: "home" });
   };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Text style={commonStyles.subTitleText}>Login to your account to use...</Text>
-      <Image source={require("../../assets/images/logo.png")} style={{ width: 400, height: 250 }} resizeMode="cover" />
-      <Text style={commonStyles.titleText}>VIET CHEFS</Text>
-      <TextInput
-        style={commonStyles.input}
-        placeholder="Username or Email"
-        placeholderTextColor="#968B7B"
-        value={usernameOrEmail}
-        onChangeText={setUsernameOrEmail}
-      />
-      <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
-      <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
-        <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
-          <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={{ flex: 1, alignItems: "center" }}>
-        <TouchableOpacity
-          onPress={handleLogin}
-          style={{
-            padding: 13,
-            marginTop: 10,
-            borderWidth: 1,
-            backgroundColor: "#383737",
-            borderColor: "#383737",
-            borderRadius: 50,
-            width: 300,
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            padding: 20,
           }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
-            Đăng nhập
+          <Text style={commonStyles.subTitleText}>
+            Login to your account to use...
           </Text>
-        </TouchableOpacity>
-      </View>
+          <Image
+            source={require("../../assets/images/logo.png")}
+            style={{ width: 400, height: 250, alignSelf: "center" }}
+            resizeMode="cover"
+          />
+          <Text style={commonStyles.titleText}>VIET CHEFS</Text>
+
+          <TextInput
+            style={commonStyles.input}
+            placeholder="Username or Email"
+            placeholderTextColor="#968B7B"
+            value={usernameOrEmail}
+            onChangeText={setUsernameOrEmail}
+          />
+          <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
+            <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
+              <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            onPress={handleLogin}
+            style={{
+              padding: 13,
+              marginTop: 10,
+              borderWidth: 1,
+              backgroundColor: "#383737",
+              borderColor: "#383737",
+              borderRadius: 50,
+              width: 300,
+              alignSelf: "center",
+            }}
+          >
+            <Text
+              style={{
+                textAlign: "center",
+                fontSize: 18,
+                color: "#fff",
+                fontFamily: "nunito-bold",
+              }}
+            >
+              Đăng nhập
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+const styles = {
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+};

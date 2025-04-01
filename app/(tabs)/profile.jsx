@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const menuItems = [
   { id: "1", icon: "wallet", title: "Wallet" },
@@ -25,12 +26,29 @@ const menuItems = [
   { id: "2", icon: "briefcase", title: "Create chef account" },
   // { id: '3', icon: 'flag', title: 'Country' },
   // { id: '4', icon: 'language', title: 'Language' },
-  { id: "3", icon: "settings", title: "Setting" },
+  { id: "3", icon: "lock-closed", title: "Change password" },
+  { id: "4", icon: "settings", title: "Setting" },
 ];
 
 const Profile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
+  const [fullName, setFullName] = useState("");
+  useEffect(() => {
+    const getFullName = async () => {
+      try {
+        const storedFullName = await AsyncStorage.getItem("@fullName");
+        if (storedFullName !== null) {
+          setFullName(storedFullName);
+        } else {
+          setFullName("Guest");
+        }
+      } catch (error) {
+        console.error("Error retrieving full name:", error);
+      }
+    };
+    getFullName();
+  }, []);
 
   const handleSetting = (id) => {
     switch (id) {
@@ -43,13 +61,13 @@ const Profile = () => {
         break;
       }
       case "3": {
-        router.push("/screen/setting");
+        router.push("/screen/changePassword");
         break;
       }
-      // case '4': {
-      //   router.push('/screen/setting');
-      //   break;
-      // }
+      case '4': {
+        router.push('/screen/setting');
+        break;
+      }
       default: {
         router.push("/screen/profileDetail");
         break;
@@ -74,7 +92,7 @@ const Profile = () => {
         />
         <View>
           <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-            Huỳnh Văn Tiến
+            {fullName}
           </Text>
           <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
             <Text

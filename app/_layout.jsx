@@ -301,7 +301,12 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
-
+        <Stack.Screen 
+          name="screen/changePassword"
+          options={{
+            headerShown: false,
+          }}
+        />
 
       </Stack>
 

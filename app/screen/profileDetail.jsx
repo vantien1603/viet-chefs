@@ -1,21 +1,65 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { commonStyles } from '../../style';
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
+import AXIOS_API from "../../config/AXIOS_API";
 
 const ProfileDetail = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
 
-  // Thông tin profile (giả lập từ context hoặc dữ liệu cố định)
-  const name = "Huỳnh Văn Tiến";
-  const email = "tien@example.com";
-  const phone = "0123456789";
-  const dob = "01/01/1990";
-  const gender = "Nam";
+  // const name = "Huỳnh Văn Tiến";
+  // const email = "tien@example.com";
+  // const phone = "0123456789";
+  // const dob = "01/01/1990";
+  // const gender = "Nam";
   const avatar = "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png";
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("");
+  const [username, setUsername] = useState("");
+
+  const handleProfile = async () => {
+    try {
+      const response = await AXIOS_API.get("/users/profile");
+      if(response.status === 200){
+        setFullName(response.data.fullName);
+        setEmail(response.data.email);
+        setPhone(response.data.phone);
+        setDob(response.data.dob);
+        setGender(response.data.gender);
+        setUsername(response.data.username);
+      }
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    }
+  }
+
+  useEffect(() => {
+    handleProfile();
+  }, [])
+
+  const handleEditProfile = () => {
+    router.push({
+      pathname: "/screen/editProfile",
+      params: {
+        profileData: JSON.stringify({
+          fullName,
+          email,
+          phone,
+          dob,
+          gender,
+          username,
+          avatar,
+        }),
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
@@ -28,8 +72,11 @@ const ProfileDetail = () => {
           />
         </View>
 
+        <Text style={styles.label}>Username</Text>
+        <Text style={styles.text}>{username}</Text>
+
         <Text style={styles.label}>Họ và tên</Text>
-        <Text style={styles.text}>{name}</Text>
+        <Text style={styles.text}>{fullName}</Text>
 
         <Text style={styles.label}>Email</Text>
         <Text style={styles.text}>{email}</Text>
@@ -48,7 +95,7 @@ const ProfileDetail = () => {
       <View style={styles.fixedButtonContainer}>
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => router.push("/screen/editProfile")}
+          onPress={handleEditProfile}
         >
           <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
         </TouchableOpacity>
