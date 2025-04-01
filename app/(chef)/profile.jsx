@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const menuItems = [
   { id: "1", icon: "wallet", title: "Wallet" },
@@ -31,6 +32,22 @@ const menuItems = [
 const Profile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
+  const [fullName, setFullName] = useState("");
+  useEffect(() => {
+    const getFullName = async () => {
+      try {
+        const storedFullName = await AsyncStorage.getItem("@fullName");
+        if (storedFullName !== null) {
+          setFullName(storedFullName);
+        } else {
+          setFullName("Guest");
+        }
+      } catch (error) {
+        console.error("Error retrieving full name:", error);
+      }
+    };
+    getFullName();
+  }, []);
 
   const handleSetting = (id) => {
     switch (id) {
@@ -56,6 +73,7 @@ const Profile = () => {
       }
     }
   };
+
   return (
     <ScrollView style={commonStyles.containerContent}>
       <View
@@ -73,9 +91,7 @@ const Profile = () => {
           style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
         />
         <View>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-            Huỳnh Văn Tiến
-          </Text>
+          <Text style={{ fontSize: 20, fontWeight: "bold" }}>{fullName}</Text>
           <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
             <Text
               style={{ color: "#A9411D", fontWeight: "bold", fontSize: 16 }}
