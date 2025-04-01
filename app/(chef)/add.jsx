@@ -12,8 +12,8 @@ import {
 import { TextInput, Button, RadioButton } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
-import Header from "../../../components/header";
+import { Dropdown } from "react-native-element-dropdown"; // Import Dropdown
+import Header from "../../components/header";
 import Toast from "react-native-toast-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,12 +26,13 @@ const AddNewFoodScreen = () => {
   const [category, setCategory] = useState("");
   const [errors, setErrors] = useState({});
 
+  // Dữ liệu cho dropdown category
   const categories = [
-    "Món xào",
-    "Món chiên",
-    "Món hấp",
-    "Món canh",
-    "Món nướng",
+    { label: "Món xào", value: "Món xào" },
+    { label: "Món chiên", value: "Món chiên" },
+    { label: "Món hấp", value: "Món hấp" },
+    { label: "Món canh", value: "Món canh" },
+    { label: "Món nướng", value: "Món nướng" },
   ];
 
   const validateCookTime = (text) => {
@@ -165,16 +166,27 @@ const AddNewFoodScreen = () => {
           </View>
 
           <Text style={styles.label}>CATEGORY</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={category}
-              onValueChange={(itemValue) => setCategory(itemValue)}
-            >
-              <Picker.Item label="Select a category" value="" />
-              {categories.map((cat, index) => (
-                <Picker.Item key={index} label={cat} value={cat} />
-              ))}
-            </Picker>
+          <View style={styles.dropdownContainer}>
+            <Dropdown
+              style={styles.dropdown}
+              data={categories}
+              labelField="label"
+              valueField="value"
+              placeholder="Select a category"
+              value={category}
+              onChange={(item) => setCategory(item.value)}
+              renderRightIcon={() => (
+                <MaterialIcons
+                  name="arrow-drop-down"
+                  size={24}
+                  color="#555"
+                />
+              )}
+              selectedTextStyle={styles.selectedTextStyle}
+              placeholderStyle={styles.placeholderStyle}
+              containerStyle={styles.dropdownMenu}
+              itemTextStyle={styles.itemTextStyle}
+            />
           </View>
 
           <Text style={styles.label}>DETAILS</Text>
@@ -185,7 +197,6 @@ const AddNewFoodScreen = () => {
             placeholder="Enter food details"
             multiline
             numberOfLines={5}
-            // style={[styles.input, { textAlignVertical: "top", height: 100 }]}
             style={[
               styles.input,
               styles.textArea,
@@ -271,11 +282,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 20,
   },
-  pickerContainer: {
+  radioText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  dropdownContainer: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 5,
     marginBottom: 15,
+  },
+  dropdown: {
+    height: 50,
+    paddingHorizontal: 10,
+  },
+  selectedTextStyle: {
+    fontSize: 14,
+    color: "#555",
+  },
+  placeholderStyle: {
+    fontSize: 14,
+    color: "#999",
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+  },
+  itemTextStyle: {
+    fontSize: 14,
+    color: "#555",
   },
   saveButton: {
     position: "absolute",

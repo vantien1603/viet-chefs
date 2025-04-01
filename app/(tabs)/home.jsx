@@ -14,12 +14,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AXISO_API from "../../config/AXIOS_API";
+import AXIOS_API from "../../config/AXIOS_API";
 
 export default function Home() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [chef, setChef] = useState([]);
+  const [dishes, setDishes] = useState([]);
 
   const handleSearch = () => {
     const searchQuery = String(query || "");
@@ -33,14 +34,26 @@ export default function Home() {
   useEffect(() => {
     const fetchChef = async () => {
       try {
-        const response = await AXISO_API.get("/chef");
+        const response = await AXIOS_API.get("/chef");
         console.log("Chefs:", response.data.content);
         setChef(response.data.content.slice(0, 3));
       } catch (error) {
         console.log("Error:", error);
       }
     };
+
+    const fetchDishes = async () => {
+      try {
+        const response = await AXIOS_API.get("/dishes");
+        console.log("Dishes:", response.data.content);
+        setDishes(response.data.content.slice(0, 3));
+      } catch (error) {
+        console.log("Error:", error);
+      }
+    };
+
     fetchChef();
+    fetchDishes();
   }, []);
 
   const fullName = AsyncStorage.getItem("@fullName");
@@ -77,7 +90,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => router.push("/screen/booking")}>
+          <TouchableOpacity onPress={() => router.push("/screen/calendar")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
           {/* <TouchableOpacity>
@@ -125,19 +138,23 @@ export default function Home() {
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
         <View>
-          <View style={{ width: 200, alignItems: "center", marginBottom: 20 }}>
-            <View style={styles.card}>
-              <View style={styles.imageContainer}>
-                <Image
-                  source={require("../../assets/images/logo.png")}
-                  style={styles.image}
-                />
-              </View>
+          {dishes.map((item, index) => (
+            <View key={index}
+              style={{ width: 200, alignItems: "center", marginBottom: 20 }}
+            >
+              <View style={styles.card}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{uri: item.imageUrl}}
+                    style={styles.image}
+                  />
+                </View>
 
-              <Text style={styles.title}>Yakisoba Noodles</Text>
-              <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
+                <Text style={styles.title}>{item.name}</Text>
+                <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
+              </View>
             </View>
-          </View>
+          ))}
         </View>
         <View
           style={{
@@ -161,16 +178,21 @@ export default function Home() {
           >
             {chef.map((item, index) => (
               <TouchableOpacity
-              key={index}
-              onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
-            >
-            
+                key={index}
+                onPress={() =>
+                  router.push({
+                    pathname: "/screen/chefDetail",
+                    params: { id: item.id },
+                  })
+                }
+              >
                 <View style={styles.card}>
                   <View style={styles.imageContainer}>
                     <Image
                       source={{
                         uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
                       }}
+                      defaultSource={require("../../assets/images/logo.png")}
                       style={styles.image}
                     />
                   </View>
@@ -244,7 +266,6 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   title: {
     fontSize: 18,
