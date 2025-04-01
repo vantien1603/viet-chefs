@@ -1,122 +1,180 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Header from '../../components/header';
-import { commonStyles } from '../../style';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import React, { useEffect, useState } from "react";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Header from "../../components/header";
+import { commonStyles } from "../../style";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import AXIOS_API from "../../config/AXIOS_API";
+
 const SelectFood = () => {
-    const [isChecked, setIsChecked] = useState(false);
+  const [selectedItems, setSelectedItems] = useState({});
+  const [menu, setMenu] = useState([]);
 
-    return (
-        <SafeAreaView style={commonStyles.containerContent}>
-            <Header title="Select food" />
-            <View>
-                <View>
-                    <View style={{ width: 200, alignItems: "center", marginBottom: 20 }}>
-                        <View style={styles.card}>
-                            {/* Checkbox ở góc trên bên trái */}
-                            <TouchableOpacity
-                                style={[
-                                    styles.checkbox,
-                                    { backgroundColor: isChecked ? '#F8BF40' : 'transparent' },
-                                ]}
-                                onPress={() => setIsChecked(!isChecked)} // Chuyển đổi trạng thái khi nhấn
-                            >
-                                <Text style={styles.checkboxText}>
-                                    {isChecked ? (
-                                        ''
-                                    ) :
-                                        (
-                                            <MaterialIcons name="check-box-outline-blank" size={24} color="black" />
-                                        )}
-                                </Text>
-                            </TouchableOpacity>
+  useEffect(() => {
+    const fetchMenuFood = async () => {
+      try {
+        const response = await AXIOS_API.get("/menus");
+        setMenu(response.data.content);
+      } catch (error) {
+        console.log("Error fetching menu:", error);
+      }
+    };
+    fetchMenuFood();
+  }, []);
 
-                            <View style={styles.imageContainer}>
-                                <Image
-                                    source={require("../../assets/images/logo.png")}
-                                    style={styles.image}
-                                />
-                            </View>
+  const toggleCheckbox = (id) => {
+    setSelectedItems((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
-                            <Text style={styles.title}>Yakisoba Noodles</Text>
-                            <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
-                        </View>
-                    </View>
+  // Chia danh sách menu thành nhóm 2 item mỗi hàng
+  const groupedMenu = [];
+  for (let i = 0; i < menu.length; i += 2) {
+    groupedMenu.push(menu.slice(i, i + 2));
+  }
+
+  return (
+    <SafeAreaView style={commonStyles.containerContent}>
+      <Header title="Select food" />
+      <Text style={styles.menuTitle}>Menu</Text>
+
+      <FlatList
+        data={groupedMenu}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            {item.map((food) => (
+              <View key={food.id} style={styles.cardContainer}>
+                <View style={styles.card}>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      {
+                        backgroundColor: selectedItems[food.id]
+                          ? "#F8BF40"
+                          : "transparent",
+                      },
+                    ]}
+                    onPress={() => toggleCheckbox(food.id)}
+                  >
+                    <MaterialIcons
+                      name={
+                        selectedItems[food.id]
+                          ? "check-box"
+                          : "check-box-outline-blank"
+                      }
+                      size={24}
+                      color="white"
+                    />
+                  </TouchableOpacity>
+
+                  <View style={styles.imageContainer}>
+                    <Image source={{ uri: food.imageUrl }} style={styles.image} />
+                  </View>
+
+                  <Text style={styles.title}>{food.name}</Text>
+                  <Text style={{ color: "#F8BF40" }}>{food.description}</Text>
                 </View>
-            </View>
-            <TouchableOpacity
-                style={{
-                    position: "absolute",
-                    bottom: 50,
-                    left: 20,
-                    right: 20,
-                    backgroundColor: "#A64B2A",
-                    padding: 15,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    // elevation: 5,
-                }}
-            >
-                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                    Continues
-                </Text>
-            </TouchableOpacity>
-        </SafeAreaView>
-    );
+              </View>
+            ))}
+          </View>
+        )}
+      />
+
+      <TouchableOpacity style={styles.continueButton}>
+        <Text style={styles.continueButtonText}>Continue</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
 };
 
 export default SelectFood;
 
 const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#A9411D",
-        borderRadius: 16,
-        padding: 16,
-        paddingTop: 50,
-        alignItems: 'center',
-        width: 200,
-        position: "relative",
-    },
-    imageContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 70,
-        backgroundColor: '#FFF',
-        overflow: 'hidden',
-        marginBottom: 8,
-        position: "absolute",
-        top: -20,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    image: {
-        width: "100%",
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#FFF",
-        marginTop: 70,
-        textAlign: "center",
-        marginBottom: 5,
-    },
-    checkbox: {
-        position: 'absolute',
-        top: 10,
-        left: 10,
-        width: 28, // Tăng kích thước để trông rõ hơn
-        height: 28, // Tăng kích thước để trông rõ hơn
-        borderRadius: 14, // Nửa chiều rộng/cao để tạo hình tròn hoàn hảo
-        borderWidth: 2,
-        borderColor: '#FFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    checkboxText: {
-        left: 2,
-        fontSize: 18, // Tăng kích thước chữ để phù hợp với checkbox lớn hơn
-        color: '#A9411D', // Màu nâu đậm để đối lập với background vàng cam khi checked
-        fontWeight: 'bold', // Làm chữ đậm hơn để nổi bật
-    },
+  menuTitle: {
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 10,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  cardContainer: {
+    width: "48%",
+    alignItems: "center",
+  },
+  card: {
+    backgroundColor: "#A9411D",
+    borderRadius: 16,
+    padding: 16,
+    paddingTop: 50,
+    alignItems: "center",
+    width: "100%",
+    position: "relative",
+  },
+  imageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#FFF",
+    overflow: "hidden",
+    marginBottom: 8,
+    position: "absolute",
+    top: -10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFF",
+    marginTop: 60,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  checkbox: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  continueButton: {
+    position: "absolute",
+    bottom: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: "#A64B2A",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  continueButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });

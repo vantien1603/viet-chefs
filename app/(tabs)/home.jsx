@@ -7,16 +7,19 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import AXISO_API from "../../config/AXIOS_API";
 
 export default function Home() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [chef, setChef] = useState([]);
 
   const handleSearch = () => {
     const searchQuery = String(query || "");
@@ -26,6 +29,21 @@ export default function Home() {
       router.push("/screen/searchResult");
     }
   };
+
+  useEffect(() => {
+    const fetchChef = async () => {
+      try {
+        const response = await AXISO_API.get("/chef");
+        console.log("Chefs:", response.data.content);
+        setChef(response.data.content.slice(0, 3));
+      } catch (error) {
+        console.log("Error:", error);
+      }
+    };
+    fetchChef();
+  }, []);
+
+  const fullName = AsyncStorage.getItem("@fullName");
   return (
     <View style={commonStyles.containerContent}>
       <View
@@ -40,7 +58,7 @@ export default function Home() {
           // marginTop: 50,
         }}
       >
-        <TouchableOpacity onPress={() => router.push('screen/editAddress')}>
+        <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
           <View style={{ flexDirection: "row" }}>
             <Image
               source={require("../../assets/images/logo.png")}
@@ -49,7 +67,7 @@ export default function Home() {
             />
             <View>
               <Text style={{ fontSize: 18, color: "#383838" }}>
-                Hello Marchele
+                Hello, {fullName}
               </Text>
               <Text style={{ fontSize: 12, color: "#968B7B" }}>
                 Jarkata, Indonesia
@@ -59,7 +77,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/screen/booking")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
           {/* <TouchableOpacity>
@@ -67,8 +85,11 @@ export default function Home() {
           </TouchableOpacity> */}
         </View>
       </View>
-      <ScrollView showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false} style={{ paddingTop: 10 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        style={{ paddingTop: 10 }}
+      >
         <View style={{ marginBottom: 20 }}>
           <Image
             source={require("../../assets/images/promo.png")}
@@ -77,14 +98,13 @@ export default function Home() {
           />
         </View>
         <View style={styles.searchContainer}>
-          
           <TextInput
             placeholder="Search..."
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={handleSearch}
-            returnKeyType="search" 
+            returnKeyType="search"
           />
           <Icon
             name="search"
@@ -139,21 +159,27 @@ export default function Home() {
               paddingBottom: 10,
             }}
           >
-            <TouchableOpacity onPress={() => router.push("/screen/chefDetail")}>
-              <View style={styles.card}>
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={{
-                      uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                    }}
-                    style={styles.image}
-                  />
-                </View>
+            {chef.map((item, index) => (
+              <TouchableOpacity
+              key={index}
+              onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
+            >
+            
+                <View style={styles.card}>
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{
+                        uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+                      }}
+                      style={styles.image}
+                    />
+                  </View>
 
-                <Text style={styles.title}>Yakisoba Noodles</Text>
-                <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
-              </View>
-            </TouchableOpacity>
+                  <Text style={styles.title}>{item.user.fullName}</Text>
+                  <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
 
             <View
               style={{
@@ -176,14 +202,9 @@ export default function Home() {
   );
 }
 const styles = StyleSheet.create({
-
-  searchContainer:{
-    position:'relative',
-
-  },
   searchInput: {
     backgroundColor: "#FFF8EF",
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderWidth: 2,
     // width: '100%',
     height: 60,
@@ -193,10 +214,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   searchIcon: {
-      position: "absolute",
-      right: 10,
-      top: "50%",
-      transform: [{ translateY: -20 }],
+    position: "absolute",
+    right: 10,
+    top: "50%",
+    transform: [{ translateY: -20 }],
   },
   card: {
     backgroundColor: "#A9411D",

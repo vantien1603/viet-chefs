@@ -1,16 +1,18 @@
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../components/header'
-import { Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Text, TouchableOpacity, View } from 'react-native'
 import { PasswordInput } from '../../components/PasswordInput/passwordInput';
 import { commonStyles } from '../../style';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AXIOS_BASE from '../../config/AXIOS_BASE';
 
 const SetPassword = () => {
     const { username, fullName, phone, mail, mode } = useLocalSearchParams();
 
     const [rePassword, setRePassword] = useState('');
     const [password, setPassword] = useState('');
+    const randomUsername = `user_${Date.now()}`;
 
     const router = useRouter();
     const handlePasswordChange = (value) => {
@@ -21,21 +23,27 @@ const SetPassword = () => {
     };
 
     const handleSetPassword = async () => {
+        if (password !== rePassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+
         const registerPayload = {
             username: randomUsername,
-            email: email,
-            phone: phone,
-            fullName: fullName,
+            email,
+            phone,
+            fullName,
             password: password,
-            dob: "1",
-            address: "",
-            gender: "",
-            password: password,
+            dob: "1999-01-01",
+            address: "Ho Chi Minh City",
+            gender: "Male",
+            rePassword: rePassword,
         };
+
         try {
-            console.log(registerPayload);
+            // console.log('data', registerPayload);
             const response = await AXIOS_BASE.post('/register', registerPayload);
-            if (response.status === 201) {
+            if(response.status === 201) {
                 Alert.alert('Register success', 'Please verify your email');
                 console.log('Register success');
                 router.push(`/screen/verify?email=${encodeURIComponent(email)}`);
@@ -48,7 +56,6 @@ const SetPassword = () => {
             Alert.alert('Register failed', message);
             console.log('Register failed', message);
         }
-        router.push('screen/login')
     }
     return (
         <SafeAreaView style={commonStyles.containerContent}>
@@ -59,11 +66,11 @@ const SetPassword = () => {
                 </Text>
                 <PasswordInput
                     placeholder="Password"
-                    onPasswordChange={handlePasswordChange}
+                    onPasswordChange={setPassword}
                 />
                 <PasswordInput
                     placeholder="Re-enter password"
-                    onPasswordChange={handleRePasswordChange}
+                    onPasswordChange={setRePassword}
                 />
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>

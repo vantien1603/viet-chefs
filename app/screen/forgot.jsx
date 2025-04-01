@@ -28,13 +28,13 @@ const ForgotPasswordScreen = () => {
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.optionRow}>
+                <TouchableOpacity style={styles.optionRow} onPress={() => router.push("/screen/forgotPassword")}>
                     <Ionicons name="mail-sharp" size={40} color="#A9411D" />
                     <View style={{ marginLeft: 15 }}>
                         <Text style={styles.contentText}>Via email</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 36}}>•••••••</Text>
-                            <Text style={{ fontSize: 18 }}>@gmail.com</Text>
+                            <Text style={{ fontSize: 40 }}>•••••••</Text>
+                            <Text style={{ fontSize: 22 }}>@gmil.com</Text>
                         </View>
                     </View>
                 </TouchableOpacity>

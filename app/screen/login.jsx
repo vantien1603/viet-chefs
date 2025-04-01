@@ -1,6 +1,6 @@
-import { View, Text, TextInput, Image, TouchableOpacity, Button } from "react-native";
+import { View, Text, TextInput, Image, TouchableOpacity } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
-import { useRouter, useNavigation, Redirect } from "expo-router";
+import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Đảm bảo đúng đường dẫn
 import { commonStyles } from "../../style";
@@ -11,31 +11,22 @@ import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { jwtDecode } from "jwt-decode";
 import { AuthContext } from "../../config/AuthContext";
 
-const webClientId = "522049129852-f9fc597s3c9tqbs9djr5sd94vcdpugmr.apps.googleusercontent.com"
-const iosClientId = "522049129852-21i7b2j5hlf06unknf0i6q5qpk4enln4.apps.googleusercontent.com"
-const androidClientId = "522049129852-dkq8qejqaao9o73hble1e1pv5m43at5g.apps.googleusercontent.com"
+const webClientId = "522049129852-f9fc597s3c9tqbs9djr5sd94vcdpugmr.apps.googleusercontent.com";
+const iosClientId = "522049129852-21i7b2j5hlf06unknf0i6q5qpk4enln4.apps.googleusercontent.com";
+const androidClientId = "522049129852-dkq8qejqaao9o73hble1e1pv5m43at5g.apps.googleusercontent.com";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [token, setToken] = useState("");
   const [userInfo, setUserInfo] = useState(null);
-  const config = {
-    webClientId,
-    iosClientId,
-    androidClientId,
-  }
-  const [request, response, promptAsync] = Google.useAuthRequest(config);
-
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  // const router = useRouter();
   const navigation = useNavigation();
-
-
-
   const { user, login } = useContext(AuthContext);
+
+  const config = { webClientId, iosClientId, androidClientId };
+  const [request, response, promptAsync] = Google.useAuthRequest(config);
 
   if (user) {
     console.log("login roiiiii")
@@ -90,11 +81,8 @@ export default function LoginScreen() {
   //   }
   // }
 
-  // const handleLogin = async () => {
-  //   const loginPayload = {
-  //     usernameOrEmail: usernameOrEmail,
-  //     password: password,
-  //   };
+  const handleLogin = async () => {
+    const loginPayload = { usernameOrEmail, password };
 
   //   try {
   //     // const response = await AXIOS_BASE.post("/login", loginPayload);
@@ -142,13 +130,10 @@ export default function LoginScreen() {
         value={usernameOrEmail}
         onChangeText={setUsernameOrEmail}
       />
-      <PasswordInput
-        placeholder="Password"
-        onPasswordChange={handlePasswordChange}
-      />
+      <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
       <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
         <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
-          <Text style={{ color: "#968B7B" }}>Forgot password ?</Text>
+          <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
         </TouchableOpacity>
       </View>
       <View style={{ flex: 1, alignItems: "center" }}>
@@ -164,19 +149,11 @@ export default function LoginScreen() {
             width: 300,
           }}
         >
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 18,
-              color: "#fff",
-              fontFamily: "nunito-bold",
-            }}
-          >
+          <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
             Đăng nhập
           </Text>
         </TouchableOpacity>
       </View>
-      {/* <Button title="Sign in with Google" onPress={() => promptAsync()}/> */}
     </SafeAreaView>
   );
 }

@@ -113,6 +113,18 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="screen/forgotPassword"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/resetPassword"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="screen/booking"
           options={{
             headerShown: false,
@@ -125,7 +137,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="screen/Booking/historyBooking"
+          name="screen/historyBooking"
           options={{
             headerShown: false,
           }}
@@ -139,33 +151,39 @@ export default function RootLayout() {
         <Stack.Screen
           name="screen/searchResult"
           options={{
-            headerShown: false
-          }} />
+            headerShown: false,
+          }}
+        />
         <Stack.Screen
           name="screen/orderHistories"
           options={{
-            headerShown: false
-          }} />
+            headerShown: false,
+          }}
+        />
         <Stack.Screen
           name="screen/setting"
           options={{
-            headerShown: false
-          }} />
+            headerShown: false,
+          }}
+        />
         <Stack.Screen
           name="screen/editAddress"
           options={{
-            headerShown: false
-          }} />
+            headerShown: false,
+          }}
+        />
         <Stack.Screen
           name="screen/calendar"
           options={{
-            headerShown: false
-          }} />
+            headerShown: false,
+          }}
+        />
         <Stack.Screen
           name="screen/selectFood"
           options={{
-            headerShown: false
-          }} />
+            headerShown: false,
+          }}
+        />
         <Stack.Screen
           name="screen/chefDetail"
           options={{

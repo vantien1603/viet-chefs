@@ -7,7 +7,7 @@ import { commonStyles } from '../../style';
 import Header from '../../components/header';
 export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
-    const [mail, setMail] = useState('');
+    const [email, setEmail] = useState('');
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     // const [rePassword, setRePassword] = useState('');
@@ -24,7 +24,16 @@ export default function SignUpScreen() {
     };
     const handleRePasswordChange = (value) => {
         setRePassword(value);
-    };
+
+    // const handleSignUp = async () => {
+    //     router.push({
+    //         pathname: 'screen/setPassword',
+    //         params: {
+    //             email, phone, fullName
+    //         }
+    //     })
+    // };
+
 
     return (
 

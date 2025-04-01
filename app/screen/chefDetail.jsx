@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,12 +8,41 @@ import Header from "../../components/header";
 import { router } from "expo-router";
 import { commonStyles } from "../../style";
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { router, useLocalSearchParams } from "expo-router";
+import AXIOS_API from "../../config/AXIOS_API";
 
 const ChefDetail = () => {
   const [expanded, setExpanded] = useState(false);
-  const fullText =
-    "I am a highly skilled Vietnamese culinary expert with over 10 years of experience. Passionate about authentic flavors, I specialize in traditional dishes such as Pho, Banh Mi, and Fresh Spring Rolls. With a dedication to quality and a love for sharing my culinary heritage, I bring the flavors of Vietnam to your doorstep.";
-  const previewText = fullText.slice(0, 100) + "...";
+  const [dishes, setDishes] = useState([]);
+  const { id } = useLocalSearchParams();
+  const [chefs, setChefs] = useState(null);
+
+  useEffect(() => {
+    const fetchDishes = async () => {
+      try {
+        const response = await AXIOS_API.get("/dishes");
+        setDishes(response.data.content);
+        console.log(response.data.content);
+      } catch (error) {
+        console.log("Error dishes:", error);
+      }
+    };
+    fetchDishes();
+  }, []);
+
+  useEffect(() => {
+    const fetchChefById = async () => {
+      if (!id) return;
+      try {
+        const response = await AXIOS_API.get(`/chef/${id}`);
+        console.log("Chef detail:", response.data);
+        setChefs(response.data);
+      } catch (error) {
+        console.log("Error:", error);
+      }
+    };
+    fetchChefById();
+  }, [id]);
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
@@ -22,9 +53,10 @@ const ChefDetail = () => {
         <View style={styles.profileContainer}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Image source={{ uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600" }} style={styles.profileImage} />
+              <Image source={{ uri: chefs?.image }} style={styles.profileImage} />
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '500' }}>John Doe</Text>
+                <Text style={{ fontSize: 18, fontWeight: '500' }}>{chefs?.user?.fullName}</Text>
+                <Text style={{ fontSize: 16 }}>{chefs?.bio}</Text>
                 <View style={styles.starContainer}>
                   {Array(5)
                     .fill()
@@ -37,12 +69,26 @@ const ChefDetail = () => {
             <AntDesign name="message1" size={24} color="black" />
           </View>
 
-          <Text style={styles.description}>{expanded ? fullText : previewText}</Text>
+          <Text style={styles.description}>
+            {expanded
+              ? chefs?.description
+              : chefs?.description?.slice(0, 100) + "..."}
+          </Text>
+
           <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-            <Text style={styles.seeAllText}>{expanded ? "See Less" : "See All"}</Text>
+            <Text style={styles.seeAllText}>
+              {expanded ? "See Less" : "See All"}
+            </Text>
           </TouchableOpacity>
 
-
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button}>
+              <Text style={styles.buttonText}>Book now</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button}>
+              <Text style={styles.buttonText}>Reviews</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.sectionHeader}>
@@ -50,59 +96,20 @@ const ChefDetail = () => {
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
             <Text style={styles.viewAll}>All dishes</Text>
           </TouchableOpacity>
-
+          
         </View>
 
         <View style={styles.dishContainer}>
-          <View style={styles.dishCard}>
-            <Image
-              source={require("../../assets/images/dish1.jpg")}
-              style={styles.dishImage}
-            />
-            <Text style={styles.dishName}>Yakisoba Noodles</Text>
-            <Text style={styles.dishDescription}>Noodle with Pork</Text>
-          </View>
-
-          <View style={styles.dishCard}>
-            <Image
-              source={require("../../assets/images/dish2.jpg")}
-              style={styles.dishImage}
-            />
-            <Text style={styles.dishName}>Thai Fried Noodles</Text>
-            <Text style={styles.dishDescription}>Noodle with Shrimp</Text>
-          </View>
-          <View style={styles.dishCard}>
-            <Image
-              source={require("../../assets/images/dish2.jpg")}
-              style={styles.dishImage}
-            />
-            <Text style={styles.dishName}>Thai Fried Noodles</Text>
-            <Text style={styles.dishDescription}>Noodle with Shrimp</Text>
-          </View>
-          <View style={styles.dishCard}>
-            <Image
-              source={require("../../assets/images/dish2.jpg")}
-              style={styles.dishImage}
-            />
-            <Text style={styles.dishName}>Thai Fried Noodles</Text>
-            <Text style={styles.dishDescription}>Noodle with Shrimp</Text>
-          </View>
-          <View style={styles.dishCard}>
-            <Image
-              source={require("../../assets/images/dish2.jpg")}
-              style={styles.dishImage}
-            />
-            <Text style={styles.dishName}>Thai Fried Noodles</Text>
-            <Text style={styles.dishDescription}>Noodle with Shrimp</Text>
-          </View>
-          <View style={styles.dishCard}>
-            <Image
-              source={require("../../assets/images/dish2.jpg")}
-              style={styles.dishImage}
-            />
-            <Text style={styles.dishName}>Thai Fried Noodles</Text>
-            <Text style={styles.dishDescription}>Noodle with Shrimp</Text>
-          </View>
+        {dishes.slice(0, 3).map((dishes, index) => (
+            <View key={index} style={styles.dishCard}>
+              <Image
+                source={{ uri: dishes.imageUrl }}
+                style={styles.dishImage}
+              />
+              <Text style={styles.dishName}>{dishes.name}</Text>
+              <Text style={styles.dishDescription}>{dishes.description}</Text>
+            </View>
+          ))} 
         </View>
       </ScrollView>
 

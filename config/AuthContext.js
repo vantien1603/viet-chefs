@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
         usernameOrEmail: username,
         password: password,
       };
-      const response = await axios.post('http://192.168.1.11:8080/no-auth/login', loginPayload);
+      const response = await axios.post('http://192.168.1.34:8080/no-auth/login', loginPayload);
       console.log(response.data);
       const { access_token, refresh_token } = response.data;
       console.log(access_token);
