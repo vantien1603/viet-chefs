@@ -97,23 +97,32 @@ export default function LoginScreen() {
         const decodedToken = jwtDecode(token);
         const userId = decodedToken.userId;
         const fullName = response.data.fullName;
+        const roleName = decodedToken.roleName;
 
         // Lưu token với thời gian hết hạn 10 ngày
-        const expiresAt = new Date().getTime() + 10 * 24 * 60 * 60 * 1000; // 10 ngày
+        const expiresAt = decodedToken.exp;
 
         await AsyncStorage.setItem("@token", token);
         await AsyncStorage.setItem("@userId", userId);
         await AsyncStorage.setItem("@fullName", fullName);
         await AsyncStorage.setItem("@expiresAt", expiresAt.toString());
+        await AsyncStorage.setItem("@roleName", roleName);
+
+        if(roleName === "ROLE_CUSTOMER") {
+          navigation.navigate("(tabs)", { screen: "home" });
+        } else if (roleName === "ROLE_CHEF") {
+          navigation.navigate("(chef)", { screen: "dashboard" });
+        }
 
         console.log("User:", fullName);
         console.log("Access token:", token);
-        navigation.navigate("(tabs)", { screen: "home" });
+        // navigation.navigate("(tabs)", { screen: "home" });
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       console.log("Login failed", errorMessage);
     }
+    // navigation.navigate("(tabs)", { screen: "home" });
   };
 
   return (

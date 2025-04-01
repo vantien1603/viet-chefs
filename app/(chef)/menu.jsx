@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
-import Header from "../../../components/header";
+import Header from "../../components/header";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   GestureHandlerRootView,
@@ -21,7 +21,7 @@ const initialFoodItems = [
   {
     id: "1",
     name: "Chicken Thai Biriyani",
-    image: require("../../../assets/images/1.jpg"),
+    image: require("../../assets/images/1.jpg"),
     type: "Non-Veg",
     category: "Rice Dish", // Món cơm
     cookingTime: 30,
@@ -29,7 +29,7 @@ const initialFoodItems = [
   {
     id: "2",
     name: "Chicken Bhuna",
-    image: require("../../../assets/images/1.jpg"),
+    image: require("../../assets/images/1.jpg"),
     type: "Non-Veg",
     category: "Stir-fried", // Món xào
     cookingTime: 45,
@@ -37,7 +37,7 @@ const initialFoodItems = [
   {
     id: "3",
     name: "Mazalichiken Halim",
-    image: require("../../../assets/images/1.jpg"),
+    image: require("../../assets/images/1.jpg"),
     type: "Non-Veg",
     category: "Soup", // Món súp
     cookingTime: 40,
@@ -75,10 +75,7 @@ const MenuChefScreen = () => {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
         <Header
-          title="My Food List"
-          onRightPress={() => router.push("screen/Chefs/addFood")}
-          rightIcon={"add"}
-        />
+          title="My Food List" />
 
         <Text style={styles.totalItems}>Total {foodItems.length} items</Text>
         <FlatList
