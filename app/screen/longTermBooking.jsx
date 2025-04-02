@@ -62,21 +62,6 @@ const LongTermBookingScreen = () => {
     }
   }, [selectedPackage]);
 
-  const handleCalculateLongTermBooking = async () => {
-    try {
-      const response = await AXIOS_API.post("/bookings/calculate-long-term-booking", {
-        chefId,
-        packageId: selectedPackage.id,
-        guestCount: parseInt(numPeople),
-        location: address,
-      });
-    } catch (error) {
-      console.log("Error calculating long-term booking:", error);
-      setError("Không thể tính toán gói dịch vụ dài hạn.");
-      
-    }
-  }
-
   const inputStyle = {
     borderWidth: 1,
     borderColor: "#ccc",

@@ -8,8 +8,10 @@ import {
   Switch,
   SafeAreaView,
   StyleSheet,
+  TextInput,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { Dropdown } from "react-native-element-dropdown";
 import Header from "../../components/header";
 import AXIOS_API from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
@@ -40,7 +42,7 @@ const LongTermSelectBooking = () => {
 
   const today = new Date();
   const todayString = today.toISOString().split("T")[0];
-  const timeSlots = generateTimeSlots(); // Danh sách các khoảng thời gian
+  const timeSlots = generateTimeSlots();
 
   useEffect(() => {
     handleMenu();
@@ -63,6 +65,8 @@ const LongTermSelectBooking = () => {
         endTime: "19:30",
         menuId: null,
         extraDishIds: [],
+        menuDishNotes: {},
+        extraDishNotes: {},
       };
     }
     setSelectedDates(newSelection);
@@ -79,6 +83,32 @@ const LongTermSelectBooking = () => {
       }
       return updated;
     });
+  };
+
+  const updateMenuDishNote = (date, dishId, note) => {
+    setSelectedDates((prev) => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        menuDishNotes: {
+          ...prev[date].menuDishNotes,
+          [dishId]: note,
+        },
+      },
+    }));
+  };
+
+  const updateExtraDishNote = (date, dishId, note) => {
+    setSelectedDates((prev) => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        extraDishNotes: {
+          ...prev[date].extraDishNotes,
+          [dishId]: note,
+        },
+      },
+    }));
   };
 
   const handleConfirm = async () => {
@@ -99,6 +129,8 @@ const LongTermSelectBooking = () => {
           ? selectedDates[date].extraDishIds
           : null,
       isDishSelected: selectedDates[date].showMenu,
+      // menuDishNotes: selectedDates[date].menuDishNotes || {},
+      // extraDishNotes: selectedDates[date].extraDishNotes || {},
     }));
 
     const payload = {
@@ -118,15 +150,16 @@ const LongTermSelectBooking = () => {
       );
       console.log("API Response:", response.data);
       router.push({
-        pathname:"/screen/reviewBooking",
+        pathname: "/screen/reviewBooking",
         params: {
           bookingData: JSON.stringify(response.data),
           selectedPackage: JSON.stringify(selectedPackage),
           chefId: chefId,
           numPeople: numPeople,
           address: location,
+          selectedDates: JSON.stringify(selectedDates),
         },
-      })
+      });
     } catch (error) {
       console.log("Error calling calculate-long-term-booking:", error);
       alert("Có lỗi khi tính toán giá đặt chỗ dài hạn.");
@@ -136,14 +169,16 @@ const LongTermSelectBooking = () => {
   const handleMenu = async () => {
     try {
       const response = await AXIOS_API.get(`/menus?chefId=${chefId}`);
+      console.log("Raw API Response:", response.data);
       if (response.status === 200) {
-        const fetchedMenus = response.data.content;
+        const fetchedMenus = response.data.content || response.data || [];
         setMenuItems(fetchedMenus);
-        console.log("Menus fetched:", fetchedMenus);
+        console.log("Menus fetched:", JSON.stringify(fetchedMenus, null, 2));
       }
     } catch (error) {
       console.log("Error fetching menus:", error);
       alert("Không thể lấy danh sách menu.");
+      setMenuItems([]);
     }
   };
 
@@ -151,13 +186,14 @@ const LongTermSelectBooking = () => {
     try {
       const response = await AXIOS_API.get(`/dishes/not-in-menu?menuId=${menuId}`);
       if (response.status === 200) {
-        const fetchedDishes = response.data.content;
+        const fetchedDishes = response.data.content || response.data || [];
         setExtraDishes(fetchedDishes);
         console.log("Dishes not in menu:", fetchedDishes);
       }
     } catch (error) {
       console.log("Error fetching dishes not in menu:", error);
       alert("Không thể lấy danh sách món ăn ngoài menu.");
+      setExtraDishes([]);
     }
   };
 
@@ -213,7 +249,6 @@ const LongTermSelectBooking = () => {
                 </Text>
               </View>
 
-              {/* Chọn giờ bắt đầu */}
               <Text style={styles.label}>Giờ bắt đầu:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {timeSlots.map((time) => (
@@ -221,13 +256,9 @@ const LongTermSelectBooking = () => {
                     key={`start-${time}`}
                     style={[
                       styles.timeButton,
-                      selectedDates[date].startTime === time
-                        ? styles.timeButtonSelected
-                        : styles.timeButton,
+                      selectedDates[date].startTime === time && styles.timeButtonSelected,
                     ]}
-                    onPress={() => {
-                      updateBookingDetail(date, "startTime", time);
-                    }}
+                    onPress={() => updateBookingDetail(date, "startTime", time)}
                   >
                     <Text
                       style={
@@ -242,7 +273,6 @@ const LongTermSelectBooking = () => {
                 ))}
               </ScrollView>
 
-              {/* Chọn giờ kết thúc */}
               <Text style={styles.label}>Giờ kết thúc:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {timeSlots.map((time) => {
@@ -260,11 +290,7 @@ const LongTermSelectBooking = () => {
                           ? styles.timeButtonDisabled
                           : styles.timeButton,
                       ]}
-                      onPress={() => {
-                        if (!isBeforeStart) {
-                          updateBookingDetail(date, "endTime", time);
-                        }
-                      }}
+                      onPress={() => !isBeforeStart && updateBookingDetail(date, "endTime", time)}
                       disabled={isBeforeStart}
                     >
                       <Text
@@ -295,67 +321,84 @@ const LongTermSelectBooking = () => {
                   {selectedDates[date].showMenu ? "Có" : "Không"}
                 </Text>
               </View>
+
               {selectedDates[date].showMenu && (
                 <>
                   <Text style={styles.label}>Chọn Menu:</Text>
-                  {menuItems.length > 0 ? (
-                    menuItems.map((item) => (
-                      <TouchableOpacity
-                        key={item.id}
-                        onPress={() => updateBookingDetail(date, "menuId", item.id)}
-                        style={{
-                          ...styles.button,
-                          backgroundColor:
-                            selectedDates[date].menuId === item.id ? "#A64B2A" : "#e0e0e0",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color:
-                              selectedDates[date].menuId === item.id ? "white" : "black",
-                            fontSize: 16,
-                          }}
-                        >
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))
-                  ) : (
-                    <Text>Đang tải menu...</Text>
+                  <Dropdown
+                    style={styles.dropdown}
+                    data={menuItems}
+                    labelField="name"
+                    valueField="id"
+                    placeholder="Chọn menu"
+                    value={selectedDates[date].menuId}
+                    onChange={(item) => updateBookingDetail(date, "menuId", item.id)}
+                    search
+                    searchPlaceholder="Tìm kiếm menu..."
+                  />
+                  {selectedDates[date].menuId && menuItems.length > 0 && (
+                    <View style={styles.menuDishesContainer}>
+                      <Text style={styles.subLabel}>Món trong menu:</Text>
+                      {menuItems
+                        .find((item) => item.id === selectedDates[date].menuId)
+                        ?.menuItems?.map((dish) => (
+                          <View key={dish.dishId} style={styles.dishItem}>
+                            <Text style={styles.dishText}>{dish.dishName}</Text>
+                            <TextInput
+                              style={styles.noteInput}
+                              placeholder={`Ghi chú cho ${dish.dishName}`}
+                              value={selectedDates[date].menuDishNotes[dish.dishId] || ""}
+                              onChangeText={(text) =>
+                                updateMenuDishNote(date, dish.dishId, text)
+                              }
+                            />
+                          </View>
+                        )) || <Text>Không có món nào trong menu này</Text>}
+                    </View>
                   )}
+
                   <Text style={styles.label}>Chọn Món Thêm:</Text>
                   {extraDishes.length > 0 ? (
                     extraDishes.map((item) => (
-                      <TouchableOpacity
-                        key={item.id}
-                        onPress={() => {
-                          const currentExtras = selectedDates[date].extraDishIds || [];
-                          updateBookingDetail(
-                            date,
-                            "extraDishIds",
-                            currentExtras.includes(item.id)
-                              ? currentExtras.filter((id) => id !== item.id)
-                              : [...currentExtras, item.id]
-                          );
-                        }}
-                        style={{
-                          ...styles.button,
-                          backgroundColor: selectedDates[date].extraDishIds?.includes(item.id)
-                            ? "#A64B2A"
-                            : "#e0e0e0",
-                        }}
-                      >
-                        <Text
+                      <View key={item.id} style={styles.extraDishItem}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            const currentExtras = selectedDates[date].extraDishIds || [];
+                            updateBookingDetail(
+                              date,
+                              "extraDishIds",
+                              currentExtras.includes(item.id)
+                                ? currentExtras.filter((id) => id !== item.id)
+                                : [...currentExtras, item.id]
+                            );
+                          }}
                           style={{
-                            color: selectedDates[date].extraDishIds?.includes(item.id)
-                              ? "white"
-                              : "black",
-                            fontSize: 16,
+                            ...styles.button,
+                            backgroundColor: selectedDates[date].extraDishIds?.includes(item.id)
+                              ? "#A64B2A"
+                              : "#e0e0e0",
                           }}
                         >
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
+                          <Text
+                            style={{
+                              color: selectedDates[date].extraDishIds?.includes(item.id)
+                                ? "white"
+                                : "black",
+                              fontSize: 16,
+                            }}
+                          >
+                            {item.name}
+                          </Text>
+                        </TouchableOpacity>
+                        {selectedDates[date].extraDishIds?.includes(item.id) && (
+                          <TextInput
+                            style={styles.noteInput}
+                            placeholder={`Ghi chú cho ${item.name}`}
+                            value={selectedDates[date].extraDishNotes[item.id] || ""}
+                            onChangeText={(text) => updateExtraDishNote(date, item.id, text)}
+                          />
+                        )}
+                      </View>
                     ))
                   ) : (
                     <Text>Chọn menu để xem món thêm</Text>
@@ -382,22 +425,33 @@ const LongTermSelectBooking = () => {
                     <Text style={styles.tableCell}>{selectedDates[date].startTime}</Text>
                     <Text style={styles.tableCell}>{selectedDates[date].endTime}</Text>
                     <Text style={styles.tableCell}>
-                      {selectedDates[date].showMenu
-                        ? menuItems.find((item) => item.id === selectedDates[date].menuId)?.name +
-                          (menuItems.find((item) => item.id === selectedDates[date].menuId)?.menuItems
-                            ? "\n(" +
-                              menuItems
-                                .find((item) => item.id === selectedDates[date].menuId)
-                                ?.menuItems.map((dish) => dish.dishName)
-                                .join(", ") +
-                              ")"
-                            : "")
+                      {selectedDates[date].showMenu && selectedDates[date].menuId
+                        ? `${
+                            menuItems.find((item) => item.id === selectedDates[date].menuId)?.name ||
+                            "Unknown Menu"
+                          }\n(${
+                            menuItems
+                              .find((item) => item.id === selectedDates[date].menuId)
+                              ?.menuItems?.map(
+                                (dish) =>
+                                  `${dish.dishName}${
+                                    selectedDates[date].menuDishNotes[dish.dishId]
+                                      ? ` (${selectedDates[date].menuDishNotes[dish.dishId]})`
+                                      : ""
+                                  }`
+                              )
+                              .join(", ") || "No dishes"
+                          })`
                         : "Không"}
                     </Text>
                     <Text style={styles.tableCell}>
                       {selectedDates[date].extraDishIds?.length > 0
                         ? selectedDates[date].extraDishIds
-                            .map((id) => extraDishes.find((dish) => dish.id === id)?.name)
+                            .map((id) => {
+                              const dishName = extraDishes.find((dish) => dish.id === id)?.name;
+                              const note = selectedDates[date].extraDishNotes[id];
+                              return note ? `${dishName} (${note})` : dishName;
+                            })
                             .filter(Boolean)
                             .join(", ")
                         : "Không"}
@@ -458,9 +512,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 10,
   },
+  subLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 5,
+  },
   switchText: {
     marginLeft: 10,
     fontSize: 16,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#fff",
+    marginVertical: 8,
+  },
+  menuDishesContainer: {
+    marginTop: 10,
+  },
+  dishItem: {
+    marginVertical: 5,
+  },
+  dishText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  extraDishItem: {
+    marginVertical: 4,
+  },
+  noteInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 8,
+    fontSize: 14,
+    marginTop: 5,
+    backgroundColor: "#fff",
   },
   button: {
     padding: 12,

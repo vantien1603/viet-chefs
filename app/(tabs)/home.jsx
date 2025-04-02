@@ -137,25 +137,26 @@ export default function Home() {
           <Text style={{ fontSize: 20 }}>Popular dishes</Text>
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
-        <View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 30 }}
+        >
           {dishes.map((item, index) => (
-            <View key={index}
-              style={{ width: 200, alignItems: "center", marginBottom: 20 }}
+            <View
+              key={index}
+              style={{ width: 200, alignItems: "center", marginRight: 20 }}
             >
               <View style={styles.card}>
                 <View style={styles.imageContainer}>
-                  <Image
-                    source={{uri: item.imageUrl}}
-                    style={styles.image}
-                  />
+                  <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="contain" />
                 </View>
-
                 <Text style={styles.title}>{item.name}</Text>
                 <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
               </View>
             </View>
           ))}
-        </View>
+        </ScrollView>
         <View
           style={{
             flexDirection: "row",
@@ -166,59 +167,38 @@ export default function Home() {
           <Text style={{ fontSize: 20 }}>Recommend chef</Text>
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
-        <View style={{ marginBottom: 30 }}>
-          <View
-            style={{
-              width: 200,
-              alignItems: "center",
-              backgroundColor: "#A9411D",
-              borderRadius: 16,
-              paddingBottom: 10,
-            }}
-          >
-            {chef.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() =>
-                  router.push({
-                    pathname: "/screen/chefDetail",
-                    params: { id: item.id },
-                  })
-                }
-              >
-                <View style={styles.card}>
-                  <View style={styles.imageContainer}>
-                    <Image
-                      source={{
-                        uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                      }}
-                      defaultSource={require("../../assets/images/logo.png")}
-                      style={styles.image}
-                    />
-                  </View>
-
-                  <Text style={styles.title}>{item.user.fullName}</Text>
-                  <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-
-            <View
-              style={{
-                backgroundColor: "#fff",
-                marginTop: -5,
-                borderRadius: 30,
-                padding: 5,
-                position: "absolute",
-                bottom: -20,
-              }}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 30 }}
+        >
+          {chef.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() =>
+                router.push({
+                  pathname: "/screen/chefDetail",
+                  params: { id: item.id },
+                })
+              }
+              style={{ width: 200, alignItems: "center", marginRight: 20 }}
             >
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>i</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+              <View style={styles.card}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{
+                      uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+                    }}
+                    defaultSource={require("../../assets/images/logo.png")}
+                    style={styles.image}
+                  />
+                </View>
+                <Text style={styles.title}>{item.user.fullName}</Text>
+                <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </ScrollView>
     </View>
   );
@@ -249,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 200,
     position: "relative",
-    // marginBottom: 20
+    marginTop: 20,
   },
   imageContainer: {
     width: 130,
