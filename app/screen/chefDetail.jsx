@@ -115,7 +115,10 @@ const ChefDetail = () => {
             style={styles.modalButton}
             onPress={() => {
               modalizeRef.current?.close();
-              router.push("/screen/selectFood");
+              router.push({
+                pathname: "/screen/selectFood",
+                params: { chefId: id },
+              });
             }}
           >
             <Text style={styles.modalButtonText}>Short-term Booking</Text>
@@ -126,7 +129,7 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               router.push({
                 pathname: "/screen/longTermBooking",
-                params: { chefId: id }, // Pass chefId here
+                params: { chefId: id },
               });
             }}
           >

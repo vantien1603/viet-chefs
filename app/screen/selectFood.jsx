@@ -8,22 +8,25 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AXIOS_API from "../../config/AXIOS_API";
 import Header from "../../components/header";
+import ProgressBar from "../../components/progressBar";
 
 const SelectFood = () => {
   const router = useRouter();
   const [selectedItems, setSelectedItems] = useState({});
   const [menu, setMenu] = useState([]);
+  const {chefId} = useLocalSearchParams();
 
   useEffect(() => {
     const fetchMenuFood = async () => {
       try {
         const response = await AXIOS_API.get("/menus");
         setMenu(response.data.content);
+        console.log("Menu data:", response.data.content);
       } catch (error) {
         console.log("Error fetching menu:", error);
       }
@@ -39,25 +42,27 @@ const SelectFood = () => {
   };
 
   const handleContinue = () => {
-    // Lấy danh sách món ăn đã chọn
-    const selectedDishes = menu
-      .filter((food) => selectedItems[food.id])
-      .map((food) => food.name);
+    // Lấy danh sách menu đã chọn, bao gồm cả menuItems
+    const selectedMenus = menu.filter((food) => selectedItems[food.id]);
 
-    if (selectedDishes.length === 0) {
+    if (selectedMenus.length === 0) {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Please select at least one dish.",
+        text2: "Please select at least one menu.",
       });
       return;
     }
 
-    // Truyền danh sách món ăn đã chọn qua query params
+    // Truyền danh sách menu đã chọn qua query params
     router.push({
       pathname: "/screen/booking",
-      params: { selectedDishes: JSON.stringify(selectedDishes) },
+      params: {
+        selectedMenus: JSON.stringify(selectedMenus), // Lưu toàn bộ thông tin menu
+        chefId
+      },
     });
+    console.log("Selected menus:", selectedMenus);
   };
 
   // Chia danh sách menu thành nhóm 2 item mỗi hàng
@@ -68,8 +73,8 @@ const SelectFood = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Select Food" />
-
+      <Header title="Select Menu" />
+      <ProgressBar title="Chọn menu" currentStep={2} totalSteps={4} />
       <FlatList
         data={groupedMenu}
         keyExtractor={(item, index) => index.toString()}
@@ -106,7 +111,6 @@ const SelectFood = () => {
 
                   <View style={styles.imageContainer}>
                     <Image
-                      // source={{ uri: food.imageUrl }}
                       source={require("../../assets/images/1.jpg")}
                       style={styles.image}
                     />
@@ -134,13 +138,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FDFBF6",
-  },
-  menuTitle: {
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 10,
-    color: "#4EA0B7",
   },
   row: {
     flexDirection: "row",
