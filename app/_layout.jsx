@@ -36,12 +36,12 @@ export default function RootLayout() {
         }}
         contentContainerStyle={{ paddingHorizontal: 15 }}
         text1Style={{
-          fontSize: 20,
+          fontSize: 15,
           fontWeight: "bold",
           color: "#2E7D32",
         }}
         text2Style={{
-          fontSize: 16,
+          fontSize: 13,
           color: "#388E3C",
         }}
       />
@@ -58,12 +58,12 @@ export default function RootLayout() {
         }}
         contentContainerStyle={{ paddingHorizontal: 15 }}
         text1Style={{
-          fontSize: 20,
+          fontSize: 15,
           fontWeight: "bold",
           color: "#C62828",
         }}
         text2Style={{
-          fontSize: 16,
+          fontSize: 13,
           color: "#D32F2F",
         }}
       />
@@ -303,6 +303,36 @@ export default function RootLayout() {
         />
         <Stack.Screen 
           name="screen/changePassword"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="screen/menuDetail"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="screen/dishDetails"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/dishNote"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/longTermDetails"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="screen/deposit"
           options={{
             headerShown: false,
           }}

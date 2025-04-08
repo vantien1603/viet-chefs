@@ -1,8 +1,8 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // For storing/retrieving token
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const config = {
-    baseURL: "http://192.168.7.170:8080/api/v1", // Crema
+    baseURL: "http://192.168.1.47:8080/api/v1",
     headers: {
         "Content-Type": "application/json",
     }
@@ -10,13 +10,18 @@ const config = {
 
 const AXIOS_API = axios.create(config);
 
-// Add a request interceptor to include the token
+// Add a request interceptor to include the token and handle FormData
 AXIOS_API.interceptors.request.use(
     async (config) => {
         const token = await AsyncStorage.getItem('@token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        
+        if (config.data instanceof FormData) {
+            config.headers["Content-Type"] = "multipart/form-data";
+        }
+        
         return config;
     },
     (error) => {

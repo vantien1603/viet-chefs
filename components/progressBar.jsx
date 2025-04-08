@@ -13,61 +13,69 @@ const ProgressBar = ({ title, currentStep, totalSteps }) => {
 
   return (
     <View style={styles.container}>
-      {steps.map((step, index) => (
-        <View key={step.step} style={styles.stepContainer}>
-          {/* Vòng tròn bước */}
-          <View
-            style={[
-              styles.circle,
-              step.step <= currentStep
-                ? styles.circleActive
-                : styles.circleInactive,
-            ]}
-          >
-            <Text
+      {/* Row for circles and lines */}
+      <View style={styles.circleRow}>
+        {steps.map((step, index) => (
+          <View key={step.step} style={styles.stepContainer}>
+            {/* Vòng tròn bước */}
+            <View
               style={[
-                styles.circleText,
+                styles.circle,
                 step.step <= currentStep
-                  ? styles.circleTextActive
-                  : styles.circleTextInactive,
+                  ? styles.circleActive
+                  : styles.circleInactive,
               ]}
             >
-              {step.step}
-            </Text>
+              <Text
+                style={[
+                  styles.circleText,
+                  step.step <= currentStep
+                    ? styles.circleTextActive
+                    : styles.circleTextInactive,
+                ]}
+              >
+                {step.step}
+              </Text>
+            </View>
+            {/* Đường nối giữa các bước */}
+            {index < steps.length - 1 && (
+              <View
+                style={[
+                  styles.line,
+                  step.step < currentStep
+                    ? styles.lineActive
+                    : styles.lineInactive,
+                ]}
+              />
+            )}
           </View>
-          {/* Nhãn bước */}
+        ))}
+      </View>
+
+      {/* Row for labels */}
+      <View style={styles.labelRow}>
+        {steps.map((step) => (
           <Text
+            key={step.step}
             style={[
               styles.label,
               step.step <= currentStep
                 ? styles.labelActive
                 : styles.labelInactive,
             ]}
+            numberOfLines={2} // Allow wrapping to 2 lines
+            ellipsizeMode="tail" // Truncate with ellipsis if too long
           >
             {step.label}
           </Text>
-          {/* Đường nối giữa các bước */}
-          {index < steps.length - 1 && (
-            <View
-              style={[
-                styles.line,
-                step.step < currentStep
-                  ? styles.lineActive
-                  : styles.lineInactive,
-              ]}
-            />
-          )}
-        </View>
-      ))}
+        ))}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingVertical: 10,
     paddingHorizontal: 20,
     backgroundColor: "#fff",
@@ -78,6 +86,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  circleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   stepContainer: {
     flex: 1,
@@ -91,7 +104,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 5,
+    zIndex: 1, // Ensure circles are above the lines
   },
   circleActive: {
     backgroundColor: "#4CAF50",
@@ -109,7 +122,13 @@ const styles = StyleSheet.create({
   circleTextInactive: {
     color: "#888",
   },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 5, // Space between circles and labels
+  },
   label: {
+    flex: 1, // Ensure labels take equal space
     fontSize: 12,
     textAlign: "center",
   },
@@ -122,11 +141,12 @@ const styles = StyleSheet.create({
   },
   line: {
     position: "absolute",
-    top: 15,
-    left: "50%",
-    width: "100%",
+    top: 14, // Center the line vertically with the circle
+    left: "50%", // Start from the right edge of the circle
+    width: "100%", // Span to the next circle
     height: 2,
-  },
+    zIndex: 0, // Ensure the line is below the circles
+  }, 
   lineActive: {
     backgroundColor: "#4CAF50",
   },

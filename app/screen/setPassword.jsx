@@ -34,7 +34,7 @@ const SetPassword = () => {
             fullName,
             password: password,
             dob: "1999-01-01",
-            address: "Ho Chi Minh City",
+            //address: "Ho Chi Minh City",
             gender: "Male",
             rePassword: rePassword,
         };

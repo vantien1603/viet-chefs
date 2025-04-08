@@ -14,7 +14,7 @@ import Header from "../../components/header";
 import { Ionicons } from "@expo/vector-icons";
 import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ConfirmBookingScreen = () => {
   const [loading, setLoading] = useState(false);
@@ -22,16 +22,55 @@ const ConfirmBookingScreen = () => {
 
   // Parse bookingData and other params
   const bookingData = JSON.parse(params.bookingData || "{}");
-  const selectedMenus = JSON.parse(params.selectedMenus || "[]");
+  const selectedMenu = JSON.parse(params.selectedMenu || "null");
+  const selectedDishes = JSON.parse(params.selectedDishes || "[]");
   const sessionDate = params.sessionDate || "N/A";
   const startTime = params.startTime || "N/A";
-  const endTime = params.endTime || "N/A";
   const chefId = parseInt(params.chefId);
   const location = params.address || "N/A";
   const requestDetails = params.requestDetails || "N/A";
   const dishNotes = JSON.parse(params.dishNotes || "{}");
+  const numPeople = parseInt(params.numPeople) || 1;
+  const menuId = params.menuId || null; // Lấy menuId từ params
 
-  // Hàm gọi API để xác nhận booking
+  // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
+  const menuDishes = selectedMenu?.menuItems?.map((item) => ({
+    id: item.dishId || item.id,
+    name: item.dishName || item.name || "Unnamed Dish",
+  })) || [];
+
+  const extraDishes = selectedDishes.map((dish) => ({
+    id: dish.id,
+    name: dish.name || "Unnamed Dish",
+  }));
+
+  // Combine all dishes for the total count
+  const allDishes = [...menuDishes, ...extraDishes];
+  const numberOfDishes = allDishes.length;
+
+  // Format the dish list: "Menu Name: Dish 1, Dish 2, ..." + extra dishes
+  const menuDishList = menuDishes.length > 0
+    ? `${selectedMenu?.name || "Menu"}: ${menuDishes
+        .map((dish) => {
+          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
+          return `${dish.name}${note}`;
+        })
+        .join(", ")}`
+    : "";
+
+  const extraDishList = extraDishes.length > 0
+    ? `${extraDishes
+        .map((dish) => {
+          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
+          return `${dish.name}${note}`;
+        })
+        .join(", ")}`
+    : "";
+
+  const dishList = [menuDishList, extraDishList].filter(Boolean).join(" | ") || "N/A";
+
+  const numberOfMenuDishes = menuDishes.length;
+
   const handleConfirmBooking = async () => {
     try {
       const customerId = await AsyncStorage.getItem("@userId");
@@ -41,20 +80,17 @@ const ConfirmBookingScreen = () => {
         );
       }
 
-      const selectedDishIds = selectedMenus.flatMap((menu) =>
-        menu.menuItems.map((item) => item.dishId || item.id)
-      );
+      const selectedDishIds = allDishes.map((dish) => dish.id);
 
       const payload = {
         customerId: parseInt(customerId),
         chefId: parseInt(chefId),
         requestDetails: requestDetails,
-        guestCount: 1,
+        guestCount: numPeople,
         bookingDetails: [
           {
             sessionDate: sessionDate,
             startTime: `${startTime}:00`,
-            endTime: `${endTime}:00`,
             location: location,
             totalPrice: bookingData.totalPrice || 0,
             chefCookingFee: bookingData.chefCookingFee || 0,
@@ -65,8 +101,9 @@ const ConfirmBookingScreen = () => {
             timeBeginTravel: bookingData.timeBeginTravel || null,
             platformFee: bookingData.platformFee || 0,
             totalChefFeePrice: bookingData.totalChefFeePrice || 0,
-            isServing: bookingData.chefServingFee > 0,
+            totalCookTime: (bookingData.cookTimeMinutes || 0)/60,
             isUpdated: false,
+            menuId: menuId,
             dishes: selectedDishIds.map((dishId) => ({
               dishId: dishId,
               notes: dishNotes[dishId] || null,
@@ -118,7 +155,7 @@ const ConfirmBookingScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
+          <Text style={{ fontSize: 18, fontWeight: "500", marginBottom: 10 }}>
             Location
           </Text>
           <View
@@ -147,69 +184,58 @@ const ConfirmBookingScreen = () => {
               marginBottom: 20,
             }}
           >
+            {/* Subsection: Thời Gian Làm Việc */}
+            <Text style={styles.subSectionTitle}>Thời Gian Làm Việc</Text>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>Date</Text>
               <Text style={styles.details}>{sessionDate}</Text>
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>Time</Text>
-              <Text style={styles.details}>{`${startTime} - ${endTime}`}</Text>
+              <Text style={styles.details}>{`${startTime}`}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time begin travel</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time Begin Travel</Text>
               <Text style={styles.details}>
                 {bookingData.timeBeginTravel || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time begin cook</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time Begin Cook</Text>
               <Text style={styles.details}>
                 {bookingData.timeBeginCook || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Cook time</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Cook Time</Text>
               <Text style={styles.details}>
                 {bookingData.cookTimeMinutes
                   ? `${bookingData.cookTimeMinutes} minutes`
                   : "N/A"}
               </Text>
             </View>
+
+            {/* Subsection: Chi Tiết Công Việc */}
+            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+              Chi Tiết Công Việc
+            </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Chef cooking fee</Text>
-              <Text style={styles.details}>
-                {bookingData.chefCookingFee?.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }) || "$0"}
-              </Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Số Người Ăn</Text>
+              <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Price of dishes</Text>
-              <Text style={styles.details}>
-                {bookingData.priceOfDishes?.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }) || "$0"}
-              </Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Tổng Số Món Ăn</Text>
+              <Text style={styles.details}>{numberOfDishes}</Text>
             </View>
+            {selectedMenu && (
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>Số Món Trong Menu</Text>
+                <Text style={styles.details}>{numberOfMenuDishes}</Text>
+              </View>
+            )}
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Arrival fee</Text>
-              <Text style={styles.details}>
-                {bookingData.arrivalFee?.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }) || "$0"}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Chef serving fee</Text>
-              <Text style={styles.details}>
-                {bookingData.chefServingFee?.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }) || "$0"}
-              </Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Danh Sách Món Ăn</Text>
+              <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text> 
             </View>
           </View>
         </View>
@@ -317,5 +343,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 5,
+  },
+  subSectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
   },
 });
