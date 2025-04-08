@@ -33,8 +33,9 @@ const ChefDetail = () => {
     const fetchChefById = async () => {
       if (!id) return;
       try {
-        const response = await AXIOS_API.get(`/chef/${id}`);
+        const response = await AXIOS_API.get(`/chefs/${id}`);
         setChefs(response.data);
+        // console.log("e", response.data);
       } catch (error) {
         console.log("Error fetching chef:", error);
       }
@@ -46,14 +47,18 @@ const ChefDetail = () => {
     modalizeRef.current?.open();
   };
 
+  const handleBack = () => {
+    router.push("/(tabs)/home");
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={"Chef's Information"} />
+      <Header title={"Chef's Information"} onLeftPress={handleBack}/>
       <ProgressBar title="Chọn đầu bếp" currentStep={1} totalSteps={4} />
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <View style={styles.profileContainer}>
           <View style={styles.header}>
-            <Image source={{ uri: chefs?.image }} style={styles.avatar} />
+            <Image source={{ uri: chefs?.user?.avatarUrl }} style={styles.avatar} />
             <View style={styles.textContainer}>
               <Text style={styles.name}>{chefs?.user?.fullName}</Text>
               <Text style={styles.specialty}>{chefs?.bio}</Text>

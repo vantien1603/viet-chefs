@@ -21,6 +21,7 @@ const ReviewBookingScreen = () => {
   const chefId = parseInt(params.chefId);
   const selectedPackage = JSON.parse(params.selectedPackage);
   const guestCount = parseInt(params.numPeople);
+  const selectedDates = JSON.parse(params.selectedDates || "{}");
 
   const calculateSubtotal = () => {
     return (
@@ -45,27 +46,30 @@ const ReviewBookingScreen = () => {
         requestDetails: bookingData.requestDetails || "",
         guestCount: guestCount || 0,
         packageId: selectedPackage.id,
-        bookingDetails: bookingData.bookingDetails?.map((detail) => ({
-          sessionDate: detail.sessionDate,
-          startTime: detail.startTime,
-          endTime: detail.endTime,
-          location: detail.location,
-          totalPrice: detail.totalPrice,
-          chefCookingFee: detail.chefCookingFee,
-          priceOfDishes: detail.priceOfDishes,
-          arrivalFee: detail.arrivalFee,
-          chefServingFee: detail.chefServingFee,
-          timeBeginCook: detail.timeBeginCook,
-          timeBeginTravel: detail.timeBeginTravel,
-          platformFee: detail.platformFee,
-          totalChefFeePrice: detail.totalChefFeePrice,
-          isServing: detail.isServing || false,
-          isUpdated: detail.isUpdated || false,
-          dishes: detail.dishes?.map((dish) => ({
-            dishId: dish.dishId,
-            notes: dish.notes || "",
-          })),
-        })),
+        bookingDetails: bookingData.bookingDetails?.map((detail, index) => {
+          const dateKey = detail.sessionDate;
+          return {
+            sessionDate: detail.sessionDate,
+            startTime: detail.startTime,
+            location: detail.location,
+            totalPrice: detail.totalPrice || 0,
+            chefCookingFee: detail.chefCookingFee || 0,
+            priceOfDishes: detail.priceOfDishes || 0,
+            arrivalFee: detail.arrivalFee || 0,
+            timeBeginCook: detail.timeBeginCook || null,
+            timeBeginTravel: detail.timeBeginTravel || null,
+            platformFee: detail.platformFee || 0,
+            totalChefFeePrice: detail.totalChefFeePrice || 0,
+            totalCookTime: (detail.totalCookTime || 0) / 60,
+            discountAmout: detail.discountAmout || 0,
+            isUpdated: detail.isUpdated || false,
+            menuId: selectedDates[dateKey]?.menuId || null,
+            dishes: detail.dishes?.map((dish) => ({
+              dishId: dish.dishId,
+              notes: dish.notes || "",
+            })),
+          };
+        }),
       };
 
       console.log(
@@ -107,7 +111,7 @@ const ReviewBookingScreen = () => {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Thời gian:</Text>
                 <Text style={styles.detailValue}>
-                  {detail.startTime.slice(0, 5)} - {detail.endTime.slice(0, 5)}
+                  {detail.startTime.slice(0, 5)}
                 </Text>
               </View>
               <View style={styles.detailRow}>
@@ -117,41 +121,44 @@ const ReviewBookingScreen = () => {
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí đến nơi:</Text>
+                <Text style={styles.detailLabel}>Phí di chuyển:</Text>
                 <Text style={styles.detailValue}>
-                  ${detail.arrivalFee.toFixed(2)}
+                  ${(detail.arrivalFee || 0).toFixed(2)}
                 </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Phí nấu ăn:</Text>
                 <Text style={styles.detailValue}>
-                  ${detail.chefCookingFee.toFixed(2)}
+                  ${(detail.chefCookingFee || 0).toFixed(2)}
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí phục vụ:</Text>
+                <Text style={styles.detailLabel}>Phí món ăn:</Text>
                 <Text style={styles.detailValue}>
-                  ${detail.chefServingFee.toFixed(2)}
+                  ${(detail.priceOfDishes || 0).toFixed(2)}
                 </Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí món ăn ngoài menu:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.priceOfDishes.toFixed(2)}
-                </Text>
-              </View>
+
               {/* <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Phí nền tảng:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.platformFee.toFixed(2)}
-                </Text>
+                <Text style={styles.detailValue}>${(detail.platformFee || 0).toFixed(2)}</Text>
               </View> */}
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Discount:</Text>
+                <Text style={styles.detailValue}>
+                  -${(detail.discountAmout || 0).toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Total cook time:</Text>
+                <Text style={styles.detailValue}>{detail.totalCookTime}</Text>
+              </View>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, styles.totalLabel]}>
                   Tổng cộng ngày:
                 </Text>
                 <Text style={[styles.detailValue, styles.totalValue]}>
-                  ${detail.totalPrice.toFixed(2)}
+                  ${(detail.totalPrice || 0).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -169,7 +176,7 @@ const ReviewBookingScreen = () => {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Giảm giá:</Text>
             <Text style={[styles.summaryValue, styles.discount]}>
-              -${bookingData.discountAmount?.toFixed(2) || "0.00"}
+              -${(bookingData.discountAmount || 0).toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
@@ -177,7 +184,7 @@ const ReviewBookingScreen = () => {
               Tổng cộng:
             </Text>
             <Text style={[styles.summaryValue, styles.totalValue]}>
-              ${bookingData.totalPrice?.toFixed(2) || "0.00"}
+              ${(bookingData.totalPrice || 0).toFixed(2)}
             </Text>
           </View>
         </View>

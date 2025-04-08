@@ -115,6 +115,7 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("@fullName", fullName);
         await AsyncStorage.setItem("@expiresAt", expiresAt.toString());
         await AsyncStorage.setItem("@roleName", roleName);
+        console.log("Token", token);
 
         setError(""); // Clear error on success
         if (roleName === "ROLE_CUSTOMER") {

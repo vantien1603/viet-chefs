@@ -11,7 +11,7 @@ import React, { useEffect, useState } from "react";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AXIOS_API from "../../config/AXIOS_API";
@@ -21,6 +21,8 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [chef, setChef] = useState([]);
   const [dishes, setDishes] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [fullName, setFullName] = useState("User");
 
   const handleSearch = () => {
     const searchQuery = String(query || "");
@@ -31,32 +33,49 @@ export default function Home() {
     }
   };
 
+  const loadData = async () => {
+    try {
+      const savedAddress = await AsyncStorage.getItem("selectedAddress");
+      if (savedAddress) {
+        setSelectedAddress(JSON.parse(savedAddress));
+      }
+      const name = await AsyncStorage.getItem("@fullName");
+      setFullName(name || "User");
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchChef = async () => {
       try {
-        const response = await AXIOS_API.get("/chef");
-        console.log("Chefs:", response.data.content);
+        const response = await AXIOS_API.get("/chefs");
         setChef(response.data.content.slice(0, 3));
       } catch (error) {
-        console.log("Error:", error);
+        console.log("Error fetching chefs:", error);
       }
     };
 
     const fetchDishes = async () => {
       try {
         const response = await AXIOS_API.get("/dishes");
-        console.log("Dishes:", response.data.content);
         setDishes(response.data.content.slice(0, 3));
       } catch (error) {
-        console.log("Error:", error);
+        console.log("Error fetching dishes:", error);
       }
     };
 
     fetchChef();
     fetchDishes();
+    loadData();
   }, []);
 
-  const fullName = AsyncStorage.getItem("@fullName");
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
+
   return (
     <View style={commonStyles.containerContent}>
       <View
@@ -67,23 +86,26 @@ export default function Home() {
           padding: 10,
           borderBottomWidth: 1,
           borderBottomColor: "#ddd",
-          // marginBottom: 10,
-          // marginTop: 50,
         }}
       >
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
-          <View style={{ flexDirection: "row" }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image
               source={require("../../assets/images/logo.png")}
               style={{ width: 50, height: 50 }}
               resizeMode="cover"
             />
-            <View>
+            <View style={{ marginLeft: 10, maxWidth: 200 }}>
               <Text style={{ fontSize: 18, color: "#383838" }}>
                 Hello, {fullName}
               </Text>
-              <Text style={{ fontSize: 12, color: "#968B7B" }}>
-                Jarkata, Indonesia
+              <Text
+                style={{ fontSize: 12, color: "#968B7B" }}
+                numberOfLines={2}
+              >
+                {selectedAddress
+                  ? selectedAddress.address
+                  : "Jarkata, Indonesia"}
               </Text>
             </View>
           </View>
@@ -93,9 +115,6 @@ export default function Home() {
           <TouchableOpacity onPress={() => router.push("/screen/calendar")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
-          {/* <TouchableOpacity>
-            <Ionicons name="cart" size={30} color="#4EA0B7" />
-          </TouchableOpacity> */}
         </View>
       </View>
       <ScrollView
@@ -137,6 +156,7 @@ export default function Home() {
           <Text style={{ fontSize: 20 }}>Popular dishes</Text>
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -149,14 +169,21 @@ export default function Home() {
             >
               <View style={styles.card}>
                 <View style={styles.imageContainer}>
-                  <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="contain" />
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.image}
+                    resizeMode="contain"
+                  />
                 </View>
                 <Text style={styles.title}>{item.name}</Text>
-                <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
+                <Text style={{ color: "#F8BF40" }}>
+                  {item.description}
+                </Text>
               </View>
             </View>
           ))}
         </ScrollView>
+
         <View
           style={{
             flexDirection: "row",
@@ -167,6 +194,7 @@ export default function Home() {
           <Text style={{ fontSize: 20 }}>Recommend chef</Text>
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -187,14 +215,16 @@ export default function Home() {
                 <View style={styles.imageContainer}>
                   <Image
                     source={{
-                      uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+                      uri: item.user.avatarUrl,
                     }}
                     defaultSource={require("../../assets/images/logo.png")}
                     style={styles.image}
                   />
                 </View>
                 <Text style={styles.title}>{item.user.fullName}</Text>
-                <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
+                <Text style={{ color: "#F8BF40" }}>
+                  {item.specialzation}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -203,12 +233,12 @@ export default function Home() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: "#FFF8EF",
     borderColor: "#ddd",
     borderWidth: 2,
-    // width: '100%',
     height: 60,
     borderRadius: 100,
     padding: 20,
@@ -254,17 +284,5 @@ const styles = StyleSheet.create({
     marginTop: 70,
     textAlign: "center",
     marginBottom: 5,
-  },
-  button: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: "#F8BF40",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonText: {
-    fontSize: 18,
-    color: "#FFF",
   },
 });

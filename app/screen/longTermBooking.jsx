@@ -13,6 +13,7 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import AXIOS_API from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LongTermBookingScreen = () => {
   const router = useRouter();
@@ -23,6 +24,22 @@ const LongTermBookingScreen = () => {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadSelectedAddress = async () => {
+      try {
+        const savedAddress = await AsyncStorage.getItem("selectedAddress");
+        if (savedAddress) {
+          const parsedAddress = JSON.parse(savedAddress);
+          setAddress(parsedAddress.address); // Hiển thị địa chỉ đã chọn
+          console.log("Loaded selected address:", parsedAddress.address);
+        }
+      } catch (error) {
+        console.error("Error loading selected address:", error);
+      }
+    };
+    loadSelectedAddress();
+  }, []);
 
   const fetchPackagesByChefId = async () => {
     if (!chefId) {
@@ -101,9 +118,16 @@ const LongTermBookingScreen = () => {
     );
   }
 
+  const handleBack = () => {
+    router.push({
+      pathname: "/screen/chefDetail",
+      params: { id: chefId },
+    })
+  }
+
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"Long-term Booking"} />
+      <Header title={"Long-term Booking"} onLeftPress={handleBack}/>
       <ProgressBar title="Chọn gói" currentStep={2} totalSteps={4} />
       <ScrollView style={{ padding: 20, backgroundColor: "#EBE5DD" }}>
         <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
