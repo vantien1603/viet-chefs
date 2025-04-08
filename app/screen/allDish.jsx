@@ -9,19 +9,24 @@ import {
   ScrollView,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import useAxios from "../../config/AXIOS_API";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
+  const [filteredDishes, setFilteredDishes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const axiosInstance = useAxios();
 
   useEffect(() => {
     const fetchDishes = async () => {
       try {
-        const response = await AXIOS_API.get("/dishes");
+        const response = await axiosInstance.get("/dishes");
         setDishes(response.data.content);
+        setFilteredDishes(response.data.content); // Ban đầu hiển thị tất cả món
       } catch (error) {
         console.log("Error dishes:", error);
       }
@@ -29,48 +34,134 @@ const AllDishScreen = () => {
     fetchDishes();
   }, []);
 
+  // Hàm xử lý tìm kiếm
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === "") {
+      setFilteredDishes(dishes); // Nếu không có từ khóa, hiển thị tất cả món
+    } else {
+      const filtered = dishes.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredDishes(filtered);
+    }
+  };
+
+  // Hàm xử lý khi nhấn icon search
+  const toggleSearch = () => {
+    setIsSearching(!isSearching);
+    if (isSearching) {
+      setSearchQuery(""); // Xóa từ khóa khi đóng tìm kiếm
+      setFilteredDishes(dishes); // Hiển thị lại tất cả món
+    }
+  };
+
+  // Chia danh sách món ăn thành nhóm 2 món mỗi hàng
+  const groupedDishes = [];
+  for (let i = 0; i < filteredDishes.length; i += 2) {
+    groupedDishes.push(filteredDishes.slice(i, i + 2));
+  }
+
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="All dishes" rightIcon={"search"} />
+    <SafeAreaView style={styles.container}>
+      <Header
+        title={isSearching ? "" : "All dishes"}
+        rightIcon={"search"}
+        onRightPress={toggleSearch}
+      />
+
+      {isSearching && (
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search dishes..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+            autoFocus={true}
+          />
+          <TouchableOpacity onPress={toggleSearch} style={styles.closeSearch}>
+            <MaterialIcons name="close" size={24} color="#4EA0B7" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <FlatList
-        data={dishes}
-        keyExtractor={(item) => item.id.toString()}
+        data={groupedDishes}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <View style={styles.cardContainer}>
-            <View style={styles.card}>
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: item.imageUrl }} style={styles.image} />
+          <View style={styles.row}>
+            {item.map((dish) => (
+              <View key={dish.id} style={styles.cardContainer}>
+                <View style={styles.card}>
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: dish.imageUrl }}
+                      style={styles.image}
+                      defaultSource={require("../../assets/images/1.jpg")}
+                    />
+                  </View>
+                  <Text style={styles.title}>{dish.name}</Text>
+                  <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
+                  <Text style={{ color: "#FFF" }}>
+                    ~ {dish.cookTime} minutes
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.title}>{item.name}</Text>
-              <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
-              <Text>~ {item.cookTime} minutes</Text>
-            </View>
+            ))}
           </View>
         )}
       />
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
-    cardContainer: {
-        width: '48%',
-        marginBottom: 16,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: "#FDFBF6",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginVertical: 10,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  closeSearch: {
+    marginLeft: 10,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  cardContainer: {
+    width: "48%", // 2 món trên 1 hàng
+    alignItems: "center",
+  },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
     padding: 16,
     paddingTop: 50,
     alignItems: "center",
-    width: 200,
+    width: "100%", // Đảm bảo card chiếm toàn bộ chiều rộng của cardContainer
     position: "relative",
-    // marginBottom: 20
   },
   imageContainer: {
     width: 130,
     height: 130,
-    borderRadius: 70,
+    borderRadius: 65,
     backgroundColor: "#FFF",
     overflow: "hidden",
     marginBottom: 8,
@@ -91,37 +182,6 @@ const styles = StyleSheet.create({
     marginTop: 70,
     textAlign: "center",
     marginBottom: 5,
-  },
-  button: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: "#F8BF40",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonText: {
-    fontSize: 18,
-    color: "#FFF",
-  },
-  rowNgayGui: {
-    marginTop: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 33,
-  },
-  dayContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginRight: 10,
-    alignItems: "center",
-    backgroundColor: "#FFF8EF",
-    borderRadius: 20,
-  },
-  selectedDay: {
-    backgroundColor: "#4EA0B7",
-    color: "white",
   },
 });
 

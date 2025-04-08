@@ -26,8 +26,7 @@ const menuItems = [
   { id: "2", icon: "briefcase", title: "Create chef account" },
   // { id: '3', icon: 'flag', title: 'Country' },
   // { id: '4', icon: 'language', title: 'Language' },
-  { id: "3", icon: "lock-closed", title: "Change password" },
-  { id: "4", icon: "settings", title: "Setting" },
+  { id: "3", icon: "settings", title: "Setting" },
 ];
 
 const Profile = () => {
@@ -60,32 +59,39 @@ const Profile = () => {
         router.push("/screen/createChef");
         break;
       }
-      case '2': {
+      case "3": {
+        router.push("/screen/setting");
         break;
       }
-      case '4': {
-        router.push('/screen/setting');
-        break;
-      }
+      // case '4': {
+      //   router.push('/screen/setting');
+      //   break;
+      // }
       default: {
         router.push("/screen/profileDetail");
         break;
       }
     }
   };
+
   return (
     <ScrollView style={commonStyles.containerContent}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 , padding:10, borderBottomColor:"#ddd",borderBottomWidth:1}}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 16,
+          padding: 10,
+        }}
+      >
         <Image
           source={{
             uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
           }}
-          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 20 }}
+          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
         />
         <View>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-            {fullName}
-          </Text>
+          <Text style={{ fontSize: 20, fontWeight: "bold" }}>{fullName}</Text>
           <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
             <Text
               style={{ color: "#A9411D", fontWeight: "bold", fontSize: 16 }}
@@ -95,9 +101,6 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
       </View>
-      {/* <View style={{backgroundColor:"#fff", paddingVertical:5, marginHorizontal:-20}}> */}
-
-      {/* </View> */}
       {menuItems.map((item) => (
         <TouchableOpacity
           key={item.id}

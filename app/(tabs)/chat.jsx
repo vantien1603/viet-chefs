@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, Image, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { collection, query, onSnapshot, orderBy, doc, getDoc } from "firebase/firestore";
 import { database } from "../../config/firebase";
@@ -7,20 +7,22 @@ import { commonStyles } from "../../style";
 import { AuthContext } from "../../config/AuthContext";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Header from "../../components/header";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 const Chat = () => {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([]);
+  const navigation = useNavigation();
 
   async function getUserById(userId) {
     if (typeof userId !== 'string') {
-      console.error('Invalid userId');
+      console.error('Invalid userId11');
       return null;
     }
     const userDocRef = doc(database, 'users', userId);
     const userDoc = await getDoc(userDocRef);
-
     if (userDoc.exists()) {
       const userData = userDoc.data();
       console.log('User Data:', userData);
@@ -32,6 +34,7 @@ const Chat = () => {
   }
   useEffect(() => {
     const fetchMessages = () => {
+      setLoading(true);
       const collectionRef = collection(database, 'chats');
       const q = query(collectionRef, orderBy('createdAt', 'desc'));
 
@@ -65,9 +68,8 @@ const Chat = () => {
         await Promise.all(userPromises);
 
         setMessages(Object.values(messagesData));
-        console.log("Messages Data:", messagesData);
+        // console.log("Messages Data:", messagesData);
       });
-
       return unsubscribe;
     };
 
@@ -76,6 +78,7 @@ const Chat = () => {
     if (user?.userId != null) {
       unsubscribe = fetchMessages();
     }
+    setLoading(false);
 
     return () => {
       if (unsubscribe) unsubscribe();
@@ -85,7 +88,7 @@ const Chat = () => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.messageItem}
-      onPress={() => navigation.navigate("screen/chat", {
+      onPress={() => navigation.navigate("screen/message", {
         contact: {
           id: item.id,
           name: item.name,
@@ -117,19 +120,16 @@ const Chat = () => {
           />
           <TextInput style={commonStyles.searchInput} placeholder="Search" />
         </View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <FlatList
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+          />
+        )}
 
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-        />
-
-        {/* <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate("screen/newMessage")}
-        >
-          <Ionicons name="add" size={25} color="white" />
-        </TouchableOpacity> */}
       </View>
     </SafeAreaView>
 
@@ -145,24 +145,27 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E0E0E0",
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 40,
     marginRight: 15,
   },
   messageContent: {
     flex: 1,
+    justifyContent:'center'
   },
   name: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom:5
   },
   message: {
-    fontSize: 14,
-    color: "#7F7F7F",
+    fontSize: 16,
+    // color: "#7F7F7F",
+    color: "#000",
   },
   time: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#7F7F7F",
     marginRight: 10,
   },

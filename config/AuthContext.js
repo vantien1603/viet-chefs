@@ -8,6 +8,7 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,8 +18,14 @@ export const AuthProvider = ({ children }) => {
         try {
           // const response = await axios.post('http://192.168.1.11:8080/no-auth/refresh', { refresh_token });
           // setUser({ token: response.data.accessToken });
+          // if (response.status === 200) {
+          //   const { access_token } = response.data;
+          //   const decoded = jwtDecode(access_token);
+          //   setUser({ token: access_token, ...decoded });
+          //   setIsGuest(false);  
+          // }
         } catch (error) {
-          console.log('Không thể refresh token:', error);
+          console.log('Can not refresh token:', error);
         }
       }
       setLoading(false);
@@ -32,7 +39,8 @@ export const AuthProvider = ({ children }) => {
         usernameOrEmail: username,
         password: password,
       };
-      const response = await axios.post('http://192.168.100.10:8080/no-auth/login', loginPayload);
+      // const response = await axios.post('http://192.168.100.16:8080/no-auth/login', loginPayload);
+      const response = await axios.post('http://192.168.1.10:8080/no-auth/login', loginPayload);
       if (response.status === 200) {
         console.log("auth", response.data);
         const { access_token, refresh_token } = response.data;
@@ -41,6 +49,7 @@ export const AuthProvider = ({ children }) => {
         console.log("decode", decoded);
         console.log("userID", decoded.userId);
         setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
+        setIsGuest(false);
         if (decoded) {
           const userDocRef = doc(database, 'users', decoded.userId);
           await setDoc(userDocRef, {
@@ -67,6 +76,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await SecureStore.deleteItemAsync('refreshToken');
     setUser(null);
+    setIsGuest(true);
   };
 
   if (loading) {
@@ -74,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isGuest, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

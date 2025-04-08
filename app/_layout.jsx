@@ -4,10 +4,17 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import Toast, { BaseToast } from "react-native-toast-message";
 import { AuthProvider } from "../config/AuthContext";
+import { Alert, PermissionsAndroid } from "react-native";
+import { NetworkProvider } from "../hooks/networkProvider";
+import NetworkAlert from "../components/networkNoti";
+import { ModalProvider } from "../context/modalContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ModalNotiProvider } from "../context/commonNoti";
 
 // SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+
   const toastConfig = {
     success: (props) => (
       <BaseToast
@@ -56,142 +63,160 @@ export default function RootLayout() {
   };
 
   return (
-    <AuthProvider>
-      <Stack
-        screenOptions={{
-          headerTitleAlign: "center",
-          headerTitleStyle: {
-            fontFamily: "nunito-bold",
-            color: "#4EA0B7",
-            fontSize: 28,
-          },
-          headerStyle: {
-            backgroundColor: "#FDFBF6",
-          },
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="(tabs)"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/login"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/signup"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/verify"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/setPassword"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/forgot"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/forgotPassword"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/resetPassword"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/booking"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/confirmBooking"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/historyBooking"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/Cart/cart"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/searchResult"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/orderHistories"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/setting"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/editAddress"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/calendar"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/selectFood"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/chefDetail"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/allDish"
+    <GestureHandlerRootView>
+      <NetworkProvider>
+        <AuthProvider>
+          <NetworkAlert />
+          <ModalProvider>
+            <ModalNotiProvider>
+
+              <Stack
+                screenOptions={{
+                  headerTitleAlign: "center",
+                  headerTitleStyle: {
+                    fontFamily: "nunito-bold",
+                    color: "#4EA0B7",
+                    fontSize: 28,
+                  },
+                  headerStyle: {
+                    backgroundColor: "#FDFBF6",
+                  },
+                }}
+              >
+                <Stack.Screen
+                  name="index"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="(tabs)"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="(chef)"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/login"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/signup"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/verify"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/setPassword"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/forgot"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/forgotPassword"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/resetPassword"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/booking"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/confirmBooking"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/historyBooking"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/Cart/cart"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/searchResult"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/orderHistories"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/setting"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/editAddress"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/calendar"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/selectFood"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/chefDetail"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/allDish"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                {/* <Stack.Screen 
+          name="screen/Chefs/dashboard" 
           options={{
             headerShown: false,
           }}
@@ -207,34 +232,97 @@ export default function RootLayout() {
           options={{
             headerShown: false,
           }}
-        />
-        <Stack.Screen
-          name="screen/Chefs/foodDetail"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/Chefs/editFood"
-          options={{
-            headerShown: false,
-          }}
-        />
-        {/* <Stack.Screen
-          name="screen/calendar"
-          options={{
-            headerShown: false,
-          }}
         /> */}
-        <Stack.Screen
-          name="screen/chefRegister"
-          options={{
-            headerShown: false,
-          }}
-        />
-      </Stack>
-
-      <Toast config={toastConfig} />
-    </AuthProvider>
+                <Stack.Screen
+                  name="screen/Chefs/foodDetail"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/Chefs/editFood"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/createChef"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/wallet"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/profileDetail"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/editProfile"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/reviewFeedback"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/reviewsChef"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/longTermBooking"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/longTermSelect"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/reviewBooking"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/changePassword"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/message"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/chefSchedule"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </ModalNotiProvider>
+          </ModalProvider>
+          <Toast config={toastConfig} />
+        </AuthProvider>
+      </NetworkProvider>
+    </GestureHandlerRootView>
   );
 }

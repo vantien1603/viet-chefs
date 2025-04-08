@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -7,21 +7,26 @@ import { commonStyles } from "../../style";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams } from "expo-router";
 import AXIOS_API from "../../config/AXIOS_API";
+import { Modalize } from "react-native-modalize";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import ProgressBar from "../../components/progressBar";
+import useAxios from "../../config/AXIOS_API";
 
 const ChefDetail = () => {
   const [expanded, setExpanded] = useState(false);
   const [dishes, setDishes] = useState([]);
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams(); // This is the chefId
   const [chefs, setChefs] = useState(null);
+  const modalizeRef = useRef(null);
+  const axiosInstance = useAxios();
 
   useEffect(() => {
     const fetchDishes = async () => {
       try {
-        const response = await AXIOS_API.get("/dishes");
+        const response = await axiosInstance.get("/dishes");
         setDishes(response.data.content);
-        console.log(response.data.content);
       } catch (error) {
-        console.log("Error dishes:", error);
+        console.log("Error fetching dishes:", error);
       }
     };
     fetchDishes();
@@ -31,22 +36,24 @@ const ChefDetail = () => {
     const fetchChefById = async () => {
       if (!id) return;
       try {
-        const response = await AXIOS_API.get(`/chef/${id}`);
-        console.log("Chef detail:", response.data);
+        const response = await axiosInstance.get(`/chef/${id}`);
         setChefs(response.data);
       } catch (error) {
-        console.log("Error:", error);
+        console.log("Error fetching chef:", error);
       }
     };
     fetchChefById();
   }, [id]);
 
+  const onOpenModal = () => {
+    modalizeRef.current?.open();
+  };
+
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={'Chefs Information'} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
+      <Header title={"Chef's Information"} />
+      <ProgressBar title="Chọn đầu bếp" currentStep={1} totalSteps={4} />
+      <ScrollView contentContainerStyle={{ padding: 20 }}>
         <View style={styles.profileContainer}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
@@ -79,80 +86,62 @@ const ChefDetail = () => {
           </TouchableOpacity>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={onOpenModal}>
               <Text style={styles.buttonText}>Book now</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={() => router.push("/screen/reviewsChef")}>
               <Text style={styles.buttonText}>Reviews</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Featured dish</Text>
+          <Text style={styles.sectionTitle}>Featured Dishes</Text>
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-            <Text style={styles.viewAll}>All dishes</Text>
+            <Text style={styles.viewAll}>All Dishes</Text>
           </TouchableOpacity>
 
         </View>
 
         <View style={styles.dishContainer}>
-          {dishes.slice(0, 3).map((dishes, index) => (
+          {dishes.slice(0, 3).map((dish, index) => (
             <View key={index} style={styles.dishCard}>
-              <Image
-                source={{ uri: dishes.imageUrl }}
-                style={styles.dishImage}
-              />
-              <Text style={styles.dishName}>{dishes.name}</Text>
-              <Text style={styles.dishDescription}>{dishes.description}</Text>
+              <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
+              <Text style={styles.dishName}>{dish.name}</Text>
+              <Text style={styles.dishDescription}>{dish.description}</Text>
             </View>
           ))}
         </View>
       </ScrollView>
 
-      <View style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        // backgroundColor: "#A64B2A",
-        backgroundColor: "#EBE5DD",
-        padding: 20,
-        alignItems: "center",
-      }}>
-        <View style={{ flexDirection: 'row', gap: 20 }}>
+      {/* Modalize cho Book Now */}
+      <Modalize ref={modalizeRef} adjustToContentHeight>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Choose Booking Type</Text>
           <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: "#748C54",
-              padding: 15,
-              borderRadius: 10,
-              alignItems: "center",
+            style={styles.modalButton}
+            onPress={() => {
+              modalizeRef.current?.close();
+              router.push("/screen/selectFood");
             }}
           >
-
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Review
-            </Text>
+            <Text style={styles.modalButtonText}>Short-term Booking</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: "#A64B2A",
-              padding: 15,
-              borderRadius: 10,
-              alignItems: "center",
+            style={styles.modalButton}
+            onPress={() => {
+              modalizeRef.current?.close();
+              router.push({
+                pathname: "/screen/longTermBooking",
+                params: { chefId: id }, // Pass chefId here
+              });
             }}
           >
-
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Book now
-            </Text>
+            <Text style={styles.modalButtonText}>Long-term Booking</Text>
           </TouchableOpacity>
         </View>
-
-      </View>
-    </SafeAreaView>
+      </Modalize>
+    </GestureHandlerRootView>
   );
 };
 
@@ -268,6 +257,27 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
   },
-});
-
+  modalContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  modalButton: {
+    backgroundColor: "#b0532c",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    width: "90%",
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+}
+)
 export default ChefDetail;

@@ -6,16 +6,18 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
+import Feather from '@expo/vector-icons/Feather';
 
 
 export default function Home() {
@@ -24,6 +26,9 @@ export default function Home() {
   const [chef, setChef] = useState([]);
   const axiosInstance = useAxios();
   const [loading, setLoading] = useState(false);
+  const [dishes, setDishes] = useState([]);
+  const { user } = useContext(AuthContext);
+
   const handleSearch = () => {
     const searchQuery = String(query || "");
     if (searchQuery.trim() !== "") {
@@ -38,6 +43,7 @@ export default function Home() {
       setLoading(true);
       try {
         const response = await axiosInstance.get("/chef");
+        // console.log("Chefs:", response.data.content);
         setChef(response.data.content.slice(0, 3));
       } catch (error) {
         if (error.response) {
@@ -50,10 +56,29 @@ export default function Home() {
         setLoading(false);
       }
     };
+
+
+    const fetchDishes = async () => {
+      try {
+        const response = await axiosInstance.get("/dishes");
+        // console.log("Dishes:", response.data.content);
+        setDishes(response.data.content.slice(0, 3));
+      } catch (error) {
+        if (error.response) {
+          console.error(`Lỗi ${error.response.status}:`, error.response.data);
+        }
+        else {
+          console.error(error.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchChef();
+    fetchDishes();
   }, []);
 
-  const fullName = AsyncStorage.getItem("@fullName");
   return (
     <View style={commonStyles.containerContent}>
       <View
@@ -64,8 +89,6 @@ export default function Home() {
           padding: 10,
           borderBottomWidth: 1,
           borderBottomColor: "#ddd",
-          // marginBottom: 10,
-          // marginTop: 50,
         }}
       >
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
@@ -77,7 +100,7 @@ export default function Home() {
             />
             <View>
               <Text style={{ fontSize: 18, color: "#383838" }}>
-                Hello, {fullName}
+                Hello, {user?.fullName}
               </Text>
               <Text style={{ fontSize: 12, color: "#968B7B" }}>
                 Jarkata, Indonesia
@@ -87,7 +110,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => router.push("/screen/booking")}>
+          <TouchableOpacity onPress={() => router.push("/screen/chefSchedule")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
           {/* <TouchableOpacity>
@@ -136,21 +159,50 @@ export default function Home() {
           <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
         <View>
-          <View style={{ width: 200, alignItems: "center", marginBottom: 20 }}>
-            <TouchableOpacity onPress={() => router.push('/screen/booking')}>
-              <View style={styles.card}>
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={require("../../assets/images/logo.png")}
-                    style={styles.image}
-                  />
-                </View>
-                <Text style={styles.title}>Yakisoba Noodles</Text>
-                <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
-              </View>
-            </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : (
 
-          </View>
+            <FlatList
+              style={{ paddingTop: 20 }}
+              data={dishes}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginBottom: 20,
+                    marginRight: 10,
+                  }}
+                >
+                  <View key={item.id} style={styles.card}>
+                    <View style={styles.imageContainer}>
+                      <Image
+                        source={{ uri: item.imageUrl }}
+                        style={styles.image}
+                      />
+                    </View>
+
+                    <Text style={styles.title}>{item.name}</Text>
+                    <Text
+                      style={{ color: "#fff", textAlign: 'center' }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+
+                    >
+                      {item.description}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+
+
+          )}
+
         </View>
         <View
           style={{
@@ -166,101 +218,113 @@ export default function Home() {
           {loading ? (
             <ActivityIndicator size="large" color="#0000ff" />
           ) : (
-            chef.map((item, index) => (
-              <View
-                style={{
-                  width: 200,
-                  alignItems: "center",
-                  backgroundColor: "#A9411D",
-                  borderRadius: 16,
-                  paddingBottom: 10,
-                }}
-                key={item.id}
-              >
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
-                >
-                  <View style={styles.card}>
-                    <View style={styles.imageContainer}>
-                      <Image
-                        source={{
-                          uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                        }}
-                        style={styles.image}
-                      />
-                    </View>
-                    <Text style={styles.title}>{item.user.fullName}</Text>
-                    <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
-                  </View>
-                </TouchableOpacity>
-
+            <FlatList
+              style={{ paddingTop: 20 }}
+              data={chef}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
                 <View
                   style={{
-                    backgroundColor: "#fff",
-                    marginTop: -5,
-                    borderRadius: 30,
-                    padding: 5,
-                    position: "absolute",
-                    bottom: -20,
+                    width: 200,
+                    alignItems: "center",
+                    backgroundColor: "#A9411D",
+                    borderRadius: 16,
+                    paddingBottom: 10,
+                    marginRight: 10,
+                    // marginBottom: 20,
                   }}
+                  key={item.id}
                 >
-                  <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText}>i</Text>
+
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
+                  >
+                    <View style={styles.card}>
+                      <View style={styles.imageContainer}>
+                        <Image
+                          source={{
+                            uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+                          }}
+                          style={styles.image}
+                        />
+                      </View>
+                      <Text style={styles.title}>{item.user.fullName}</Text>
+                      <Text style={{ color: "#fff", fontWeight: 'bold' }}>{item.price} $</Text>
+                      <Text style={{ color: "#fff", textAlign: 'center' }} numberOfLines={2} ellipsizeMode="tail">{item.specialization}</Text>
+                    </View>
+                    <Feather style={{ position: 'absolute', right: 5, top:5 }} name="info" size={24} color="white" />
+
                   </TouchableOpacity>
+
+
+                  {/* 
+                  <View
+                    style={{
+                      backgroundColor: "#fff",
+                      marginTop: -5,
+                      borderRadius: 30,
+                      padding: 5,
+                      position: "absolute",
+                      bottom: -20,
+                    }}
+                  >
+                    <TouchableOpacity style={styles.button}> */}
+                  {/* <Text style={styles.buttonText}>i</Text> */}
+                  {/* <Feather name="info" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View> */}
                 </View>
-              </View>
-            ))
+              )}
+            />
+
+            //   chef.map((item, index) => (
+            // <View
+            //   style={{
+            //     width: 200,
+            //     alignItems: "center",
+            //     backgroundColor: "#A9411D",
+            //     borderRadius: 16,
+            //     paddingBottom: 10,
+            //   }}
+            //   key={item.id}
+            // >
+            //   <TouchableOpacity
+            //     key={index}
+            //     onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
+            //   >
+            //     <View style={styles.card}>
+            //       <View style={styles.imageContainer}>
+            //         <Image
+            //           source={{
+            //             uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+            //           }}
+            //           style={styles.image}
+            //         />
+            //       </View>
+            //       <Text style={styles.title}>{item.user.fullName}</Text>
+            //       <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
+            //     </View>
+            //   </TouchableOpacity>
+
+            //   <View
+            //     style={{
+            //       backgroundColor: "#fff",
+            //       marginTop: -5,
+            //       borderRadius: 30,
+            //       padding: 5,
+            //       position: "absolute",
+            //       bottom: -20,
+            //     }}
+            //   >
+            //     <TouchableOpacity style={styles.button}>
+            //       <Text style={styles.buttonText}>i</Text>
+            //     </TouchableOpacity>
+            //   </View>
+            // </View>
+            // ))
           )}
-
-          {/* {chef.map((item, index) => (
-            <View
-              style={{
-                width: 200,
-                alignItems: "center",
-                backgroundColor: "#A9411D",
-                borderRadius: 16,
-                paddingBottom: 10,
-              }}
-              key={chef.id}
-            >
-              <TouchableOpacity
-                key={index}
-                onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
-              >
-
-                <View style={styles.card}>
-                  <View style={styles.imageContainer}>
-                    <Image
-                      source={{
-                        uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                      }}
-                      style={styles.image}
-                    />
-                  </View>
-
-                  <Text style={styles.title}>{item.user.fullName}</Text>
-                  <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
-                </View>
-              </TouchableOpacity>
-
-
-              <View
-                style={{
-                  backgroundColor: "#fff",
-                  marginTop: -5,
-                  borderRadius: 30,
-                  padding: 5,
-                  position: "absolute",
-                  bottom: -20,
-                }}
-              >
-                <TouchableOpacity style={styles.button}>
-                  <Text style={styles.buttonText}>i</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))} */}
 
         </View>
       </ScrollView>
@@ -310,12 +374,11 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   title: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#FFF",
+    color: "#F8BF40",
     marginTop: 70,
     textAlign: "center",
     marginBottom: 5,

@@ -2,31 +2,28 @@ import { View, Text, TextInput, Image, TouchableOpacity, ActivityIndicator } fro
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Đảm bảo đúng đường dẫn
+import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Ensure correct path
 import { commonStyles } from "../../style";
 import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import AXIOS_BASE from "../../config/AXIOS_BASE";
-import { jwtDecode } from "jwt-decode";
 import { AuthContext } from "../../config/AuthContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
-import { Ionicons } from '@expo/vector-icons'; // Import icon
+import { Ionicons } from '@expo/vector-icons';
+import useActionCheckNetwork from "../../hooks/useAction";
 
 
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const [token, setToken] = useState("");
-  const [userInfo, setUserInfo] = useState(null);
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
   const { user, login } = useContext(AuthContext);
   const modalRef = useRef(null);
   const [loading, setLoading] = useState(false);
+
+  const requireNetwork = useActionCheckNetwork();
 
   useEffect(() => {
     if (user) {
@@ -35,13 +32,6 @@ export default function LoginScreen() {
 
     }
   }, [user])
-
-
-  const handlePasswordChange = (value) => {
-    setPassword(value);
-  };
-
-
 
   const handleLogin = async () => {
     console.log('cc');
@@ -86,7 +76,8 @@ export default function LoginScreen() {
         </View>
         <View style={{ alignItems: "center" }}>
           <TouchableOpacity
-            onPress={handleLogin}
+            // onPress={handleLogin}
+            onPress={()=>requireNetwork(()=>handleLogin())}
             style={{
               padding: 13,
               marginTop: 10,
@@ -98,7 +89,7 @@ export default function LoginScreen() {
             }}
           >
             {loading ? (
-              <ActivityIndicator size="large" color="#0000ff" />
+              <ActivityIndicator size="large" color="#fff" />
             ) : (
               <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
                 Login

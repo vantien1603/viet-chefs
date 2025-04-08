@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Dimensions } from 'react-native';
+import { View, Text  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Header from '../../components/header';
@@ -14,7 +14,7 @@ const FirstRoute = () => (
 
 const SecondRoute = () => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-    <Text>Completed Orders</Text>
+    <Text>Completed Order s</Text>
   </View>
 );
 

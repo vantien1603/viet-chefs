@@ -1,16 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, ScrollView, FlatList, ActivityIndicator } from 'react-native';
-import { router, useNavigation } from 'expo-router';
-import { commonStyles } from '../../style';
-import Header from '../../components/header';
-import moment from 'moment';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import React, { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  Image,
+  ScrollView,
+  FlatList,
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { commonStyles } from "../../style";
+import Header from "../../components/header";
+import moment from "moment";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import { Ionicons } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Checkbox, RadioButton, ToggleButton } from "react-native-paper";
-import useAxios from '../../config/AXIOS_API';
-
+import { Checkbox, ToggleButton } from "react-native-paper";
+import Toast from "react-native-toast-message";
+import useAxios from "../../config/AXIOS_API";
 
 const getDaysInMonth = (month, year) => {
   const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
@@ -26,20 +36,21 @@ const getDaysInMonth = (month, year) => {
 
 
 
-const dayInWeek = (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+// const dayInWeek = (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
 
-const min = 1;
-const max = 5;
 
 const BookingScreen = () => {
   const axiosInstance = useAxios();
-  const [loading, setLoading] = useState(false);
 
+
+  // Nhận danh sách món ăn đã chọn từ query params
+  const { selectedDishes } = useLocalSearchParams();
+  const parsedSelectedDishes = selectedDishes ? JSON.parse(selectedDishes) : [];
 
   const [month, setMonth] = useState(moment().format("MM"));
   const [year, setYear] = useState(moment().format("YYYY"));
   const [selectedDay, setSelectedDay] = useState(null);
-  const [address, setAddress] = useState("");
+  const [specialRequest, setSpecialRequest] = useState("");
   const today = moment();
   const days = getDaysInMonth(month, year);
   const isBeforeToday = (date) => date.isBefore(today, 'day');
@@ -48,23 +59,33 @@ const BookingScreen = () => {
 
   const [menu, setMenu] = useState([]);
   const [dishes, setDishes] = useState([]);
+  // Phần thời gian
+  const [selectedStart, setSelectedStart] = useState(null);
+  const [selectedEnd, setSelectedEnd] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSelectTime = (hour) => {
+    if (selectedStart === null || selectedEnd !== null) {
+      setSelectedStart(hour);
+      setSelectedEnd(null);
+    } else if (selectedStart === hour) {
+      setSelectedStart(null);
+      setSelectedEnd(null);
+    } else {
+      let maxEnd = getValidEndTimes(selectedStart);
+      if (hour > selectedStart && hour < maxEnd) {
+        setSelectedEnd(hour);
+      } else {
+        setSelectedStart(hour);
+        setSelectedEnd(null);
+      }
+    }
+  };
 
   const modalRef = useRef(null);
-  const modalDishesRef = useRef(null);
-  const [selectedItems, setSelectedItems] = useState([]);
-
-  const [timeStart, setTimeStart] = useState(new Date());
-  const [timeEnd, setTimeEnd] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
-
-  const [checked, setChecked] = useState(false);
-  const [checkedRepeat, setCheckedRepeat] = useState(false);
-  const [selectedDays, setSelectedDays] = useState([]);
-
-  const [quantity, setQuantity] = useState(min);
-  const updateQuantity = (num) => setQuantity(Math.min(max, Math.max(min, num)));
-
-  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [selectedItems, setSelectedItems] = useState(
+    parsedSelectedDishes.map((dish, index) => index)
+  );
 
   const toggleSelection = (id) => {
     setSelectedItems((prev) =>
@@ -72,115 +93,80 @@ const BookingScreen = () => {
     );
   };
 
-  const handleTimeStartChange = (event, selectedTime) => {
-    setShowPicker(false);
+  // Tách biệt state cho Meal time và End time
+  const [mealTime, setMealTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [showMealPicker, setShowMealPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  const handleMealTimeChange = (event, selectedTime) => {
+    setShowMealPicker(false);
     if (selectedTime) {
-      setTimeStart(selectedTime);
+      setMealTime(selectedTime);
     }
   };
 
-  const handleTimeEndChange = (event, selectedTime) => {
-    setShowPicker(false);
+  const handleEndTimeChange = (event, selectedTime) => {
+    setShowEndPicker(false);
     if (selectedTime) {
-      setTimeEnd(selectedTime);
+      setEndTime(selectedTime);
     }
   };
 
-  const toggleDay = (day) => {
-    setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+  const [checked, setChecked] = useState(false);
+
+  // State để quản lý địa chỉ
+  const [address, setAddress] = useState("8592 Preston Rd. Inglewood");
+
+  // Hàm định dạng thời gian
+  const formatTime = (date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
-
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [menuRes, dishesRes] = await Promise.all([
-          axiosInstance.get("/menus"),
-          axiosInstance.get("/dishes"),
-        ]);
-
-        if (menuRes.status === 200) setMenu(menuRes.data.content);
-        if (dishesRes.status === 200) setDishes(dishesRes.data.content);
-      } catch (error) {
-        if (error.response) {
-          console.error(`Lỗi ${error.response.status}:`, error.response.data);
-        } else {
-          console.error(error.message);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-
-
-  const handleBooking = async () => {
-    const chefId = 1;
-    const menuId = 1;
-    const bookingPayload = {
-      chefId: chefId,
-      isServing: checked,
-      bookingDetails: [
-        {
-          sessionDate: selectedDay.format("YYYY-MM-DD"),
-          startTime: moment(timeStart).format("HH:mm"),
-          endTime: timeEnd ? moment(timeEnd).format("HH:mm") : null,
-          location: address,
-          guestCount: quantity,
-          menuId: menuId,
-          extraDishIds: []
-        }
-      ]
-    };
-
-    try {
-      console.log("Payload booking", bookingPayload);
-      const response = await axiosInstance.post('/bookings/calculate-single-booking', bookingPayload);
-      const sessionDate = selectedDay.format("YYYY-MM-DD")
-      const startTime = moment(timeStart).format("HH:mm");
-      const endTime = timeEnd ? moment(timeEnd).format("HH:mm") : null;
-      response.status === 200 && router.push({ pathname: "screen/confirmBooking", params: { chefId, sessionDate, startTime, endTime, address, quantity, menuId } });
-
-    } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      }
-      else {
-        console.error(error.message);
-      }
+  const handleConfirmBooking = () => {
+    if (checked && endTime <= mealTime) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "End time must be later than meal time.",
+      });
+      return;
     }
-  }
-
+    setLoading(true);
+    router.push("screen/confirmBooking");
+    setLoading(false);
+  };
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" />
 
-      <ScrollView style={{ paddingTop: 20 }} showsVerticalScrollIndicator={false}
+      <ScrollView
+        style={{ paddingTop: 20 }}
+        showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 150 }}>
-
-        <View >
+      >
+        <View>
           <Text style={styles.sectionTitle}>Chef information</Text>
           <View style={[styles.profileContainer, { marginVertical: 20 }]}>
             <View style={styles.profileContainer}>
-              <Image source={{ uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600" }} style={styles.profileImage} />
+              <Image
+                source={{
+                  uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
+                }}
+                style={styles.profileImage}
+              />
               <View>
                 <Text style={styles.profileName}>John Doe</Text>
-                <Text style={{ fontSize: 14 }}>20 yearold</Text>
+                <Text style={{ fontSize: 14 }}>20 year old</Text>
               </View>
             </View>
             <AntDesign name="message1" size={24} color="black" />
           </View>
         </View>
-
-
 
         <View style={styles.section}>
           <View>
@@ -193,7 +179,11 @@ const BookingScreen = () => {
             horizontal
             initialScrollIndex={days.findIndex((item) => isToday(item.date))}
             showsHorizontalScrollIndicator={false}
-            getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
+            getItemLayout={(data, index) => ({
+              length: 80,
+              offset: 80 * index,
+              index,
+            })}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[
@@ -204,46 +194,72 @@ const BookingScreen = () => {
                 disabled={isBeforeToday(item.date)}
                 onPress={() => setSelectedDay(item.date)}
               >
-                <Text style={[styles.dayOfWeek, isSelectedDay(item.date) && styles.selectedText]}>
+                <Text
+                  style={[
+                    styles.dayOfWeek,
+                    isSelectedDay(item.date) && styles.selectedText,
+                  ]}
+                >
                   {item.dayOfWeek}
                 </Text>
-                <Text style={[styles.day, isSelectedDay(item.date) && styles.selectedText]}>
+                <Text
+                  style={[
+                    styles.day,
+                    isSelectedDay(item.date) && styles.selectedText,
+                  ]}
+                >
                   {item.day}
                 </Text>
               </TouchableOpacity>
             )}
           />
         </View>
+
         <View style={styles.timeContainer}>
           <Text style={styles.label}>Meal time</Text>
-          <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.timeBox}>
-            <Text style={styles.timeText}>{timeStart.getHours()}</Text>
-            <Text style={styles.separator}>|</Text>
-            <Text style={styles.timeText}>{String(timeStart.getMinutes()).padStart(2, "0")}</Text>
+          <TouchableOpacity
+            onPress={() => setShowMealPicker(true)}
+            style={styles.timeBox}
+          >
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color="#A9411D"
+              style={{ marginRight: 5 }}
+            />
+            <Text style={styles.timeText}>{formatTime(mealTime)}</Text>
           </TouchableOpacity>
-          {showPicker && (
+          {showMealPicker && (
             <DateTimePicker
-              value={timeStart}
+              value={mealTime}
               mode="time"
               display="spinner"
-              onChange={handleTimeStartChange}
+              onChange={handleMealTimeChange}
             />
           )}
         </View>
+
         {checked && (
           <View style={styles.timeContainer}>
             <Text style={styles.label}>End time</Text>
-            <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.timeBox}>
-              <Text style={styles.timeText}>{timeEnd.getHours()}</Text>
-              <Text style={styles.separator}>|</Text>
-              <Text style={styles.timeText}>{String(timeEnd.getMinutes()).padStart(2, "0")}</Text>
+            <TouchableOpacity
+              onPress={() => setShowEndPicker(true)}
+              style={styles.timeBox}
+            >
+              <Ionicons
+                name="time-outline"
+                size={20}
+                color="#A9411D"
+                style={{ marginRight: 5 }}
+              />
+              <Text style={styles.timeText}>{formatTime(endTime)}</Text>
             </TouchableOpacity>
-            {showPicker && (
+            {showEndPicker && (
               <DateTimePicker
-                value={timeEnd}
+                value={endTime}
                 mode="time"
                 display="spinner"
-                onChange={handleTimeEndChange}
+                onChange={handleEndTimeChange}
               />
             )}
           </View>
@@ -262,7 +278,7 @@ const BookingScreen = () => {
           />
         </View>
 
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Amount of people</Text>
           <View style={{
             flexDirection: "row", alignItems: "center", justifyContent: 'space-between',
@@ -293,9 +309,9 @@ const BookingScreen = () => {
               <Text style={{ fontSize: 20 }}>+</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={styles.sectionTitle}>
               Weekly Schedule
@@ -308,8 +324,8 @@ const BookingScreen = () => {
               onPress={() => setCheckedRepeat(!checkedRepeat)}
               style={{ backgroundColor: 'transparent' }}
             />
-          </View>
-          {checkedRepeat && (
+          </View> */}
+          {/* {checkedRepeat && (
             <View >
               <View
                 style={{
@@ -345,13 +361,13 @@ const BookingScreen = () => {
                 ))}
               </View>
             </View>
-          )}
+          )} */}
 
-        </View>
+        {/* </View> */}
 
-        <View style={styles.section}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={[styles.sectionTitle, { flex: 1 }]}>Menu list</Text>
+        {/* <View style={styles.section}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={[styles.sectionTitle, { flex: 1 }]}>Food list</Text>
             <TouchableOpacity onPress={() => modalRef.current?.open()}>
               <AntDesign name="plus" size={20} color="black" />
             </TouchableOpacity>
@@ -362,9 +378,9 @@ const BookingScreen = () => {
               <Text style={{marginLeft:10}}>{selectedMenu.menuItems.map(dish => dish.dishName).join(", ")}
               </Text>
             </View>
-          )}
+          )} */}
 
-        </View>
+        {/* </View>
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={[styles.sectionTitle, { flex: 1 }]}>Food list</Text>
@@ -374,39 +390,73 @@ const BookingScreen = () => {
           </View>
 
           <View>
-            <Text>Mon 1</Text>
-            <Text>Mon 2</Text>
+            {parsedSelectedDishes.length > 0 ? (
+              parsedSelectedDishes.map((dish, index) => (
+                <Text
+                  key={index}
+                  style={{ fontSize: 16, color: "#333", marginVertical: 2 }}
+                >
+                  {dish}
+                </Text>
+              ))
+            ) : (
+              <Text style={{ fontSize: 16, color: "#777" }}>
+                No dishes selected.
+              </Text>
+            )}
           </View>
-        </View>
-
+        </View> */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Address</Text>
-          <TextInput style={styles.addressText} value={address} onChangeText={setAddress} placeholder='Vinhome' />
+          <TextInput
+            style={styles.addressText}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="Enter your address"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Special request</Text>
+          <TextInput
+            style={styles.specialRequestInput}
+            placeholder="Enter your request"
+            value={specialRequest}
+            onChangeText={setSpecialRequest}
+            multiline
+          />
+        </View>
+
+        <View style={[styles.section, { marginBottom: 100 }]}>
+          <Text style={styles.sectionTitle}>Cost details</Text>
+          <Text>Total hourly rent</Text>
+          <Text>Total additional charges</Text>
+          <Text>Total payment</Text>
         </View>
       </ScrollView>
 
-      <View style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: "#EBE5DD",
-        padding: 20,
-        alignItems: "center",
-      }}>
-
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "#EBE5DD",
+          padding: 20,
+          alignItems: "center",
+        }}
+      >
         <TouchableOpacity
           style={{
-            width: '100%',
+            width: "100%",
             bottom: 10,
             backgroundColor: "#A64B2A",
             padding: 15,
             borderRadius: 10,
             alignItems: "center",
           }}
-
-          onPress={() => handleBooking()}
+          onPress={handleConfirmBooking}
         >
           {loading ? (
             <ActivityIndicator size="small" color="white" />
@@ -417,94 +467,10 @@ const BookingScreen = () => {
           )}
         </TouchableOpacity>
       </View>
-      <Modalize ref={modalRef} adjustToContentHeight>
-        <View style={{ padding: 10, backgroundColor: '#EBE5DD' }}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#4CAF50" />
-          ) : (
-            menu.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 15,
-                  backgroundColor: "#EBE5DD",
-                  borderRadius: 12,
-                  marginBottom: 10,
-                  padding: 5,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 5,
-                  elevation: 1,
-                }}
-                onPress={() => setSelectedMenu(selectedMenu?.id === item.id ? null : item)}
-              >
-                <RadioButton
-                  value={item.id}
-                  status={selectedMenu?.id === item.id ? "checked" : "unchecked"}
-                  onPress={() => setSelectedMenu(selectedMenu?.id === item.id ? null : item)}
-                  color="#4CAF50"
-                />
 
-                <Image
-                  source={{
-                    uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
-                  }}
-                  style={{
-                    width: 70,
-                    height: 70,
-                    borderRadius: 10,
-                    marginRight: 12,
-                  }}
-                />
-                <View style={{ flex: 1, }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: 30 }}>
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: "500",
-                        color: "#333",
-                        // flex:1,
-                      }}
-                    >
-                      {item.name}
-                    </Text>
-                    <Text style={{
-                      textDecorationLine: 'line-through', fontSize: 18,
-                      color: "#333",
-                    }}>
-                      {item.beforePrice}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: 30 }}>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: "#777",
-                      }}
-                    >
-                      {item.menuItems.map(dish => dish.dishName).join(", ")}
-                    </Text>
-                    <Text style={{
-                      fontSize: 18,
-                      color: "#333",
-                    }}>
-                      {item.afterPrice}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
-
-        </View>
-      </Modalize>
-
-      <Modalize ref={modalDishesRef} adjustToContentHeight>
-        <View style={{ padding: 10, backgroundColor: '#EBE5DD' }}>
-          {loading == false && dishes?.map((item) => (
+      {/* <Modalize ref={modalRef} adjustToContentHeight>
+        <View style={{ padding: 10, backgroundColor: "#EBE5DD" }}>
+          {foodList.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={{
@@ -524,11 +490,12 @@ const BookingScreen = () => {
               onPress={() => toggleSelection(item.id)}
             >
               <Checkbox.Android
-                status={selectedItems.includes(item.id) ? "checked" : "unchecked"}
+                status={
+                  selectedItems.includes(item.id) ? "checked" : "unchecked"
+                }
                 onPress={() => toggleSelection(item.id)}
                 color="#4CAF50"
               />
-
               <Image
                 source={{
                   uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
@@ -562,9 +529,8 @@ const BookingScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
-      </Modalize>
+      </Modalize> */}
     </GestureHandlerRootView>
-
   );
 };
 
@@ -573,7 +539,6 @@ const styles = StyleSheet.create({
     borderTopColor: "#D1D1D1",
     borderTopWidth: 0.5,
     paddingVertical: 20,
-    // paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -582,16 +547,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   profileContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    // alignItems: "center",
-    // marginVertical: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   profileImage: {
     width: 50,
     height: 50,
     borderRadius: 45,
-    marginRight: 20
+    marginRight: 20,
   },
   profileName: {
     fontSize: 16,
@@ -603,7 +566,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginRight: 10,
     alignItems: "center",
-    // backgroundColor: '#E2AA97',
     backgroundColor: "#519254",
     borderRadius: 20,
   },
@@ -617,30 +579,11 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
   },
-  bookButton: {
-    backgroundColor: "#A9411D",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    margin: 20,
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  bookButtonText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  //thoi gian
   timeContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 10,
-    paddingVertical: 10
-  },
-  icon: {
-    marginRight: 10,
+    paddingVertical: 10,
   },
   label: {
     fontSize: 18,
@@ -653,20 +596,38 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     alignItems: "center",
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "#D1D1D1",
   },
   timeText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: '#A9411D'
+    color: "#A9411D",
   },
   separator: {
     fontSize: 16,
     fontWeight: "bold",
     marginHorizontal: 5,
   },
-  // selectedText: { fontSize: 18, fontWeight: "bold", marginTop: 20 },
-
-  //
+  addressText: {
+    fontSize: 16,
+    color: "#333",
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#D1D1D1",
+    borderRadius: 10,
+    backgroundColor: "#FFF",
+  },
+  specialRequestInput: {
+    borderWidth: 1,
+    borderColor: "#D1D1D1",
+    borderRadius: 10,
+    padding: 10,
+    height: 100,
+    textAlignVertical: "top",
+    backgroundColor: "#FFF",
+  },
 });
 
 export default BookingScreen;

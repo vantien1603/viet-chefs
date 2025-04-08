@@ -1,17 +1,28 @@
-import React from "react";
+import React, { useContext, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 
-// Custom Tab Bar Component
 function CustomTabBar({ state, descriptors, navigation }) {
+    const { isGuest } = useContext(AuthContext);
+    const { showModal } = useGlobalModal();
+
+    useEffect(() => {
+        const restrictedScreens = ["chat", "history"];
+        const currentScreen = state.routes[state.index].name;
+
+        if (isGuest && restrictedScreens.includes(currentScreen)) {
+            showModal("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
+            // navigation.navigate("home"); 
+        }
+    }, [state.index, isGuest]);
     return (
         <View style={styles.container}>
             <LinearGradient
                 colors={['rgba(24, 24, 24, 1)', 'rgba(42, 42, 40, 1)']}
                 start={{ x: 0, y: 1 }}
                 end={{ x: 0, y: 0 }}
-                locations={[0, 0.8]} 
+                locations={[0, 0.8]}
                 style={styles.gradientBackground}
             />
             <View style={styles.tabBar}>
@@ -73,12 +84,14 @@ function CustomTabBar({ state, descriptors, navigation }) {
     );
 }
 import { Tabs } from "expo-router";
+import { AuthContext, AuthProvider } from "../../config/AuthContext";
+import { ModalProvider, useGlobalModal } from "../../context/modalContext";
 
 export default function TabLayout() {
     return (
         <Tabs
             screenOptions={{
-                headerShown: false
+                headerShown: false,
             }}
             tabBar={(props) => <CustomTabBar {...props} />}
         >
@@ -94,7 +107,9 @@ const styles = StyleSheet.create({
     container: {
         // flex: 1,
         // justifyContent: "flex-end",
-        backgroundColor: "#EBE5DD",
+        // backgroundColor: "#EBE5DD",
+        backgroundColor: "transparent",
+
     },
     gradientBackground: {
         borderTopLeftRadius: 50,
@@ -107,6 +122,7 @@ const styles = StyleSheet.create({
 
     },
     tabBar: {
+        overflow: 'hidden',
         flexDirection: "row",
         justifyContent: "space-around",
         alignItems: "center",
@@ -117,6 +133,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         flex: 1,
+
     },
     centerIcon: {
         width: 70,
