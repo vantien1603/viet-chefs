@@ -1,48 +1,54 @@
-import React, { useContext, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
-import { commonStyles } from '../../style';
-import { useRouter } from "expo-router";
+import React, { useContext, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
+import { commonStyles } from "../../style";
+import { useRouter, useFocusEffect } from "expo-router"; // Thêm useFocusEffect
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
+import useAxios from "../../config/AXIOS_API";
 
 const ProfileDetail = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
-
-  // const name = "Huỳnh Văn Tiến";
-  // const email = "tien@example.com";
-  // const phone = "0123456789";
-  // const dob = "01/01/1990";
-  // const gender = "Nam";
-  const avatar = "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png";
-
+  const axiosInstance = useAxios();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
   const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const handleProfile = async () => {
     try {
-      const response = await AXIOS_API.get("/users/profile");
-      if(response.status === 200){
+      const response = await axiosInstance.get("/users/profile");
+      if (response.status === 200) {
         setFullName(response.data.fullName);
         setEmail(response.data.email);
         setPhone(response.data.phone);
         setDob(response.data.dob);
         setGender(response.data.gender);
         setUsername(response.data.username);
+        setAvatarUrl(response.data.avatarUrl);
       }
     } catch (error) {
       console.error("Error fetching profile data:", error);
     }
-  }
+  };
 
-  useEffect(() => {
-    handleProfile();
-  }, [])
+  // Sử dụng useFocusEffect để reload dữ liệu khi màn hình được focus
+  useFocusEffect(
+    React.useCallback(() => {
+      handleProfile();
+    }, [])
+  );
 
   const handleEditProfile = () => {
     router.push({
@@ -55,7 +61,7 @@ const ProfileDetail = () => {
           dob,
           gender,
           username,
-          avatar,
+          avatarUrl,
         }),
       },
     });
@@ -63,11 +69,11 @@ const ProfileDetail = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Thông tin cá nhân"/>
+      <Header title="Thông tin cá nhân" />
       <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
-        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <View style={{ alignItems: "center", marginBottom: 20 }}>
           <Image
-            source={{ uri: avatar }}
+            source={{ uri: avatarUrl || "https://via.placeholder.com/100" }}
             style={{ width: 100, height: 100, borderRadius: 50 }}
           />
         </View>
@@ -91,12 +97,8 @@ const ProfileDetail = () => {
         <Text style={styles.text}>{gender}</Text>
       </ScrollView>
 
-      {/* Nút Edit Profile */}
       <View style={styles.fixedButtonContainer}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={handleEditProfile}
-        >
+        <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
           <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
         </TouchableOpacity>
       </View>
@@ -105,37 +107,29 @@ const ProfileDetail = () => {
 };
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
+  label: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
   text: {
     fontSize: 16,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 16,
-    color: '#333',
+    color: "#333",
   },
   fixedButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 10,
     right: 10,
   },
   editButton: {
-    backgroundColor: '#A9411D',
+    backgroundColor: "#A9411D",
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  editButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  editButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
 });
 
 export default ProfileDetail;

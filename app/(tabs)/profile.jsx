@@ -12,10 +12,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 
 const menuItems = [
-  { id: "1", icon: "wallet", title: "Wallet" },
+  { id: "1", icon: "wallet", title: "VietPay" },
   // { id: '2', icon: 'gift', title: 'Ưu đãi của tôi', badge: 2 },
   // { id: '3', icon: 'ribbon', title: 'bRewards' },
   // { id: '4', icon: 'ticket', title: 'Gói Ưu Đãi' },
@@ -33,22 +33,8 @@ const menuItems = [
 const Profile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
-  const [fullName, setFullName] = useState("");
-  useEffect(() => {
-    const getFullName = async () => {
-      try {
-        const storedFullName = await AsyncStorage.getItem("@fullName");
-        if (storedFullName !== null) {
-          setFullName(storedFullName);
-        } else {
-          setFullName("Guest");
-        }
-      } catch (error) {
-        console.error("Error retrieving full name:", error);
-      }
-    };
-    getFullName();
-  }, []);
+  const [avatar, setAvatar] = useState("");
+  const axiosInstance = useAxios();
 
   const handleSetting = (id) => {
     switch (id) {
@@ -63,8 +49,8 @@ const Profile = () => {
       case '2': {
         break;
       }
-      case '4': {
-        router.push('/screen/setting');
+      case "4": {
+        router.push("/screen/setting");
         break;
       }
       default: {
@@ -73,19 +59,35 @@ const Profile = () => {
       }
     }
   };
+
+  const avatarUrl = async () => {
+    try {
+      const response = await axiosInstance.get("/users/profile");
+      setAvatar(response.data.avatarUrl);
+    } catch (error) {
+      console.log("Error", error);
+    }
+  };
+
+  useEffect(() => {
+    avatarUrl();
+  }, []);
+
   return (
     <ScrollView style={commonStyles.containerContent}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 , padding:10, borderBottomColor:"#ddd",borderBottomWidth:1}}>
         <Image
-          source={{
-            uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-          }}
-          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 20 }}
+          source={
+            avatar && avatar.trim() !== ""
+              ? {
+                  uri: avatar,
+                }
+              : null
+          }
+          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
         />
         <View>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-            {fullName}
-          </Text>
+          <Text style={{ fontSize: 20, fontWeight: "bold" }}>{user?.fullName}</Text>
           <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
             <Text
               style={{ color: "#A9411D", fontWeight: "bold", fontSize: 16 }}

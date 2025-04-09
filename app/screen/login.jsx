@@ -26,8 +26,8 @@ export default function LoginScreen() {
   const requireNetwork = useActionCheckNetwork();
 
   useEffect(() => {
-    if (user) {
-      console.log("login roiiiii")
+    if (user?.token!==undefined) {
+      console.log("login roiiiii", user)
       navigation.navigate("(tabs)", { screen: "home" });
 
     }

@@ -17,21 +17,19 @@ export default function WelcomeScreen() {
     // router.push('screen/Chefs/menu');
   };
 
-  const auth = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
+  // console.log(user);
+  // if (!user) {
+  //   console.log("AuthContext is not provided");
+  //   // return;
+  // }
 
-  if (!auth) {
-    console.log("AuthContext is not provided");
-    return null;
-  }
-
-  const { user } = auth;
 
   useEffect(() => {
     console.log('User:', user);
     if (user) {
       // return <Redirect href="/home" />;
       navigation.navigate("(tabs)", { screen: "home" });
-
     }
   }, [user]);
 

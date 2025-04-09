@@ -13,11 +13,12 @@ import React, { useContext, useEffect, useState } from "react";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import Feather from '@expo/vector-icons/Feather';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 export default function Home() {
@@ -28,6 +29,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [dishes, setDishes] = useState([]);
   const { user } = useContext(AuthContext);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [fullName, setFullName] = useState("User");
 
   const handleSearch = () => {
     const searchQuery = String(query || "");
@@ -38,11 +41,24 @@ export default function Home() {
     }
   };
 
+  const loadData = async () => {
+    try {
+      const savedAddress = await AsyncStorage.getItem("selectedAddress");
+      if (savedAddress) {
+        setSelectedAddress(JSON.parse(savedAddress));
+      }
+      const name = await AsyncStorage.getItem("@fullName");
+      setFullName(name || "User");
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchChef = async () => {
       setLoading(true);
       try {
-        const response = await axiosInstance.get("/chef");
+        const response = await axiosInstance.get("/chefs");
         // console.log("Chefs:", response.data.content);
         setChef(response.data.content.slice(0, 3));
       } catch (error) {
@@ -77,7 +93,14 @@ export default function Home() {
 
     fetchChef();
     fetchDishes();
+    loadData();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   return (
     <View style={commonStyles.containerContent}>
@@ -92,18 +115,23 @@ export default function Home() {
         }}
       >
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
-          <View style={{ flexDirection: "row" }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image
               source={require("../../assets/images/logo.png")}
               style={{ width: 50, height: 50 }}
               resizeMode="cover"
             />
-            <View>
+            <View style={{ marginLeft: 10, maxWidth: 200 }}>
               <Text style={{ fontSize: 18, color: "#383838" }}>
                 Hello, {user?.fullName}
               </Text>
-              <Text style={{ fontSize: 12, color: "#968B7B" }}>
-                Jarkata, Indonesia
+              <Text
+                style={{ fontSize: 12, color: "#968B7B" }}
+                numberOfLines={2}
+              >
+                {selectedAddress
+                  ? selectedAddress.address
+                  : "Jarkata, Indonesia"}
               </Text>
             </View>
           </View>
@@ -113,9 +141,6 @@ export default function Home() {
           <TouchableOpacity onPress={() => router.push("/screen/chefSchedule")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
-          {/* <TouchableOpacity>
-            <Ionicons name="cart" size={30} color="#4EA0B7" />
-          </TouchableOpacity> */}
         </View>
       </View>
       <ScrollView
@@ -331,12 +356,12 @@ export default function Home() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: "#FFF8EF",
     borderColor: "#ddd",
     borderWidth: 2,
-    // width: '100%',
     height: 60,
     borderRadius: 100,
     padding: 20,
@@ -357,7 +382,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 200,
     position: "relative",
-    // marginBottom: 20
+    marginTop: 20,
   },
   imageContainer: {
     width: 130,
@@ -382,17 +407,5 @@ const styles = StyleSheet.create({
     marginTop: 70,
     textAlign: "center",
     marginBottom: 5,
-  },
-  button: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: "#F8BF40",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonText: {
-    fontSize: 18,
-    color: "#FFF",
   },
 });

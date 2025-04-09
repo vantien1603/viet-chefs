@@ -1,200 +1,319 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { commonStyles } from '../../style';
-import Header from '../../components/header';
-import { Ionicons } from '@expo/vector-icons';
-import useAxios from '../../config/AXIOS_API';
-import moment from 'moment';
-import DateTimePicker from "@react-native-community/datetimepicker";
-
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { commonStyles } from "../../style";
+import Header from "../../components/header";
+import { Ionicons } from "@expo/vector-icons";
+import AXIOS_API from "../../config/AXIOS_API";
+import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ConfirmBookingScreen = () => {
   const axiosInstance = useAxios();
   const [loading, setLoading] = useState(false);
-  const { chefId, sessionDate, startTime, endTime, address, quantity, menuId } = useLocalSearchParams();
-  const [calculator, setCalculator] = useState(null);
+  const params = useLocalSearchParams();
 
+  // Parse bookingData and other params
+  const bookingData = JSON.parse(params.bookingData || "{}");
+  const selectedMenu = JSON.parse(params.selectedMenu || "null");
+  const selectedDishes = JSON.parse(params.selectedDishes || "[]");
+  const sessionDate = params.sessionDate || "N/A";
+  const startTime = params.startTime || "N/A";
+  const chefId = parseInt(params.chefId);
+  const location = params.address || "N/A";
+  const requestDetails = params.requestDetails || "N/A";
+  const dishNotes = JSON.parse(params.dishNotes || "{}");
+  const numPeople = parseInt(params.numPeople) || 1;
+  const menuId = params.menuId || null; // Lấy menuId từ params
 
-  const getCalculator = async () => {
-    console.log(chefId, sessionDate, startTime, endTime, address, quantity, menuId)
-    const calcuPayload = {
-      chefId: chefId,
-      isServing: false,
-      bookingDetails: [
-        {
-          sessionDate: sessionDate,
-          startTime: startTime,
-          endTime: endTime ? endTime : null,
-          location: address,
-          guestCount: quantity,
-          menuId: menuId,
-          extraDishIds: []
-        }
-      ]
-    };
+  // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
+  const menuDishes = selectedMenu?.menuItems?.map((item) => ({
+    id: item.dishId || item.id,
+    name: item.dishName || item.name || "Unnamed Dish",
+  })) || [];
 
-    try {
-      const response = await axiosInstance.post('/bookings/calculate-single-booking', calcuPayload);
-      setCalculator(response.data);
-    } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      }
-      else {
-        console.error(error.message);
-      }
-    }
-  }
-  useEffect(() => {
-    getCalculator();
+  const extraDishes = selectedDishes.map((dish) => ({
+    id: dish.id,
+    name: dish.name || "Unnamed Dish",
+  }));
 
-  }, [chefId, sessionDate, startTime, endTime, address, quantity, menuId])
+  // Combine all dishes for the total count
+  const allDishes = [...menuDishes, ...extraDishes];
+  const numberOfDishes = allDishes.length;
+
+  // Format the dish list: "Menu Name: Dish 1, Dish 2, ..." + extra dishes
+  const menuDishList = menuDishes.length > 0
+    ? `${selectedMenu?.name || "Menu"}: ${menuDishes
+        .map((dish) => {
+          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
+          return `${dish.name}${note}`;
+        })
+        .join(", ")}`
+    : "";
+
+  const extraDishList = extraDishes.length > 0
+    ? `${extraDishes
+        .map((dish) => {
+          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
+          return `${dish.name}${note}`;
+        })
+        .join(", ")}`
+    : "";
+
+  const dishList = [menuDishList, extraDishList].filter(Boolean).join(" | ") || "N/A";
+
+  const numberOfMenuDishes = menuDishes.length;
 
   const handleConfirmBooking = async () => {
-    const confirmPayload = {
-
-    }
     try {
-      const response = await axiosInstance.post('/bookings', confirmPayload);
+      const customerId = await AsyncStorage.getItem("@userId");
+      if (!customerId) {
+        throw new Error(
+          "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
+        );
+      }
 
+      const selectedDishIds = allDishes.map((dish) => dish.id);
+
+      const payload = {
+        customerId: parseInt(customerId),
+        chefId: parseInt(chefId),
+        requestDetails: requestDetails,
+        guestCount: numPeople,
+        bookingDetails: [
+          {
+            sessionDate: sessionDate,
+            startTime: `${startTime}:00`,
+            location: location,
+            totalPrice: bookingData.totalPrice || 0,
+            chefCookingFee: bookingData.chefCookingFee || 0,
+            priceOfDishes: bookingData.priceOfDishes || 0,
+            arrivalFee: bookingData.arrivalFee || 0,
+            chefServingFee: bookingData.chefServingFee || 0,
+            timeBeginCook: bookingData.timeBeginCook || null,
+            timeBeginTravel: bookingData.timeBeginTravel || null,
+            platformFee: bookingData.platformFee || 0,
+            totalChefFeePrice: bookingData.totalChefFeePrice || 0,
+            totalCookTime: (bookingData.cookTimeMinutes || 0)/60,
+            isUpdated: false,
+            menuId: menuId,
+            dishes: selectedDishIds.map((dishId) => ({
+              dishId: dishId,
+              notes: dishNotes[dishId] || null,
+            })),
+          },
+        ],
+      };
+      console.log("Payload for booking confirmation:", payload);
+
+      const response = await AXIOS_API.post("/bookings", payload);
+      console.log("API Response:", response.data);
+
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Booking confirmed successfully!",
+      });
+
+      router.push("(tabs)/home");
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      }
-      else {
-        console.error(error.message);
-      }
+      console.error("Error creating booking:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to confirm booking. Please try again.",
+      });
+      throw error;
     }
+  };
 
-  }
+  const handleKeepBooking = async () => {
+    setLoading(true);
+    try {
+      await handleConfirmBooking();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Confirm & payment" />
-      <ScrollView style={{ paddingTop: 20 }} showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        style={{ paddingTop: 20, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingBottom: 170 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Job location</Text>
-          <View style={{ borderColor: '#e0e0e0', borderWidth: 2, borderRadius: 10, padding: 20, marginBottom: 20 }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>46/1 Tan Hoa 2 Street</Text>
-            <Text style={{ fontSize: 16 }}>46.1 Tan Hoa 2, Hiep Phu, Quan 9, Ho Chi Minh,Viet Nam</Text>
+          <Text style={{ fontSize: 18, fontWeight: "500", marginBottom: 10 }}>
+            Location
+          </Text>
+          <View
+            style={{
+              borderColor: "#BBBBBB",
+              borderWidth: 2,
+              borderRadius: 10,
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{location}</Text>
           </View>
         </View>
 
         <View>
-          {/* <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Job information</Text> */}
-          <View style={{ borderColor: '#e0e0e0', borderWidth: 2, borderRadius: 10, padding: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10, margin: -10 }}>Job information</Text>
-
-            <Text style={{ fontSize: 16, fontWeight: 'bold', }}>Working time</Text>
+          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
+            Information
+          </Text>
+          <View
+            style={{
+              borderColor: "#BBBBBB",
+              borderWidth: 2,
+              borderRadius: 10,
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            {/* Subsection: Thời Gian Làm Việc */}
+            <Text style={styles.subSectionTitle}>Thời Gian Làm Việc</Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Working days</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Date</Text>
               <Text style={styles.details}>{sessionDate}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time begin travel</Text>
-              <Text style={styles.details}>{calculator?.timeBeginTravel} </Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time</Text>
+              <Text style={styles.details}>{`${startTime}`}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time begin cook</Text>
-              <Text style={styles.details}>{calculator?.timeBeginCook} </Text>
-            </View>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', }}>Job details</Text>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Number of diners</Text>
-              <Text style={styles.details}>3</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time Begin Travel</Text>
+              <Text style={styles.details}>
+                {bookingData.timeBeginTravel || "N/A"}
+              </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Number of dishes</Text>
-              <Text sstyle={styles.details}>3</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Time Begin Cook</Text>
+              <Text style={styles.details}>
+                {bookingData.timeBeginCook || "N/A"}
+              </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>List of dishes</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.details} >3</Text>
-                <Text style={styles.details}>3</Text>
-                <Text style={styles.details}>3</Text>
-              </View>
+              <Text style={{ fontSize: 14, flex: 1 }}>Cook Time</Text>
+              <Text style={styles.details}>
+                {bookingData.cookTimeMinutes
+                  ? `${bookingData.cookTimeMinutes} minutes`
+                  : "N/A"}
+              </Text>
+            </View>
 
+            {/* Subsection: Chi Tiết Công Việc */}
+            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+              Chi Tiết Công Việc
+            </Text>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>Số Người Ăn</Text>
+              <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Palate</Text>
-              <Text style={styles.details}>Bac</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Tổng Số Món Ăn</Text>
+              <Text style={styles.details}>{numberOfDishes}</Text>
             </View>
-          </View>
-        </View>
-        <View>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Payment details</Text>
-          <View style={{ borderColor: '#e0e0e0', borderWidth: 2, borderRadius: 10, padding: 20 }}>
+            {selectedMenu && (
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>Số Món Trong Menu</Text>
+                <Text style={styles.details}>{numberOfMenuDishes}</Text>
+              </View>
+            )}
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Arrival fee</Text>
-              <Text style={styles.details}>{calculator?.arrivalFee}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Chef cooking fee</Text>
-              <Text style={styles.details}>{calculator?.chefCookingFee}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Chef serving fee</Text>
-              <Text style={styles.details}>{calculator?.chefServingFee}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Total cheff fee price</Text>
-              <Text sstyle={styles.details}>{calculator?.totalChefFeePrice}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Total price</Text>
-              <Text sstyle={styles.details}>{calculator?.totalPrice}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>Danh Sách Món Ăn</Text>
+              <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text> 
             </View>
           </View>
         </View>
-        <View style={{ marginBottom: 200 }}>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>Payment methods</Text>
-          <View style={{ borderColor: '#e0e0e0', borderWidth: 2, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
+            Payment methods
+          </Text>
+          <View
+            style={{
+              borderColor: "#BBBBBB",
+              borderWidth: 2,
+              borderRadius: 10,
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
             <View style={styles.row}>
-              <View style={{ flexDirection: 'row' }}>
-                <Ionicons name="logo-paypal" size={24} color="black" style={{ marginRight: 10 }} />
-                <Text style={{ fontSize: 16 }}>Paypal </Text>
+              <View style={{ flexDirection: "row" }}>
+                <Ionicons
+                  name="logo-paypal"
+                  size={24}
+                  color="black"
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={{ fontSize: 16 }}>Paypal</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="gray" />
             </View>
-
-
           </View>
         </View>
       </ScrollView>
 
-
-      <View style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        // backgroundColor: "#A64B2A",
-        backgroundColor: "#EBE5DD",
-        padding: 20,
-        alignItems: "center",
-      }}>
-        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-          <Text style={{ flex: 1, fontSize: 18, fontWeight: 'bold' }}>Total </Text>
-          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>150,000 VND</Text>
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "#EBE5DD",
+          padding: 20,
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            borderColor: "#BBBBBB",
+            borderWidth: 2,
+            borderRadius: 10,
+            padding: 15,
+            marginBottom: 20,
+          }}
+        >
+          <View style={styles.costRow}>
+            <Text style={{ flex: 1, fontSize: 18, fontWeight: "bold" }}>
+              Total:
+            </Text>
+            <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              {bookingData.totalPrice?.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              }) || "$0"}
+            </Text>
+          </View>
         </View>
-        <View>
 
-        </View>
         <TouchableOpacity
           style={{
-            // position: "relative",
-            width: '100%',
-            bottom: 10,
+            width: "100%",
             backgroundColor: "#A64B2A",
             padding: 15,
             borderRadius: 10,
             alignItems: "center",
           }}
-          onPress={() => handleConfirmBooking()}
+          onPress={handleKeepBooking}
+          disabled={loading}
         >
           {loading ? (
             <ActivityIndicator size="small" color="white" />
@@ -205,8 +324,6 @@ const ConfirmBookingScreen = () => {
           )}
         </TouchableOpacity>
       </View>
-
-
     </SafeAreaView>
   );
 };
@@ -216,10 +333,22 @@ export default ConfirmBookingScreen;
 const styles = StyleSheet.create({
   row: {
     margin: 5,
-    flexDirection: 'row',
-    justifyContent: 'space-between'
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   details: {
-    textAlign: 'right'
-  }
+    textAlign: "right",
+    fontSize: 14,
+  },
+  costRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 5,
+  },
+  subSectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
 });

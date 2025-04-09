@@ -30,20 +30,20 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     const { options } = descriptors[route.key];
                     const isFocused = state.index === index;
 
-                    const onPress = () => {
-                        const event = navigation.emit({
-                            type: "tabPress",
-                            target: route.key,
-                        });
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+            });
 
-                        if (!isFocused && !event.defaultPrevented) {
-                            navigation.navigate(route.name);
-                        }
-                    };
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
-                    return (
-                        <View key={route.key} style={styles.tabItem}>
-                            {/* {index === 2 ? (
+          return (
+            <View key={route.key} style={styles.tabItem}>
+              {/* {index === 2 ? (
                                 // Center Icon
                                 <View style={styles.centerIcon}>
                                     <Ionicons
@@ -54,34 +54,35 @@ function CustomTabBar({ state, descriptors, navigation }) {
                                     />
                                 </View>
                             ) :  */}
-                            {/* ( */}
-                            <TouchableOpacity
-                                style={{ padding: 10 }}
-                                onPress={onPress}
-                            >
-                                <Ionicons
-                                    name={
-                                        route.name === "home"
-                                            ? "home"
-                                            : route.name === "chat"
-                                                ? "chatbubble-outline"
-                                                : route.name === "bag"
-                                                    ? "briefcase-outline"
-                                                    : "person-outline"
-                                    }
-                                    size={24}
-                                    color={isFocused ? "white" : "#B0BEC5"}
-                                />
-                            </TouchableOpacity>
+              {/* ( */}
+              <TouchableOpacity style={{ padding: 10 }} onPress={onPress}>
+                <Ionicons
+                  name={
+                    route.name === "home"
+                      ? "home"
+                      : route.name === "chat"
+                      ? "chatbubble-outline"
+                      : route.name === "history"
+                      ? "time-outline"
+                      : route.name === "history"
+                      ? "time-outline"
+                      : route.name === "bag"
+                      ? "briefcase-outline"
+                      : "person-outline"
+                  }
+                  size={24}
+                  color={isFocused ? "white" : "#B0BEC5"}
+                />
+              </TouchableOpacity>
 
-                            {/* ) */}
-                            {/* } */}
-                        </View>
-                    );
-                })}
+              {/* ) */}
+              {/* } */}
             </View>
-        </View>
-    );
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 import { Tabs } from "expo-router";
 import { AuthContext, AuthProvider } from "../../config/AuthContext";

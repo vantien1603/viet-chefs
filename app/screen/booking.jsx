@@ -1,26 +1,27 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Image,
   ScrollView,
   FlatList,
+  ActivityIndicator,
+  Image,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import moment from "moment";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import { Ionicons } from "@expo/vector-icons";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Modalize } from "react-native-modalize";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Checkbox, ToggleButton } from "react-native-paper";
 import Toast from "react-native-toast-message";
-import useAxios from "../../config/AXIOS_API";
+import ProgressBar from "../../components/progressBar";
+import AXIOS_API from "../../config/AXIOS_API";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Modalize } from "react-native-modalize";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const getDaysInMonth = (month, year) => {
   const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
@@ -34,137 +35,243 @@ const getDaysInMonth = (month, year) => {
   });
 };
 
+const generateTimeSlots = () => {
+  const timeSlots = [];
+  for (let hour = 8; hour <= 22; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const time = `${hour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`;
+      timeSlots.push(time);
+    }
+  }
+  return timeSlots;
+};
 
-
-// const dayInWeek = (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
-
+const timeSlots = generateTimeSlots();
 
 const BookingScreen = () => {
-  const axiosInstance = useAxios();
+  const params = useLocalSearchParams();
+  const { chefId, selectedMenu, selectedDishes, dishNotes: dishNotesParam, updatedDishId, updatedNote } = params;
 
-
-  // Nhận danh sách món ăn đã chọn từ query params
-  const { selectedDishes } = useLocalSearchParams();
+  const parsedSelectedMenu = selectedMenu ? JSON.parse(selectedMenu) : null;
   const parsedSelectedDishes = selectedDishes ? JSON.parse(selectedDishes) : [];
+  const initialDishNotes = dishNotesParam ? JSON.parse(dishNotesParam) : {};
 
   const [month, setMonth] = useState(moment().format("MM"));
   const [year, setYear] = useState(moment().format("YYYY"));
   const [selectedDay, setSelectedDay] = useState(null);
   const [specialRequest, setSpecialRequest] = useState("");
+  const [address, setAddress] = useState("");
+  const [numPeople, setNumPeople] = useState(1);
   const today = moment();
   const days = getDaysInMonth(month, year);
-  const isBeforeToday = (date) => date.isBefore(today, 'day');
-  const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, 'day');
+
+  const [startTime, setStartTime] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [dishNotes, setDishNotes] = useState(initialDishNotes);
+  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+  const [tempDishNotes, setTempDishNotes] = useState(initialDishNotes);
+
+  const modalizeRef = useRef(null);
+  useEffect(() => {
+    const loadSelectedAddress = async () => {
+      try {
+        const savedAddress = await AsyncStorage.getItem("selectedAddress");
+        if (savedAddress) {
+          const parsedAddress = JSON.parse(savedAddress);
+          setAddress(parsedAddress.address); // Hiển thị địa chỉ đã chọn
+          console.log("Loaded selected address:", parsedAddress.address);
+        }
+      } catch (error) {
+        console.error("Error loading selected address:", error);
+      }
+    };
+    loadSelectedAddress();
+  }, []);
+
+  useEffect(() => {
+    if (updatedDishId && updatedNote !== undefined) {
+      setDishNotes((prev) => {
+        const newNotes = { ...prev, [updatedDishId]: updatedNote };
+        console.log("Updated dishNotes in BookingScreen:", newNotes);
+        return newNotes;
+      });
+    }
+  }, [updatedDishId, updatedNote]);
+
+  const isBeforeToday = (date) => date.isBefore(today, "day");
+  const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
 
-  const [menu, setMenu] = useState([]);
-  const [dishes, setDishes] = useState([]);
-  // Phần thời gian
-  const [selectedStart, setSelectedStart] = useState(null);
-  const [selectedEnd, setSelectedEnd] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // const isTimeAfter = (time1, time2) => {
+  //   const [hour1, min1] = time1.split(":").map(Number);
+  //   const [hour2, min2] = time2.split(":").map(Number);
+  //   return hour1 > hour2 || (hour1 === hour2 && min1 > min2);
+  // };
 
-  const handleSelectTime = (hour) => {
-    if (selectedStart === null || selectedEnd !== null) {
-      setSelectedStart(hour);
-      setSelectedEnd(null);
-    } else if (selectedStart === hour) {
-      setSelectedStart(null);
-      setSelectedEnd(null);
-    } else {
-      let maxEnd = getValidEndTimes(selectedStart);
-      if (hour > selectedStart && hour < maxEnd) {
-        setSelectedEnd(hour);
-      } else {
-        setSelectedStart(hour);
-        setSelectedEnd(null);
-      }
-    }
+  // Handlers for incrementing and decrementing the number of people
+  const incrementPeople = () => {
+    setNumPeople((prev) => prev + 1);
   };
 
-  const modalRef = useRef(null);
-  const [selectedItems, setSelectedItems] = useState(
-    parsedSelectedDishes.map((dish, index) => index)
-  );
-
-  const toggleSelection = (id) => {
-    setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  const decrementPeople = () => {
+    setNumPeople((prev) => (prev > 1 ? prev - 1 : 1)); // Minimum 1 person
   };
 
-  // Tách biệt state cho Meal time và End time
-  const [mealTime, setMealTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
-  const [showMealPicker, setShowMealPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-
-  const handleMealTimeChange = (event, selectedTime) => {
-    setShowMealPicker(false);
-    if (selectedTime) {
-      setMealTime(selectedTime);
-    }
-  };
-
-  const handleEndTimeChange = (event, selectedTime) => {
-    setShowEndPicker(false);
-    if (selectedTime) {
-      setEndTime(selectedTime);
-    }
-  };
-
-  const [checked, setChecked] = useState(false);
-
-  // State để quản lý địa chỉ
-  const [address, setAddress] = useState("8592 Preston Rd. Inglewood");
-
-  // Hàm định dạng thời gian
-  const formatTime = (date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
+  const handleAddItems = () => {
+    router.push({
+      pathname: "/screen/selectFood",
+      params: {
+        chefId,
+        selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
+        selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
+        dishNotes: JSON.stringify(dishNotes),
+      },
     });
   };
-  const handleConfirmBooking = () => {
-    if (checked && endTime <= mealTime) {
+
+  const handleConfirmBooking = async () => {
+    if (!selectedDay) {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "End time must be later than meal time.",
+        text2: "Please select a date.",
       });
       return;
     }
+
+    if (!startTime) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please select a start time.",
+      });
+      return;
+    }
+
+    if (!address) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please enter an address.",
+      });
+      return;
+    }
+
     setLoading(true);
-    router.push("screen/confirmBooking");
-    setLoading(false);
+
+    const selectedDishIds = parsedSelectedDishes?.map((dish) => dish.id);
+    if (parsedSelectedMenu) {
+      selectedDishIds.push(...(parsedSelectedMenu.menuItems || []).map((item) => item.dishId || item.id));
+    }
+
+    const payload = {
+      chefId: parseInt(chefId),
+      guestCount: numPeople,
+      bookingDetail: {
+        sessionDate: selectedDay.format("YYYY-MM-DD"),
+        startTime: `${startTime}:00`,
+        location: address,
+        menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
+        extraDishIds: parsedSelectedDishes.length > 0 ? selectedDishIds : null,
+        dishes: selectedDishIds?.map((dishId) => ({
+          dishId: dishId,
+          notes: dishNotes[dishId] || "",
+        })),
+      },
+    };
+
+    console.log("Payload to API:", JSON.stringify(payload, null, 2));
+
+    try {
+      const response = await AXIOS_API.post(
+        "/bookings/calculate-single-booking",
+        payload
+      );
+      router.push({
+        pathname: "screen/confirmBooking",
+        params: {
+          bookingData: JSON.stringify(response.data),
+          chefId: chefId,
+          selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
+          selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
+          address,
+          sessionDate: selectedDay.format("YYYY-MM-DD"),
+          startTime: startTime,
+          requestDetails: specialRequest,
+          dishNotes: JSON.stringify(dishNotes),
+          numPeople: numPeople.toString(),
+          menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null, // Thêm menuId vào params
+        },
+      });
+      console.log("Booking response:", JSON.stringify(response.data));
+    } catch (error) {
+      console.error("Error calling calculate-single-booking:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2:
+          error.response?.data?.message ||
+          "Failed to calculate booking. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title="Booking" />
+  const openModal = () => {
+    setTempDishNotes(dishNotes);
+    modalizeRef.current?.open();
+  };
 
+  const saveNotes = () => {
+    setDishNotes(tempDishNotes);
+    modalizeRef.current?.close();
+  };
+
+  const cancelNotes = () => {
+    modalizeRef.current?.close();
+  };
+
+  const allDishes = [
+    ...(parsedSelectedMenu?.menuItems || [])?.map((item) => ({
+      id: item.dishId || item.id,
+      name: item.dishName || item.name || "Unnamed Dish",
+    })),
+    ...parsedSelectedDishes?.map((dish) => ({
+      id: dish.id,
+      name: dish.name || "Unnamed Dish",
+    })),
+  ];
+
+  return (
+    <SafeAreaView style={commonStyles.containerContent}>
+      <Header title="Booking" />
+      <ProgressBar title="Chọn ngày" currentStep={3} totalSteps={4} />
       <ScrollView
-        style={{ paddingTop: 20 }}
+        style={{ flex: 1, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
       >
-        <View>
-          <Text style={styles.sectionTitle}>Chef information</Text>
-          <View style={[styles.profileContainer, { marginVertical: 20 }]}>
-            <View style={styles.profileContainer}>
-              <Image
-                source={{
-                  uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
-                }}
-                style={styles.profileImage}
-              />
-              <View>
-                <Text style={styles.profileName}>John Doe</Text>
-                <Text style={{ fontSize: 14 }}>20 year old</Text>
-              </View>
-            </View>
-            <AntDesign name="message1" size={24} color="black" />
+        {/* New Section: Number of People */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Number of People</Text>
+          <View style={styles.numberPicker}>
+            <TouchableOpacity
+              style={styles.numberButton}
+              onPress={decrementPeople}
+              disabled={numPeople <= 1}
+            >
+              <Text style={styles.numberButtonText}>−</Text>
+            </TouchableOpacity>
+            <Text style={styles.numberText}>{numPeople}</Text>
+            <TouchableOpacity
+              style={styles.numberButton}
+              onPress={incrementPeople}
+            >
+              <Text style={styles.numberButtonText}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -216,321 +323,60 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.timeContainer}>
-          <Text style={styles.label}>Meal time</Text>
-          <TouchableOpacity
-            onPress={() => setShowMealPicker(true)}
-            style={styles.timeBox}
-          >
-            <Ionicons
-              name="time-outline"
-              size={20}
-              color="#A9411D"
-              style={{ marginRight: 5 }}
-            />
-            <Text style={styles.timeText}>{formatTime(mealTime)}</Text>
-          </TouchableOpacity>
-          {showMealPicker && (
-            <DateTimePicker
-              value={mealTime}
-              mode="time"
-              display="spinner"
-              onChange={handleMealTimeChange}
-            />
-          )}
-        </View>
-
-        {checked && (
-          <View style={styles.timeContainer}>
-            <Text style={styles.label}>End time</Text>
-            <TouchableOpacity
-              onPress={() => setShowEndPicker(true)}
-              style={styles.timeBox}
-            >
-              <Ionicons
-                name="time-outline"
-                size={20}
-                color="#A9411D"
-                style={{ marginRight: 5 }}
-              />
-              <Text style={styles.timeText}>{formatTime(endTime)}</Text>
-            </TouchableOpacity>
-            {showEndPicker && (
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display="spinner"
-                onChange={handleEndTimeChange}
-              />
-            )}
-          </View>
-        )}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={styles.sectionTitle}>
-            After-meal cleaning service
-          </Text>
-          <ToggleButton
-            size={40}
-            icon={checked ? 'toggle-switch' : 'toggle-switch-off'}
-            value="toggle"
-            status={checked ? 'checked' : 'unchecked'}
-            style={{ backgroundColor: 'transparent' }}
-            onPress={() => setChecked(!checked)}
-          />
-        </View>
-
-        {/* <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Amount of people</Text>
-          <View style={{
-            flexDirection: "row", alignItems: "center", justifyContent: 'space-between',
-            backgroundColor: "#EBE5DD", borderRadius: 10, marginHorizontal: 50,
-            padding: 5
-          }}>
-            <TouchableOpacity
-              onPress={() => updateQuantity(quantity - 1)}
-              style={{
-                width: 40, height: 40, justifyContent: "center", alignItems: "center",
-                backgroundColor: "#fff", borderRadius: 10
-              }}
-            >
-              <Text style={{ fontSize: 20 }}>-</Text>
-            </TouchableOpacity>
-
-            <Text style={{ fontSize: 20, fontWeight: "bold", marginHorizontal: 20 }}>
-              {quantity}
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => updateQuantity(quantity + 1)}
-              style={{
-                width: 40, height: 40, justifyContent: "center", alignItems: "center",
-                backgroundColor: "#fff", borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontSize: 20 }}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View> */}
-
-        {/* <View style={styles.section}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.sectionTitle}>
-              Weekly Schedule
-            </Text>
-            <ToggleButton
-              size={40}
-              icon={checkedRepeat ? 'toggle-switch' : 'toggle-switch-off'}
-              value="toggle"
-              status={checkedRepeat ? 'checked' : 'unchecked'}
-              onPress={() => setCheckedRepeat(!checkedRepeat)}
-              style={{ backgroundColor: 'transparent' }}
-            />
-          </View> */}
-          {/* {checkedRepeat && (
-            <View >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  borderColor: '#000',
-                  borderWidth: 0.5,
-                  padding: 10,
-                  borderRadius: 20,
-                }}
+          <Text style={styles.label}>Start time</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {timeSlots?.map((time) => (
+              <TouchableOpacity
+                key={time}
+                style={[
+                  styles.timeButton,
+                  startTime === time && styles.timeButtonSelected,
+                ]}
+                onPress={() => setStartTime(time)}
               >
-                {dayInWeek.map((day) => (
-                  <TouchableOpacity
-                    key={day}
-                    onPress={() => toggleDay(day)}
-                    style={{
-                      paddingVertical: 10,
-                      paddingHorizontal: 10,
-                      borderRadius: 16,
-                      backgroundColor: selectedDays.includes(day) ? "#A9411D" : "transparent",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontWeight: "bold",
-                        // fontSize:12,
-                        color: selectedDays.includes(day) ? "white" : "black",
-                      }}
-                    >
-                      {day}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )} */}
+                <Text
+                  style={[
+                    styles.timeButtonText,
+                    startTime === time && styles.timeButtonTextSelected,
+                  ]}
+                >
+                  {time}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-        {/* </View> */}
-
-        {/* <View style={styles.section}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={[styles.sectionTitle, { flex: 1 }]}>Food list</Text>
-            <TouchableOpacity onPress={() => modalRef.current?.open()}>
-              <AntDesign name="plus" size={20} color="black" />
+        <View style={styles.section}>
+          <View style={styles.menuHeader}>
+            <TouchableOpacity
+              style={styles.menuHeaderContent}
+              onPress={() => setIsMenuExpanded(!isMenuExpanded)}
+            >
+              <Text style={styles.sectionTitle}>
+                {parsedSelectedMenu ? parsedSelectedMenu.name : "Order"}
+              </Text>
+              <MaterialIcons
+                name={isMenuExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                size={24}
+                color="#333"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleAddItems}>
+              <Text style={styles.addItemsText}>Add items</Text>
             </TouchableOpacity>
           </View>
           {selectedMenu && (
             <View>
-              <Text style={{fontSize:18, fontWeight:'500'}}>{selectedMenu?.name}</Text>
-              <Text style={{marginLeft:10}}>{selectedMenu.menuItems.map(dish => dish.dishName).join(", ")}
+              <Text style={{ fontSize: 18, fontWeight: '500' }}>{selectedMenu?.name}</Text>
+              <Text style={{ marginLeft: 10 }}>{selectedMenu.menuItems?.map(dish => dish.dishName).join(", ")}
               </Text>
             </View>
-          )} */}
-
-        {/* </View>
-        <View style={styles.section}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={[styles.sectionTitle, { flex: 1 }]}>Food list</Text>
-            <TouchableOpacity onPress={() => modalDishesRef.current?.open()}>
-              <AntDesign name="plus" size={20} color="black" />
-            </TouchableOpacity>
-          </View>
-
-          <View>
-            {parsedSelectedDishes.length > 0 ? (
-              parsedSelectedDishes.map((dish, index) => (
-                <Text
-                  key={index}
-                  style={{ fontSize: 16, color: "#333", marginVertical: 2 }}
-                >
-                  {dish}
-                </Text>
-              ))
-            ) : (
-              <Text style={{ fontSize: 16, color: "#777" }}>
-                No dishes selected.
-              </Text>
-            )}
-          </View>
-        </View> */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address</Text>
-          <TextInput
-            style={styles.addressText}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Enter your address"
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Special request</Text>
-          <TextInput
-            style={styles.specialRequestInput}
-            placeholder="Enter your request"
-            value={specialRequest}
-            onChangeText={setSpecialRequest}
-            multiline
-          />
-        </View>
-
-        <View style={[styles.section, { marginBottom: 100 }]}>
-          <Text style={styles.sectionTitle}>Cost details</Text>
-          <Text>Total hourly rent</Text>
-          <Text>Total additional charges</Text>
-          <Text>Total payment</Text>
+          )}
+         
         </View>
       </ScrollView>
-
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "#EBE5DD",
-          padding: 20,
-          alignItems: "center",
-        }}
-      >
-        <TouchableOpacity
-          style={{
-            width: "100%",
-            bottom: 10,
-            backgroundColor: "#A64B2A",
-            padding: 15,
-            borderRadius: 10,
-            alignItems: "center",
-          }}
-          onPress={handleConfirmBooking}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Confirm booking
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* <Modalize ref={modalRef} adjustToContentHeight>
-        <View style={{ padding: 10, backgroundColor: "#EBE5DD" }}>
-          {foodList.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 15,
-                backgroundColor: "#EBE5DD",
-                borderRadius: 12,
-                marginBottom: 10,
-                padding: 5,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.1,
-                shadowRadius: 5,
-                elevation: 1,
-              }}
-              onPress={() => toggleSelection(item.id)}
-            >
-              <Checkbox.Android
-                status={
-                  selectedItems.includes(item.id) ? "checked" : "unchecked"
-                }
-                onPress={() => toggleSelection(item.id)}
-                color="#4CAF50"
-              />
-              <Image
-                source={{
-                  uri: "https://images.pexels.com/photos/39866/entrepreneur-startup-start-up-man-39866.jpeg?auto=compress&cs=tinysrgb&w=600",
-                }}
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 25,
-                  marginRight: 12,
-                }}
-              />
-              <View>
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "bold",
-                    color: "#333",
-                  }}
-                >
-                  {item.name}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#777",
-                  }}
-                >
-                  Thoi gian nau
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modalize> */}
-    </GestureHandlerRootView>
+    </SafeAreaView>
   );
 };
 
@@ -546,20 +392,86 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 10,
   },
-  profileContainer: {
+  // Number picker styles
+  numberPicker: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
   },
-  profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 45,
-    marginRight: 20,
+  numberButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#A64B2A",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  profileName: {
-    fontSize: 16,
+  numberButtonText: {
+    fontSize: 24,
+    color: "white",
+    fontWeight: "bold",
+  },
+  numberText: {
+    fontSize: 20,
     fontWeight: "bold",
     color: "#333",
+    marginHorizontal: 20,
+  },
+  menuHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  menuHeaderContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  addItemsText: {
+    fontSize: 16,
+    color: "#1E90FF",
+    fontWeight: "bold",
+  },
+  menuContent: {
+    marginTop: 10,
+  },
+  dishRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  dishInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  dishImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  dishText: {
+    flex: 1,
+  },
+  dishName: {
+    fontSize: 16,
+    color: "#333",
+  },
+  noteText: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 2,
+  },
+  editText: {
+    fontSize: 14,
+    color: "#1E90FF",
+    fontWeight: "bold",
+  },
+  noItemsText: {
+    fontSize: 16,
+    color: "#777",
   },
   dayContainer: {
     paddingHorizontal: 15,
@@ -580,35 +492,46 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   timeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 10,
     paddingVertical: 10,
   },
   label: {
     fontSize: 18,
     fontWeight: "bold",
-    flex: 1,
+    marginBottom: 10,
   },
-  timeBox: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    alignItems: "center",
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "#D1D1D1",
-  },
-  timeText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#A9411D",
-  },
-  separator: {
-    fontSize: 16,
-    fontWeight: "bold",
+  timeButton: {
+    padding: 10,
     marginHorizontal: 5,
+    borderRadius: 8,
+    backgroundColor: "#e0e0e0",
+  },
+  timeButtonSelected: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginHorizontal: 5,
+    borderRadius: 6,
+    backgroundColor: "#A64B2A",
+  },
+  timeButtonDisabled: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginHorizontal: 5,
+    borderRadius: 6,
+    backgroundColor: "#d3d3d3",
+    opacity: 0.5,
+  },
+  timeButtonText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  timeButtonTextSelected: {
+    fontSize: 16,
+    color: "white",
+    fontWeight: "bold",
+  },
+  timeButtonTextDisabled: {
+    fontSize: 16,
+    color: "#888",
   },
   addressText: {
     fontSize: 16,
@@ -627,6 +550,104 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: "top",
     backgroundColor: "#FFF",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#EBE5DD",
+    padding: 20,
+    alignItems: "center",
+  },
+  confirmButton: {
+    width: "100%",
+    backgroundColor: "#A64B2A",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  modalStyle: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  handleStyle: {
+    backgroundColor: "#A64B2A",
+    width: 40,
+    height: 5,
+    borderRadius: 5,
+  },
+  modalContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  dishNoteContainer: {
+    marginBottom: 20,
+  },
+  dishNoteLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
+  },
+  dishNoteInput: {
+    borderWidth: 1,
+    borderColor: "#D1D1D1",
+    borderRadius: 10,
+    padding: 10,
+    minHeight: 60,
+    textAlignVertical: "top",
+    backgroundColor: "#FFF",
+  },
+  noDishesText: {
+    fontSize: 16,
+    color: "#777",
+    textAlign: "center",
+    marginVertical: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#D1D1D1",
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: "#333",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#A64B2A",
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  saveButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

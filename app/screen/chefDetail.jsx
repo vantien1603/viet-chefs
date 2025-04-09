@@ -38,6 +38,7 @@ const ChefDetail = () => {
       try {
         const response = await axiosInstance.get(`/chef/${id}`);
         setChefs(response.data);
+        // console.log("e", response.data);
       } catch (error) {
         console.log("Error fetching chef:", error);
       }
@@ -49,28 +50,29 @@ const ChefDetail = () => {
     modalizeRef.current?.open();
   };
 
+  const handleBack = () => {
+    router.push("/(tabs)/home");
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={"Chef's Information"} />
+      <Header title={"Chef's Information"} onLeftPress={handleBack}/>
       <ProgressBar title="Chọn đầu bếp" currentStep={1} totalSteps={4} />
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <View style={styles.profileContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Image source={{ uri: chefs?.image }} style={styles.profileImage} />
-              <View>
-                <Text style={{ fontSize: 18, fontWeight: '500' }}>{chefs?.user?.fullName}</Text>
-                <Text style={{ fontSize: 16 }}>{chefs?.bio}</Text>
-                <View style={styles.starContainer}>
-                  {Array(5)
-                    .fill()
-                    .map((_, i) => (
-                      <Icon key={i} name="star" size={20} color="#f5a623" />
-                    ))}
-                </View>
+          <View style={styles.header}>
+            <Image source={{ uri: chefs?.user?.avatarUrl }} style={styles.avatar} />
+            <View style={styles.textContainer}>
+              <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+              <Text style={styles.specialty}>{chefs?.bio}</Text>
+              <View style={styles.starContainer}>
+                {Array(5)
+                  .fill()
+                  .map((_, i) => (
+                    <Icon key={i} name="star" size={20} color="#f5a623" />
+                  ))}
               </View>
             </View>
-            <AntDesign name="message1" size={24} color="black" />
           </View>
 
           <Text style={styles.description}>
@@ -122,7 +124,10 @@ const ChefDetail = () => {
             style={styles.modalButton}
             onPress={() => {
               modalizeRef.current?.close();
-              router.push("/screen/selectFood");
+              router.push({
+                pathname: "/screen/selectFood",
+                params: { chefId: id },
+              });
             }}
           >
             <Text style={styles.modalButtonText}>Short-term Booking</Text>
@@ -133,7 +138,7 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               router.push({
                 pathname: "/screen/longTermBooking",
-                params: { chefId: id }, // Pass chefId here
+                params: { chefId: id },
               });
             }}
           >
