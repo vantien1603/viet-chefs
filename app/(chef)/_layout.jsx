@@ -4,6 +4,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 // Component ChefTabBar
 function ChefTabBar({ state, descriptors, navigation }) {
+    // Kiểm tra route hiện tại
+  const currentRoute = state.routes[state.index].name;
+
+  // Nếu route hiện tại là "add", không render tab bar
+  if (currentRoute === "add") {
+    return null;
+  }
     return (
         <View style={styles.container}>
             <View style={styles.background} />

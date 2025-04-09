@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,17 +9,14 @@ import {
   SafeAreaView,
   StyleSheet,
   TextInput,
-  Image,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { Dropdown } from "react-native-element-dropdown";
 import Header from "../../components/header";
 import AXIOS_API from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Modalize } from "react-native-modalize"; // Thêm import Modalize
 
-// Hàm tạo danh sách các khoảng thời gian
 const generateTimeSlots = () => {
   const timeSlots = [];
   for (let hour = 8; hour <= 22; hour++) {
@@ -35,14 +32,22 @@ const generateTimeSlots = () => {
 
 const LongTermSelectBooking = () => {
   const params = useLocalSearchParams();
-  const selectedPackage = JSON.parse(params.selectedPackage);
+  const selectedPackage = params.selectedPackage ? JSON.parse(params.selectedPackage) : null;
   const chefId = params.chefId;
-  const numPeople = parseInt(params.numPeople);
-  const location = params.address;
-  const [selectedDates, setSelectedDates] = useState({});
-  const [extraDishes, setExtraDishes] = useState([]);
+  const numPeople = params.numPeople ? parseInt(params.numPeople) : null;
+  const address = params.address || "";
+
+  const [selectedDates, setSelectedDates] = useState(
+    params.selectedDates ? JSON.parse(params.selectedDates) : {}
+  );
   const [menuItems, setMenuItems] = useState([]);
-  const [editingNote, setEditingNote] = useState(null);
+  const [dishes, setDishes] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentDishId, setCurrentDishId] = useState(null);
+  const [currentDate, setCurrentDate] = useState(null);
+  const [noteText, setNoteText] = useState("");
+  const modalizeRef = useRef(null); // Thêm ref cho Modalize
+  const lastProcessedParams = useRef(null);
 
   const today = new Date();
   const todayString = today.toISOString().split("T")[0];
@@ -50,7 +55,75 @@ const LongTermSelectBooking = () => {
 
   useEffect(() => {
     handleMenu();
+    fetchDishes();
   }, []);
+
+  useEffect(() => {
+    const paramsString = JSON.stringify(params);
+    if (
+      params.date &&
+      (params.selectedMenu || params.selectedDishes) &&
+      paramsString !== lastProcessedParams.current
+    ) {
+      const date = params.date;
+
+      const selectedMenuData =
+        typeof params.selectedMenu === "string" && params.selectedMenu !== "null" && params.selectedMenu !== ""
+          ? JSON.parse(params.selectedMenu)
+          : {};
+      const selectedDishesData =
+        typeof params.selectedDishes === "string" && params.selectedDishes !== "null" && params.selectedDishes !== ""
+          ? JSON.parse(params.selectedDishes)
+          : [];
+      const newDishNotes =
+        typeof params.dishNotes === "string" && params.dishNotes !== "null" && params.dishNotes !== ""
+          ? JSON.parse(params.dishNotes)
+          : {};
+
+      setSelectedDates((prev) => {
+        const existingDate = prev[date] || {
+          selected: true,
+          selectedColor: "#6C63FF",
+          showMenu: true,
+          startTime: "",
+          menuId: null,
+          extraDishIds: [],
+          menuDishNotes: {},
+          extraDishNotes: {},
+        };
+
+        return {
+          ...prev,
+          [date]: {
+            ...existingDate,
+            menuId: selectedMenuData?.id || null,
+            extraDishIds: selectedDishesData.map((dish) => dish.id),
+            menuDishNotes: Object.fromEntries(
+              Object.entries(newDishNotes).filter(([dishId]) =>
+                selectedMenuData?.menuItems?.some((item) => item.dishId === parseInt(dishId))
+              )
+            ),
+            extraDishNotes: Object.fromEntries(
+              Object.entries(newDishNotes).filter(([dishId]) =>
+                selectedDishesData.some((dish) => dish.id === parseInt(dishId))
+              )
+            ),
+          },
+        };
+      });
+
+      lastProcessedParams.current = paramsString;
+    }
+  }, [params]);
+
+  const fetchDishes = async () => {
+    try {
+      const response = await AXIOS_API.get(`/dishes?chefId=${chefId}`);
+      setDishes(response.data.content || []);
+    } catch (error) {
+      console.log("Error fetching dishes:", error);
+    }
+  };
 
   const onDayPress = (day) => {
     let newSelection = { ...selectedDates };
@@ -65,7 +138,6 @@ const LongTermSelectBooking = () => {
       newSelection[day.dateString] = {
         selected: true,
         selectedColor: "#6C63FF",
-        isServing: false,
         showMenu: false,
         startTime: "",
         menuId: null,
@@ -78,42 +150,52 @@ const LongTermSelectBooking = () => {
   };
 
   const updateBookingDetail = (date, key, value) => {
+    setSelectedDates((prev) => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleEditNote = (date, dishId, isMenuDish) => {
+    setCurrentDate(date);
+    setCurrentDishId(dishId);
+    const notes = isMenuDish
+      ? selectedDates[date].menuDishNotes[dishId]
+      : selectedDates[date].extraDishNotes[dishId];
+    setNoteText(notes || "");
+    setModalVisible(true);
+    modalizeRef.current?.open(); // Mở Modalize
+  };
+
+  const saveNote = () => {
+    if (!currentDate || !currentDishId) return;
+
     setSelectedDates((prev) => {
-      const updated = {
+      const isMenuDish = prev[currentDate].menuId && menuItems
+        .find((m) => m.id === prev[currentDate].menuId)
+        ?.menuItems.some((item) => item.dishId === currentDishId);
+
+      return {
         ...prev,
-        [date]: { ...prev[date], [key]: value },
+        [currentDate]: {
+          ...prev[currentDate],
+          menuDishNotes: isMenuDish
+            ? { ...prev[currentDate].menuDishNotes, [currentDishId]: noteText }
+            : prev[currentDate].menuDishNotes,
+          extraDishNotes: !isMenuDish
+            ? { ...prev[currentDate].extraDishNotes, [currentDishId]: noteText }
+            : prev[currentDate].extraDishNotes,
+        },
       };
-      if (key === "menuId" && value) {
-        fetchDishesNotInMenu(value);
-      }
-      return updated;
     });
-  };
-
-  const updateMenuDishNote = (date, dishId, note) => {
-    setSelectedDates((prev) => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        menuDishNotes: {
-          ...prev[date].menuDishNotes,
-          [dishId]: note,
-        },
-      },
-    }));
-  };
-
-  const updateExtraDishNote = (date, dishId, note) => {
-    setSelectedDates((prev) => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        extraDishNotes: {
-          ...prev[date].extraDishNotes,
-          [dishId]: note,
-        },
-      },
-    }));
+    modalizeRef.current?.close(); // Đóng Modalize
+    setModalVisible(false);
+    setNoteText("");
+    setCurrentDishId(null);
+    setCurrentDate(null);
   };
 
   const handleConfirm = async () => {
@@ -123,50 +205,66 @@ const LongTermSelectBooking = () => {
       );
       return;
     }
-    const bookingDetails = Object.keys(selectedDates).map((date) => ({
-      sessionDate: date,
-      isServing: selectedDates[date].isServing,
-      startTime: `${selectedDates[date].startTime}:00`,
-      menuId: selectedDates[date].showMenu ? selectedDates[date].menuId : null,
-      extraDishIds:
-        selectedDates[date].showMenu &&
-        selectedDates[date].extraDishIds.length > 0
-          ? selectedDates[date].extraDishIds
-          : null,
-      isDishSelected: selectedDates[date].showMenu,
-      menuDishNotes: selectedDates[date].menuDishNotes || {},
-      extraDishNotes: selectedDates[date].extraDishNotes || {},
-    }));
+
+    if (!numPeople || !address) {
+      alert("Số lượng khách hoặc địa điểm không hợp lệ.");
+      return;
+    }
+
+    const bookingDetails = Object.keys(selectedDates).map((date) => {
+      const menuDishes = Object.entries(selectedDates[date].menuDishNotes || {}).map(
+        ([dishId, notes]) => ({
+          dishId: parseInt(dishId),
+          notes,
+        })
+      );
+      const extraDishesNotes = Object.entries(selectedDates[date].extraDishNotes || {}).map(
+        ([dishId, notes]) => ({
+          dishId: parseInt(dishId),
+          notes,
+        })
+      );
+      const allDishes = [...menuDishes, ...extraDishesNotes];
+
+      return {
+        sessionDate: date,
+        startTime: `${selectedDates[date].startTime}:00`,
+        menuId: selectedDates[date].showMenu ? selectedDates[date].menuId : null,
+        extraDishIds:
+          selectedDates[date].showMenu && selectedDates[date].extraDishIds?.length > 0
+            ? selectedDates[date].extraDishIds
+            : null,
+        isDishSelected: selectedDates[date].showMenu,
+        dishes: allDishes.length > 0 ? allDishes : null,
+      };
+    });
 
     const payload = {
       chefId: parseInt(chefId),
       packageId: selectedPackage.id,
       guestCount: numPeople,
-      location,
+      location: address,
       bookingDetails,
     };
-
-    console.log("Payload to API:", JSON.stringify(payload, null, 2));
 
     try {
       const response = await AXIOS_API.post(
         "/bookings/calculate-long-term-booking",
         payload
       );
-      console.log("API Response:", response.data);
       router.push({
         pathname: "/screen/reviewBooking",
         params: {
           bookingData: JSON.stringify(response.data),
           selectedPackage: JSON.stringify(selectedPackage),
-          chefId: chefId,
-          numPeople: numPeople,
-          address: location,
+          chefId,
+          numPeople,
+          address,
           selectedDates: JSON.stringify(selectedDates),
         },
       });
     } catch (error) {
-      console.log("Error calling calculate-long-term-booking:", error);
+      console.log("Error:", error.response?.data || error.message);
       alert("Có lỗi khi tính toán giá đặt chỗ dài hạn.");
     }
   };
@@ -174,48 +272,14 @@ const LongTermSelectBooking = () => {
   const handleMenu = async () => {
     try {
       const response = await AXIOS_API.get(`/menus?chefId=${chefId}`);
-      console.log("Raw API Response:", response.data);
       if (response.status === 200) {
-        const fetchedMenus = response.data.content || response.data || [];
-        setMenuItems(fetchedMenus);
-        console.log("Menus fetched:", JSON.stringify(fetchedMenus, null, 2));
+        setMenuItems(response.data.content || response.data || []);
       }
     } catch (error) {
       console.log("Error fetching menus:", error);
       alert("Không thể lấy danh sách menu.");
       setMenuItems([]);
     }
-  };
-
-  const fetchDishesNotInMenu = async (menuId) => {
-    try {
-      const response = await AXIOS_API.get(
-        `/dishes/not-in-menu?menuId=${menuId}`
-      );
-      if (response.status === 200) {
-        const fetchedDishes = response.data.content || response.data || [];
-        setExtraDishes(fetchedDishes);
-        console.log("Dishes not in menu:", fetchedDishes);
-      }
-    } catch (error) {
-      console.log("Error fetching dishes not in menu:", error);
-      alert("Không thể lấy danh sách món ăn ngoài menu.");
-      setExtraDishes([]);
-    }
-  };
-
-  const toggleEditNote = (date, dishId, type) => {
-    const key = `${date}-${dishId}-${type}`;
-    setEditingNote(editingNote === key ? null : key);
-  };
-
-  const saveNote = (date, dishId, type, note) => {
-    if (type === "menu") {
-      updateMenuDishNote(date, dishId, note);
-    } else {
-      updateExtraDishNote(date, dishId, note);
-    }
-    setEditingNote(null);
   };
 
   return (
@@ -228,7 +292,7 @@ const LongTermSelectBooking = () => {
           contentContainerStyle={styles.scrollViewContent}
         >
           <Text style={styles.title}>
-            Chọn Ngày (Cần chọn đúng {selectedPackage.durationDays} ngày):
+            Chọn Ngày (Cần chọn đúng {selectedPackage?.durationDays || 0} ngày):
           </Text>
           <Calendar
             markedDates={{
@@ -278,227 +342,82 @@ const LongTermSelectBooking = () => {
 
               {selectedDates[date].showMenu && (
                 <>
-                  <Text style={styles.label}>Chọn Menu:</Text>
-                  <Dropdown
-                    style={styles.dropdown}
-                    data={menuItems}
-                    labelField="name"
-                    valueField="id"
-                    placeholder="Select Menu"
-                    placeholderStyle={styles.dropdownPlaceholder}
-                    selectedTextStyle={styles.dropdownSelectedText}
-                    value={selectedDates[date].menuId}
-                    onChange={(item) =>
-                      updateBookingDetail(date, "menuId", item.id)
-                    }
-                    search
-                    searchPlaceholder="Tìm kiếm menu..."
-                    containerStyle={styles.dropdownContainer}
-                    itemTextStyle={styles.dropdownItemText}
-                  />
+                  <TouchableOpacity
+                    style={styles.selectFoodButton}
+                    onPress={() => {
+                      router.push({
+                        pathname: "/screen/selectFood",
+                        params: {
+                          chefId,
+                          date,
+                          isLongTerm: "true",
+                          currentStep: "3",
+                          totalSteps: "4",
+                          selectedPackage: JSON.stringify(selectedPackage),
+                          selectedDates: JSON.stringify(selectedDates),
+                          selectedMenu: selectedDates[date].menuId
+                            ? JSON.stringify(
+                                menuItems.find((item) => item.id === selectedDates[date].menuId)
+                              )
+                            : "",
+                          selectedDishes: selectedDates[date].extraDishIds?.length > 0
+                            ? JSON.stringify(
+                                selectedDates[date].extraDishIds.map((id) => ({ id }))
+                              )
+                            : "",
+                          dishNotes: JSON.stringify({
+                            ...selectedDates[date].menuDishNotes,
+                            ...selectedDates[date].extraDishNotes,
+                          }),
+                          numPeople: numPeople || "",
+                          address: address || "",
+                        },
+                      });
+                    }}
+                  >
+                    <Text style={styles.selectFoodButtonText}>Chọn Menu/Món ăn</Text>
+                  </TouchableOpacity>
 
-                  {selectedDates[date].menuId && menuItems.length > 0 && (
-                    <View style={styles.menuDishesContainer}>
-                      <Text style={styles.subLabel}>Món trong menu:</Text>
+                  {selectedDates[date].menuId && (
+                    <>
+                      <Text style={styles.summaryText}>
+                        Menu: {menuItems.find((m) => m.id === selectedDates[date].menuId)?.name}
+                      </Text>
+                      <Text style={styles.subTitle}>Món trong menu:</Text>
                       {menuItems
-                        .find((item) => item.id === selectedDates[date].menuId)
-                        ?.menuItems?.map((dish) => {
-                          const noteKey = `${date}-${dish.dishId}-menu`;
-                          const isEditing = editingNote === noteKey;
-                          return (
-                            <View key={dish.dishId} style={styles.dishCard}>
-                              <Image
-                                source={require("../../assets/images/1.jpg")} // Placeholder image
-                                style={styles.dishImage}
-                              />
-                              <View style={styles.dishContent}>
-                                <Text style={styles.dishText}>
-                                  {dish.dishName}
-                                </Text>
-                                {selectedDates[date].menuDishNotes[
-                                  dish.dishId
-                                ] &&
-                                  !isEditing && (
-                                    <Text style={styles.noteText}>
-                                      Note:{" "}
-                                      {
-                                        selectedDates[date].menuDishNotes[
-                                          dish.dishId
-                                        ]
-                                      }
-                                    </Text>
-                                  )}
-                                {isEditing ? (
-                                  <View style={styles.noteInputContainer}>
-                                    <TextInput
-                                      style={styles.noteInput}
-                                      placeholder="Add your request here..."
-                                      value={
-                                        selectedDates[date].menuDishNotes[
-                                          dish.dishId
-                                        ] || ""
-                                      }
-                                      onChangeText={(text) =>
-                                        updateMenuDishNote(
-                                          date,
-                                          dish.dishId,
-                                          text
-                                        )
-                                      }
-                                      multiline
-                                    />
-                                    <TouchableOpacity
-                                      style={styles.saveNoteButton}
-                                      onPress={() =>
-                                        saveNote(
-                                          date,
-                                          dish.dishId,
-                                          "menu",
-                                          selectedDates[date].menuDishNotes[
-                                            dish.dishId
-                                          ]
-                                        )
-                                      }
-                                    >
-                                      <Text style={styles.saveNoteButtonText}>
-                                        Save
-                                      </Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                ) : (
-                                  <TouchableOpacity
-                                    style={styles.editNoteButton}
-                                    onPress={() =>
-                                      toggleEditNote(date, dish.dishId, "menu")
-                                    }
-                                  >
-                                    <Text style={styles.editNoteButtonText}>
-                                      Edit Note
-                                    </Text>
-                                  </TouchableOpacity>
-                                )}
-                              </View>
-                            </View>
-                          );
-                        }) || (
-                        <Text style={styles.noItemsText}>
-                          Không có món nào trong menu này
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  <Text style={styles.label}>Chọn Món Thêm:</Text>
-                  {extraDishes.length > 0 ? (
-                    extraDishes.map((item) => {
-                      const noteKey = `${date}-${item.id}-extra`;
-                      const isEditing = editingNote === noteKey;
-                      const isSelected = selectedDates[
-                        date
-                      ].extraDishIds?.includes(item.id);
-                      return (
-                        <View key={item.id} style={styles.dishCard}>
-                          <Image
-                            source={require("../../assets/images/1.jpg")} // Placeholder image
-                            style={styles.dishImage}
-                          />
-                          <View style={styles.dishContent}>
+                        .find((m) => m.id === selectedDates[date].menuId)
+                        ?.menuItems.map((item) => (
+                          <View key={item.dishId} style={styles.dishItem}>
+                            <Text style={styles.dishText}>
+                              {item.dishName} {selectedDates[date].menuDishNotes[item.dishId] && `(Ghi chú: ${selectedDates[date].menuDishNotes[item.dishId]})`}
+                            </Text>
                             <TouchableOpacity
-                              onPress={() => {
-                                const currentExtras =
-                                  selectedDates[date].extraDishIds || [];
-                                updateBookingDetail(
-                                  date,
-                                  "extraDishIds",
-                                  currentExtras.includes(item.id)
-                                    ? currentExtras.filter(
-                                        (id) => id !== item.id
-                                      )
-                                    : [...currentExtras, item.id]
-                                );
-                              }}
-                              style={styles.dishNameContainer}
+                              style={styles.editButton}
+                              onPress={() => handleEditNote(date, item.dishId, true)}
                             >
-                              <View style={styles.dishNameWithCheck}>
-                                <Text style={styles.dishText}>{item.name}</Text>
-                                {isSelected && (
-                                  <MaterialIcons
-                                    name="check-circle"
-                                    size={20}
-                                    color="#A64B2A"
-                                    style={styles.checkIcon}
-                                  />
-                                )}
-                              </View>
+                              <Text style={styles.editButtonText}>Edit Note</Text>
                             </TouchableOpacity>
-                            {isSelected && (
-                              <>
-                                {selectedDates[date].extraDishNotes[item.id] &&
-                                  !isEditing && (
-                                    <Text style={styles.noteText}>
-                                      Note:{" "}
-                                      {
-                                        selectedDates[date].extraDishNotes[
-                                          item.id
-                                        ]
-                                      }
-                                    </Text>
-                                  )}
-                                {isEditing ? (
-                                  <View style={styles.noteInputContainer}>
-                                    <TextInput
-                                      style={styles.noteInput}
-                                      placeholder="Add your request here..."
-                                      value={
-                                        selectedDates[date].extraDishNotes[
-                                          item.id
-                                        ] || ""
-                                      }
-                                      onChangeText={(text) =>
-                                        updateExtraDishNote(date, item.id, text)
-                                      }
-                                      multiline
-                                    />
-                                    <TouchableOpacity
-                                      style={styles.saveNoteButton}
-                                      onPress={() =>
-                                        saveNote(
-                                          date,
-                                          item.id,
-                                          "extra",
-                                          selectedDates[date].extraDishNotes[
-                                            item.id
-                                          ]
-                                        )
-                                      }
-                                    >
-                                      <Text style={styles.saveNoteButtonText}>
-                                        Save
-                                      </Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                ) : (
-                                  <TouchableOpacity
-                                    style={styles.editNoteButton}
-                                    onPress={() =>
-                                      toggleEditNote(date, item.id, "extra")
-                                    }
-                                  >
-                                    <Text style={styles.editNoteButtonText}>
-                                      Edit Note
-                                    </Text>
-                                  </TouchableOpacity>
-                                )}
-                              </>
-                            )}
                           </View>
+                        ))}
+                    </>
+                  )}
+                  {selectedDates[date].extraDishIds?.length > 0 && (
+                    <>
+                      <Text style={styles.subTitle}>Món thêm:</Text>
+                      {selectedDates[date].extraDishIds.map((dishId) => (
+                        <View key={dishId} style={styles.dishItem}>
+                          <Text style={styles.dishText}>
+                            {dishes.find((d) => d.id === dishId)?.name || "Unknown Dish"} {selectedDates[date].extraDishNotes[dishId] && `(Ghi chú: ${selectedDates[date].extraDishNotes[dishId]})`}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => handleEditNote(date, dishId, false)}
+                          >
+                            <Text style={styles.editButtonText}>Edit Note</Text>
+                          </TouchableOpacity>
                         </View>
-                      );
-                    })
-                  ) : (
-                    <Text style={styles.noItemsText}>
-                      Chọn menu để xem món thêm
-                    </Text>
+                      ))}
+                    </>
                   )}
                 </>
               )}
@@ -536,239 +455,88 @@ const LongTermSelectBooking = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Modalize để chỉnh sửa ghi chú */}
+      <Modalize
+        ref={modalizeRef}
+        adjustToContentHeight={true} // Tự động điều chỉnh chiều cao theo nội dung
+        handlePosition="outside" // Thanh kéo nằm ngoài modal
+        modalStyle={styles.modalContent}
+        onClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalInner}>
+          <Text style={styles.modalTitle}>Ghi chú</Text>
+          <TextInput
+            style={styles.noteInput}
+            value={noteText}
+            onChangeText={setNoteText}
+            placeholder="Nhập ghi chú cho món ăn"
+            multiline
+          />
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => modalizeRef.current?.close()}
+            >
+              <Text style={styles.modalButtonText}>Hủy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={saveNote}
+            >
+              <Text style={styles.modalButtonText}>Lưu</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modalize>
     </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#EBE5DD",
-  },
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    padding: 20,
-  },
-  scrollViewContent: {
-    paddingBottom: 100, // Ensure enough padding to scroll past the fixed button
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
+  safeArea: { flex: 1, backgroundColor: "#EBE5DD" },
+  container: { flex: 1 },
+  scrollView: { flex: 1, padding: 20 },
+  scrollViewContent: { paddingBottom: 100 },
+  title: { fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 15 },
   calendar: {
     backgroundColor: "#EBE5DD",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#D1D1D1",
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   dateCard: {
     marginTop: 20,
     backgroundColor: "#FFF",
     padding: 15,
     borderRadius: 12,
-    borderColor: "#D1D1D1",
     borderWidth: 1,
+    borderColor: "#D1D1D1",
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  dateTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  switchContainer: {
-    flexDirection: "row",
+  dateTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
+  switchContainer: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  label: { fontSize: 16, fontWeight: "600", color: "#333", marginTop: 15, marginBottom: 5 },
+  switchText: { marginLeft: 10, fontSize: 16, color: "#555" },
+  selectFoodButton: {
+    backgroundColor: "#1E90FF",
+    padding: 10,
+    borderRadius: 8,
     alignItems: "center",
-    marginBottom: 10,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 15,
-    marginBottom: 5,
-  },
-  subLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#555",
-    marginTop: 15,
-    marginBottom: 10,
-  },
-  switchText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#555",
-  },
-  dropdown: {
-    borderWidth: 1,
-    borderColor: "#D1D1D1",
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: "#FFF",
-    marginVertical: 8,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  dropdownPlaceholder: {
-    fontSize: 16,
-    color: "#888",
-  },
-  dropdownSelectedText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  dropdownContainer: {
-    borderRadius: 12,
-    borderColor: "#D1D1D1",
-    borderWidth: 1,
-    backgroundColor: "#FFF",
-    elevation: 2,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  menuDishesContainer: {
     marginTop: 10,
   },
-  dishCard: {
-    flexDirection: "row",
-    backgroundColor: "#F9F9F9",
-    borderRadius: 12,
-    padding: 10,
-    marginVertical: 5,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  dishImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 15,
-  },
-  dishContent: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  dishNameContainer: {
-    marginBottom: 5,
-  },
-  dishNameWithCheck: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  dishText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-  checkIcon: {
-    marginLeft: 8,
-  },
-  noteText: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 2,
-    marginBottom: 5,
-  },
-  editNoteButton: {
-    backgroundColor: "#1E90FF",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  editNoteButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  noteInputContainer: {
-    marginTop: 5,
-  },
-  noteInput: {
-    borderWidth: 1,
-    borderColor: "#D1D1D1",
-    borderRadius: 8,
-    padding: 10,
-    minHeight: 60,
-    textAlignVertical: "top",
-    backgroundColor: "#FFF",
-    marginBottom: 5,
-  },
-  saveNoteButton: {
-    backgroundColor: "#A64B2A",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  saveNoteButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  noItemsText: {
-    fontSize: 14,
-    color: "#777",
-    textAlign: "center",
-    marginVertical: 10,
-  },
-  timeButton: {
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: "#E5E5E5",
-  },
-  timeButtonSelected: {
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: "#A64B2A",
-  },
-  timeButtonDisabled: {
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: "#D3D3D3",
-    opacity: 0.5,
-  },
-  timeButtonText: {
-    color: "#333",
-    fontSize: 14,
-  },
-  timeButtonTextSelected: {
-    color: "white",
-    fontSize: 14,
-  },
-  timeButtonTextDisabled: {
-    color: "#888",
-    fontSize: 14,
-  },
+  selectFoodButtonText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  summaryText: { fontSize: 14, color: "#333", marginTop: 5 },
+  subTitle: { fontSize: 16, fontWeight: "600", color: "#333", marginTop: 10 },
+  dishItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 },
+  dishText: { fontSize: 14, color: "#555", flex: 1 },
+  editButton: { backgroundColor: "#FF9800", padding: 5, borderRadius: 5 },
+  editButtonText: { color: "white", fontSize: 12 },
+  timeButton: { padding: 10, marginHorizontal: 5, borderRadius: 8, backgroundColor: "#E5E5E5" },
+  timeButtonSelected: { backgroundColor: "#A64B2A" },
+  timeButtonText: { color: "#333", fontSize: 14 },
+  timeButtonTextSelected: { color: "white", fontSize: 14 },
   buttonArea: {
     position: "absolute",
     bottom: 0,
@@ -786,17 +554,36 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 18,
+  buttonText: { color: "white", fontWeight: "bold", fontSize: 18 },
+  modalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 10,
   },
+  modalInner: {
+    padding: 20,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10, textAlign: "center" },
+  noteInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    height: 100,
+    textAlignVertical: "top",
+    marginBottom: 10,
+  },
+  modalButtons: { flexDirection: "row", justifyContent: "space-between" },
+  modalButton: {
+    backgroundColor: "#A64B2A",
+    padding: 10,
+    borderRadius: 5,
+    width: "45%",
+    alignItems: "center",
+  },
+  modalButtonText: { color: "white", fontWeight: "bold" },
 });
 
 export default LongTermSelectBooking;

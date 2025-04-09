@@ -5,16 +5,75 @@ import { Redirect, router } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthContext } from "../config/AuthContext";
+import * as Notifications from 'expo-notifications'
+import * as Device from 'expo-device'
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
 
+  useEffect(() => {
+    const setupNotifications = async () => {
+      // // Kiểm tra xem có phải thiết bị thật không
+      // if (!Device.isDevice) {
+      //   console.log('Must use physical device for Push Notifications')
+      //   return
+      // }
+
+      // Yêu cầu quyền thông báo
+      const { status: existingStatus } = await Notifications.getPermissionsAsync()
+      let finalStatus = existingStatus
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync()
+        finalStatus = status
+      }
+
+      if (finalStatus !== 'granted') {
+        Alert.alert('Failed to get push token for push notification!')
+        return
+      }
+
+      // Lấy token
+      const token = (await Notifications.getExpoPushTokenAsync()).data
+      console.log('🔥 Device token:', token);
+      const expotoken = await AsyncStorage.setItem("expoPushToken", token);
+
+      // Cấu hình xử lý thông báo khi app đang chạy
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      })
+
+      // Lắng nghe thông báo khi app ở foreground
+      const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+        Alert.alert(
+          'Thông báo nhận được!',
+          notification.request.content.body || 'Có thông báo mới'
+        )
+      })
+
+      // Lắng nghe khi người dùng tương tác với thông báo
+      const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('Notification clicked:', response)
+      })
+
+      // Cleanup
+      return () => {
+        foregroundSubscription.remove()
+        responseSubscription.remove()
+      }
+    }
+
+    setupNotifications()
+  }, [])
+
   const handleLogin = () => {
     router.push("screen/login");
-    // router.push('screen/selectFood');
-    // router.push('screen/Cart/cart');
-    // router.push('screen/map')
-    // router.push('screen/Chefs/menu');
   };
 
   const auth = useContext(AuthContext);

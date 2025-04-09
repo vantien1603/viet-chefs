@@ -93,11 +93,11 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!usernameOrEmail || !password) {
-      setError("Vui lòng nhập đầy đủ username/email và mật khẩu!");
+      setError("Please fill in the information completely.");
       return;
     }
-
-    const loginPayload = { usernameOrEmail, password };
+    const expoToken = await AsyncStorage.getItem("expoPushToken");
+    const loginPayload = { usernameOrEmail, password, expoToken };
 
     try {
       const response = await AXIOS_BASE.post("/login", loginPayload);
@@ -125,7 +125,7 @@ export default function LoginScreen() {
         }
       }
     } catch (error) {
-      const errorMessage = "Username/email hoặc mật khẩu không đúng!";
+      const errorMessage = "Please check again account & password!";
       setError(errorMessage); // Display error to user
       console.log("Login failed", errorMessage);
     }

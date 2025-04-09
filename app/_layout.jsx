@@ -1,27 +1,10 @@
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import Toast, { BaseToast } from "react-native-toast-message";
 import { AuthProvider } from "../config/AuthContext";
 import { Alert, PermissionsAndroid } from "react-native";
 
-// SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
-  const requestUserPermission = async () => {
-    const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
-    if(granted===PermissionsAndroid.RESULTS.GRANTED){
-      // Alert.alert("Permission granted");
-      console.log("Permission granted");
-    } else {
-      Alert.alert("Permission denied");
-    }
-  };
-
-  useEffect(() => {
-    requestUserPermission();
-  }, [])
 
   const toastConfig = {
     success: (props) => (
@@ -50,7 +33,7 @@ export default function RootLayout() {
       <BaseToast
         {...props}
         style={{
-          borderLeftColor: "#D32F2F", // Màu đỏ cho error
+          borderLeftColor: "#D32F2F",
           backgroundColor: "#FFEBEE",
           height: 80,
           width: "90%",
@@ -85,261 +68,142 @@ export default function RootLayout() {
           },
         }}
       >
-        <Stack.Screen
-          name="index"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="(tabs)"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="(chef)"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/login"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/signup"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/verify"
-          options={{
-            headerShown: false,
-          }}
-        />
+        {/* Your screens */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(chef)" options={{ headerShown: false }} />
+        <Stack.Screen name="screen/login" options={{ headerShown: false }} />
+        <Stack.Screen name="screen/signup" options={{ headerShown: false }} />
+        <Stack.Screen name="screen/verify" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/setPassword"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="screen/forgot"
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="screen/forgot" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/forgotPassword"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/resetPassword"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="screen/booking"
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="screen/booking" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/confirmBooking"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/historyBooking"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/Cart/cart"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/searchResult"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/orderHistories"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="screen/setting"
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="screen/setting" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/editAddress"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="screen/calendar"
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="screen/calendar" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/selectFood"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/chefDetail"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="screen/allDish"
-          options={{
-            headerShown: false,
-          }}
-        />
-        {/* <Stack.Screen 
-          name="screen/Chefs/dashboard" 
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/Chefs/menu"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="screen/Chefs/addFood"
-          options={{
-            headerShown: false,
-          }}
-        /> */}
+        <Stack.Screen name="screen/allDish" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/Chefs/foodDetail"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/Chefs/editFood"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/createChef"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="screen/wallet"
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="screen/wallet" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/profileDetail"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/editProfile"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/reviewFeedback"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="screen/reviewsChef"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="screen/longTermBooking"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="screen/longTermSelect"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="screen/reviewBooking"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="screen/changePassword"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="screen/menuDetail"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="screen/dishDetails"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="screen/dishNote"
-          options={{
-            headerShown: false,
-          }}
+          name="screen/longTermBooking"
+          options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="screen/longTermSelect"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/reviewBooking"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/changePassword"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/menuDetail"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/dishDetails"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="screen/dishNote" options={{ headerShown: false }} />
         <Stack.Screen
           name="screen/longTermDetails"
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="screen/deposit" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="screen/paymentBooking"
+          options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="screen/deposit"
-          options={{
-            headerShown: false,
-          }}
+          name="screen/review"
+          options={{ headerShown: false }}
         />
-
+        <Stack.Screen
+          name="screen/notification"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/bookingDetails"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/updateBookingDetail"
+          options={{ headerShown: false }}
+        />
       </Stack>
-
       <Toast config={toastConfig} />
     </AuthProvider>
   );

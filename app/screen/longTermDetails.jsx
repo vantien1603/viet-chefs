@@ -8,14 +8,14 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 
 const LongTermDetailsScreen = () => {
-  const { bookingId } = useLocalSearchParams(); // Lấy bookingId từ params
+  const { bookingId, chefId } = useLocalSearchParams();
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -48,7 +48,6 @@ const LongTermDetailsScreen = () => {
         text1: "Success",
         text2: "Deposit successful",
       });
-      // Cập nhật lại dữ liệu sau khi thanh toán (tùy chọn)
       fetchLongTermDetails();
     } catch (error) {
       console.error("Error making deposit:", error);
@@ -70,25 +69,44 @@ const LongTermDetailsScreen = () => {
 
   const renderCycleItem = (cycle) => (
     <View key={cycle.id} style={styles.cycleCard}>
+      {/* Tiêu đề Cycle */}
       <Text style={styles.cycleTitle}>Cycle {cycle.cycleOrder}</Text>
-      <Text style={styles.cycleText}>Start Date: {cycle.startDate}</Text>
-      <Text style={styles.cycleText}>End Date: {cycle.endDate}</Text>
-      <Text style={styles.cycleText}>Amount Due: ${cycle.amountDue}</Text>
-      <Text style={styles.cycleText}>Status: {cycle.status}</Text>
-      <Text style={styles.sectionTitle}>Booking Details:</Text>
-      {cycle.bookingDetails.map((detail) => (
-        <View key={detail.id} style={styles.detailItem}>
-          <Text style={styles.detailText}>
-            Session Date: {detail.sessionDate}
-          </Text>
-          <Text style={styles.detailText}>Start Time: {detail.startTime}</Text>
-          <Text style={styles.detailText}>Location: {detail.location}</Text>
-          <Text style={styles.detailText}>
-            Total Price: ${detail.totalPrice}
-          </Text>
-          <Text style={styles.detailText}>Status: {detail.status}</Text>
-        </View>
-      ))}
+      {/* Thông tin cơ bản của Cycle */}
+      <View style={styles.cycleInfo}>
+        <Text style={styles.cycleText}>Start Date: {cycle.startDate}</Text>
+        <Text style={styles.cycleText}>End Date: {cycle.endDate}</Text>
+        <Text style={styles.cycleText}>Amount Due: ${cycle.amountDue}</Text>
+        <Text style={styles.cycleText}>Status: {cycle.status}</Text>
+        <Text style={styles.cycleText}>Booking Details: {cycle.status}</Text>
+      </View>
+      {/* Danh sách Booking Details */}
+      <View style={styles.bookingDetailsContainer}>
+        {cycle.bookingDetails.map((detail) => (
+          <TouchableOpacity
+            key={detail.id}
+            style={styles.detailItem}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/bookingDetails",
+                params: { bookingDetailId: detail.id, chefId },
+              })
+            }
+          >
+            <Text style={styles.detailText}>
+              Session Date: {detail.sessionDate}
+            </Text>
+            <Text style={styles.detailText}>
+              Start Time: {detail.startTime}
+            </Text>
+            <Text style={styles.detailText}>Location: {detail.location}</Text>
+            <Text style={styles.detailText}>
+              Total Price: ${detail.totalPrice}
+            </Text>
+            <Text style={styles.detailText}>Status: {detail.status}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {/* <View style={{ height: 10 }} /> */}
     </View>
   );
 
@@ -133,6 +151,8 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     elevation: 2,
+    borderWidth: 1, // Thêm viền cho Cycle
+    borderColor: "#DDD",
   },
   cycleTitle: {
     fontSize: 18,
@@ -140,23 +160,27 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 10,
   },
+  cycleInfo: {
+    marginBottom: 10,
+  },
   cycleText: {
     fontSize: 14,
     color: "#666",
     marginBottom: 5,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 10,
-    marginBottom: 5,
+  bookingDetailsContainer: {
+    borderWidth: 1, // Viền bao quanh danh sách booking details
+    borderColor: "#DDD",
+    borderRadius: 5,
+    padding: 10,
   },
   detailItem: {
-    borderTopWidth: 1,
-    borderTopColor: "#DDD",
-    paddingTop: 10,
-    marginTop: 5,
+    // backgroundColor: "#F9F9F9", // Màu nền cho từng booking detail
+    borderBottomWidth: 1,
+    borderColor: "#DDD",
+    // borderRadius: 5,
+    padding: 10,
+    marginBottom: 10, // Khoảng cách giữa các booking detail
   },
   detailText: {
     fontSize: 14,
@@ -169,6 +193,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginVertical: 20,
+    marginHorizontal: 20,
   },
   paymentButtonText: {
     color: "white",
