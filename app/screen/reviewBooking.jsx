@@ -115,12 +115,6 @@ const ReviewBookingScreen = () => {
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Dịch vụ phục vụ:</Text>
-                <Text style={styles.detailValue}>
-                  {detail.isServing ? "Có" : "Không"}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Phí di chuyển:</Text>
                 <Text style={styles.detailValue}>
                   ${(detail.arrivalFee || 0).toFixed(2)}

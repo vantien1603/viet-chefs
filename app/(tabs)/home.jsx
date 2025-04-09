@@ -25,12 +25,11 @@ export default function Home() {
   const [fullName, setFullName] = useState("User");
 
   const handleSearch = () => {
-    const searchQuery = String(query || "");
-    if (searchQuery.trim() !== "") {
-      router.push(`/screen/searchResult/?query=${query}`);
-    } else {
-      router.push("/screen/searchResult");
-    }
+    const searchQuery = String(query || "").trim();
+    router.push({
+      pathname: "/screen/searchResult",
+      params: { query: searchQuery }
+    });
   };
 
   const loadData = async () => {
@@ -112,7 +111,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => router.push("/screen/calendar")}>
+          <TouchableOpacity onPress={() => router.push("/screen/notification")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
         </View>
@@ -235,6 +234,10 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  searchContainer: {
+    position: "relative",
+    marginBottom: 20,
+  },
   searchInput: {
     backgroundColor: "#FFF8EF",
     borderColor: "#ddd",

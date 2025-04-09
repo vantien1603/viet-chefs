@@ -72,7 +72,10 @@ const DepositScreen = () => {
       setShowWebView(false);
       router.push({
         pathname: "/screen/wallet",
-        params: { depositAmount: amount }
+        params: { 
+          depositAmount: amount,
+          refresh: "true"
+        },
       });
     } else if (url.includes("cancel")) {
       Toast.show({
@@ -86,11 +89,11 @@ const DepositScreen = () => {
 
   const handleBack = async () => {
     router.push("/screen/wallet");
-  }
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Deposit in VietPay" onLeftPress={handleBack}/>
+      <Header title="Deposit in VietPay" onLeftPress={handleBack} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"

@@ -122,7 +122,14 @@ const ConfirmBookingScreen = () => {
         text2: "Booking confirmed successfully!",
       });
 
-      router.push("(tabs)/home");
+      // router.push("(tabs)/home");
+      router.push({
+        pathname: "/screen/paymentBooking",
+        params: {
+          bookingId: response.data.id,
+          bookingData: JSON.stringify(bookingData),
+        },
+      });
     } catch (error) {
       console.error("Error creating booking:", error);
       Toast.show({
@@ -239,34 +246,7 @@ const ConfirmBookingScreen = () => {
             </View>
           </View>
         </View>
-
-        <View style={{ marginBottom: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
-            Payment methods
-          </Text>
-          <View
-            style={{
-              borderColor: "#BBBBBB",
-              borderWidth: 2,
-              borderRadius: 10,
-              padding: 20,
-              marginBottom: 20,
-            }}
-          >
-            <View style={styles.row}>
-              <View style={{ flexDirection: "row" }}>
-                <Ionicons
-                  name="logo-paypal"
-                  size={24}
-                  color="black"
-                  style={{ marginRight: 10 }}
-                />
-                <Text style={{ fontSize: 16 }}>Paypal</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="gray" />
-            </View>
-          </View>
-        </View>
+        <View style={{padding: 5}}/>
       </ScrollView>
 
       <View
