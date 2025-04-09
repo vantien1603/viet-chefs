@@ -30,7 +30,7 @@ const EditAddress = () => {
   const [editingAddress, setEditingAddress] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
 
-  const GOOGLE_PLACES_API_KEY = "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk";
+  const GOOGLE_PLACES_API_KEY = process.env.API_GEO_KEY;
 
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
