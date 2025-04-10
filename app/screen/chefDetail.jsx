@@ -36,7 +36,7 @@ const ChefDetail = () => {
     const fetchChefById = async () => {
       if (!id) return;
       try {
-        const response = await axiosInstance.get(`/chef/${id}`);
+        const response = await axiosInstance.get(`/chefs/${id}`);
         setChefs(response.data);
         // console.log("e", response.data);
       } catch (error) {

@@ -18,8 +18,8 @@ export const ModalNotiProvider = ({ children }) => {
       {children}
       <Modalize ref={modalizeRef} adjustToContentHeight>
         <View style={{ padding: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{modalContent.title}</Text>
-          <Text style={{ marginVertical: 10 }}>{modalContent.message}</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign:'center' }}>{modalContent.title}</Text>
+          <Text style={{ marginVertical: 10 , textAlign:'center'}}>{modalContent.message}</Text>
         </View>
       </Modalize>
     </NotiContext.Provider>

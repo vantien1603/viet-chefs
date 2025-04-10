@@ -81,7 +81,7 @@ const Message = () => {
         <View
             style={[
                 styles.messageContainer,
-                item.isSender ? styles.sender : styles.receiver,
+                item.isSender ? styles.sender : styles.receiver
             ]}
         >
             <Text style={styles.messageText}>{item.text}</Text>
@@ -105,7 +105,8 @@ const Message = () => {
                     <Text style={styles.title}>{contact.name}</Text>
                 </View>
                 <View>
-                    <Feather name="info" size={28} color="black" />                </View>
+                    <Feather name="info" size={28} color="black" />
+                </View>
             </View>
             <FlatList
                 data={messages}
@@ -182,16 +183,16 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 2.0,
         elevation: 3,
-        marginBottom:20,
+        marginBottom: 20,
     },
     sender: {
         // padding:10,
-        marginRight:20,
+        marginRight: 20,
         alignSelf: "flex-end",
         backgroundColor: "#D3CBC5",
     },
     receiver: {
-        marginLeft:20,
+        marginLeft: 20,
         alignSelf: "flex-start",
         backgroundColor: "#FFF8E7",
     },
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         padding: 10,
-        marginTop:20,
+        marginTop: 20,
         borderTopWidth: 1,
         borderTopColor: "#E0E0E0",
         backgroundColor: '#F4EDE4',

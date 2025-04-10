@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, Image } from 'react-native'
 
-const CardOrder = () => {
+const CardOrder = (item) => {
     return (
         <TouchableOpacity style={{ backgroundColor: '#B9603F', flexDirection: 'row', borderRadius: 15, width: '110%', padding: 12 }}>
 

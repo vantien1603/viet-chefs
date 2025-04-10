@@ -4,6 +4,7 @@ export default
     "expo": {
       "name": "viet-chef",
       "slug": "viet-chef",
+      "owner": "thangcayep",
       "version": "1.0.0",
       "orientation": "portrait",
       "icon": "./assets/images/icon.png",
@@ -45,8 +46,11 @@ export default
         "router": {
           "origin": false
         },
+        // "eas": {
+        //   "projectId": "7633a8b3-2237-454d-98da-394babd667ae"
+        // },
         "eas": {
-          "projectId": "7633a8b3-2237-454d-98da-394babd667ae"
+          "projectId": "af076336-773f-45ab-a366-b43c92c97da5"
         },
         "apiKey": process.env.API_KEY,
         "authDomain": process.env.AUTH_DOMAIN,

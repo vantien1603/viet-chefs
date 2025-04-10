@@ -7,8 +7,10 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
+  StyleSheet,
+  Alert, // Thêm Alert để hiển thị confirm
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { commonStyles } from "../../style";
@@ -26,6 +28,64 @@ const EditAddress = () => {
   const [newAddress, setNewAddress] = useState({ title: "", address: "" });
   const [editingAddress, setEditingAddress] = useState(null);
   const axiosInstance = useAxios();
+  const [suggestions, setSuggestions] = useState([]);
+
+  const GOOGLE_PLACES_API_KEY = process.env.API_GEO_KEY;
+
+  const fetchAddressSuggestions = async (query) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+        {
+          params: {
+            input: query,
+            key: GOOGLE_PLACES_API_KEY,
+            language: "vi",
+            components: "country:vn",
+          },
+        }
+      );
+      if (response.data.status === "OK") {
+        setSuggestions(response.data.predictions);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions from Google Places:", error?.response?.data);
+    }
+  };
+
+  const getPlaceDetails = async (placeId) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/details/json`,
+        {
+          params: {
+            place_id: placeId,
+            key: GOOGLE_PLACES_API_KEY,
+            fields: "formatted_address",
+            language: "vi",
+          },
+        }
+      );
+      return response.data.result.formatted_address;
+    } catch (error) {
+      console.error("Error fetching place details:", error);
+      return null;
+    }
+  };
+
+  const selectAddress = async (prediction) => {
+    const formattedAddress = await getPlaceDetails(prediction.place_id);
+    if (formattedAddress) {
+      editingAddress
+        ? setEditingAddress({ ...editingAddress, address: formattedAddress })
+        : setNewAddress({ ...newAddress, address: formattedAddress });
+      setSuggestions([]);
+    }
+  };
 
   useEffect(() => {
     fetchAddresses();
@@ -60,8 +120,8 @@ const EditAddress = () => {
       console.error("Error fetching addresses:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to load addresses",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách địa chỉ",
       });
     }
   };
@@ -73,8 +133,8 @@ const EditAddress = () => {
       if (status !== "granted") {
         Toast.show({
           type: "error",
-          text1: "Permission Denied",
-          text2: "You need to enable location services.",
+          text1: "Quyền bị từ chối",
+          text2: "Bạn cần bật dịch vụ định vị.",
         });
         return;
       }
@@ -87,10 +147,12 @@ const EditAddress = () => {
 
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""}, ${addr.region || ""}, ${addr.country || ""}`;
-        
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
+          addr.city || ""
+        }, ${addr.region || ""}, ${addr.country || ""}`;
+
         const newLocation = {
-          title: "Current Location",
+          title: "Vị trí hiện tại",
           address: fullAddress,
         };
         await handleCreateAddress(newLocation);
@@ -101,8 +163,8 @@ const EditAddress = () => {
       console.error(error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Could not fetch location",
+        text1: "Lỗi",
+        text2: "Không thể lấy vị trí",
       });
     } finally {
       setLoading(false);
@@ -110,24 +172,35 @@ const EditAddress = () => {
   };
 
   const handleCreateAddress = async (addressData) => {
+    // Kiểm tra giới hạn 5 địa chỉ
+    if (addresses.length >= 5) {
+      Toast.show({
+        type: "error",
+        text1: "Giới hạn",
+        text2: "Bạn chỉ được tạo tối đa 5 địa chỉ",
+      });
+      setModalVisible(false);
+      return;
+    }
+
     try {
       const response = await axiosInstance.post("/address", addressData);
       if (response.status === 201) {
-        setAddresses([...addresses, response.data]);
+        setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
         setNewAddress({ title: "", address: "" });
         Toast.show({
           type: "success",
-          text1: "Success",
-          text2: "Address created successfully",
+          text1: "Thành công",
+          text2: "Địa chỉ đã được tạo",
         });
       }
     } catch (error) {
       console.error("Error creating address:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to create address",
+        text1: "Lỗi",
+        text2: "Không thể tạo địa chỉ",
       });
     }
   };
@@ -136,56 +209,78 @@ const EditAddress = () => {
     if (!editingAddress.title || !editingAddress.address) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Please fill in all fields",
+        text1: "Lỗi",
+        text2: "Vui lòng điền đầy đủ thông tin",
       });
       return;
     }
     try {
       const response = await axiosInstance.put("/address", editingAddress);
       if (response.status === 200) {
-        setAddresses(addresses.map((addr) => (addr.id === editingAddress.id ? response.data : addr)));
+        setAddresses(
+          addresses.map((addr) =>
+            addr.id === editingAddress.id ? response.data : addr
+          )
+        );
         setModalVisible(false);
         setEditingAddress(null);
         Toast.show({
           type: "success",
-          text1: "Success",
-          text2: "Address updated successfully",
+          text1: "Thành công",
+          text2: "Địa chỉ đã được cập nhật",
         });
       }
     } catch (error) {
       console.error("Error updating address:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to update address",
+        text1: "Lỗi",
+        text2: "Không thể cập nhật địa chỉ",
       });
     }
   };
 
-  const handleDeleteAddress = async (id) => {
-    try {
-      const response = await axiosInstance.delete(`/address/${id}`);
-      if (response.status === 200) {
-        setAddresses(addresses.filter((addr) => addr.id !== id));
-        if (selectedId === id) {
-          setSelectedId(null);
-          await AsyncStorage.removeItem("selectedAddress"); // Xóa địa chỉ đã chọn nếu bị xóa
-        }
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Address deleted successfully",
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting address:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to delete address",
-      });
-    }
+  const handleDeleteAddress = (id) => {
+    // Hiển thị confirm trước khi xóa
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc chắn muốn xóa địa chỉ này?",
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xóa",
+          onPress: async () => {
+            try {
+              const response = await axiosInstance.delete(`/address/${id}`);
+              if (response.status === 200) {
+                setAddresses(addresses.filter((addr) => addr.id !== id));
+                if (selectedId === id) {
+                  setSelectedId(null);
+                  await AsyncStorage.removeItem("selectedAddress");
+                }
+                Toast.show({
+                  type: "success",
+                  text1: "Thành công",
+                  text2: "Địa chỉ đã được xóa",
+                });
+              }
+            } catch (error) {
+              console.error("Error deleting address:", error);
+              Toast.show({
+                type: "error",
+                text1: "Lỗi",
+                text2: "Không thể xóa địa chỉ",
+              });
+            }
+          },
+          style: "destructive",
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const renderAddressItem = (item) => (
@@ -203,7 +298,7 @@ const EditAddress = () => {
       <TouchableOpacity
         onPress={() => {
           setSelectedId(item.id);
-          saveSelectedAddress(item); // Lưu địa chỉ được chọn vào AsyncStorage
+          saveSelectedAddress(item);
         }}
         style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
       >
@@ -213,7 +308,13 @@ const EditAddress = () => {
           color={selectedId === item.id ? "#A64B2A" : "gray"}
         />
         <Ionicons
-          name={item.type === "home" ? "home" : item.type === "work" ? "business" : "location-outline"}
+          name={
+            item.type === "home"
+              ? "home"
+              : item.type === "work"
+              ? "business"
+              : "location-outline"
+          }
           size={20}
           color="black"
           style={{ marginLeft: 10 }}
@@ -229,7 +330,11 @@ const EditAddress = () => {
             setModalVisible(true);
           }}
         >
-          <Text style={{ color: "#A9411D", fontWeight: "bold", marginRight: 15 }}>Edit</Text>
+          <Text
+            style={{ color: "#A9411D", fontWeight: "bold", marginRight: 15 }}
+          >
+            Sửa
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDeleteAddress(item.id)}>
           <Ionicons name="trash-outline" size={20} color="red" />
@@ -240,32 +345,35 @@ const EditAddress = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"Address"} />
+      <Header title={"Địa chỉ"} />
       <ScrollView style={{ marginBottom: 80 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
-          <Text style={{ color: "#666", fontSize: 16 }}>Addresses</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
+          <Text style={{ color: "#666", fontSize: 16 }}>Danh sách địa chỉ</Text>
           <TouchableOpacity onPress={() => setModalVisible(true)}>
-            <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>Add New</Text>
+            <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
+              Thêm mới
+            </Text>
           </TouchableOpacity>
         </View>
 
         {addresses.map(renderAddressItem)}
 
         <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={{ flex: 1, justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <View style={{ backgroundColor: "white", margin: 20, padding: 20, borderRadius: 10 }}>
-              <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 15 }}>
-                {editingAddress ? "Edit Address" : "Add New Address"}
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
+                {editingAddress ? "Sửa địa chỉ" : "Thêm địa chỉ mới"}
               </Text>
+
               <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                  padding: 10,
-                  marginBottom: 10,
-                  borderRadius: 5,
-                }}
-                placeholder="Title (e.g., Home, Work)"
+                style={styles.input}
+                placeholder="Tiêu đề (ví dụ: Nhà, Cơ quan)"
                 value={editingAddress ? editingAddress.title : newAddress.title}
                 onChangeText={(text) =>
                   editingAddress
@@ -273,42 +381,64 @@ const EditAddress = () => {
                     : setNewAddress({ ...newAddress, title: text })
                 }
               />
+
               <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                  padding: 10,
-                  marginBottom: 20,
-                  borderRadius: 5,
-                }}
-                placeholder="Address"
-                value={editingAddress ? editingAddress.address : newAddress.address}
+                style={styles.input}
+                placeholder="Địa chỉ"
+                value={
+                  editingAddress ? editingAddress.address : newAddress.address
+                }
                 onChangeText={(text) =>
                   editingAddress
                     ? setEditingAddress({ ...editingAddress, address: text })
                     : setNewAddress({ ...newAddress, address: text })
                 }
+                onSubmitEditing={(event) =>
+                  fetchAddressSuggestions(event.nativeEvent.text)
+                }
+                returnKeyType="search"
               />
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+
+              {suggestions.length > 0 && (
+                <ScrollView
+                  style={styles.suggestionContainer}
+                  nestedScrollEnabled={true}
+                >
+                  {suggestions.map((item, index) => (
+                    <TouchableOpacity
+                      key={`${item.place_id}-${index}`}
+                      onPress={() => selectAddress(item)}
+                      style={styles.suggestionItem}
+                    >
+                      <Text style={styles.suggestionText}>
+                        {item.description}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+
+              <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   onPress={() => {
                     setModalVisible(false);
                     setEditingAddress(null);
+                    setSuggestions([]);
                   }}
-                  style={{ padding: 10 }}
+                  style={styles.cancelButton}
                 >
-                  <Text style={{ color: "gray" }}>Cancel</Text>
+                  <Text style={styles.cancelText}>Hủy</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={editingAddress ? handleUpdateAddress : () => handleCreateAddress(newAddress)}
-                  style={{
-                    backgroundColor: "#A64B2A",
-                    padding: 10,
-                    borderRadius: 5,
-                  }}
+                  onPress={
+                    editingAddress
+                      ? handleUpdateAddress
+                      : () => handleCreateAddress(newAddress)
+                  }
+                  style={styles.saveButton}
                 >
-                  <Text style={{ color: "white", fontWeight: "bold" }}>
-                    {editingAddress ? "Update" : "Save"}
+                  <Text style={styles.saveText}>
+                    {editingAddress ? "Cập nhật" : "Lưu"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -335,12 +465,77 @@ const EditAddress = () => {
           <ActivityIndicator size="small" color="white" />
         ) : (
           <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-            Use Current Location
+            Sử dụng vị trí hiện tại
           </Text>
         )}
       </TouchableOpacity>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    margin: 20,
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    fontSize: 16,
+  },
+  suggestionContainer: {
+    maxHeight: 250,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    marginBottom: 20,
+    backgroundColor: "#f9f9f9",
+  },
+  suggestionItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cancelButton: {
+    padding: 10,
+  },
+  cancelText: {
+    color: "gray",
+    fontSize: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A64B2A",
+    padding: 10,
+    borderRadius: 5,
+  },
+  saveText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+});
 
 export default EditAddress;

@@ -22,14 +22,28 @@ const initialLayout = { width: Dimensions.get("window").width };
 const SelectFood = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { chefId, updatedDishId, updatedNote, selectedMenu: selectedMenuParam, selectedDishes: selectedDishesParam, dishNotes: dishNotesParam } = params;
+  const {
+    chefId,
+    date,
+    isLongTerm,
+    currentStep,
+    totalSteps,
+    selectedMenu: selectedMenuParam,
+    selectedDishes: selectedDishesParam,
+    dishNotes: dishNotesParam,
+    selectedPackage,
+    selectedDates,
+    numPeople,
+    address: location,
+  } = params;
 
-  // Initialize state from params if they exist
   const [selectedMenu, setSelectedMenu] = useState(
-    selectedMenuParam ? JSON.parse(selectedMenuParam)?.id : null
+    selectedMenuParam && selectedMenuParam !== ""
+      ? JSON.parse(selectedMenuParam)?.id
+      : null
   );
   const [selectedDishes, setSelectedDishes] = useState(() => {
-    if (selectedDishesParam) {
+    if (selectedDishesParam && selectedDishesParam !== "") {
       const dishes = JSON.parse(selectedDishesParam);
       return dishes.reduce((acc, dish) => {
         acc[dish.id] = true;
@@ -39,7 +53,9 @@ const SelectFood = () => {
     return {};
   });
   const [extraDishIds, setExtraDishIds] = useState({});
-  const [dishNotes, setDishNotes] = useState(dishNotesParam ? JSON.parse(dishNotesParam) : {});
+  const [dishNotes, setDishNotes] = useState(
+    dishNotesParam && dishNotesParam !== "" ? JSON.parse(dishNotesParam) : {}
+  );
   const [menu, setMenu] = useState([]);
   const axiosInstance = useAxios();
 
@@ -51,13 +67,18 @@ const SelectFood = () => {
     { key: "dishes", title: "Dishes" },
   ]);
 
-  // Fetch menus on component mount
+  const progressStep = isLongTerm === "true" ? parseInt(currentStep || "3") : 2;
+  const progressTotal = isLongTerm === "true" ? parseInt(totalSteps || "4") : 4;
+  const progressTitle =
+    isLongTerm === "true"
+      ? `Chọn món ăn cho ngày ${date}`
+      : "Chọn menu hoặc món ăn";
+
   useEffect(() => {
     const fetchMenus = async () => {
       try {
         const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
         setMenu(menuResponse.data.content || []);
-        console.log("Menu data:", menuResponse.data.content);
       } catch (error) {
         console.log("Error fetching menus:", error);
         Toast.show({
@@ -70,7 +91,6 @@ const SelectFood = () => {
     fetchMenus();
   }, [chefId]);
 
-  // Fetch dishes based on selectedMenu
   useEffect(() => {
     const fetchDishes = async () => {
       try {
@@ -96,20 +116,9 @@ const SelectFood = () => {
     fetchDishes();
   }, [selectedMenu]);
 
-  // Update dish notes when updatedDishId and updatedNote are passed
-  useEffect(() => {
-    if (updatedDishId && updatedNote !== undefined) {
-      console.log("Updating dishNotes with:", { updatedDishId, updatedNote });
-      setDishNotes((prevNotes) => {
-        const newNotes = { ...prevNotes, [updatedDishId]: updatedNote };
-        console.log("Updated dishNotes:", newNotes);
-        return newNotes;
-      });
-    }
-  }, [updatedDishId, updatedNote]);
-
   const toggleMenuCheckbox = (id) => {
-    const selectedDishesCount = Object.values(selectedDishes).filter(Boolean).length;
+    const selectedDishesCount =
+      Object.values(selectedDishes).filter(Boolean).length;
     if (selectedDishesCount > 0) {
       Toast.show({
         type: "error",
@@ -160,7 +169,7 @@ const SelectFood = () => {
     const selectedDishesData = selectedMenu
       ? dishes.filter((dish) => extraDishIds[dish.id])
       : dishes.filter((dish) => selectedDishes[dish.id]);
-
+  
     if (!selectedMenuData && selectedDishesData.length === 0) {
       Toast.show({
         type: "error",
@@ -169,19 +178,33 @@ const SelectFood = () => {
       });
       return;
     }
-
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : null,
-        selectedDishes: selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : null,
-        chefId,
-        dishNotes: JSON.stringify(dishNotes),
-      },
-    });
-    console.log("Selected menu:", selectedMenuData);
-    console.log("Selected dishes:", selectedDishesData);
-    console.log("Dish notes:", dishNotes);
+  
+    if (isLongTerm === "true") {
+      router.push({
+        pathname: "/screen/longTermSelect", // Sửa đường dẫn
+        params: {
+          chefId,
+          date,
+          selectedPackage,
+          selectedDates,
+          selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
+          selectedDishes: selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
+          dishNotes: JSON.stringify(dishNotes),
+          numPeople: numPeople || "", // Đảm bảo truyền numPeople
+          address: location || "", // Sử dụng 'address' thay vì 'location' để đồng bộ
+        },
+      });
+    } else {
+      router.push({
+        pathname: "/screen/booking",
+        params: {
+          selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
+          selectedDishes: selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
+          chefId,
+          dishNotes: JSON.stringify(dishNotes),
+        },
+      });
+    }
   };
 
   const getContinueButtonText = () => {
@@ -193,11 +216,15 @@ const SelectFood = () => {
       : dishes.filter((dish) => selectedDishes[dish.id]);
 
     if (selectedMenuData && selectedDishesData.length > 0) {
-      return `Continue with Menu: ${selectedMenuData.name} & ${selectedDishesData.length} Extra Dish${selectedDishesData.length > 1 ? "es" : ""}`;
+      return `Continue with Menu: ${selectedMenuData.name} & ${
+        selectedDishesData.length
+      } Extra Dish${selectedDishesData.length > 1 ? "es" : ""}`;
     } else if (selectedMenuData) {
       return `Continue with Menu: ${selectedMenuData.name}`;
     } else if (selectedDishesData.length > 0) {
-      return `Continue with ${selectedDishesData.length} Dish${selectedDishesData.length > 1 ? "es" : ""}`;
+      return `Continue with ${selectedDishesData.length} Dish${
+        selectedDishesData.length > 1 ? "es" : ""
+      }`;
     }
     return "Continue";
   };
@@ -222,7 +249,8 @@ const SelectFood = () => {
   };
 
   const shouldShowMenuCheckboxes = () => {
-    const selectedDishesCount = Object.values(selectedDishes).filter(Boolean).length;
+    const selectedDishesCount =
+      Object.values(selectedDishes).filter(Boolean).length;
     return !selectedMenu && selectedDishesCount === 0;
   };
 
@@ -250,8 +278,10 @@ const SelectFood = () => {
                   style={[
                     styles.checkbox,
                     {
-                      backgroundColor: selectedMenu === item.id ? "#F8BF40" : "transparent",
-                      borderColor: selectedMenu === item.id ? "#F8BF40" : "#FFF",
+                      backgroundColor:
+                        selectedMenu === item.id ? "#F8BF40" : "transparent",
+                      borderColor:
+                        selectedMenu === item.id ? "#F8BF40" : "#FFF",
                     },
                   ]}
                 >
@@ -263,7 +293,10 @@ const SelectFood = () => {
             )}
             <View style={styles.contentRow}>
               <View style={styles.imageContainer}>
-                <Image source={require("../../assets/images/1.jpg")} style={styles.image} />
+                <Image
+                  source={require("../../assets/images/1.jpg")}
+                  style={styles.image}
+                />
               </View>
               <View style={styles.textContainer}>
                 <Text style={styles.title}>{item.name}</Text>
@@ -296,10 +329,7 @@ const SelectFood = () => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.flatListContent}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.cardContainer}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.cardContainer} activeOpacity={0.8}>
             <View style={styles.card}>
               <TouchableOpacity
                 style={styles.checkboxContainer}
@@ -312,25 +342,37 @@ const SelectFood = () => {
                   style={[
                     styles.checkbox,
                     {
-                      backgroundColor:
-                        (selectedMenu ? extraDishIds[item.id] : selectedDishes[item.id])
-                          ? "#F8BF40"
-                          : "transparent",
-                      borderColor:
-                        (selectedMenu ? extraDishIds[item.id] : selectedDishes[item.id])
-                          ? "#F8BF40"
-                          : "#FFF",
+                      backgroundColor: (
+                        selectedMenu
+                          ? extraDishIds[item.id]
+                          : selectedDishes[item.id]
+                      )
+                        ? "#F8BF40"
+                        : "transparent",
+                      borderColor: (
+                        selectedMenu
+                          ? extraDishIds[item.id]
+                          : selectedDishes[item.id]
+                      )
+                        ? "#F8BF40"
+                        : "#FFF",
                     },
                   ]}
                 >
-                  {(selectedMenu ? extraDishIds[item.id] : selectedDishes[item.id]) && (
+                  {(selectedMenu
+                    ? extraDishIds[item.id]
+                    : selectedDishes[item.id]) && (
                     <MaterialIcons name="check" size={20} color="white" />
                   )}
                 </View>
               </TouchableOpacity>
               <View style={styles.contentRow}>
                 <View style={styles.imageContainer}>
-                  <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
                 </View>
                 <View style={styles.textContainer}>
                   <Text style={styles.title}>{item.name}</Text>
@@ -338,7 +380,9 @@ const SelectFood = () => {
                     {item.description || "No description"}
                   </Text>
                   {dishNotes[item.id] && (
-                    <Text style={styles.noteText}>Note: {dishNotes[item.id]}</Text>
+                    <Text style={styles.noteText}>
+                      Note: {dishNotes[item.id]}
+                    </Text>
                   )}
                 </View>
               </View>
@@ -363,8 +407,12 @@ const SelectFood = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header onLeftPress={handleBackToChefDetail}/>
-      <ProgressBar title="Chọn menu hoặc món ăn" currentStep={2} totalSteps={4} />
+      <Header onLeftPress={handleBackToChefDetail} />
+      <ProgressBar
+        title={progressTitle}
+        currentStep={progressStep}
+        totalSteps={progressTotal}
+      />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
@@ -384,8 +432,13 @@ const SelectFood = () => {
       />
       {isContinueButtonVisible() && (
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-            <Text style={styles.continueButtonText}>{getContinueButtonText()}</Text>
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinue}
+          >
+            <Text style={styles.continueButtonText}>
+              {getContinueButtonText()}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -393,23 +446,11 @@ const SelectFood = () => {
   );
 };
 
-export default SelectFood;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#EBE5DD",
-  },
-  tabView: {
-    flex: 1,
-  },
-  flatListContent: {
-    paddingBottom: 80,
-  },
-  cardContainer: {
-    paddingHorizontal: 20,
-    marginVertical: 10,
-  },
+  container: { flex: 1, backgroundColor: "#EBE5DD" },
+  tabView: { flex: 1 },
+  flatListContent: { paddingBottom: 80 },
+  cardContainer: { paddingHorizontal: 20, marginVertical: 10 },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
@@ -433,13 +474,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F8BF40",
   },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  textContainer: {
-    flex: 1,
-  },
+  image: { width: "100%", height: "100%" },
+  textContainer: { flex: 1 },
   title: {
     fontSize: 16,
     fontWeight: "bold",
@@ -459,12 +495,7 @@ const styles = StyleSheet.create({
     textAlign: "left",
     fontStyle: "italic",
   },
-  checkboxContainer: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    zIndex: 1,
-  },
+  checkboxContainer: { position: "absolute", top: 10, left: 10, zIndex: 1 },
   checkbox: {
     width: 28,
     height: 28,
@@ -499,7 +530,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 18,
-    letterSpacing: 1,
     textAlign: "center",
   },
   selectedMenuContainer: {
@@ -511,18 +541,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  selectedMenuText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  deselectButton: {
-    backgroundColor: "#A64B2A",
-    padding: 8,
-    borderRadius: 8,
-  },
-  deselectButtonText: {
-    color: "white",
-    fontWeight: "bold",
-  },
+  selectedMenuText: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  deselectButton: { backgroundColor: "#A64B2A", padding: 8, borderRadius: 8 },
+  deselectButtonText: { color: "white", fontWeight: "bold" },
 });
+
+export default SelectFood;

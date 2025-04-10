@@ -16,12 +16,11 @@ import Header from "../../components/header";
 import moment from "moment";
 import Toast from "react-native-toast-message";
 import ProgressBar from "../../components/progressBar";
-import AXIOS_API from "../../config/AXIOS_API";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SafeAreaView } from "react-native-safe-area-context";
+import useAxios from "../../config/AXIOS_API";
 
 const getDaysInMonth = (month, year) => {
   const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
@@ -72,6 +71,7 @@ const BookingScreen = () => {
   const [dishNotes, setDishNotes] = useState(initialDishNotes);
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [tempDishNotes, setTempDishNotes] = useState(initialDishNotes);
+  const axiosInstance = useAxios();
 
   const modalizeRef = useRef(null);
   useEffect(() => {
@@ -104,11 +104,11 @@ const BookingScreen = () => {
   const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
 
-  // const isTimeAfter = (time1, time2) => {
-  //   const [hour1, min1] = time1.split(":").map(Number);
-  //   const [hour2, min2] = time2.split(":").map(Number);
-  //   return hour1 > hour2 || (hour1 === hour2 && min1 > min2);
-  // };
+  const isTimeAfter = (time1, time2) => {
+    const [hour1, min1] = time1.split(":").map(Number);
+    const [hour2, min2] = time2.split(":").map(Number);
+    return hour1 > hour2 || (hour1 === hour2 && min1 > min2);
+  };
 
   // Handlers for incrementing and decrementing the number of people
   const incrementPeople = () => {
@@ -161,7 +161,7 @@ const BookingScreen = () => {
 
     setLoading(true);
 
-    const selectedDishIds = parsedSelectedDishes?.map((dish) => dish.id);
+    const selectedDishIds = parsedSelectedDishes.map((dish) => dish.id);
     if (parsedSelectedMenu) {
       selectedDishIds.push(...(parsedSelectedMenu.menuItems || []).map((item) => item.dishId || item.id));
     }
@@ -175,7 +175,7 @@ const BookingScreen = () => {
         location: address,
         menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
         extraDishIds: parsedSelectedDishes.length > 0 ? selectedDishIds : null,
-        dishes: selectedDishIds?.map((dishId) => ({
+        dishes: selectedDishIds.map((dishId) => ({
           dishId: dishId,
           notes: dishNotes[dishId] || "",
         })),
@@ -185,7 +185,7 @@ const BookingScreen = () => {
     console.log("Payload to API:", JSON.stringify(payload, null, 2));
 
     try {
-      const response = await AXIOS_API.post(
+      const response = await axiosInstance.post(
         "/bookings/calculate-single-booking",
         payload
       );
@@ -201,7 +201,7 @@ const BookingScreen = () => {
           startTime: startTime,
           requestDetails: specialRequest,
           dishNotes: JSON.stringify(dishNotes),
-          numPeople: numPeople.toString(),
+          numPeople: numPeople.toString(), 
           menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null, // Thêm menuId vào params
         },
       });
@@ -235,18 +235,18 @@ const BookingScreen = () => {
   };
 
   const allDishes = [
-    ...(parsedSelectedMenu?.menuItems || [])?.map((item) => ({
+    ...(parsedSelectedMenu?.menuItems || []).map((item) => ({
       id: item.dishId || item.id,
       name: item.dishName || item.name || "Unnamed Dish",
     })),
-    ...parsedSelectedDishes?.map((dish) => ({
+    ...parsedSelectedDishes.map((dish) => ({
       id: dish.id,
       name: dish.name || "Unnamed Dish",
     })),
   ];
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
+    <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" />
       <ProgressBar title="Chọn ngày" currentStep={3} totalSteps={4} />
       <ScrollView
@@ -276,10 +276,7 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <View>
-            <Text style={styles.sectionTitle}>Select Date & Time</Text>
-            {/* <Text>Tháng {month}</Text> */}
-          </View>
+          <Text style={styles.sectionTitle}>Select Date & Time</Text>
           <FlatList
             data={days}
             keyExtractor={(item) => item.day.toString()}
@@ -325,7 +322,7 @@ const BookingScreen = () => {
         <View style={styles.timeContainer}>
           <Text style={styles.label}>Start time</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {timeSlots?.map((time) => (
+            {timeSlots.map((time) => (
               <TouchableOpacity
                 key={time}
                 style={[
@@ -366,17 +363,151 @@ const BookingScreen = () => {
               <Text style={styles.addItemsText}>Add items</Text>
             </TouchableOpacity>
           </View>
-          {selectedMenu && (
-            <View>
-              <Text style={{ fontSize: 18, fontWeight: '500' }}>{selectedMenu?.name}</Text>
-              <Text style={{ marginLeft: 10 }}>{selectedMenu.menuItems?.map(dish => dish.dishName).join(", ")}
-              </Text>
+
+          {isMenuExpanded && (
+            <View style={styles.menuContent}>
+              {parsedSelectedMenu && (parsedSelectedMenu.menuItems || []).length > 0 ? (
+                parsedSelectedMenu.menuItems.map((item, idx) => (
+                  <View key={idx} style={styles.dishRow}>
+                    <View style={styles.dishInfo}>
+                      <Image
+                        source={
+                          item.imageUrl
+                            ? { uri: item.imageUrl }
+                            : require("../../assets/images/1.jpg")
+                        }
+                        style={styles.dishImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.dishText}>
+                        <Text style={styles.dishName}>
+                          {item.dishName || item.name || "Unnamed Dish"}
+                        </Text>
+                        {dishNotes[item.dishId || item.id] && (
+                          <Text style={styles.noteText}>
+                            Note: {dishNotes[item.dishId || item.id]}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                    <TouchableOpacity onPress={openModal}>
+                      <Text style={styles.editText}>Edit Notes</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : null}
+
+              {parsedSelectedDishes.length > 0 && (
+                parsedSelectedDishes.map((dish, idx) => (
+                  <View key={idx} style={styles.dishRow}>
+                    <View style={styles.dishInfo}>
+                      <Image
+                        source={
+                          dish.imageUrl
+                            ? { uri: dish.imageUrl }
+                            : require("../../assets/images/1.jpg")
+                        }
+                        style={styles.dishImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.dishText}>
+                        <Text style={styles.dishName}>{dish.name || "Unnamed Dish"}</Text>
+                        {dishNotes[dish.id] && (
+                          <Text style={styles.noteText}>Note: {dishNotes[dish.id]}</Text>
+                        )}
+                      </View>
+                    </View>
+                    <TouchableOpacity onPress={openModal}>
+                      <Text style={styles.editText}>Edit Notes</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+
+              {!parsedSelectedMenu && parsedSelectedDishes.length === 0 && (
+                <Text style={styles.noItemsText}>No menus or dishes selected.</Text>
+              )}
             </View>
           )}
-         
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Address</Text>
+          <TextInput
+            style={styles.addressText}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="Enter your address"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Special request</Text>
+          <TextInput
+            style={styles.specialRequestInput}
+            placeholder="Enter your request"
+            value={specialRequest}
+            onChangeText={setSpecialRequest}
+            multiline
+          />
         </View>
       </ScrollView>
-    </SafeAreaView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirmBooking}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={styles.confirmButtonText}>Confirm booking</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <Modalize
+        ref={modalizeRef}
+        adjustToContentHeight
+        handlePosition="outside"
+        modalStyle={styles.modalStyle}
+        handleStyle={styles.handleStyle}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Edit Notes for Dishes</Text>
+          {allDishes.length > 0 ? (
+            allDishes.map((dish) => (
+              <View key={dish.id} style={styles.dishNoteContainer}>
+                <Text style={styles.dishNoteLabel}>{dish.name}</Text>
+                <TextInput
+                  style={styles.dishNoteInput}
+                  placeholder="Add your request here..."
+                  value={tempDishNotes[dish.id] || ""}
+                  onChangeText={(text) =>
+                    setTempDishNotes((prev) => ({
+                      ...prev,
+                      [dish.id]: text,
+                    }))
+                  }
+                  multiline
+                />
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDishesText}>No dishes to add notes for.</Text>
+          )}
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={styles.cancelButton} onPress={cancelNotes}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveButton} onPress={saveNotes}>
+              <Text style={styles.saveButtonText}>Save Notes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modalize>
+    </GestureHandlerRootView>
   );
 };
 

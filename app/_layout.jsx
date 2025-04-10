@@ -1,6 +1,4 @@
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import Toast, { BaseToast } from "react-native-toast-message";
 import { AuthProvider } from "../config/AuthContext";
@@ -42,7 +40,7 @@ export default function RootLayout() {
       <BaseToast
         {...props}
         style={{
-          borderLeftColor: "#D32F2F", // Màu đỏ cho error
+          borderLeftColor: "#D32F2F",
           backgroundColor: "#FFEBEE",
           height: 80,
           width: "90%",
@@ -215,7 +213,7 @@ export default function RootLayout() {
                     headerShown: false,
                   }}
                 />
-   
+
                 <Stack.Screen
                   name="screen/Chefs/foodDetail"
                   options={{
@@ -328,6 +326,36 @@ export default function RootLayout() {
                   name="screen/deposit"
                   options={{
                     headerShown: false,
+                  }}
+                /><Stack.Screen
+                  name="screen/updateBookingDetail"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+
+                <Stack.Screen
+                  name="screen/paymentBooking"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/review"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/scheduleBlocked"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/bookingDetails"
+                  options={{
+                    headerShown: false
                   }}
                 />
               </Stack>

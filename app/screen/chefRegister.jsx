@@ -4,9 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../components/header'
 import { commonStyles } from '../../style'
 import AntDesign from '@expo/vector-icons/AntDesign';
+import useAxios from '../../config/AXIOS_API'
 const ChefRegister = () => {
     const [isOpenDesciption, setIsOpenDescription] = useState(false);
     const [isOpenBio, setIsOpenBio] = useState(false);
+    const axiosInstance = useAxios();
 
     return (
         <SafeAreaView style={commonStyles.containerContent}>

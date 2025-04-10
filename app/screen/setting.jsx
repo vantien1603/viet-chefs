@@ -11,18 +11,6 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 
 
-const languages = [
-  { id: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
-  { id: "en", name: "English", flag: "🇬🇧" },
-];
-
-const country = [
-  { id: "vi", name: "Việt Nam" },
-  { id: "my", name: "American" },
-
-]
-
-
 
 
 const Setting = () => {

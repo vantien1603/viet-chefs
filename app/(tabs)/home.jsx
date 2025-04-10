@@ -33,12 +33,11 @@ export default function Home() {
   const [fullName, setFullName] = useState("User");
 
   const handleSearch = () => {
-    const searchQuery = String(query || "");
-    if (searchQuery.trim() !== "") {
-      router.push(`/screen/searchResult/?query=${query}`);
-    } else {
-      router.push("/screen/searchResult");
-    }
+    const searchQuery = String(query || "").trim();
+    router.push({
+      pathname: "/screen/searchResult",
+      params: { query: searchQuery }
+    });
   };
 
   const loadData = async () => {
@@ -138,7 +137,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => router.push("/screen/chefSchedule")}>
+          <TouchableOpacity onPress={() => router.push("/screen/notification")}>
             <Ionicons name="notifications" size={30} color="#4EA0B7" />
           </TouchableOpacity>
         </View>
@@ -181,7 +180,9 @@ export default function Home() {
           }}
         >
           <Text style={{ fontSize: 20 }}>Popular dishes</Text>
-          <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
+          <TouchableOpacity onPress={() => router.push("screen/chefSchedule")}>
+            <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
+          </TouchableOpacity>
         </View>
         <View>
           {loading ? (
@@ -214,7 +215,7 @@ export default function Home() {
                     <Text style={styles.title}>{item.name}</Text>
                     <Text
                       style={{ color: "#fff", textAlign: 'center' }}
-                      numberOfLines={2}
+                      numberOfLines={1}
                       ellipsizeMode="tail"
 
                     >
@@ -237,7 +238,10 @@ export default function Home() {
           }}
         >
           <Text style={{ fontSize: 20 }}>Recommend chef</Text>
-          <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
+          <TouchableOpacity onPress={() => router.push("screen/scheduleBlocked")}>
+
+            <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
+          </TouchableOpacity>
         </View>
         <View style={{ marginBottom: 30 }}>
           {loading ? (
@@ -277,9 +281,9 @@ export default function Home() {
                       </View>
                       <Text style={styles.title}>{item.user.fullName}</Text>
                       <Text style={{ color: "#fff", fontWeight: 'bold' }}>{item.price} $</Text>
-                      <Text style={{ color: "#fff", textAlign: 'center' }} numberOfLines={2} ellipsizeMode="tail">{item.specialization}</Text>
+                      <Text style={{ color: "#fff", textAlign: 'center' }} numberOfLines={1} ellipsizeMode="tail">{item.specialization}</Text>
                     </View>
-                    <Feather style={{ position: 'absolute', right: 5, top:5 }} name="info" size={24} color="white" />
+                    <Feather style={{ position: 'absolute', right: 5, top: 5 }} name="info" size={24} color="white" />
 
                   </TouchableOpacity>
 
@@ -358,6 +362,10 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  searchContainer: {
+    position: "relative",
+    marginBottom: 20,
+  },
   searchInput: {
     backgroundColor: "#FFF8EF",
     borderColor: "#ddd",

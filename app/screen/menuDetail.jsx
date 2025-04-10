@@ -9,19 +9,20 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import Header from "../../components/header";
+import useAxios from "../../config/AXIOS_API";
 
 const MenuDetails = () => {
   const router = useRouter();
   const { menuId, menuName, chefId } = useLocalSearchParams();
   const [menuDetails, setMenuDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const axiosInstance = useAxios();
 
   useEffect(() => {
     const fetchMenuDetails = async () => {
       try {
-        const response = await AXIOS_API.get(`/menus/${menuId}`);
+        const response = await axiosInstance.get(`/menus/${menuId}`);
         setMenuDetails(response.data);
         console.log("Menu details:", response.data);
       } catch (error) {

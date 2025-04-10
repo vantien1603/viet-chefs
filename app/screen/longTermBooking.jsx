@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 
 const LongTermBookingScreen = () => {
   const router = useRouter();
@@ -24,6 +24,7 @@ const LongTermBookingScreen = () => {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const axiosInstance = useAxios();
 
   useEffect(() => {
     const loadSelectedAddress = async () => {
@@ -48,7 +49,7 @@ const LongTermBookingScreen = () => {
       return;
     }
     try {
-      const response = await AXIOS_API.get(`/packages/chefs/${chefId}`);
+      const response = await axiosInstance.get(`/packages/chefs/${chefId}`);
       //console.log("API Response:", response.data);
 
       const fetchedPackages = response.data.content || response.data || [];

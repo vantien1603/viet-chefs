@@ -26,17 +26,32 @@ export default function LoginScreen() {
   const requireNetwork = useActionCheckNetwork();
 
   useEffect(() => {
-    if (user?.token!==undefined) {
+    if (user?.token !== undefined) {
       console.log("login roiiiii", user)
       navigation.navigate("(tabs)", { screen: "home" });
 
     }
   }, [user])
 
+  const [expoToken, setExpoToken] = useState(null);
+
+  useEffect(() => {
+    const getToken = async () => {
+      const token = await AsyncStorage.getItem("expoPushToken");
+      console.log("✅ Token lấy từ AsyncStorage:", token);
+      setExpoToken(token);
+    };
+    getToken();
+  }, []);
   const handleLogin = async () => {
+    if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
+      modalRef.current.open();
+      return;
+    }
     console.log('cc');
     setLoading(true);
-    const result = await login(usernameOrEmail, password);
+    console.log("toi day ne")
+    const result = await login(usernameOrEmail, password, expoToken);
     if (result === true) {
       navigation.navigate("(tabs)", { screen: "home" });
     }
@@ -77,7 +92,7 @@ export default function LoginScreen() {
         <View style={{ alignItems: "center" }}>
           <TouchableOpacity
             // onPress={handleLogin}
-            onPress={()=>requireNetwork(()=>handleLogin())}
+            onPress={() => requireNetwork(() => handleLogin())}
             style={{
               padding: 13,
               marginTop: 10,

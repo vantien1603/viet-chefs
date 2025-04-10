@@ -23,7 +23,7 @@ export default function SignUpScreen() {
             };
             console.log(signUpPayload);
 
-            const response = await axios.post('http://192.168.100.16:8080/no-auth/register', signUpPayload,
+            const response = await axios.post('http://192.168.146.195:8080/no-auth/register', signUpPayload,
                 {
                     headers: { 'Content-Type': 'application/json' } 
                 });
@@ -57,21 +57,21 @@ export default function SignUpScreen() {
                 <Text style={commonStyles.labelInput}>Username</Text>
                 <TextInput
                     style={commonStyles.input}
-                    placeholder='thangcayEP'
+                    placeholder='User name'
                     value={username}
                     onChangeText={setUsername}
                 />
                 <Text style={commonStyles.labelInput}>First and last name</Text>
                 <TextInput
                     style={commonStyles.input}
-                    placeholder='Huynh Van Tien'
+                    placeholder='Full name'
                     value={fullName}
                     onChangeText={setFullName}
                 />
                 <Text style={commonStyles.labelInput}>Phone number</Text>
                 <TextInput
                     style={commonStyles.input}
-                    placeholder="0373097409"
+                    placeholder="03730xxxxx"
                     // placeholderTextColor="#968B7B"
                     keyboardType="numeric"
                     value={phone}
@@ -80,7 +80,7 @@ export default function SignUpScreen() {
                 <Text style={commonStyles.labelInput}>Mail address</Text>
                 <TextInput
                     style={commonStyles.input}
-                    placeholder="abc@gmail.com"
+                    placeholder="xxx@gmail.com"
                     // placeholderTextColor="#968B7B"
                     keyboardType="email-address"
                     value={mail}

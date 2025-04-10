@@ -207,6 +207,8 @@ export default function ChefScheduleScreen() {
 
   const handleAddNewSlot = async () => {
     try {
+      let successCount = 0;
+      let errorCount = 0;
       if (!slots) return;
       const payloads = convertToPayload(slots);
       console.log(payloads);
@@ -218,18 +220,33 @@ export default function ChefScheduleScreen() {
         const dayName = day?.full;
         fetchSchedule();
         if (result.status === "fulfilled") {
+          successCount++;
           console.log(`✅ Slot ${index + 1} thành công`, result.value.data);
+          showModal("Success", "Success")
         } else {
+          errorCount++;
           console.error(`❌ Tạo slot ở ${dayName} thất bại`, result.reason);
         }
       });
 
+      if (successCount === results.length) {
+        showModal("Success", "All slot created successfully.");
+      } else if (errorCount === results.length) {
+        showModal("Error", "All slot created failed.");
+      } else {
+        showModal("Warning", `Some slot created failed. Number of slot success: ${successCount}, TNumber of slot failed: ${errorCount}`);
+      }
+
     } catch (error) {
       if (error.response) {
         console.error(`Lỗi ${error.response.status}:`, error.response.data);
+        showModal("Error", error.response.data)
+
       }
       else {
         console.error(error.message);
+        showModal("Error", error.message)
+
       }
     } finally {
       setLoading(false);

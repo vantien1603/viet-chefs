@@ -8,21 +8,22 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
+import { useLocalSearchParams, router } from "expo-router";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
+import useAxios from "../../config/AXIOS_API";
 
 const LongTermDetailsScreen = () => {
-  const { bookingId } = useLocalSearchParams(); // Lấy bookingId từ params
+  const { bookingId, chefId } = useLocalSearchParams();
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const axiosInstance = useAxios();
 
   const fetchLongTermDetails = async () => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.get(
+      const response = await axiosInstance.get(
         `/bookings/${bookingId}/payment-cycles`
       );
       setLongTermDetails(response.data || []);
@@ -42,13 +43,12 @@ const LongTermDetailsScreen = () => {
   const handleDeposit = async () => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.post(`/bookings/${bookingId}/deposit`);
+      const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
       Toast.show({
         type: "success",
         text1: "Success",
         text2: "Deposit successful",
       });
-      // Cập nhật lại dữ liệu sau khi thanh toán (tùy chọn)
       fetchLongTermDetails();
     } catch (error) {
       console.error("Error making deposit:", error);
@@ -71,24 +71,53 @@ const LongTermDetailsScreen = () => {
   const renderCycleItem = (cycle) => (
     <View key={cycle.id} style={styles.cycleCard}>
       <Text style={styles.cycleTitle}>Cycle {cycle.cycleOrder}</Text>
-      <Text style={styles.cycleText}>Start Date: {cycle.startDate}</Text>
-      <Text style={styles.cycleText}>End Date: {cycle.endDate}</Text>
-      <Text style={styles.cycleText}>Amount Due: ${cycle.amountDue}</Text>
-      <Text style={styles.cycleText}>Status: {cycle.status}</Text>
-      <Text style={styles.sectionTitle}>Booking Details:</Text>
-      {cycle.bookingDetails.map((detail) => (
-        <View key={detail.id} style={styles.detailItem}>
-          <Text style={styles.detailText}>
-            Session Date: {detail.sessionDate}
-          </Text>
-          <Text style={styles.detailText}>Start Time: {detail.startTime}</Text>
-          <Text style={styles.detailText}>Location: {detail.location}</Text>
-          <Text style={styles.detailText}>
-            Total Price: ${detail.totalPrice}
-          </Text>
-          <Text style={styles.detailText}>Status: {detail.status}</Text>
+      <View style={{ flexDirection: "row", justifyContent: 'space-between', padding: 1 }}>
+        <Text style={{ fontWeight: "bold", fontSize: 18 }}>{cycle.status}</Text>
+        <View style={{ flexDirection: "row" }}>
+          <Text style={{ fontWeight: "400" }}>{cycle.startDate}</Text>
+          <Text>~</Text>
+          <Text style={{ fontWeight: "400" }}> {cycle.endDate}</Text>
         </View>
-      ))}
+
+
+      </View>
+
+      <View style={styles.cycleInfo}>
+        <Text style={{ fontWeight: "400" }}>Amount Due: ${cycle.amountDue}</Text>
+      </View>
+      <View style={styles.bookingDetailsContainer}>
+        {cycle.bookingDetails.map((detail) => (
+          <View key={detail.id}
+            style={{ borderBottomWidth: 0.5, borderBottomColor: "#333" }}>
+            <TouchableOpacity
+              style={styles.detailItem}
+              onPress={() =>
+                router.push({
+                  pathname: "/screen/bookingDetails",
+                  params: { bookingDetailId: detail.id, chefId },
+                })
+              }
+            >
+              <View style={{ flexDirection: 'row', padding: 1, justifyContent: "space-between" }}>
+                <Text style={styles.detailText}>
+                  Session Date: {detail.sessionDate}
+                </Text>
+                <Text style={{ fontWeight: "bold", fontSize: 14 }}>{detail.status}</Text>
+              </View>
+
+              <Text style={styles.detailText}>
+                Start Time: {detail.startTime}
+              </Text>
+              <Text style={styles.detailText}>Location: {detail.location}</Text>
+              <Text style={{ fontWeight: "bold", fontSize: 14 }}>
+                Total Price: ${detail.totalPrice}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        ))}
+      </View>
+      {/* <View style={{ height: 10 }} /> */}
     </View>
   );
 
@@ -133,11 +162,17 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#DDD",
   },
   cycleTitle: {
+    textAlign: "center",
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+    marginBottom: 10,
+  },
+  cycleInfo: {
     marginBottom: 10,
   },
   cycleText: {
@@ -145,18 +180,19 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 5,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 10,
-    marginBottom: 5,
+  bookingDetailsContainer: {
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 5,
+    padding: 10,
   },
   detailItem: {
-    borderTopWidth: 1,
-    borderTopColor: "#DDD",
-    paddingTop: 10,
-    marginTop: 5,
+    // backgroundColor: "#F9F9F9", 
+    // borderBottomWidth: 1,
+    borderColor: "#DDD",
+    // borderRadius: 5,
+    // padding: 10,
+    marginVertical: 10
   },
   detailText: {
     fontSize: 14,
@@ -169,6 +205,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginVertical: 20,
+    marginHorizontal: 20,
   },
   paymentButtonText: {
     color: "white",
