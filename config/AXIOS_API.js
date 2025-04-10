@@ -7,7 +7,7 @@ const useAxios = () => {
     const { user } = useContext(AuthContext);
     // console.log("tokem",user?.token);
     const AXIOS_API = axios.create({
-        baseURL: "http://192.168.146.195:8080/api/v1",
+        baseURL: "http://35.240.147.10/api/v1",
         // baseURL: "http://192.168.1.52:8080/api/v1",
         headers: {
             "Content-Type": "application/json",

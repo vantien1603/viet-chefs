@@ -24,8 +24,8 @@ const WalletScreen = () => {
   const fetchWalletData = async () => {
     try {
       const response = await axiosInstance.get("/users/profile/my-wallet");
-      setBalance(response.data.balance || 0);
-      setWalletId(response.data.id);
+      setBalance(response.data.wallet.balance || 0);
+      setWalletId(response.data.wallet.id);
     } catch (error) {
       console.error("Error fetching wallet data:", error);
       Alert.alert("Error", "Unable to load wallet data.");

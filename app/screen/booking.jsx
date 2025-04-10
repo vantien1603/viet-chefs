@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -37,7 +37,7 @@ const getDaysInMonth = (month, year) => {
 const generateTimeSlots = () => {
   const timeSlots = [];
   for (let hour = 8; hour <= 22; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
+    for (let minute = 0; minute < 60; minute += 15) {
       const time = `${hour.toString().padStart(2, "0")}:${minute
         .toString()
         .padStart(2, "0")}`;
@@ -51,11 +51,20 @@ const timeSlots = generateTimeSlots();
 
 const BookingScreen = () => {
   const params = useLocalSearchParams();
-  const { chefId, selectedMenu, selectedDishes, dishNotes: dishNotesParam, updatedDishId, updatedNote } = params;
 
-  const parsedSelectedMenu = selectedMenu ? JSON.parse(selectedMenu) : null;
-  const parsedSelectedDishes = selectedDishes ? JSON.parse(selectedDishes) : [];
-  const initialDishNotes = dishNotesParam ? JSON.parse(dishNotesParam) : {};
+  const parsedParams = useMemo(
+    () => ({
+      chefId: params.chefId,
+      selectedMenu: params.selectedMenu ? JSON.parse(params.selectedMenu) : null,
+      selectedDishes: params.selectedDishes ? JSON.parse(params.selectedDishes) : [],
+      dishNotes: params.dishNotes ? JSON.parse(params.dishNotes) : {},
+      updatedDishId: params.updatedDishId,
+      updatedNote: params.updatedNote,
+    }),
+    [params.chefId, params.selectedMenu, params.selectedDishes, params.dishNotes, params.updatedDishId, params.updatedNote]
+  );
+
+  const { chefId, selectedMenu: parsedSelectedMenu, selectedDishes: parsedSelectedDishes, dishNotes: initialDishNotes, updatedDishId, updatedNote } = parsedParams;
 
   const [month, setMonth] = useState(moment().format("MM"));
   const [year, setYear] = useState(moment().format("YYYY"));
@@ -72,15 +81,20 @@ const BookingScreen = () => {
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [tempDishNotes, setTempDishNotes] = useState(initialDishNotes);
   const axiosInstance = useAxios();
+  const [availability, setAvailability] = useState([]);
+  const [dishIds, setDishIds] = useState([]);
+  const [addresses, setAddresses] = useState([]); // Added for address list
 
   const modalizeRef = useRef(null);
+  const addressModalizeRef = useRef(null); // Added for address modal
+
   useEffect(() => {
     const loadSelectedAddress = async () => {
       try {
         const savedAddress = await AsyncStorage.getItem("selectedAddress");
         if (savedAddress) {
           const parsedAddress = JSON.parse(savedAddress);
-          setAddress(parsedAddress.address); // Hiển thị địa chỉ đã chọn
+          setAddress(parsedAddress.address);
           console.log("Loaded selected address:", parsedAddress.address);
         }
       } catch (error) {
@@ -92,31 +106,145 @@ const BookingScreen = () => {
 
   useEffect(() => {
     if (updatedDishId && updatedNote !== undefined) {
-      setDishNotes((prev) => {
-        const newNotes = { ...prev, [updatedDishId]: updatedNote };
-        console.log("Updated dishNotes in BookingScreen:", newNotes);
-        return newNotes;
-      });
+      setDishNotes((prev) => ({
+        ...prev,
+        [updatedDishId]: updatedNote,
+      }));
     }
   }, [updatedDishId, updatedNote]);
+
+  useEffect(() => {
+    const menuDishIds = parsedSelectedMenu?.menuItems?.map((item) => item.dishId || item.id) || [];
+    const extraDishIds = parsedSelectedDishes.map((dish) => dish.id);
+    const allDishIds = [...new Set([...menuDishIds, ...extraDishIds])];
+    console.log("Calculated dishIds:", allDishIds);
+    setDishIds(allDishIds);
+  }, [parsedSelectedMenu, parsedSelectedDishes]);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!selectedDay || !address) {
+        console.log("Skipping fetchAvailability: missing selectedDay or address");
+        return;
+      }
+
+      try {
+        const date = selectedDay.format("YYYY-MM-DD");
+        const menuId = parsedSelectedMenu ? parsedSelectedMenu.id : null;
+        console.log("Fetching availability with params:", {
+          chefId,
+          date,
+          customerLocation: address,
+          guestCount: numPeople,
+          menuId,
+          dishIds,
+        });
+        const response = await axiosInstance.get(
+          `/availability/chef/${chefId}/location-constraints`,
+          {
+            params: {
+              date,
+              customerLocation: address,
+              guestCount: numPeople,
+              menuId: menuId || undefined,
+              dishIds: dishIds.length > 0 ? dishIds : undefined,
+              maxDishesPerMeal: 6,
+            },
+            paramsSerializer: (params) => {
+              const searchParams = new URLSearchParams();
+              for (const [key, value] of Object.entries(params)) {
+                if (Array.isArray(value)) {
+                  value.forEach((item) => searchParams.append(key, item));
+                } else if (value !== undefined) {
+                  searchParams.append(key, value);
+                }
+              }
+              return searchParams.toString();
+            },
+          }
+        );
+        setAvailability(response.data);
+        console.log("Availability data:", response.data);
+      } catch (error) {
+        console.error("Error fetching availability:", error.response?.data || error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: error.response?.data?.message || "Unable to fetch chef availability. Please try again.",
+        });
+        setAvailability([]);
+      }
+    };
+
+    fetchAvailability();
+  }, [chefId, selectedDay, address, numPeople, dishIds]);
+
+  const getAvailableTimeSlots = () => {
+    if (!selectedDay) return [];
+
+    const dayAvailabilities = availability.filter((avail) =>
+      moment(avail.date).isSame(selectedDay, "day")
+    );
+
+    if (!dayAvailabilities.length) return [];
+
+    const availableSlots = new Set();
+    dayAvailabilities.forEach(({ startTime: availStart, endTime: availEnd }) => {
+      const [startHour, startMinute] = availStart.split(":").map(Number);
+      const [endHour, endMinute] = availEnd.split(":").map(Number);
+      const startTimeInMinutes = startHour * 60 + startMinute;
+      const endTimeInMinutes = endHour * 60 + endMinute;
+
+      timeSlots.forEach((slot) => {
+        const [slotHour, slotMinute] = slot.split(":").map(Number);
+        const slotTimeInMinutes = slotHour * 60 + slotMinute;
+        if (slotTimeInMinutes >= startTimeInMinutes && slotTimeInMinutes <= endTimeInMinutes) {
+          availableSlots.add(slot);
+        }
+      });
+    });
+
+    return Array.from(availableSlots).sort();
+  };
+
+  const availableTimeSlots = getAvailableTimeSlots();
 
   const isBeforeToday = (date) => date.isBefore(today, "day");
   const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
 
-  const isTimeAfter = (time1, time2) => {
-    const [hour1, min1] = time1.split(":").map(Number);
-    const [hour2, min2] = time2.split(":").map(Number);
-    return hour1 > hour2 || (hour1 === hour2 && min1 > min2);
+  const incrementPeople = () => setNumPeople((prev) => (prev < 10 ? prev + 1 : prev));
+  const decrementPeople = () => setNumPeople((prev) => (prev > 1 ? prev - 1 : 1));
+
+  const fetchAddresses = async () => {
+    try {
+      const response = await axiosInstance.get("/address/my-addresses");
+      setAddresses(response.data);
+      console.log("Fetched addresses:", response.data);
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách địa chỉ",
+      });
+    }
   };
 
-  // Handlers for incrementing and decrementing the number of people
-  const incrementPeople = () => {
-    setNumPeople((prev) => prev + 1);
+  const openAddressModal = () => {
+    fetchAddresses();
+    addressModalizeRef.current?.open();
   };
 
-  const decrementPeople = () => {
-    setNumPeople((prev) => (prev > 1 ? prev - 1 : 1)); // Minimum 1 person
+  const selectAddress = async (selectedAddress) => {
+    setAddress(selectedAddress.address);
+    try {
+      await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
+      console.log("Saved selected address:", selectedAddress.address);
+    } catch (error) {
+      console.error("Error saving selected address:", error);
+    }
+    addressModalizeRef.current?.close();
   };
 
   const handleAddItems = () => {
@@ -133,39 +261,19 @@ const BookingScreen = () => {
 
   const handleConfirmBooking = async () => {
     if (!selectedDay) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please select a date.",
-      });
+      Toast.show({ type: "error", text1: "Error", text2: "Please select a date." });
       return;
     }
-
     if (!startTime) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please select a start time.",
-      });
+      Toast.show({ type: "error", text1: "Error", text2: "Please select a start time." });
       return;
     }
-
     if (!address) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please enter an address.",
-      });
+      Toast.show({ type: "error", text1: "Error", text2: "Please select an address." });
       return;
     }
 
     setLoading(true);
-
-    const selectedDishIds = parsedSelectedDishes.map((dish) => dish.id);
-    if (parsedSelectedMenu) {
-      selectedDishIds.push(...(parsedSelectedMenu.menuItems || []).map((item) => item.dishId || item.id));
-    }
-
     const payload = {
       chefId: parseInt(chefId),
       guestCount: numPeople,
@@ -174,16 +282,15 @@ const BookingScreen = () => {
         startTime: `${startTime}:00`,
         location: address,
         menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
-        extraDishIds: parsedSelectedDishes.length > 0 ? selectedDishIds : null,
-        dishes: selectedDishIds.map((dishId) => ({
-          dishId: dishId,
+        extraDishIds: parsedSelectedDishes.length > 0 ? parsedSelectedDishes.map((dish) => dish.id) : null,
+        dishes: dishIds.map((dishId) => ({
+          dishId,
           notes: dishNotes[dishId] || "",
         })),
       },
     };
 
     console.log("Payload to API:", JSON.stringify(payload, null, 2));
-
     try {
       const response = await axiosInstance.post(
         "/bookings/calculate-single-booking",
@@ -193,16 +300,16 @@ const BookingScreen = () => {
         pathname: "screen/confirmBooking",
         params: {
           bookingData: JSON.stringify(response.data),
-          chefId: chefId,
+          chefId,
           selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
           selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
           address,
           sessionDate: selectedDay.format("YYYY-MM-DD"),
-          startTime: startTime,
+          startTime,
           requestDetails: specialRequest,
           dishNotes: JSON.stringify(dishNotes),
-          numPeople: numPeople.toString(), 
-          menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null, // Thêm menuId vào params
+          numPeople: numPeople.toString(),
+          menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
         },
       });
       console.log("Booking response:", JSON.stringify(response.data));
@@ -211,9 +318,7 @@ const BookingScreen = () => {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2:
-          error.response?.data?.message ||
-          "Failed to calculate booking. Please try again.",
+        text2: error.response?.data?.message || "Failed to calculate booking. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -221,6 +326,7 @@ const BookingScreen = () => {
   };
 
   const openModal = () => {
+    console.log("Opening modal");
     setTempDishNotes(dishNotes);
     modalizeRef.current?.open();
   };
@@ -230,9 +336,7 @@ const BookingScreen = () => {
     modalizeRef.current?.close();
   };
 
-  const cancelNotes = () => {
-    modalizeRef.current?.close();
-  };
+  const cancelNotes = () => modalizeRef.current?.close();
 
   const allDishes = [
     ...(parsedSelectedMenu?.menuItems || []).map((item) => ({
@@ -245,6 +349,45 @@ const BookingScreen = () => {
     })),
   ];
 
+  const renderAddressModal = () => (
+    <Modalize
+      ref={addressModalizeRef}
+      handlePosition="outside"
+      modalStyle={styles.modalStyle}
+      handleStyle={styles.handleStyle}
+      adjustToContentHeight={true}
+    >
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Select Address</Text>
+        {addresses.length === 0 ? (
+          <Text style={styles.noAddressesText}>
+            Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ mới!
+          </Text>
+        ) : (
+          addresses.map((item) => (
+            <TouchableOpacity
+              key={item.id.toString()}
+              onPress={() => selectAddress(item)}
+              style={styles.addressItem}
+            >
+              <View style={styles.addressInfo}>
+                <Text style={styles.addressTitle}>{item.title}</Text>
+                <Text style={styles.addressText}>{item.address}</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+        <TouchableOpacity
+          onPress={() => addressModalizeRef.current?.close()}
+          style={styles.cancelButton}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </Modalize>
+  );
+
+  console.log("Rendering BookingScreen");
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" />
@@ -254,40 +397,38 @@ const BookingScreen = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* New Section: Number of People */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Number of People</Text>
           <View style={styles.numberPicker}>
-            <TouchableOpacity
-              style={styles.numberButton}
-              onPress={decrementPeople}
-              disabled={numPeople <= 1}
-            >
+            <TouchableOpacity style={styles.numberButton} onPress={decrementPeople} disabled={numPeople <= 1}>
               <Text style={styles.numberButtonText}>−</Text>
             </TouchableOpacity>
             <Text style={styles.numberText}>{numPeople}</Text>
-            <TouchableOpacity
-              style={styles.numberButton}
-              onPress={incrementPeople}
-            >
+            <TouchableOpacity style={styles.numberButton} onPress={incrementPeople}>
               <Text style={styles.numberButtonText}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Date & Time</Text>
+          <Text style={styles.sectionTitle}>Address</Text>
+          <TouchableOpacity onPress={() => openAddressModal()} style={styles.locationContainer}>
+            <MaterialIcons name="location-on" size={20} color="#4EA0B7" style={styles.locationIcon} />
+            <Text style={styles.locationText}>
+              {address || "Select an address"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Date</Text>
           <FlatList
             data={days}
             keyExtractor={(item) => item.day.toString()}
             horizontal
             initialScrollIndex={days.findIndex((item) => isToday(item.date))}
             showsHorizontalScrollIndicator={false}
-            getItemLayout={(data, index) => ({
-              length: 80,
-              offset: 80 * index,
-              index,
-            })}
+            getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[
@@ -296,22 +437,15 @@ const BookingScreen = () => {
                   isSelectedDay(item.date) && styles.selectedDay,
                 ]}
                 disabled={isBeforeToday(item.date)}
-                onPress={() => setSelectedDay(item.date)}
+                onPress={() => {
+                  setSelectedDay(item.date);
+                  setStartTime(null);
+                }}
               >
-                <Text
-                  style={[
-                    styles.dayOfWeek,
-                    isSelectedDay(item.date) && styles.selectedText,
-                  ]}
-                >
+                <Text style={[styles.dayOfWeek, isSelectedDay(item.date) && styles.selectedText]}>
                   {item.dayOfWeek}
                 </Text>
-                <Text
-                  style={[
-                    styles.day,
-                    isSelectedDay(item.date) && styles.selectedText,
-                  ]}
-                >
+                <Text style={[styles.day, isSelectedDay(item.date) && styles.selectedText]}>
                   {item.day}
                 </Text>
               </TouchableOpacity>
@@ -319,30 +453,32 @@ const BookingScreen = () => {
           />
         </View>
 
-        <View style={styles.timeContainer}>
-          <Text style={styles.label}>Start time</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {timeSlots.map((time) => (
-              <TouchableOpacity
-                key={time}
-                style={[
-                  styles.timeButton,
-                  startTime === time && styles.timeButtonSelected,
-                ]}
-                onPress={() => setStartTime(time)}
-              >
-                <Text
-                  style={[
-                    styles.timeButtonText,
-                    startTime === time && styles.timeButtonTextSelected,
-                  ]}
+        {selectedDay && availableTimeSlots.length > 0 && (
+          <View style={styles.timeContainer}>
+            <Text style={styles.label}>Start time</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {availableTimeSlots.map((time) => (
+                <TouchableOpacity
+                  key={time}
+                  style={[styles.timeButton, startTime === time && styles.timeButtonSelected]}
+                  onPress={() => setStartTime(time)}
                 >
-                  {time}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+                  <Text
+                    style={[styles.timeButtonText, startTime === time && styles.timeButtonTextSelected]}
+                  >
+                    {time}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {selectedDay && availableTimeSlots.length === 0 && (
+          <View style={styles.timeContainer}>
+            <Text style={styles.noTimeText}>No available time slots for this day.</Text>
+          </View>
+        )}
 
         <View style={styles.section}>
           <View style={styles.menuHeader}>
@@ -432,16 +568,6 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address</Text>
-          <TextInput
-            style={styles.addressText}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Enter your address"
-          />
-        </View>
-
-        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Special request</Text>
           <TextInput
             style={styles.specialRequestInput}
@@ -454,11 +580,7 @@ const BookingScreen = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirmBooking}
-          disabled={loading}
-        >
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmBooking} disabled={loading}>
           {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
@@ -485,10 +607,7 @@ const BookingScreen = () => {
                   placeholder="Add your request here..."
                   value={tempDishNotes[dish.id] || ""}
                   onChangeText={(text) =>
-                    setTempDishNotes((prev) => ({
-                      ...prev,
-                      [dish.id]: text,
-                    }))
+                    setTempDishNotes((prev) => ({ ...prev, [dish.id]: text }))
                   }
                   multiline
                 />
@@ -507,6 +626,8 @@ const BookingScreen = () => {
           </View>
         </View>
       </Modalize>
+
+      {renderAddressModal()}
     </GestureHandlerRootView>
   );
 };
@@ -523,7 +644,6 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 10,
   },
-  // Number picker styles
   numberPicker: {
     flexDirection: "row",
     alignItems: "center",
@@ -643,14 +763,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#A64B2A",
   },
-  timeButtonDisabled: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginHorizontal: 5,
-    borderRadius: 6,
-    backgroundColor: "#d3d3d3",
-    opacity: 0.5,
-  },
   timeButtonText: {
     fontSize: 16,
     color: "#333",
@@ -660,18 +772,23 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
   },
-  timeButtonTextDisabled: {
-    fontSize: 16,
-    color: "#888",
-  },
-  addressText: {
-    fontSize: 16,
-    color: "#333",
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
     borderWidth: 1,
     borderColor: "#D1D1D1",
     borderRadius: 10,
     backgroundColor: "#FFF",
+  },
+  locationIcon: {
+    marginRight: 8,
+  },
+  locationText: {
+    fontSize: 16,
+    color: "#333",
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   specialRequestInput: {
     borderWidth: 1,
@@ -779,6 +896,37 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  noTimeText: {
+    fontSize: 16,
+    color: "#777",
+    textAlign: "center",
+    marginVertical: 10,
+  },
+  noAddressesText: {
+    fontSize: 16,
+    color: "#777",
+    textAlign: "center",
+    marginVertical: 20,
+  },
+  addressItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  addressInfo: {
+    flex: 1,
+  },
+  addressTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
+  },
+  addressText: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 5,
   },
 });
 

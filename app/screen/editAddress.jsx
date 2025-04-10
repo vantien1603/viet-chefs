@@ -18,6 +18,7 @@ import Header from "../../components/header";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
+import axios from "axios";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -30,7 +31,6 @@ const EditAddress = () => {
   const axiosInstance = useAxios();
   const [suggestions, setSuggestions] = useState([]);
 
-  const GOOGLE_PLACES_API_KEY = process.env.API_GEO_KEY;
 
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
@@ -43,7 +43,7 @@ const EditAddress = () => {
         {
           params: {
             input: query,
-            key: GOOGLE_PLACES_API_KEY,
+            key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
             language: "vi",
             components: "country:vn",
           },
@@ -53,7 +53,10 @@ const EditAddress = () => {
         setSuggestions(response.data.predictions);
       }
     } catch (error) {
-      console.error("Error fetching suggestions from Google Places:", error?.response?.data);
+      console.error(
+        "Error fetching suggestions from Google Places:",
+        error?.response?.data
+      );
     }
   };
 
@@ -393,9 +396,10 @@ const EditAddress = () => {
                     ? setEditingAddress({ ...editingAddress, address: text })
                     : setNewAddress({ ...newAddress, address: text })
                 }
-                onSubmitEditing={(event) =>
-                  fetchAddressSuggestions(event.nativeEvent.text)
-                }
+                onSubmitEditing={(event) => {
+                  event.persist();
+                  fetchAddressSuggestions(event.nativeEvent.text);
+                }}
                 returnKeyType="search"
               />
 

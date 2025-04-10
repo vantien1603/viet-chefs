@@ -130,7 +130,7 @@ const ChefDetail = () => {
               });
             }}
           >
-            <Text style={styles.modalButtonText}>Short-term Booking</Text>
+            <Text style={styles.modalButtonText}>Booking</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.modalButton}

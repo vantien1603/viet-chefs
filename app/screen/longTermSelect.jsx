@@ -193,7 +193,7 @@ const LongTermSelectBooking = () => {
         },
       };
     });
-    modalizeRef.current?.close(); // Đóng Modalize
+    modalizeRef.current?.close();
     setModalVisible(false);
     setNoteText("");
     setCurrentDishId(null);
@@ -284,9 +284,22 @@ const LongTermSelectBooking = () => {
     }
   };
 
+  const handleBack = () => {
+    router.push({
+      pathname: "/screen/longTermBooking",
+      params: {
+        selectedPackage: JSON.stringify(selectedPackage),
+        chefId,
+        numPeople,
+        address,
+        selectedDates: JSON.stringify(selectedDates),
+      },
+    });
+  }
+
   return (
     <GestureHandlerRootView style={styles.safeArea}>
-      <Header title={"Long-term Booking"} />
+      <Header title={"Long-term Booking"} onLeftPress={handleBack}/>
       <ProgressBar title="Chọn lịch" currentStep={3} totalSteps={4} />
       <View style={styles.container}>
         <ScrollView

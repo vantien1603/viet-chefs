@@ -36,7 +36,7 @@ export default function Home() {
     const searchQuery = String(query || "").trim();
     router.push({
       pathname: "/screen/searchResult",
-      params: { query: searchQuery }
+      params: { query: searchQuery },
     });
   };
 

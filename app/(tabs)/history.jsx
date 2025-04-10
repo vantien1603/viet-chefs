@@ -469,16 +469,23 @@ const OrderHistories = () => {
   }, []);
 
   const pendingBookings = bookings.filter(
-    (booking) => booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE"
+    (booking) =>
+      booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE"
   );
   const paidDepositBookings = bookings.filter(
-    (booking) => booking.status === "PAID" || booking.status === "DEPOSITED" || booking.status === "PAID_FIRST_CYCLE"
+    (booking) =>
+      booking.status === "PAID" ||
+      booking.status === "DEPOSITED" ||
+      booking.status === "PAID_FIRST_CYCLE"
   );
   const completedBookings = bookings.filter(
     (booking) => booking.status === "COMPLETED"
   );
   const confirmedBookings = bookings.filter(
-    (booking) => booking.status === "CONFIRMED" || booking.status === "CONFIRMED_PARTIALLY_PAID" || booking.status === "CONFIRMED_PAID"
+    (booking) =>
+      booking.status === "CONFIRMED" ||
+      booking.status === "CONFIRMED_PARTIALLY_PAID" ||
+      booking.status === "CONFIRMED_PAID"
   );
   const cancelledBookings = bookings.filter(
     (booking) => booking.status === "CANCELLED" || booking.status === "OVERDUE"
@@ -574,13 +581,17 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     backgroundColor: "#EBE5DD",
     flexDirection: "row",
+    flexDirection: "row",
   },
   tabButton: {
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderBottomWidth: 0,
+    borderBottomWidth: 0,
   },
   activeTabButton: {
+    borderBottomWidth: 3,
+    borderBottomColor: "#9C583F",
     borderBottomWidth: 3,
     borderBottomColor: "#9C583F",
   },
@@ -590,6 +601,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   activeTabText: {
+    color: "#9C583F",
     color: "#9C583F",
   },
   card: {

@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
           console.log("refresh token1", refresh_token);
 
           const response = await axios.post(
-            'http://192.168.146.195:8080/no-auth/refresh-token',
+            'http://35.240.147.10/no-auth/refresh-token',
             {},
             {
               headers: {
@@ -58,8 +58,9 @@ export const AuthProvider = ({ children }) => {
         password: password,
         expoToken: expoToken,
       };
-      // const response = await axios.post('http://192.168.146.195:8080/no-auth/login', loginPayload);
-      const response = await axios.post('http://192.168.146.195:8080/no-auth/login', loginPayload);
+      // const response = await axios.post('http://35.240.147.10/no-auth/login', loginPayload);
+      const response = await axios.post('http://35.240.147.10/no-auth/login', loginPayload);
+      console.log(response);
       if (response.status === 200) {
         console.log("auth", response.data);
         const { access_token, refresh_token } = response.data;

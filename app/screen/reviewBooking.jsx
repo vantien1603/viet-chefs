@@ -83,13 +83,8 @@ const ReviewBookingScreen = () => {
 
       const response = await axiosInstance.post("/bookings/long-term", payload);
 
-      if (response.status === 201) {
-        Alert.alert("Thành công", "Đặt chỗ dài hạn đã được xác nhận!", [
-          {
-            text: "OK",
-            onPress: () => router.push("(tabs)/home"),
-          },
-        ]);
+      if (response.status === 201 || response.status === 200) {
+        router.push("/(tabs)/home");
       }
     } catch (error) {
       console.error("Error confirming booking:", error);
@@ -100,9 +95,22 @@ const ReviewBookingScreen = () => {
     }
   };
 
+  const handleBackPress = () => {
+    router.push({
+      pathname: "/screen/longTermSelect",
+      params: {
+        bookingData: JSON.stringify(bookingData),
+        chefId: chefId.toString(),
+        selectedPackage: JSON.stringify(selectedPackage),
+        numPeople: guestCount.toString(),
+        selectedDates: JSON.stringify(selectedDates),
+      },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title="Review Booking" />
+      <Header title="Confirm Booking" onLeftPress={handleBackPress}/>
       <ProgressBar title="Xác nhận" currentStep={4} totalSteps={4} />
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Chi tiết đặt chỗ dài hạn</Text>

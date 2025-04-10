@@ -23,7 +23,7 @@ export default function SignUpScreen() {
             };
             console.log(signUpPayload);
 
-            const response = await axios.post('http://192.168.146.195:8080/no-auth/register', signUpPayload,
+            const response = await axios.post('http://35.240.147.10/no-auth/register', signUpPayload,
                 {
                     headers: { 'Content-Type': 'application/json' } 
                 });
