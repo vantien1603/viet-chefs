@@ -4,12 +4,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
 import { useLocalSearchParams } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
+import useAxios from "../../config/AXIOS_API";
 
 const ReviewsChefScreen = () => {
   const { id } = useLocalSearchParams();
   const [reviews, setReviews] = useState([]);
   const [chefName, setChefName] = useState("");
+  const axiosInstance = useAxios();
 
   // Dữ liệu giả để hiển thị
   const mockReviews = [
@@ -128,7 +129,7 @@ const ReviewsChefScreen = () => {
 
   useEffect(() => {
     const fetchReviews = async () => {
-      const response = await AXIOS_API.get(`/reviews/chef/${id}`);
+      const response = await axiosInstance.get(`/reviews/chef/${id}`);
     }
   }, [])
 

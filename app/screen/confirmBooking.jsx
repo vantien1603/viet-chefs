@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -12,11 +12,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { Ionicons } from "@expo/vector-icons";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../../config/AuthContext";
+import useAxios from "../../config/AXIOS_API";
 
 const ConfirmBookingScreen = () => {
+  const axiosInstance = useAxios();
   const [loading, setLoading] = useState(false);
   const params = useLocalSearchParams();
 
@@ -32,6 +34,7 @@ const ConfirmBookingScreen = () => {
   const dishNotes = JSON.parse(params.dishNotes || "{}");
   const numPeople = parseInt(params.numPeople) || 1;
   const menuId = params.menuId || null; // Lấy menuId từ params
+  const { user } = useContext(AuthContext);
 
   // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
   const menuDishes = selectedMenu?.menuItems?.map((item) => ({
@@ -73,17 +76,18 @@ const ConfirmBookingScreen = () => {
 
   const handleConfirmBooking = async () => {
     try {
-      const customerId = await AsyncStorage.getItem("@userId");
-      if (!customerId) {
+      // const customerId = await AsyncStorage.getItem("@userId");
+      if (!user) {
+        console.log("user befor booo",user);
         throw new Error(
           "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
         );
       }
 
       const selectedDishIds = allDishes.map((dish) => dish.id);
-
+      console.log("uausduausdasd", user);
       const payload = {
-        customerId: parseInt(customerId),
+        customerId: user?.userId,
         chefId: parseInt(chefId),
         requestDetails: requestDetails,
         guestCount: numPeople,
@@ -113,7 +117,7 @@ const ConfirmBookingScreen = () => {
       };
       console.log("Payload for booking confirmation:", payload);
 
-      const response = await AXIOS_API.post("/bookings", payload);
+      const response = await axiosInstance.post("/bookings", payload);
       console.log("API Response:", response.data);
 
       Toast.show({

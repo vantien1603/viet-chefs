@@ -1,72 +1,92 @@
 import { View, Text, TextInput, Image, TouchableOpacity, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-// import { SafeAreaView } from 'react-native-safe-area-context';
-// import { PasswordInput } from '../../components/PasswordInput/passwordInput'; 
 import { commonStyles } from '../../style';
 import Header from '../../components/header';
-export default function LoginScreen() {
+import axios from 'axios';
+export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
+    const [mail, setMail] = useState('');
     const [fullName, setFullName] = useState('');
+    const [username, setUsername] = useState('');
     const router = useRouter();
 
     const handleSignUp = async () => {
-        router.push({
-            pathname: 'screen/setPassword',
-            params: {
-                email, phone, fullName
-            }
-        })
-    };
+        try {
+            const signUpPayload = {
+                username: username,
+                email: mail,
+                fullName: fullName,
+                dob: "1999-01-01",
+                gender: "male",
+                phone: phone
+            };
+            console.log(signUpPayload);
 
+            const response = await axios.post('http://35.240.147.10/no-auth/register', signUpPayload,
+                {
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+            console.log(response.data);
+            if (response.status === 201) {
+                router.push({
+                    pathname: "screen/verify",
+                    params: { username, fullName, phone, mail, mode: "register" }
+                });
+            }
+
+        } catch (error) {
+            if (error.response) {
+                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            }
+            else {
+                console.error(error.message);
+            }
+        }
+    };
 
     return (
 
         <ScrollView style={commonStyles.containerContent}>
-            <Image
-                source={require('../../assets/images/logo.png')}
-                style={{ width: 400, height: 250 }}
-                resizeMode="cover"
-            />
-            <Text style={commonStyles.titleText}>
-                VIET CHEFS
-            </Text>
-            <TextInput
-                style={commonStyles.input}
-                placeholder="Full name"
-                placeholderTextColor="#968B7B"
-                keyboardType="default"
-                value={fullName}
-                onChangeText={setFullName}
-            />
-            <TextInput
-                style={commonStyles.input}
-                placeholder="Phone number"
-                placeholderTextColor="#968B7B"
-                keyboardType="numeric"
-                value={phone}
-                onChangeText={setPhone}
-            />
-            <TextInput
-                style={commonStyles.input}
-                placeholder="Mail address"
-                placeholderTextColor="#968B7B"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-            />
-
-            {/* <PasswordInput
-                placeholder="Password"
-                onPasswordChange={handlePasswordChange}
-            />
-            <PasswordInput
-                placeholder="Re-Password"
-                onPasswordChange={handleRePasswordChange}
-            /> */}
-            
+            <Header title="Register" />
             <View>
+
+                <Text style={{ fontSize: 18, fontWeight: 'bold' }}> Pleasure to be at your service!</Text>
+                <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}> Create an account now to experience our services!</Text>
+
+                <Text style={commonStyles.labelInput}>Username</Text>
+                <TextInput
+                    style={commonStyles.input}
+                    placeholder='User name'
+                    value={username}
+                    onChangeText={setUsername}
+                />
+                <Text style={commonStyles.labelInput}>First and last name</Text>
+                <TextInput
+                    style={commonStyles.input}
+                    placeholder='Full name'
+                    value={fullName}
+                    onChangeText={setFullName}
+                />
+                <Text style={commonStyles.labelInput}>Phone number</Text>
+                <TextInput
+                    style={commonStyles.input}
+                    placeholder="03730xxxxx"
+                    // placeholderTextColor="#968B7B"
+                    keyboardType="numeric"
+                    value={phone}
+                    onChangeText={setPhone}
+                />
+                <Text style={commonStyles.labelInput}>Mail address</Text>
+                <TextInput
+                    style={commonStyles.input}
+                    placeholder="xxx@gmail.com"
+                    // placeholderTextColor="#968B7B"
+                    keyboardType="email-address"
+                    value={mail}
+                    onChangeText={setMail}
+                />
+
                 <View style={{ flex: 1, alignItems: 'center' }}>
 
                     <TouchableOpacity onPress={handleSignUp} style={{

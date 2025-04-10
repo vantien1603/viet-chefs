@@ -15,7 +15,7 @@ const HistoryBookingScreen = () => {
 
   const upcomingBookings = [
     { id: '4', chef: 'John Doe Chef', distance: '5.0 Kms', details: 'Yakisoba Noodles 1 x + Thai Fried Noodles 1 x', date: '5 Jan 2025', price: '$150' },
-    { id: '5', chef: 'John Doe Chef', distance: '5.0 Kms', details: 'Yakisoba Noodles 1 x', date: '5 Jan 2025', price: '$55' },
+    { id: '5', chef: 'John Doe Ch ef', distance: '5.0 K ms', details: 'Yakisoba Noodles 1 x', date: '5 Jan 2025', price: '$55' },
   ];
 
   const handleCancelPress = (booking) => {

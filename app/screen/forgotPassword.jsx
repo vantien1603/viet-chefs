@@ -12,6 +12,7 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { router } from "expo-router";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
+import useAxios from "../../config/AXIOS_API";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");

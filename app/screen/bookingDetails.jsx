@@ -9,10 +9,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useLocalSearchParams, router, useNavigation } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
+import useAxios from "../../config/AXIOS_API";
 
 const BookingDetailScreen = () => {
   const { bookingDetailId, updateData, chefId } = useLocalSearchParams(); // Lấy updateData trực tiếp từ params
@@ -21,11 +21,12 @@ const BookingDetailScreen = () => {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const navigation = useNavigation();
+  const axiosInstance = useAxios();
 
   const fetchBookingDetail = async () => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.get(
+      const response = await axiosInstance.get(
         `/bookings/booking-details/${bookingDetailId}`
       );
       console.log("Booking detail:", JSON.stringify(response.data, null, 2));
@@ -34,11 +35,12 @@ const BookingDetailScreen = () => {
       if (response.data.dishes && response.data.dishes.length > 0) {
         const dishPromises = response.data.dishes.map(async (dish) => {
           try {
-            const dishResponse = await AXIOS_API.get(`/dishes/${dish.dishId}`);
-            return { dishId: dish.dishId, dishName: dishResponse.data.name };
+            console.log(dish.dish.id)
+            const dishResponse = await axiosInstance.get(`/dishes/${dish.dish.id}`);
+            return { dishId: dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            console.error(`Error fetching dish ${dish.dishId}:`, error);
-            return { dishId: dish.dishId, dishName: `Dish ${dish.dishId}` };
+            console.error(`Error fetching dish ${dish.id}:`, error);
+            return { dishId: dish.dish.id, dishName: `Dish ${dish.dish.id}` };
           }
         });
         const dishResults = await Promise.all(dishPromises);
@@ -72,7 +74,7 @@ const BookingDetailScreen = () => {
         isUpdated: true,
       }));
 
-      await AXIOS_API.put(`/bookings/booking-details/${bookingDetailId}`, parsedUpdateData);
+      await axiosInstance.put(`/bookings/booking-details/${bookingDetailId}`, parsedUpdateData);
 
       Toast.show({
         type: "success",
@@ -83,7 +85,7 @@ const BookingDetailScreen = () => {
       if (parsedUpdateData.dishes && parsedUpdateData.dishes.length > 0) {
         const dishPromises = parsedUpdateData.dishes.map(async (dish) => {
           try {
-            const dishResponse = await AXIOS_API.get(`/dishes/${dish.dishId}`);
+            const dishResponse = await axiosInstance.get(`/dishes/${dish.dish.dish.id}`);
             return { dishId: dish.dishId, dishName: dishResponse.data.name };
           } catch (error) {
             console.error(`Error fetching dish ${dish.dishId}:`, error);
@@ -114,7 +116,7 @@ const BookingDetailScreen = () => {
     if (bookingDetailId) {
       fetchBookingDetail();
     }
-  }, [bookingDetailId]);
+  }, []);
 
   useEffect(() => {
     console.log("useEffect for updateData triggered, updateData:", updateData);
@@ -153,9 +155,9 @@ const BookingDetailScreen = () => {
   }
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
+    <SafeAreaView style={commonStyles.container}>
       <Header title="Booking Detail" />
-      <ScrollView style={{ padding: 20 }}>
+      <ScrollView style={commonStyles.containerContent}>
         <View style={styles.detailCard}>
           <Text style={styles.sectionTitle}>Booking Information</Text>
           <Text style={styles.detailText}>
@@ -222,7 +224,7 @@ const BookingDetailScreen = () => {
             bookingDetail.dishes.map((dish, index) => (
               <View key={index} style={styles.dishItem}>
                 <Text style={styles.detailText}>
-                  Dish Name: {dishNames[dish.dishId] || "Loading..."}
+                  Dish Name: {dishNames[dish.dish.id] || "Loading..."}
                 </Text>
                 {dish.notes && (
                   <Text style={styles.detailText}>Notes: {dish.notes}</Text>
@@ -254,11 +256,12 @@ const BookingDetailScreen = () => {
 
 const styles = StyleSheet.create({
   detailCard: {
-    backgroundColor: "#FFF",
+    // backgroundColor: "#FFF",
     borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
+    marginHorizontal:10
+    // padding: 15,
+    // marginBottom: 15,
+    // elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,

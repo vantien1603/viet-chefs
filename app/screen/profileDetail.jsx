@@ -12,12 +12,12 @@ import { commonStyles } from "../../style";
 import { useRouter, useFocusEffect } from "expo-router"; // Thêm useFocusEffect
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
+import useAxios from "../../config/AXIOS_API";
 
 const ProfileDetail = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
-
+  const axiosInstance = useAxios();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,7 +28,7 @@ const ProfileDetail = () => {
 
   const handleProfile = async () => {
     try {
-      const response = await AXIOS_API.get("/users/profile");
+      const response = await axiosInstance.get("/users/profile");
       if (response.status === 200) {
         setFullName(response.data.fullName);
         setEmail(response.data.email);

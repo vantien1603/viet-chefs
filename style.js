@@ -121,7 +121,7 @@ export const commonStyles = StyleSheet.create({
     marginLeft: 10,
   },
   searchContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row', 
     backgroundColor: '#F2F2F2',
     borderRadius: 25,
     margin: 10,
@@ -134,9 +134,8 @@ export const commonStyles = StyleSheet.create({
     marginRight: 10,
   },
   searchInput: {
-    flex: 1,
     fontSize: 16,
-    paddingVertical: 10,
+    paddingVertical: 15,
     color: '#000',
   },
 });

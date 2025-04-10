@@ -15,11 +15,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
-import { API_GEO_KEY } from "@env";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -29,9 +28,9 @@ const EditAddress = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [newAddress, setNewAddress] = useState({ title: "", address: "" });
   const [editingAddress, setEditingAddress] = useState(null);
+  const axiosInstance = useAxios();
   const [suggestions, setSuggestions] = useState([]);
 
-  const GOOGLE_PLACES_API_KEY = API_GEO_KEY;
 
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
@@ -44,7 +43,7 @@ const EditAddress = () => {
         {
           params: {
             input: query,
-            key: GOOGLE_PLACES_API_KEY,
+            key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
             language: "vi",
             components: "country:vn",
           },
@@ -118,7 +117,7 @@ const EditAddress = () => {
 
   const fetchAddresses = async () => {
     try {
-      const response = await AXIOS_API.get("/address/my-addresses");
+      const response = await axiosInstance.get("/address/my-addresses");
       setAddresses(response.data);
     } catch (error) {
       console.error("Error fetching addresses:", error);
@@ -188,7 +187,7 @@ const EditAddress = () => {
     }
 
     try {
-      const response = await AXIOS_API.post("/address", addressData);
+      const response = await axiosInstance.post("/address", addressData);
       if (response.status === 201) {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
@@ -219,7 +218,7 @@ const EditAddress = () => {
       return;
     }
     try {
-      const response = await AXIOS_API.put("/address", editingAddress);
+      const response = await axiosInstance.put("/address", editingAddress);
       if (response.status === 200) {
         setAddresses(
           addresses.map((addr) =>
@@ -258,7 +257,7 @@ const EditAddress = () => {
           text: "Xóa",
           onPress: async () => {
             try {
-              const response = await AXIOS_API.delete(`/address/${id}`);
+              const response = await axiosInstance.delete(`/address/${id}`);
               if (response.status === 200) {
                 setAddresses(addresses.filter((addr) => addr.id !== id));
                 if (selectedId === id) {

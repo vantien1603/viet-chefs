@@ -1,14 +1,16 @@
-// app/screen/ChefDetail.js
-import React, { useEffect, useState, useRef } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
+import { commonStyles } from "../../style";
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams } from "expo-router";
 import AXIOS_API from "../../config/AXIOS_API";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import ProgressBar from "../../components/progressBar";
+import useAxios from "../../config/AXIOS_API";
 
 const ChefDetail = () => {
   const [expanded, setExpanded] = useState(false);
@@ -16,11 +18,12 @@ const ChefDetail = () => {
   const { id } = useLocalSearchParams(); // This is the chefId
   const [chefs, setChefs] = useState(null);
   const modalizeRef = useRef(null);
+  const axiosInstance = useAxios();
 
   useEffect(() => {
     const fetchDishes = async () => {
       try {
-        const response = await AXIOS_API.get("/dishes");
+        const response = await axiosInstance.get("/dishes");
         setDishes(response.data.content);
       } catch (error) {
         console.log("Error fetching dishes:", error);
@@ -33,7 +36,7 @@ const ChefDetail = () => {
     const fetchChefById = async () => {
       if (!id) return;
       try {
-        const response = await AXIOS_API.get(`/chefs/${id}`);
+        const response = await axiosInstance.get(`/chefs/${id}`);
         setChefs(response.data);
         // console.log("e", response.data);
       } catch (error) {
@@ -99,6 +102,7 @@ const ChefDetail = () => {
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
             <Text style={styles.viewAll}>All Dishes</Text>
           </TouchableOpacity>
+
         </View>
 
         <View style={styles.dishContainer}>
@@ -146,7 +150,7 @@ const ChefDetail = () => {
   );
 };
 
-const styles = {
+const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     color: "black",
@@ -157,21 +161,19 @@ const styles = {
     fontWeight: "bold",
   },
   profileContainer: {
-    padding: 20,
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    // padding: 20,
+    marginVertical: 20
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 40,
-    borderWidth: 2,
-    borderColor: "#b0532c",
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 45,
+    marginRight: 20
   },
   textContainer: {
     marginLeft: 30,
@@ -190,6 +192,7 @@ const styles = {
     marginTop: 5,
   },
   description: {
+    fontSize: 16,
     textAlign: "left",
     color: "#555",
     marginBottom: 5,
@@ -197,7 +200,7 @@ const styles = {
   seeAllText: {
     color: "#b0532c",
     fontWeight: "bold",
-    marginBottom: 15,
+    // marginBottom: 15,
     alignSelf: "flex-end",
   },
   buttonContainer: {
@@ -217,9 +220,11 @@ const styles = {
     fontWeight: "bold",
   },
   sectionHeader: {
+    borderTopColor: '#D1D1D1',
+    borderTopWidth: 0.5,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
+    paddingVertical: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -278,6 +283,6 @@ const styles = {
     color: "#fff",
     fontWeight: "bold",
   },
-};
-
+}
+)
 export default ChefDetail;

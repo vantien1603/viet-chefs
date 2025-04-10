@@ -14,9 +14,9 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Ionicons } from "@expo/vector-icons";
 import WebView from "react-native-webview";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import { router, useLocalSearchParams } from "expo-router";
+import useAxios from "../../config/AXIOS_API";
 
 const DepositScreen = () => {
   const [amount, setAmount] = useState("");
@@ -26,6 +26,7 @@ const DepositScreen = () => {
   const params = useLocalSearchParams();
   const walletId = params.id;
   const balance = params.balance;
+  const axiosInstance = useAxios();
 
   const handleDeposit = async () => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
@@ -39,7 +40,7 @@ const DepositScreen = () => {
 
     setLoading(true);
     try {
-      const response = await AXIOS_API.post(
+      const response = await axiosInstance.post(
         `/payment/deposit?walletId=${walletId}&amount=${amount}`
       );
 

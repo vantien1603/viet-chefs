@@ -10,8 +10,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
+import useAxios from "../../config/AXIOS_API";
 
 const PaymentBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -19,6 +19,7 @@ const PaymentBookingScreen = () => {
   const bookingData = JSON.parse(params.bookingData || "{}");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const axiosInstance = useAxios();
 
   const totalPrice = bookingData?.totalPrice || 0;
   console.log("Booking Data:", bookingData);
@@ -26,7 +27,7 @@ const PaymentBookingScreen = () => {
   const handleCompletePayment = async () => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.post(`/bookings/${bookingId}/payment`, {});
+      const response = await axiosInstance.post(`/bookings/${bookingId}/payment`, {});
       console.log("Payment Response:", response.data);
 
       Toast.show({

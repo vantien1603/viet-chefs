@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import AXIOS_API from "../../config/AXIOS_API";
 import Header from "../../components/header";
+import useAxios from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import Toast from "react-native-toast-message";
@@ -57,6 +57,8 @@ const SelectFood = () => {
     dishNotesParam && dishNotesParam !== "" ? JSON.parse(dishNotesParam) : {}
   );
   const [menu, setMenu] = useState([]);
+  const axiosInstance = useAxios();
+
   const [dishes, setDishes] = useState([]);
 
   const [index, setIndex] = useState(0);
@@ -75,7 +77,7 @@ const SelectFood = () => {
   useEffect(() => {
     const fetchMenus = async () => {
       try {
-        const menuResponse = await AXIOS_API.get(`/menus?chefId=${chefId}`);
+        const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
         setMenu(menuResponse.data.content || []);
       } catch (error) {
         console.log("Error fetching menus:", error);
@@ -94,11 +96,11 @@ const SelectFood = () => {
       try {
         let dishesResponse;
         if (selectedMenu) {
-          dishesResponse = await AXIOS_API.get(
-            `/dishes/not-in-menu?menuId=${selectedMenu}`
-          );
+          dishesResponse = await axiosInstance.get(`/dishes/not-in-menu?menuId=${selectedMenu}`);
+          console.log("Extra dishes (not in menu):", dishesResponse.data.content);
         } else {
-          dishesResponse = await AXIOS_API.get(`/dishes`);
+          dishesResponse = await axiosInstance.get(`/dishes`);
+          console.log("All dishes:", dishesResponse.data.content);
         }
         setDishes(dishesResponse.data.content || []);
       } catch (error) {

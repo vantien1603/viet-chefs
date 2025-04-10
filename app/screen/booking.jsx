@@ -16,11 +16,11 @@ import Header from "../../components/header";
 import moment from "moment";
 import Toast from "react-native-toast-message";
 import ProgressBar from "../../components/progressBar";
-import AXIOS_API from "../../config/AXIOS_API";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 
 const getDaysInMonth = (month, year) => {
   const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
@@ -80,6 +80,7 @@ const BookingScreen = () => {
   const [dishNotes, setDishNotes] = useState(initialDishNotes);
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [tempDishNotes, setTempDishNotes] = useState(initialDishNotes);
+  const axiosInstance = useAxios();
   const [availability, setAvailability] = useState([]);
   const [dishIds, setDishIds] = useState([]);
   const [addresses, setAddresses] = useState([]); // Added for address list
@@ -138,7 +139,7 @@ const BookingScreen = () => {
           menuId,
           dishIds,
         });
-        const response = await AXIOS_API.get(
+        const response = await axiosInstance.get(
           `/availability/chef/${chefId}/location-constraints`,
           {
             params: {
@@ -217,7 +218,7 @@ const BookingScreen = () => {
 
   const fetchAddresses = async () => {
     try {
-      const response = await AXIOS_API.get("/address/my-addresses");
+      const response = await axiosInstance.get("/address/my-addresses");
       setAddresses(response.data);
       console.log("Fetched addresses:", response.data);
     } catch (error) {
@@ -291,7 +292,10 @@ const BookingScreen = () => {
 
     console.log("Payload to API:", JSON.stringify(payload, null, 2));
     try {
-      const response = await AXIOS_API.post("/bookings/calculate-single-booking", payload);
+      const response = await axiosInstance.post(
+        "/bookings/calculate-single-booking",
+        payload
+      );
       router.push({
         pathname: "screen/confirmBooking",
         params: {

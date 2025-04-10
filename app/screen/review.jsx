@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
+import useAxios from "../../config/AXIOS_API";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
@@ -23,10 +23,11 @@ const ReviewScreen = () => {
   const [criteriaRatings, setCriteriaRatings] = useState({});
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
+  const axiosInstance = useAxios();
 
   const fetchCriteria = async () => {
     try {
-      const response = await AXIOS_API.get("/review-criteria");
+      const response = await axiosInstance.get("/review-criteria");
       const criteriaList = response.data;
 
       const initialRatings = {};
@@ -91,7 +92,7 @@ const ReviewScreen = () => {
         criteriaComments: { ...criteriaComments },
       };
       console.log("Review Payload:", payload);
-      const response = await AXIOS_API.post("/reviews", payload);
+      const response = await axiosInstance.post("/reviews", payload);
       console.log("Review Response:", response.data);
 
       Toast.show({

@@ -37,7 +37,7 @@ const ViewBookingDetailsScreen = () => {
   const fetchBookingDetails = async () => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.get(`/bookings/${bookingId}/booking-details`);
+      const response = await axiosInstance.get(`/bookings/${bookingId}/booking-details`);
       console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
@@ -55,7 +55,7 @@ const ViewBookingDetailsScreen = () => {
   const handleDeposit = async () => {
     setDepositLoading(true);
     try {
-      const response = await AXIOS_API.post(`/bookings/${bookingId}/deposit`);
+      const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
       Toast.show({
         type: "success",
         text1: "Success",

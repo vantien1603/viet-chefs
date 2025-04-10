@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AXIOS_API from "../../config/AXIOS_API";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 
 const AddNewFoodScreen = () => {
   const [foodName, setFoodName] = useState("");
@@ -34,6 +35,7 @@ const AddNewFoodScreen = () => {
   const [foodTypes, setFoodTypes] = useState([]);
   const [chefId, setChefId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const axiosInstance = useAxios();
 
   const cookGroups = [
     { label: "1. Nấu riêng", value: "1" },
@@ -99,7 +101,7 @@ const AddNewFoodScreen = () => {
         }
 
         // Gọi API GET /api/v1/chefs để lấy danh sách chef
-        const response = await AXIOS_API.get("/chefs", {
+        const response = await axiosInstance.get("/chefs", {
           params: {
             pageNo: 0,
             pageSize: 100,
@@ -134,7 +136,7 @@ const AddNewFoodScreen = () => {
 
     const fetchFoodTypes = async () => {
       try {
-        const response = await AXIOS_API.get("/food-types");
+        const response = await axiosInstance.get("/food-types");
         const formattedFoodTypes = response.data.map((item) => ({
           label: item.name,
           value: item.id.toString(),
@@ -233,7 +235,7 @@ const AddNewFoodScreen = () => {
         file: image ? { uri: image, name: image.split("/").pop() } : null,
       });
 
-      const response = await AXIOS_API.post("/dishes", formData);
+      const response = await axiosInstance.post("/dishes", formData);
       console.log("API response:", response.data);
 
       if (response.status === 201) {

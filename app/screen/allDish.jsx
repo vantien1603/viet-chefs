@@ -11,19 +11,20 @@ import {
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import useAxios from "../../config/AXIOS_API";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
   const [filteredDishes, setFilteredDishes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const axiosInstance = useAxios();
 
   useEffect(() => {
     const fetchDishes = async () => {
       try {
-        const response = await AXIOS_API.get("/dishes");
+        const response = await axiosInstance.get("/dishes");
         setDishes(response.data.content);
         setFilteredDishes(response.data.content); // Ban đầu hiển thị tất cả món
       } catch (error) {

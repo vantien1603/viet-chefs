@@ -9,20 +9,21 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
+import useAxios from "../../config/AXIOS_API";
 
 const LongTermDetailsScreen = () => {
   const { bookingId, chefId } = useLocalSearchParams();
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const axiosInstance = useAxios();
 
   const fetchLongTermDetails = async () => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.get(
+      const response = await axiosInstance.get(
         `/bookings/${bookingId}/payment-cycles`
       );
       setLongTermDetails(response.data || []);
@@ -42,7 +43,7 @@ const LongTermDetailsScreen = () => {
   const handlePayment = async (cycleId) => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.post(
+      const response = await axiosInstance.post(
         `/bookings/${bookingId}/payment-cycles/${cycleId}/pay`
       );
       Toast.show({
@@ -71,41 +72,51 @@ const LongTermDetailsScreen = () => {
 
   const renderCycleItem = (cycle) => (
     <View key={cycle.id} style={styles.cycleCard}>
-      {/* Tiêu đề Cycle */}
       <Text style={styles.cycleTitle}>Cycle {cycle.cycleOrder}</Text>
-      {/* Thông tin cơ bản của Cycle */}
-      <View style={styles.cycleInfo}>
-        <Text style={styles.cycleText}>Start Date: {cycle.startDate}</Text>
-        <Text style={styles.cycleText}>End Date: {cycle.endDate}</Text>
-        <Text style={styles.cycleText}>Amount Due: ${cycle.amountDue}</Text>
-        <Text style={styles.cycleText}>Status: {cycle.status}</Text>
-        <Text style={styles.cycleText}>Booking Details:</Text>
+      <View style={{ flexDirection: "row", justifyContent: 'space-between', padding: 1 }}>
+        <Text style={{ fontWeight: "bold", fontSize: 18 }}>{cycle.status}</Text>
+        <View style={{ flexDirection: "row" }}>
+          <Text style={{ fontWeight: "400" }}>{cycle.startDate}</Text>
+          <Text>~</Text>
+          <Text style={{ fontWeight: "400" }}> {cycle.endDate}</Text>
+        </View>
+
+
       </View>
-      {/* Danh sách Booking Details */}
+
+      <View style={styles.cycleInfo}>
+        <Text style={{ fontWeight: "400" }}>Amount Due: ${cycle.amountDue}</Text>
+      </View>
       <View style={styles.bookingDetailsContainer}>
         {cycle.bookingDetails.map((detail) => (
-          <TouchableOpacity
-            key={detail.id}
-            style={styles.detailItem}
-            onPress={() =>
-              router.push({
-                pathname: "/screen/bookingDetails",
-                params: { bookingDetailId: detail.id, chefId },
-              })
-            }
-          >
-            <Text style={styles.detailText}>
-              Session Date: {detail.sessionDate}
-            </Text>
-            <Text style={styles.detailText}>
-              Start Time: {detail.startTime}
-            </Text>
-            <Text style={styles.detailText}>Location: {detail.location}</Text>
-            <Text style={styles.detailText}>
-              Total Price: ${detail.totalPrice}
-            </Text>
-            <Text style={styles.detailText}>Status: {detail.status}</Text>
-          </TouchableOpacity>
+          <View key={detail.id}
+            style={{ borderBottomWidth: 0.5, borderBottomColor: "#333" }}>
+            <TouchableOpacity
+              style={styles.detailItem}
+              onPress={() =>
+                router.push({
+                  pathname: "/screen/bookingDetails",
+                  params: { bookingDetailId: detail.id, chefId },
+                })
+              }
+            >
+              <View style={{ flexDirection: 'row', padding: 1, justifyContent: "space-between" }}>
+                <Text style={styles.detailText}>
+                  Session Date: {detail.sessionDate}
+                </Text>
+                <Text style={{ fontWeight: "bold", fontSize: 14 }}>{detail.status}</Text>
+              </View>
+
+              <Text style={styles.detailText}>
+                Start Time: {detail.startTime}
+              </Text>
+              <Text style={styles.detailText}>Location: {detail.location}</Text>
+              <Text style={{ fontWeight: "bold", fontSize: 14 }}>
+                Total Price: ${detail.totalPrice}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
         ))}
       </View>
       {/* Nút thanh toán cho từng kỳ */}
@@ -156,9 +167,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 2,
     borderWidth: 1,
+    borderWidth: 1,
     borderColor: "#DDD",
   },
   cycleTitle: {
+    textAlign: "center",
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
@@ -174,16 +187,19 @@ const styles = StyleSheet.create({
   },
   bookingDetailsContainer: {
     borderWidth: 1,
+    borderWidth: 1,
     borderColor: "#DDD",
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
   },
   detailItem: {
-    borderBottomWidth: 1,
+    // backgroundColor: "#F9F9F9", 
+    // borderBottomWidth: 1,
     borderColor: "#DDD",
-    padding: 10,
-    marginBottom: 10,
+    // borderRadius: 5,
+    // padding: 10,
+    marginVertical: 10
   },
   detailText: {
     fontSize: 14,

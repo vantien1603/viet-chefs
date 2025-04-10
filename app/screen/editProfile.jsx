@@ -16,6 +16,7 @@ import AXIOS_API from "../../config/AXIOS_API";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useAxiosFormData from "../../config/AXIOS_API_FORM";
 
 const EditProfile = () => {
   const router = useRouter();
@@ -93,7 +94,7 @@ const EditProfile = () => {
         });
       }
 
-      const response = await AXIOS_API.put("/users/profile", formData);
+      const response = await useAxiosFormData.put("/users/profile", formData);
 
       if (response.status === 200) {
         await AsyncStorage.setItem("@fullName", name);

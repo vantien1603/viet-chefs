@@ -1,15 +1,13 @@
-import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
-import React, { useContext, useEffect } from "react";
-import * as WebBrowser from "expo-web-browser";
-import { Redirect, router } from "expo-router";
-import { useNavigation } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { AuthContext } from "../config/AuthContext";
+import { View, Text, Image, TouchableOpacity } from 'react-native'
+import React, { useContext, useEffect } from 'react'
+import * as WebBrowser from 'expo-web-browser'
+import { Redirect, router } from 'expo-router'
+import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-
 export default function WelcomeScreen() {
   const navigation = useNavigation();
 
@@ -37,6 +35,7 @@ export default function WelcomeScreen() {
 
       // Lấy token
       const token = (await Notifications.getExpoPushTokenAsync()).data
+      console.log("expo index", token);
       console.log('🔥 Device token:', token);
       const expotoken = await AsyncStorage.setItem("expoPushToken", token);
 
@@ -76,22 +75,23 @@ export default function WelcomeScreen() {
     router.push("screen/login");
   };
 
-  const auth = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
+  // console.log(user);
+  // if (!user) {
+  //   console.log("AuthContext is not provided");
+  //   // return;
+  // }
 
-  if (!auth) {
-    console.log("AuthContext is not provided");
-    return null;
-  }
-
-  const { user } = auth;
 
   useEffect(() => {
-    console.log("User:", user);
+    console.log('User:', user);
+    if (user) {
+      // return <Redirect href="/home" />;
+      navigation.navigate("(tabs)", { screen: "home" });
+    }
   }, [user]);
 
-  if (user) {
-    return <Redirect href="/home" />;
-  }
+
   return (
     <SafeAreaView
       style={{
@@ -168,6 +168,9 @@ export default function WelcomeScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity onPress={() => navigation.navigate("(tabs)", { screen: "home" })} style={{ alignItems: 'center', marginTop: 10, position: 'absolute', bottom: 10, }}>
+        <Text style={{ textDecorationLine: 'underline', }}>Continue as guest</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }

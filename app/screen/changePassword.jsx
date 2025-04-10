@@ -8,10 +8,10 @@ import {
   View,
 } from "react-native";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import { useRouter } from "expo-router";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useAxios from "../../config/AXIOS_API";
 
 const ChangePasswordScreen = () => {
   const router = useRouter();
@@ -21,6 +21,7 @@ const ChangePasswordScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [newPasswordError, setNewPasswordError] = useState(""); // Error for new password
   const [confirmPasswordError, setConfirmPasswordError] = useState(""); // Error for confirm password
+  const axiosInstance = useAxios();
 
   // Validate new password against current password
   const validateNewPassword = (newPass, currentPass = currentPassword) => {
@@ -58,7 +59,7 @@ const ChangePasswordScreen = () => {
         confirmPassword: confirmPassword,
       };
 
-      const response = await AXIOS_API.put("/users/change-password", passwordData);
+      const response = await axiosInstance.put("/users/change-password", passwordData);
 
       if (response.status === 200 || response.status === 201) {
         alert("Đổi mật khẩu thành công!");

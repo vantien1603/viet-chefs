@@ -10,9 +10,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -27,6 +27,7 @@ const LongTermBookingScreen = () => {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const axiosInstance = useAxios();
   const [addresses, setAddresses] = useState([]);
   const addressModalizeRef = useRef(null);
 
@@ -53,7 +54,9 @@ const LongTermBookingScreen = () => {
       return;
     }
     try {
-      const response = await AXIOS_API.get(`/packages/chefs/${chefId}`);
+      const response = await axiosInstance.get(`/packages/chefs/${chefId}`);
+      //console.log("API Response:", response.data);
+
       const fetchedPackages = response.data.content || response.data || [];
       if (!Array.isArray(fetchedPackages)) {
         throw new Error("Dữ liệu gói không phải là mảng.");
@@ -84,7 +87,7 @@ const LongTermBookingScreen = () => {
 
   const fetchAddresses = async () => {
     try {
-      const response = await AXIOS_API.get("/address/my-addresses");
+      const response = await axiosInstance.get("/address/my-addresses");
       setAddresses(response.data);
       console.log("Fetched addresses:", response.data);
     } catch (error) {

@@ -22,7 +22,7 @@ import { Modalize } from "react-native-modalize";
 import { Dropdown } from "react-native-element-dropdown";
 import Toast from "react-native-toast-message";
 import axios from "axios";
-import { API_GEO_KEY } from "@env";
+import useAxios from "../../config/AXIOS_API";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -43,6 +43,7 @@ const SearchResultScreen = () => {
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const axiosInstance = useAxios();
 
   const distanceOptions = [
     { label: "1 km", value: 1 },
@@ -53,11 +54,10 @@ const SearchResultScreen = () => {
     { label: "25 km", value: 25 },
   ];
 
-  const GOOGLE_PLACES_API_KEY = API_GEO_KEY;
 
   const fetchAddresses = async () => {
     try {
-      const response = await AXIOS_API.get("/address/my-addresses");
+      const response = await axiosInstance.get("/address/my-addresses");
       const fetchedAddresses = response.data;
 
       const addressesWithCoords = await Promise.all(
@@ -68,7 +68,7 @@ const SearchResultScreen = () => {
               {
                 params: {
                   address: addr.address,
-                  key: GOOGLE_PLACES_API_KEY,
+                  key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
                   language: "vi",
                 },
               }
@@ -155,7 +155,7 @@ const SearchResultScreen = () => {
             "Location permission is required to search nearby chefs and dishes. Please enable location services in your settings."
           );
           setLocation(null);
-          const dishesResponse = await AXIOS_API.get("/dishes/search", {
+          const dishesResponse = await axiosInstance.get("/dishes/search", {
             params: { keyword: "" },
           });
           setDishes(dishesResponse.data.content);
@@ -175,7 +175,7 @@ const SearchResultScreen = () => {
           "Failed to fetch your location. Please ensure location services are enabled and try again."
         );
         setLocation(null);
-        const dishesResponse = await AXIOS_API.get("/dishes/search", {
+        const dishesResponse = await axiosInstance.get("/dishes/search", {
           params: { keyword: "" },
         });
         setDishes(dishesResponse.data.content);
@@ -195,10 +195,10 @@ const SearchResultScreen = () => {
 
   const fetchInitialData = async (lat, lng) => {
     try {
-      const dishesResponse = await AXIOS_API.get("/dishes/search", {
+      const dishesResponse = await axiosInstance.get("/dishes/search", {
         params: { keyword: "" },
       });
-      const chefsResponse = await AXIOS_API.get("/chefs/nearby", {
+      const chefsResponse = await axiosInstance.get("/chefs/nearby", {
         params: {
           customerLat: lat,
           customerLng: lng,
@@ -232,7 +232,7 @@ const SearchResultScreen = () => {
 
     setIsLoading(true);
     try {
-      const dishesSearchResponse = await AXIOS_API.get("/dishes/search", {
+      const dishesSearchResponse = await axiosInstance.get("/dishes/search", {
         params: { keyword: trimmedQuery },
       });
       const matchingDish = dishesSearchResponse.data.content.find((dish) =>
@@ -242,7 +242,7 @@ const SearchResultScreen = () => {
       if (matchingDish) {
         setIsSelected(0);
         if (trimmedQuery.includes("near") || trimmedQuery.includes("nearby")) {
-          const nearbyDishesResponse = await AXIOS_API.get("/dishes/nearby/search", {
+          const nearbyDishesResponse = await axiosInstance.get("/dishes/nearby/search", {
             params: {
               keyword: trimmedQuery,
               customerLat: location.latitude,
@@ -264,7 +264,7 @@ const SearchResultScreen = () => {
           return;
         }
 
-        const chefsResponse = await AXIOS_API.get("/chefs/nearby", {
+        const chefsResponse = await axiosInstance.get("/chefs/nearby", {
           params: {
             customerLat: location.latitude,
             customerLng: location.longitude,
@@ -303,7 +303,7 @@ const SearchResultScreen = () => {
     if (location) {
       setIsLoading(true);
       try {
-        const chefsResponse = await AXIOS_API.get("/chefs/nearby", {
+        const chefsResponse = await axiosInstance.get("/chefs/nearby", {
           params: {
             customerLat: location.latitude,
             customerLng: location.longitude,

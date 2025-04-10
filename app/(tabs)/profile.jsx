@@ -12,8 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import AXIOS_API from "../../config/AXIOS_API";
+import useAxios from "../../config/AXIOS_API";
 
 const menuItems = [
   { id: "1", icon: "wallet", title: "VietPay" },
@@ -34,23 +33,8 @@ const menuItems = [
 const Profile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
-  const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
-  useEffect(() => {
-    const getFullName = async () => {
-      try {
-        const storedFullName = await AsyncStorage.getItem("@fullName");
-        if (storedFullName !== null) {
-          setFullName(storedFullName);
-        } else {
-          setFullName("Guest");
-        }
-      } catch (error) {
-        console.error("Error retrieving full name:", error);
-      }
-    };
-    getFullName();
-  }, []);
+  const axiosInstance = useAxios();
 
   const handleSetting = (id) => {
     switch (id) {
@@ -62,8 +46,7 @@ const Profile = () => {
         router.push("/screen/createChef");
         break;
       }
-      case "3": {
-        router.push("/screen/changePassword");
+      case '2': {
         break;
       }
       case "4": {
@@ -79,7 +62,7 @@ const Profile = () => {
 
   const avatarUrl = async () => {
     try {
-      const response = await AXIOS_API.get("/users/profile");
+      const response = await axiosInstance.get("/users/profile");
       setAvatar(response.data.avatarUrl);
       // console.log("Avatar URL:", response.data.avatarUrl);
     } catch (error) {
@@ -93,14 +76,7 @@ const Profile = () => {
 
   return (
     <ScrollView style={commonStyles.containerContent}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: 16,
-          padding: 10,
-        }}
-      >
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 , padding:10, borderBottomColor:"#ddd",borderBottomWidth:1}}>
         <Image
           source={
             avatar && avatar.trim() !== ""
@@ -112,7 +88,7 @@ const Profile = () => {
           style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
         />
         <View>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>{fullName}</Text>
+          <Text style={{ fontSize: 20, fontWeight: "bold" }}>{user?.fullName}</Text>
           <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
             <Text
               style={{ color: "#A9411D", fontWeight: "bold", fontSize: 16 }}
@@ -122,6 +98,9 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
       </View>
+      {/* <View style={{backgroundColor:"#fff", paddingVertical:5, marginHorizontal:-20}}> */}
+
+      {/* </View> */}
       {menuItems.map((item) => (
         <TouchableOpacity
           key={item.id}

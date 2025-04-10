@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,8 +11,9 @@ import {
 import Header from "../../components/header";
 import ProgressBar from "../../components/progressBar";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
 
 const ReviewBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -22,6 +23,8 @@ const ReviewBookingScreen = () => {
   const selectedPackage = JSON.parse(params.selectedPackage);
   const guestCount = parseInt(params.numPeople);
   const selectedDates = JSON.parse(params.selectedDates || "{}");
+  const axiosInstance = useAxios();
+  const { user } = useContext(AuthContext);
 
   const calculateSubtotal = () => {
     return (
@@ -35,13 +38,14 @@ const ReviewBookingScreen = () => {
   const handleConfirmBooking = async () => {
     try {
       const customerId = await AsyncStorage.getItem("@userId");
-      if (!customerId) {
+      if (!user) {
+        console.log("user befor booo",user);
         throw new Error(
           "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
         );
       }
       const payload = {
-        customerId: parseInt(customerId),
+        customerId: parseInt(user?.userId),
         chefId: chefId,
         requestDetails: bookingData.requestDetails || "",
         guestCount: guestCount || 0,
@@ -77,7 +81,7 @@ const ReviewBookingScreen = () => {
         JSON.stringify(payload, null, 2)
       );
 
-      const response = await AXIOS_API.post("/bookings/long-term", payload);
+      const response = await axiosInstance.post("/bookings/long-term", payload);
 
       if (response.status === 201 || response.status === 200) {
         router.push("/(tabs)/home");

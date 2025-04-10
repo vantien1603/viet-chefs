@@ -11,11 +11,11 @@ import {
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Dropdown } from "react-native-element-dropdown";
+import useAxios from "../../config/AXIOS_API";
 
 const UpdateBookingDetailScreen = () => {
   const { bookingDetailId, chefId } = useLocalSearchParams();
@@ -27,12 +27,14 @@ const UpdateBookingDetailScreen = () => {
   const [selectedExtraDishIds, setSelectedExtraDishIds] = useState([]); // Extra dishes được chọn
   const [allDishes, setAllDishes] = useState([]); // Danh sách tất cả dishes
   const [selectedDishes, setSelectedDishes] = useState([]); // Dishes được chọn (bao gồm notes)
+  const axiosInstance = useAxios();
+
 console.log("cc", chefId);
   // Fetch danh sách menu
   useEffect(() => {
     const fetchMenus = async () => {
       try {
-        const menuResponse = await AXIOS_API.get(`/menus?chefId=${chefId}`);
+        const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
         console.log(
           "Menu response:",
           JSON.stringify(menuResponse.data.content, null, 2)
@@ -70,7 +72,7 @@ console.log("cc", chefId);
     const fetchExtraDishes = async () => {
       if (selectedMenu) {
         try {
-          const dishesResponse = await AXIOS_API.get(
+          const dishesResponse = await axiosInstance.get(
             `/dishes/not-in-menu?menuId=${selectedMenu}`
           );
           setExtraDishes(dishesResponse.data.content || []);
@@ -96,7 +98,7 @@ console.log("cc", chefId);
     const fetchDishes = async () => {
       if (!selectedMenu) {
         try {
-          const dishesResponse = await AXIOS_API.get(`/dishes`);
+          const dishesResponse = await axiosInstance.get(`/dishes`);
           setAllDishes(dishesResponse.data.content || []);
         } catch (error) {
           console.log("Error fetching dishes:", error);
@@ -156,7 +158,7 @@ console.log("cc", chefId);
 
       // console.log("Calculate data:", JSON.stringify(calculateData, null, 2));
 
-      const response = await AXIOS_API.post(
+      const response = await axiosInstance.post(
         `/bookings/booking-details/${bookingDetailId}/calculate`,
         calculateData
       );

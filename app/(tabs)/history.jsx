@@ -1,410 +1,330 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import Header from "../../components/header";
-import { commonStyles } from "../../style";
-import AXIOS_API from "../../config/AXIOS_API";
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+import { router } from 'expo-router';
+import Header from '../../components/header';
+import { commonStyles } from '../../style';
+import useAxios from '../../config/AXIOS_API';
+import { AuthContext } from '../../config/AuthContext';
+import { useCommonNoification } from '../../context/commonNoti';
 
-const PendingRoute = ({ bookings, currentPage, totalPages, onPageChange, refreshBookings }) => {
+const PendingRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, payment }) => {
+  const renderItem = ({ item: booking }) => (
+    <View style={{
+      backgroundColor: "#B9603F",
+      borderRadius: 15,
+      width: "100%",
+      justifyContent: 'center',
+      padding: 12,
+      marginBottom: 15,
+      // height: 300,
+    }}>
+      <TouchableOpacity
+        key={booking.id}
+        style={styles.card}
+        onPress={() => {
+          ((booking.status === "PENDING" ||
+            booking.status === "PENDING_FIRST_CYCLE") &&
+            booking.bookingType === "SINGLE") ?
+            payment(booking.id)
+            :
+            (booking.bookingType === "LONG_TERM") &&
+            router.push({
+              pathname: "/screen/longTermDetails",
+              params: {
+                bookingId: booking.id,
+                chefId: booking.chef.id,
+              },
+            })
+        }
+          // (booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE") &&
+          //   booking.bookingType === "LONG_TERM"
+          // ? () =>
+          //   router.push({
+          //     pathname: "/screen/longTermDetails",
+          //     params: {
+          //       bookingId: booking.id,
+          //       chefId: booking.chef.id,
+          //     },
+          //   })
+          // : null
+
+        }
+      >
+        <View style={styles.leftSection}>
+          <Text style={styles.packageName}>{booking.bookingPackage?.name || ""}</Text>
+          <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
+          <Text style={styles.chefName}>Chef: {booking.chef.user.fullName}</Text>
+          <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
+        </View>
+        <View style={styles.rightSection}>
+          <Text numberOfLines={2} ellipsizeMode="tail" style={styles.address}>
+            {booking.bookingDetails?.[0]?.location || ""}
+          </Text>
+          {booking.bookingDetails && booking.bookingDetails[0] && (
+            <>
+              <Text style={styles.date}>Date: {booking.bookingDetails[0].sessionDate}</Text>
+              <Text style={styles.time}>Time: {booking.bookingDetails[0].startTime}</Text>
+            </>
+          )}
+          <Text style={styles.guestCount}>Type: {booking.bookingType}</Text>
+          <Text style={styles.totalPrice}>Total Price: ${booking.totalPrice}</Text>
+          <Text style={styles.status}>
+            Status: {booking.status === "PENDING" ? "PENDING" : "PENDING_FIRST_CYCLE"}
+          </Text>
+        </View>
+
+
+      </TouchableOpacity>
+
+    </View >
+
+  );
+
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={{ padding: 20 }}>
-        {bookings.length > 0 ? (
-          bookings.map((booking) => (
-            <TouchableOpacity
-              key={booking.id}
-              style={styles.card}
-              onPress={
-                booking.status === "PENDING"
-                  ? () =>
-                      router.push({
-                        pathname: "/screen/viewBookingDetails",
-                        params: {
-                          bookingId: booking.id,
-                          chefId: booking.chef.id,
-                          bookingType: booking.bookingType,
-                          refreshBookings: refreshBookings.toString(), // Truyền callback dưới dạng chuỗi
-                        },
-                      })
-                  : null
-              }
-            >
-              <View style={styles.leftSection}>
-                <Text style={styles.packageName}>
-                  {booking.bookingPackage?.name || ""}
-                </Text>
-                <Text style={styles.guestCount}>
-                  {booking.guestCount} guests
-                </Text>
-                <Text style={styles.chefName}>
-                  Chef: {booking.chef.user.fullName}
-                </Text>
-                <Text style={styles.phone}>
-                  Phone: {booking.chef.user.phone}
-                </Text>
-              </View>
-              <View style={styles.rightSection}>
-                <Text style={styles.address}>
-                  {booking.bookingDetails?.[0]?.location || ""}
-                </Text>
-                {booking.bookingDetails && booking.bookingDetails[0] && (
-                  <>
-                    <Text style={styles.date}>
-                      Date: {booking.bookingDetails[0].sessionDate}
-                    </Text>
-                    <Text style={styles.time}>
-                      Time: {booking.bookingDetails[0].startTime}
-                    </Text>
-                  </>
-                )}
-                <Text style={styles.guestCount}>
-                  Type: {booking.bookingType}
-                </Text>
-                <Text style={styles.totalPrice}>
-                  Total Price: ${booking.totalPrice}
-                </Text>
-                <Text style={styles.status}>
-                  Status:{" "}
-                  {booking.status === "PENDING"
-                    ? "PENDING"
-                    : "PENDING_FIRST_CYCLE"}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noOrders}>No pending orders</Text>
-        )}
-      </ScrollView>
-      <View style={styles.paginationContainer}>
-        {Array.from({ length: totalPages }, (_, i) => (
-          <TouchableOpacity
-            key={i}
-            style={[
-              styles.pageButton,
-              currentPage === i ? styles.activePageButton : null,
-            ]}
-            onPress={() => onPageChange(i)}
-          >
-            <Text style={styles.pageText}>{i + 1}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <FlatList
+        data={bookings}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ padding: 10 }}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.1}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={<Text style={styles.noOrders}>No pending orders</Text>}
+      />
     </View>
   );
 };
 
+const PaidDepositRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, onAccept, onReject }) => {
+  const renderItem = ({ item: booking }) => (
+    <View style={{
+      backgroundColor: "#B9603F",
+      // flexDirection: "row",
+      borderRadius: 15,
+      width: "100%",
+      // height: 300,
 
-const PaidDepositRoute = ({
-  bookings,
-  currentPage,
-  totalPages,
-  onPageChange,
-}) => (
-  <View style={{ flex: 1 }}>
-    <ScrollView style={{ padding: 20 }}>
-      {bookings.length > 0 ? (
-        bookings.map((booking) => (
-          <TouchableOpacity
-            key={booking.id}
-            style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: "/screen/longTermDetails",
-                params: {
-                  bookingId: booking.id,
-                  chefId: booking.chef.id,
-                },
-              })
-            }
-          >
-            <View style={styles.leftSection}>
-              <Text style={styles.packageName}>
-                {booking.bookingPackage?.name || ""}
-              </Text>
-              <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
-              <Text style={styles.chefName}>
-                Chef: {booking.chef.user.fullName}
-              </Text>
-              <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
-            </View>
-            <View style={styles.rightSection}>
-              <Text style={styles.address}>
-                {booking.bookingDetails?.[0]?.location || ""}
-              </Text>
-              {booking.bookingDetails && booking.bookingDetails[0] && (
-                <>
-                  <Text style={styles.date}>
-                    Date: {booking.bookingDetails[0].sessionDate}
-                  </Text>
-                  <Text style={styles.time}>
-                    Time: {booking.bookingDetails[0].startTime}
-                  </Text>
-                </>
-              )}
-              <Text style={styles.totalPrice}>
-                Total Price: ${booking.totalPrice}
-              </Text>
-              <Text style={styles.status}>
-                STATUS:{" "}
-                {booking.status === "PAID"
-                  ? "PAID"
-                  : booking.status === "DEPOSITED"
-                  ? "DEPOSITED"
-                  : "PAID_FIRST_CYCLE"}
-              </Text>
-            </View>
+      padding: 12,
+      marginBottom: 15,
+    }}>
+      <TouchableOpacity key={booking.id} style={{ flexDirection: "row" }}>
+        <View style={styles.leftSection}>
+          <Text style={styles.packageName}>{booking.bookingPackage?.name || ""}</Text>
+          <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
+          <Text style={styles.chefName}>Chef: {booking.chef.user.fullName}</Text>
+          <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
+        </View>
+        <View style={styles.rightSection}>
+          <Text style={styles.address}>{booking.bookingDetails?.[0]?.location || ""}</Text>
+          {booking.bookingDetails && booking.bookingDetails[0] && (
+            <>
+              <Text style={styles.date}>Date: {booking.bookingDetails[0].sessionDate}</Text>
+              <Text style={styles.time}>Time: {booking.bookingDetails[0].startTime}</Text>
+            </>
+          )}
+          <Text style={styles.totalPrice}>Total Price: ${booking.totalPrice}</Text>
+          <Text style={styles.status}>
+            STATUS: {booking.status === "PAID" ? "PAID" : booking.status === "DEPOSIT" ? "DEPOSITED" : "PAID_FIRST_CYCLE"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      {(role === "ROLE_CHEF" && (booking.status === "PAID" || booking.status === "DEPOSIT" || booking.status === "DEPOSITED" || booking.status === "PAID_FIRST_CYCLE")) && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.acceptButton} onPress={() => onAccept(booking.id)} >
+            <Text style={styles.buttonText}>Đồng ý</Text>
           </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.noOrders}>No paid/deposit orders</Text>
-      )}
-    </ScrollView>
-    <View style={styles.paginationContainer}>
-      {Array.from({ length: totalPages }, (_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.pageButton,
-            currentPage === i ? styles.activePageButton : null,
-          ]}
-          onPress={() => onPageChange(i)}
-        >
-          <Text style={styles.pageText}>{i + 1}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </View>
-);
-
-const CompletedRoute = ({
-  bookings,
-  currentPage,
-  totalPages,
-  onPageChange,
-}) => (
-  <View style={{ flex: 1 }}>
-    <ScrollView style={{ padding: 20 }}>
-      {bookings.length > 0 ? (
-        bookings.map((booking) => (
-          <View key={booking.id} style={styles.card}>
-            <View style={styles.leftSection}>
-              <Text style={styles.packageName}>
-                {booking.bookingPackage?.name || ""}
-              </Text>
-              <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
-              <Text style={styles.chefName}>
-                Chef: {booking.chef.user.fullName}
-              </Text>
-              <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
-            </View>
-            <View style={styles.rightSection}>
-              <Text style={styles.address}>
-                {booking.bookingDetails?.[0]?.location || "N/A"}
-              </Text>
-              {booking.bookingDetails && booking.bookingDetails[0] && (
-                <>
-                  <Text style={styles.date}>
-                    Date: {booking.bookingDetails[0].sessionDate}
-                  </Text>
-                  <Text style={styles.time}>
-                    Time: {booking.bookingDetails[0].startTime}
-                  </Text>
-                </>
-              )}
-              <Text style={styles.totalPrice}>
-                Total Price: ${booking.totalPrice}
-              </Text>
-              <Text style={styles.status}>Status: COMPLETED</Text>
-              <TouchableOpacity
-                style={styles.reviewButton}
-                onPress={() =>
-                  router.push({
-                    pathname: "/screen/review",
-                    params: { bookingId: booking.id, chefId: booking.chef.id },
-                  })
-                }
-              >
-                <Text style={styles.reviewButtonText}>Review</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))
-      ) : (
-        <Text style={styles.noOrders}>No completed orders</Text>
-      )}
-    </ScrollView>
-    <View style={styles.paginationContainer}>
-      {Array.from({ length: totalPages }, (_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.pageButton,
-            currentPage === i ? styles.activePageButton : null,
-          ]}
-          onPress={() => onPageChange(i)}
-        >
-          <Text style={styles.pageText}>{i + 1}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </View>
-);
-
-const ConfirmRoute = ({ bookings, currentPage, totalPages, onPageChange }) => (
-  <View style={{ flex: 1 }}>
-    <ScrollView style={{ padding: 20 }}>
-      {bookings.length > 0 ? (
-        bookings.map((booking) => (
-          <TouchableOpacity key={booking.id} style={styles.card}>
-            <View style={styles.leftSection}>
-              <Text style={styles.packageName}>
-                {booking.bookingPackage?.name || ""}
-              </Text>
-              <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
-              <Text style={styles.chefName}>
-                Chef: {booking.chef.user.fullName}
-              </Text>
-              <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
-            </View>
-            <View style={styles.rightSection}>
-              <Text style={styles.address}>
-                {booking.bookingDetails?.[0]?.location || ""}
-              </Text>
-              {booking.bookingDetails && booking.bookingDetails[0] && (
-                <>
-                  <Text style={styles.date}>
-                    Date: {booking.bookingDetails[0].sessionDate}
-                  </Text>
-                  <Text style={styles.time}>
-                    Time: {booking.bookingDetails[0].startTime}
-                  </Text>
-                </>
-              )}
-              <Text style={styles.totalPrice}>
-                Total Price: ${booking.totalPrice}
-              </Text>
-              <Text style={styles.status}>
-                Status:{" "}
-                {booking.status === "CONFIRMED_PARTIALLY_PAID"
-                  ? "CONFIRMED_PARTIALLY_PAID"
-                  : booking.status === "CONFIRMED"
-                  ? "CONFIRMED"
-                  : "CONFIRMED_PAID"}
-              </Text>
-            </View>
+          <TouchableOpacity style={styles.rejectButton} onPress={() => onReject(booking.id)}>
+            <Text style={styles.buttonText}>Từ chối</Text>
           </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.noOrders}>No confirmed orders</Text>
+        </View>
       )}
-    </ScrollView>
-    <View style={styles.paginationContainer}>
-      {Array.from({ length: totalPages }, (_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.pageButton,
-            currentPage === i ? styles.activePageButton : null,
-          ]}
-          onPress={() => onPageChange(i)}
-        >
-          <Text style={styles.pageText}>{i + 1}</Text>
-        </TouchableOpacity>
-      ))}
     </View>
-  </View>
-);
 
-const CancelRoute = ({ bookings, currentPage, totalPages, onPageChange }) => (
-  <View style={{ flex: 1 }}>
-    <ScrollView style={{ padding: 20 }}>
-      {bookings.length > 0 ? (
-        bookings.map((booking) => (
-          <TouchableOpacity key={booking.id} style={styles.card}>
-            <View style={styles.leftSection}>
-              <Text style={styles.packageName}>
-                {booking.bookingPackage?.name || ""}
-              </Text>
-              <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
-              <Text style={styles.chefName}>
-                Chef: {booking.chef.user.fullName}
-              </Text>
-              <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
-            </View>
-            <View style={styles.rightSection}>
-              <Text style={styles.address}>
-                {booking.bookingDetails?.[0]?.location || ""}
-              </Text>
-              {booking.bookingDetails && booking.bookingDetails[0] && (
-                <>
-                  <Text style={styles.date}>
-                    Date: {booking.bookingDetails[0].sessionDate}
-                  </Text>
-                  <Text style={styles.time}>
-                    Time: {booking.bookingDetails[0].startTime}
-                  </Text>
-                </>
-              )}
-              <Text style={styles.totalPrice}>
-                Total Price: ${booking.totalPrice}
-              </Text>
-              <Text style={styles.status}>
-                Status: {booking.status === "CANCELED" ? "CANCELED" : "OVERDUE"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.noOrders}>No cancelled orders</Text>
-      )}
-    </ScrollView>
-    <View style={styles.paginationContainer}>
-      {Array.from({ length: totalPages }, (_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.pageButton,
-            currentPage === i ? styles.activePageButton : null,
-          ]}
-          onPress={() => onPageChange(i)}
-        >
-          <Text style={styles.pageText}>{i + 1}</Text>
-        </TouchableOpacity>
-      ))}
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={bookings}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ padding: 20 }}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.1}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={<Text style={styles.noOrders}>No paid/deposit orders</Text>}
+      />
     </View>
-  </View>
-);
+  );
+};
+
+const CompletedRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => {
+  const renderItem = ({ item: booking }) => (
+    <View key={booking.id} style={styles.card}>
+      <View style={styles.leftSection}>
+        <Text style={styles.packageName}>{booking.bookingPackage?.name || ""}</Text>
+        <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
+        <Text style={styles.chefName}>Chef: {booking.chef.user.fullName}</Text>
+        <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
+      </View>
+      <View style={styles.rightSection}>
+        <Text style={styles.address}>{booking.bookingDetails?.[0]?.location || "N/A"}</Text>
+        {booking.bookingDetails && booking.bookingDetails[0] && (
+          <>
+            <Text style={styles.date}>Date: {booking.bookingDetails[0].sessionDate}</Text>
+            <Text style={styles.time}>Time: {booking.bookingDetails[0].startTime}</Text>
+          </>
+        )}
+        <Text style={styles.totalPrice}>Total Price: ${booking.totalPrice}</Text>
+        <Text style={styles.status}>Status: COMPLETED</Text>
+        <TouchableOpacity
+          style={styles.reviewButton}
+          onPress={() =>
+            router.push({
+              pathname: "/screen/review",
+              params: { bookingId: booking.id, chefId: booking.chef.id },
+            })
+          }
+        >
+          <Text style={styles.reviewButtonText}>Review</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={bookings}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ padding: 20 }}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.1}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={<Text style={styles.noOrders}>No completed orders</Text>}
+      />
+    </View>
+  );
+};
+
+const ConfirmRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => {
+  const renderItem = ({ item: booking }) => (
+    <TouchableOpacity key={booking.id} style={styles.card}>
+      <View style={styles.leftSection}>
+        <Text style={styles.packageName}>{booking.bookingPackage?.name || ""}</Text>
+        <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
+        <Text style={styles.chefName}>Chef: {booking.chef.user.fullName}</Text>
+        <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
+      </View>
+      <View style={styles.rightSection}>
+        <Text style={styles.address}>{booking.bookingDetails?.[0]?.location || ""}</Text>
+        {booking.bookingDetails && booking.bookingDetails[0] && (
+          <>
+            <Text style={styles.date}>Date: {booking.bookingDetails[0].sessionDate}</Text>
+            <Text style={styles.time}>Time: {booking.bookingDetails[0].startTime}</Text>
+          </>
+        )}
+        <Text style={styles.totalPrice}>Total Price: ${booking.totalPrice}</Text>
+        <Text style={styles.status}>
+          Status: {booking.status === "CONFIRMED_PARTIALLY_PAID" ? "CONFIRMED_PARTIALLY_PAID" : booking.status === "CONFIRMED" ? "CONFIRMED" : "CONFIRMED_PAID"}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={bookings}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ padding: 20 }}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.1}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={<Text style={styles.noOrders}>No confirmed orders</Text>}
+      />
+    </View>
+  );
+};
+
+const CancelRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => {
+  const renderItem = ({ item: booking }) => (
+    <TouchableOpacity key={booking.id} style={styles.card}>
+      <Text>{booking.id}</Text>
+      <View style={styles.leftSection}>
+        <Text style={styles.packageName}>{booking.bookingPackage?.name || ""}</Text>
+        <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
+        <Text style={styles.chefName}>Chef: {booking.chef.user.fullName}</Text>
+        <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
+      </View>
+      <View style={styles.rightSection}>
+        <Text style={styles.address}>{booking.bookingDetails?.[0]?.location || ""}</Text>
+        {booking.bookingDetails && booking.bookingDetails[0] && (
+          <>
+            <Text style={styles.date}>Date: {booking.bookingDetails[0].sessionDate}</Text>
+            <Text style={styles.time}>Time: {booking.bookingDetails[0].startTime}</Text>
+          </>
+        )}
+        <Text style={styles.totalPrice}>Total Price: ${booking.totalPrice}</Text>
+        <Text style={styles.status}>
+          Status: {booking.status === "CANCELED" ? "CANCELED" : "OVERDUE"}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={bookings}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ padding: 20 }}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.1}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={<Text style={styles.noOrders}>No cancelled orders</Text>}
+      />
+    </View>
+  );
+};
 
 const OrderHistories = () => {
-  const [selectedTab, setSelectedTab] = useState("pending");
-  const [bookings, setBookings] = useState([]);
-  const [pageNo, setPageNo] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useContext(AuthContext);
 
-  const tabs = [
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
     { key: "pending", title: "Pending" },
     { key: "paidDeposit", title: "Paid/Deposit" },
     { key: "completed", title: "Completed" },
     { key: "confirm", title: "Confirm" },
     { key: "cancel", title: "Cancel" },
-  ];
-
+  ]);
+  const [bookings, setBookings] = useState([]);
+  const [pageNo, setPageNo] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const axiosInstance = useAxios();
+  const [loading, setLoading] = useState(false);
   const PAGE_SIZE = 10;
-
-  const fetchBookingDetails = async (page) => {
-    if (isLoading) return;
+  const { showModal } = useCommonNoification();
+  const fetchRequestBooking = async (page, isRefresh = false) => {
+    console.log("Request");
+    if (isLoading && !isRefresh) return;
     setIsLoading(true);
     try {
-      const response = await AXIOS_API.get("/bookings/my-bookings", {
+      const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
         params: {
           pageNo: page,
           pageSize: PAGE_SIZE,
@@ -413,29 +333,140 @@ const OrderHistories = () => {
         },
       });
 
+
+
       const bookingData = response.data.content || response.data || [];
-      setBookings(bookingData);
+      setBookings(prev => {
+        const newData = isRefresh ? bookingData : [...prev, ...bookingData];
+        const uniqueData = Array.from(new Map(newData.map(item => [item.id, item])).values());
+        return uniqueData;
+      });
       setTotalPages(
         response.data.totalPages ||
-          Math.ceil(
-            (response.data.totalElements || bookingData.length) / PAGE_SIZE
-          )
+        Math.ceil((response.data.totalElements || bookingData.length) / PAGE_SIZE)
       );
       setPageNo(page);
     } catch (error) {
       console.error("Error fetching booking details:", error.message);
     } finally {
       setIsLoading(false);
+      if (isRefresh) setRefreshing(false);
+    }
+  }
+
+
+  const fetchBookingDetails = async (page, isRefresh = false) => {
+    console.log("Booking");
+
+    if (isLoading && !isRefresh) return;
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.get("/bookings/my-bookings", {
+        params: {
+          pageNo: page,
+          pageSize: PAGE_SIZE,
+          sortBy: "id",
+          sortDir: "desc",
+        },
+      });
+
+
+
+      const bookingData = response.data.content || response.data || [];
+      // setBookings(prev => isRefresh ? bookingData : [...prev, ...bookingData]);
+      setBookings(prev => {
+        const newData = isRefresh ? bookingData : [...prev, ...bookingData];
+        const uniqueData = Array.from(new Map(newData.map(item => [item.id, item])).values());
+        return uniqueData;
+      });
+      setTotalPages(
+        response.data.totalPages ||
+        Math.ceil((response.data.totalElements || bookingData.length) / PAGE_SIZE)
+      );
+      setPageNo(page);
+    } catch (error) {
+      console.error("Error fetching booking details:", error.message);
+    } finally {
+      setIsLoading(false);
+      if (isRefresh) setRefreshing(false);
     }
   };
 
+  const handleReject = (id) => {
+    try {
+      setLoading(true);
+      const response = axiosInstance.put(`/bookings/${id}/reject`);
+      fetchRequestBooking(0, true)
+      showModal("Success", "Reject successfully");
+
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      }
+      else {
+        console.error(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleAccept = (id) => {
+    try {
+      console.log("Toi se acept cai nafy", id);
+      setLoading(true);
+      const response = axiosInstance.put(`/bookings/${id}/confirm`);
+      showModal("Success", "Confirmed successfully");
+      fetchRequestBooking(0, true)
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      }
+      else {
+        console.error(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handlePayment = async (id) => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.post(`/bookings/${id}/payment`, {});
+      if (response.status === 200) {
+        showModal("Success", "Payment successfully");
+        fetchBookingDetails(0, true);
+      }
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      }
+      else {
+        console.error(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+
+  }
+
   useEffect(() => {
-    fetchBookingDetails(0);
+    user?.roleName === "ROLE_CHEF" ? fetchRequestBooking(0) :
+      fetchBookingDetails(0);
   }, []);
 
-  const handlePageChange = (page) => {
-    fetchBookingDetails(page);
+  const handleLoadMore = () => {
+    if (pageNo < totalPages - 1 && !isLoading) {
+      user?.roleName === "ROLE_CHEF" ? fetchRequestBooking(pageNo + 1) : fetchBookingDetails(pageNo + 1);
+    }
   };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setBookings([]);
+    user?.roleName === "ROLE_CHEF" ? fetchRequestBooking(0, true) : fetchBookingDetails(0, true);
+  }, []);
 
   const pendingBookings = bookings.filter(
     (booking) =>
@@ -460,88 +491,87 @@ const OrderHistories = () => {
     (booking) => booking.status === "CANCELLED" || booking.status === "OVERDUE"
   );
 
-  const renderContent = () => {
-    switch (selectedTab) {
-      case "pending":
-        return (
-          <PendingRoute
-            bookings={pendingBookings}
-            currentPage={pageNo}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            refreshBookings={fetchBookingDetails} // Truyền hàm làm mới
-          />
-        );
-      case "paidDeposit":
-        return (
-          <PaidDepositRoute
-            bookings={paidDepositBookings}
-            currentPage={pageNo}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        );
-      case "completed":
-        return (
-          <CompletedRoute
-            bookings={completedBookings}
-            currentPage={pageNo}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        );
-      case "confirm":
-        return (
-          <ConfirmRoute
-            bookings={confirmedBookings}
-            currentPage={pageNo}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        );
-      case "cancel":
-        return (
-          <CancelRoute
-            bookings={cancelledBookings}
-            currentPage={pageNo}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  const renderScene = SceneMap({
+    pending: () => (
+      <PendingRoute
+        bookings={pendingBookings}
+        onLoadMore={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        payment={handlePayment}
+        role={user?.roleName}
+      />
+    ),
+    paidDeposit: () => (
+      <PaidDepositRoute
+        bookings={paidDepositBookings}
+        onLoadMore={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        role={user?.roleName}
+        onAccept={handleAccept}
+        onReject={handleReject}
+      />
+    ),
+
+    confirm: () => (
+      <ConfirmRoute
+        bookings={confirmedBookings}
+        onLoadMore={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        role={user?.roleName}
+
+      />
+    ),
+    completed: () => (
+      <CompletedRoute
+        bookings={completedBookings}
+        onLoadMore={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        role={user?.roleName}
+
+      />
+    ),
+    cancel: () => (
+      <CancelRoute
+        bookings={cancelledBookings}
+        onLoadMore={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        role={user?.roleName}
+
+      />
+    ),
+  });
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"History"} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabContainer}
-      >
-        {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[
-              styles.tabButton,
-              selectedTab === tab.key && styles.activeTabButton,
-            ]}
-            onPress={() => setSelectedTab(tab.key)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                selectedTab === tab.key && styles.activeTabText,
-              ]}
-            >
-              {tab.title}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-      <View style={{ flex: 1 }}>{renderContent()}</View>
+      <Header title={'History'} />
+      <View style={{ flex: 1 }}>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          renderTabBar={(props) => (
+            <TabBar
+              {...props}
+              scrollEnabled={true}
+              indicatorStyle={{ backgroundColor: '#9C583F', height: 3 }}
+              style={{
+                backgroundColor: '#EBE5DD',
+                elevation: 0,
+                shadowOpacity: 0,
+                borderBottomWidth: 0,
+              }}
+              activeColor="#9C583F"
+              inactiveColor="gray"
+              labelStyle={{ fontWeight: 'bold' }}
+            />
+          )}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -551,13 +581,17 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     backgroundColor: "#EBE5DD",
     flexDirection: "row",
+    flexDirection: "row",
   },
   tabButton: {
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderBottomWidth: 0,
+    borderBottomWidth: 0,
   },
   activeTabButton: {
+    borderBottomWidth: 3,
+    borderBottomColor: "#9C583F",
     borderBottomWidth: 3,
     borderBottomColor: "#9C583F",
   },
@@ -568,12 +602,15 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#9C583F",
+    color: "#9C583F",
   },
   card: {
     backgroundColor: "#B9603F",
     flexDirection: "row",
     borderRadius: 15,
     width: "100%",
+    // height: 300,
+
     padding: 12,
     marginBottom: 15,
   },
@@ -665,6 +702,28 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 14,
+  }, acceptButton: {
+    backgroundColor: "#4CAF50", // Màu xanh cho nút Đồng ý
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    marginRight: 5,
+  },
+  rejectButton: {
+    backgroundColor: "#F44336", // Màu đỏ cho nút Từ chối
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
   },
 });
 

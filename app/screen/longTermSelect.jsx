@@ -12,10 +12,10 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import Header from "../../components/header";
-import AXIOS_API from "../../config/AXIOS_API";
 import ProgressBar from "../../components/progressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize"; // Thêm import Modalize
+import useAxios from "../../config/AXIOS_API";
 
 const generateTimeSlots = () => {
   const timeSlots = [];
@@ -31,6 +31,8 @@ const generateTimeSlots = () => {
 };
 
 const LongTermSelectBooking = () => {
+  const axiosInstance = useAxios();
+
   const params = useLocalSearchParams();
   const selectedPackage = params.selectedPackage ? JSON.parse(params.selectedPackage) : null;
   const chefId = params.chefId;
@@ -118,7 +120,7 @@ const LongTermSelectBooking = () => {
 
   const fetchDishes = async () => {
     try {
-      const response = await AXIOS_API.get(`/dishes?chefId=${chefId}`);
+      const response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
       setDishes(response.data.content || []);
     } catch (error) {
       console.log("Error fetching dishes:", error);
@@ -248,7 +250,7 @@ const LongTermSelectBooking = () => {
     };
 
     try {
-      const response = await AXIOS_API.post(
+      const response = await axiosInstance.post(
         "/bookings/calculate-long-term-booking",
         payload
       );
@@ -271,7 +273,7 @@ const LongTermSelectBooking = () => {
 
   const handleMenu = async () => {
     try {
-      const response = await AXIOS_API.get(`/menus?chefId=${chefId}`);
+      const response = await axiosInstance.get(`/menus?chefId=${chefId}`);
       if (response.status === 200) {
         setMenuItems(response.data.content || response.data || []);
       }

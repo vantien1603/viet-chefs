@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
   Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -16,9 +15,14 @@ import Header from "../../components/header";
 
 const VerifyScreen = () => {
   const router = useRouter();
-  const { email } = useLocalSearchParams();
+  const { username, fullName, phone, mail, mode } = useLocalSearchParams();
   const [code, setCode] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
+
+
+  if (mode == "register") {
+    console.log("register");
+  } else if (mode == "forgot") console.log('forgot');
 
   const handleInputChange = (value, index) => {
     if (/^\d?$/.test(value)) {
@@ -43,23 +47,30 @@ const VerifyScreen = () => {
     try {
       const response = await AXIOS_BASE.post(
         `/verify-code?email=${encodeURIComponent(
-          email
+          mail
         )}&code=${encodeURIComponent(verificationCode)}`
       );
       if (response.status === 200) {
         console.log("Verify success");
-        router.push("screen/login");
+        // router.push("screen/login");
+        router.push({ pathname: "screen/setPassword", params: { username, fullName, phone, mail, mode: "register" } });
+
+        // }
       }
     } catch (error) {
-      const message = error.response.data.message;
-      console.log("Verify failed", message);
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      }
+      else {
+        console.error(error.message);
+      }
     }
   };
 
   const handleSendAgain = async () => {
     try {
       const response = await AXIOS_BASE.post(
-        `/resend-code?email=${encodeURIComponent(email)}`
+        `/resend-code?email=${encodeURIComponent(mail)}`
       );
       if (response.status === 200) {
         Alert.alert("Success", "Resend code. Please check your email");

@@ -11,20 +11,21 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
-import AXIOS_API from "../../config/AXIOS_API";
 import { router, useLocalSearchParams } from "expo-router";
+import useAxios from "../../config/AXIOS_API";
 
 const WalletScreen = () => {
   const [balance, setBalance] = useState(0);
   const [walletId, setWalletId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const params = useLocalSearchParams();
+  const axiosInstance = useAxios();
 
   const fetchWalletData = async () => {
     try {
-      const response = await AXIOS_API.get("/users/profile/my-wallet");
-      setBalance(response.data.balance || 0);
-      setWalletId(response.data.id);
+      const response = await axiosInstance.get("/users/profile/my-wallet");
+      setBalance(response.data.wallet.balance || 0);
+      setWalletId(response.data.wallet.id);
     } catch (error) {
       console.error("Error fetching wallet data:", error);
       Alert.alert("Error", "Unable to load wallet data.");
