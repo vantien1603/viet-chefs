@@ -39,22 +39,24 @@ const LongTermDetailsScreen = () => {
     }
   };
 
-  const handleDeposit = async () => {
+  const handlePayment = async (cycleId) => {
     setLoading(true);
     try {
-      const response = await AXIOS_API.post(`/bookings/${bookingId}/deposit`);
+      const response = await AXIOS_API.post(
+        `/bookings/${bookingId}/payment-cycles/${cycleId}/pay`
+      );
       Toast.show({
         type: "success",
         text1: "Success",
-        text2: "Deposit successful",
+        text2: "Payment successful",
       });
-      fetchLongTermDetails();
+      fetchLongTermDetails(); // Cập nhật lại danh sách sau khi thanh toán
     } catch (error) {
-      console.error("Error making deposit:", error);
+      console.error("Error making payment:", error);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: error.response?.data?.message || "Failed to process deposit",
+        text2: error.response?.data?.message || "Failed to process payment",
       });
     } finally {
       setLoading(false);
@@ -77,7 +79,7 @@ const LongTermDetailsScreen = () => {
         <Text style={styles.cycleText}>End Date: {cycle.endDate}</Text>
         <Text style={styles.cycleText}>Amount Due: ${cycle.amountDue}</Text>
         <Text style={styles.cycleText}>Status: {cycle.status}</Text>
-        <Text style={styles.cycleText}>Booking Details: {cycle.status}</Text>
+        <Text style={styles.cycleText}>Booking Details:</Text>
       </View>
       {/* Danh sách Booking Details */}
       <View style={styles.bookingDetailsContainer}>
@@ -106,7 +108,20 @@ const LongTermDetailsScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
-      {/* <View style={{ height: 10 }} /> */}
+      {/* Nút thanh toán cho từng kỳ */}
+      {cycle.status === "PENDING" && (
+        <TouchableOpacity
+          style={styles.paymentButton}
+          onPress={() => handlePayment(cycle.id)}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={styles.paymentButtonText}>Pay Cycle</Text>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -128,17 +143,6 @@ const LongTermDetailsScreen = () => {
           )}
         </ScrollView>
       )}
-      <TouchableOpacity
-        style={styles.paymentButton}
-        onPress={handleDeposit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <Text style={styles.paymentButtonText}>Make Deposit</Text>
-        )}
-      </TouchableOpacity>
       <Toast />
     </SafeAreaView>
   );
@@ -151,7 +155,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     elevation: 2,
-    borderWidth: 1, // Thêm viền cho Cycle
+    borderWidth: 1,
     borderColor: "#DDD",
   },
   cycleTitle: {
@@ -169,18 +173,17 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   bookingDetailsContainer: {
-    borderWidth: 1, // Viền bao quanh danh sách booking details
+    borderWidth: 1,
     borderColor: "#DDD",
     borderRadius: 5,
     padding: 10,
+    marginBottom: 10,
   },
   detailItem: {
-    // backgroundColor: "#F9F9F9", // Màu nền cho từng booking detail
     borderBottomWidth: 1,
     borderColor: "#DDD",
-    // borderRadius: 5,
     padding: 10,
-    marginBottom: 10, // Khoảng cách giữa các booking detail
+    marginBottom: 10,
   },
   detailText: {
     fontSize: 14,
@@ -189,16 +192,14 @@ const styles = StyleSheet.create({
   },
   paymentButton: {
     backgroundColor: "#A64B2A",
-    padding: 15,
+    padding: 10,
     borderRadius: 10,
     alignItems: "center",
-    marginVertical: 20,
-    marginHorizontal: 20,
   },
   paymentButtonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 14,
   },
   noDataText: {
     fontSize: 16,

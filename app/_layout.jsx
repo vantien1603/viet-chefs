@@ -203,6 +203,14 @@ export default function RootLayout() {
           name="screen/updateBookingDetail"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="screen/viewBookingDetails"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screen/message"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <Toast config={toastConfig} />
     </AuthProvider>

@@ -6,195 +6,598 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  ScrollView,
+  Alert,
+  Dimensions,
+  Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { commonStyles } from "../../style";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../components/header";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AXIOS_API from "../../config/AXIOS_API";
+import * as Location from "expo-location";
+import { Modalize } from "react-native-modalize";
+import { Dropdown } from "react-native-element-dropdown";
+import Toast from "react-native-toast-message";
+import axios from "axios";
+import { API_GEO_KEY } from "@env";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const SearchResultScreen = () => {
   const { query } = useLocalSearchParams();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState(query || "");
   const [isSelected, setIsSelected] = useState(0);
+  const [chefs, setChefs] = useState([]);
+  const [dishes, setDishes] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Added for current location button
+  const textInputRef = useRef(null);
+  const [location, setLocation] = useState(null);
+  const [distance, setDistance] = useState(10);
+  const [tempDistance, setTempDistance] = useState(10);
   const modalizeRef = useRef(null);
+  const addressModalizeRef = useRef(null);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+
+  const distanceOptions = [
+    { label: "1 km", value: 1 },
+    { label: "5 km", value: 5 },
+    { label: "10 km", value: 10 },
+    { label: "15 km", value: 15 },
+    { label: "20 km", value: 20 },
+    { label: "25 km", value: 25 },
+  ];
+
+  const GOOGLE_PLACES_API_KEY = API_GEO_KEY;
+
+  const fetchAddresses = async () => {
+    try {
+      const response = await AXIOS_API.get("/address/my-addresses");
+      const fetchedAddresses = response.data;
+
+      const addressesWithCoords = await Promise.all(
+        fetchedAddresses.map(async (addr) => {
+          try {
+            const geocodeResponse = await axios.get(
+              `https://maps.googleapis.com/maps/api/geocode/json`,
+              {
+                params: {
+                  address: addr.address,
+                  key: GOOGLE_PLACES_API_KEY,
+                  language: "vi",
+                },
+              }
+            );
+            if (geocodeResponse.data.status === "OK") {
+              const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
+              return { ...addr, latitude: lat, longitude: lng };
+            }
+            return { ...addr, latitude: null, longitude: null };
+          } catch (error) {
+            console.error(`Error geocoding address ${addr.address}:`, error);
+            return { ...addr, latitude: null, longitude: null };
+          }
+        })
+      );
+
+      setAddresses(addressesWithCoords);
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách địa chỉ",
+      });
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    setLoading(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Toast.show({
+          type: "error",
+          text1: "Quyền bị từ chối",
+          text2: "Bạn cần bật dịch vụ định vị.",
+        });
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (reverseGeocode.length > 0) {
+        let addr = reverseGeocode[0];
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
+          addr.city || ""
+        }, ${addr.region || ""}, ${addr.country || ""}`;
+
+        const newAddress = {
+          id: Date.now().toString(),
+          title: "Vị trí hiện tại",
+          address: fullAddress,
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+
+        setAddresses((prev) => [...prev, newAddress]);
+        selectAddress(newAddress);
+      }
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể lấy vị trí",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const getLocationAndFetchData = async () => {
+      setIsLoading(true);
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Permission Denied",
+            "Location permission is required to search nearby chefs and dishes. Please enable location services in your settings."
+          );
+          setLocation(null);
+          const dishesResponse = await AXIOS_API.get("/dishes/search", {
+            params: { keyword: "" },
+          });
+          setDishes(dishesResponse.data.content);
+        } else {
+          let userLocation = await Location.getCurrentPositionAsync({});
+          setLocation({
+            latitude: userLocation.coords.latitude,
+            longitude: userLocation.coords.longitude,
+          });
+          console.log("User Location:", userLocation.coords);
+          await fetchInitialData(userLocation.coords.latitude, userLocation.coords.longitude);
+        }
+      } catch (error) {
+        console.log("Error getting location or fetching data:", error);
+        Alert.alert(
+          "Location Error",
+          "Failed to fetch your location. Please ensure location services are enabled and try again."
+        );
+        setLocation(null);
+        const dishesResponse = await AXIOS_API.get("/dishes/search", {
+          params: { keyword: "" },
+        });
+        setDishes(dishesResponse.data.content);
+      } finally {
+        setIsLoading(false);
+      }
+
+      await fetchAddresses();
+
+      if (textInputRef.current) {
+        textInputRef.current.focus();
+      }
+    };
+
+    getLocationAndFetchData();
+  }, []);
+
+  const fetchInitialData = async (lat, lng) => {
+    try {
+      const dishesResponse = await AXIOS_API.get("/dishes/search", {
+        params: { keyword: "" },
+      });
+      const chefsResponse = await AXIOS_API.get("/chefs/nearby", {
+        params: {
+          customerLat: lat,
+          customerLng: lng,
+          distance,
+        },
+      });
+      setDishes(dishesResponse.data.content);
+      setChefs(chefsResponse.data.content);
+    } catch (error) {
+      console.log("Error fetching initial data:", error);
+    }
+  };
 
   const options = [
     { index: 0, name: "Recommended" },
     { index: 1, name: "Chefs" },
     { index: 2, name: "Ratings" },
-    { index: 3, name: "Distance" },
   ];
 
-  const filterOptions = [
-    { id: 1, name: "Price: Low to High" },
-    { id: 2, name: "Price: High to Low" },
-    { id: 3, name: "Rating" },
-    { id: 4, name: "Nearest" },
-  ];
+  const handleSearch = async () => {
+    const trimmedQuery = searchQuery.trim().toLowerCase();
+    if (trimmedQuery === "") return;
 
-  const handleSearch = () => {
-    const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery !== "") {
-      router.replace({
-        pathname: "/screen/searchResult",
-        params: { query: trimmedQuery },
+    if (!location && (trimmedQuery.includes("near") || trimmedQuery.includes("nearby"))) {
+      Alert.alert(
+        "Location Unavailable",
+        "Location services are required for nearby searches. Please enable location services in your settings."
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const dishesSearchResponse = await AXIOS_API.get("/dishes/search", {
+        params: { keyword: trimmedQuery },
       });
+      const matchingDish = dishesSearchResponse.data.content.find((dish) =>
+        dish.name?.toLowerCase().includes(trimmedQuery)
+      );
+
+      if (matchingDish) {
+        setIsSelected(0);
+        if (trimmedQuery.includes("near") || trimmedQuery.includes("nearby")) {
+          const nearbyDishesResponse = await AXIOS_API.get("/dishes/nearby/search", {
+            params: {
+              keyword: trimmedQuery,
+              customerLat: location.latitude,
+              customerLng: location.longitude,
+              distance,
+            },
+          });
+          setDishes(nearbyDishesResponse.data.content);
+          setIsSelected(0);
+        } else {
+          setDishes(dishesSearchResponse.data.content);
+        }
+      } else {
+        if (!location) {
+          Alert.alert(
+            "Location Unavailable",
+            "Location services are required to search for nearby chefs. Please enable location services in your settings."
+          );
+          return;
+        }
+
+        const chefsResponse = await AXIOS_API.get("/chefs/nearby", {
+          params: {
+            customerLat: location.latitude,
+            customerLng: location.longitude,
+            distance,
+          },
+        });
+        const matchingChef = chefsResponse.data.content.find(
+          (chef) =>
+            chef?.user.fullName?.toLowerCase().includes(trimmedQuery) ||
+            chef?.user.username?.toLowerCase().includes(trimmedQuery)
+        );
+
+        if (matchingChef) {
+          setIsSelected(1);
+          setChefs(chefsResponse.data.content);
+        } else {
+          setChefs([]);
+          setIsSelected(1);
+        }
+      }
+    } catch (error) {
+      console.log("Error during search:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const openFilterModal = () => {
+    Keyboard.dismiss();
+    setTempDistance(distance);
     modalizeRef.current?.open();
   };
 
-  const closeFilterModal = () => {
+  const applyFilter = async () => {
+    setDistance(tempDistance);
+    if (location) {
+      setIsLoading(true);
+      try {
+        const chefsResponse = await AXIOS_API.get("/chefs/nearby", {
+          params: {
+            customerLat: location.latitude,
+            customerLng: location.longitude,
+            distance: tempDistance,
+          },
+        });
+        setChefs(chefsResponse.data.content);
+      } catch (error) {
+        console.log("Error refetching chefs with new distance:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     modalizeRef.current?.close();
   };
 
-  const handleBack = () => {
-    router.push("/(tabs)/home"); 
+  const openAddressModal = () => {
+    Keyboard.dismiss();
+    addressModalizeRef.current?.open();
   };
 
-  useEffect(() => {
-    setSearchQuery(query || "");
-  }, [query]);
-
-  const isSelectedOption = (index) => {
-    return isSelected === index;
+  const selectAddress = (address) => {
+    if (address.latitude && address.longitude) {
+      setLocation({
+        latitude: address.latitude,
+        longitude: address.longitude,
+      });
+      setSelectedAddress(address);
+      addressModalizeRef.current?.close();
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể lấy tọa độ của địa chỉ này",
+      });
+    }
   };
 
-  return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
+  const renderHeader = () => (
+    <>
       <View style={styles.searchContainer}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#4EA0B7" /> 
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/home")}
+          style={styles.backButton}
+        >
+          <Icon name="arrow-back" size={24} color="#4EA0B7" />
         </TouchableOpacity>
         <View style={styles.searchInputWrapper}>
-          <Icon
-            name="search"
-            size={24}
-            color="#4EA0B7" 
-            style={styles.searchIcon}
-          />
+          <Icon name="search" size={24} color="#4EA0B7" style={styles.searchIcon} />
           <TextInput
-            placeholder="Search"
+            ref={textInputRef}
+            placeholder="Search chefs or dishes"
             placeholderTextColor="#4EA0B7"
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
+            onSubmitEditing={() => handleSearch()}
             returnKeyType="search"
+            autoFocus={true}
           />
         </View>
-        <TouchableOpacity onPress={openFilterModal} style={styles.filterIcon}>
-          <Icon name="filter" size={24} color="#4EA0B7" /> 
+        <TouchableOpacity onPress={() => openFilterModal()} style={styles.filterButton}>
+          <Icon name="filter" size={24} color="#4EA0B7" />
         </TouchableOpacity>
       </View>
 
-      <Modalize
-        ref={modalizeRef}
-        adjustToContentHeight
-        modalStyle={styles.modalStyle}
-        handleStyle={styles.handleStyle}
-      >
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Filter Options</Text>
-          {filterOptions.map((option) => (
-            <TouchableOpacity
-              key={option.id}
-              style={styles.filterOption}
-              onPress={() => {
-                console.log(`Selected filter: ${option.name}`);
-                closeFilterModal();
-              }}
-            >
-              <Text style={styles.filterText}>{option.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modalize>
+      <TouchableOpacity onPress={() => openAddressModal()} style={styles.locationContainer}>
+        <Icon name="location-outline" size={20} color="#4EA0B7" style={styles.locationIcon} />
+        <Text style={styles.locationText}>
+          {selectedAddress ? selectedAddress.address : "Current Location"}
+        </Text>
+      </TouchableOpacity>
 
       <View style={styles.rowNgayGui}>
         <FlatList
           data={options}
           keyExtractor={(item) => item.index.toString()}
           horizontal
-          renderItem={({ item }) => {
-            const selected = isSelectedOption(item.index);
-
-            return (
-              <TouchableOpacity
-                style={[styles.dayContainer, selected && styles.selectedDay]}
-                onPress={() => setIsSelected(item.index)}
-              >
-                <Text
-                  style={selected ? styles.selectedText : styles.normalText}
-                >
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.dayContainer, isSelected === item.index && styles.selectedDay]}
+              onPress={() => setIsSelected(item.index)}
+            >
+              <Text style={isSelected === item.index ? styles.selectedText : styles.normalText}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          )}
           showsHorizontalScrollIndicator={false}
         />
       </View>
+    </>
+  );
 
-      <ScrollView>
-        <View style={{ marginBottom: 30 }}>
-          <View
-            style={{
-              width: 200,
-              alignItems: "center",
-              backgroundColor: "#A9411D",
-              borderRadius: 16,
-              paddingBottom: 10,
-            }}
-          >
-            <View style={styles.card}>
-              <View style={styles.imageContainer}>
+  const truncateText = (text, maxLength = 40) => {
+    if (!text || text.length <= maxLength) return text || "";
+    return text.substring(0, maxLength) + "...";
+  };
+
+  const renderItem = ({ item }) => {
+    switch (isSelected) {
+      case 1: // Chefs
+        return (
+          <TouchableOpacity style={styles.card}>
+            <View style={styles.chefContainer}>
+              {item.user.avatarUrl && (
                 <Image
-                  source={{
-                    uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                  }}
-                  style={styles.image}
+                  source={{ uri: item.user.avatarUrl }}
+                  style={styles.avatar}
+                  resizeMode="cover"
                 />
+              )}
+              <View style={styles.chefInfo}>
+                <Text style={styles.title}>{truncateText(item.user.fullName)}</Text>
+                <Text style={styles.description}>{truncateText(item.description)}</Text>
+                <Text style={styles.address}>{truncateText(item.address)}</Text>
+                <Text style={styles.serving}>Max Serving: {item.maxServingSize}</Text>
               </View>
-              <Text style={styles.title}>Yakisoba Noodles</Text>
-              <Text style={{ color: "#F8BF40" }}>Noodle with Pork</Text>
             </View>
-            <View
-              style={{
-                backgroundColor: "#fff",
-                marginTop: -5,
-                borderRadius: 30,
-                padding: 5,
-                position: "absolute",
-                bottom: -20,
-              }}
-            >
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>i</Text>
-              </TouchableOpacity>
+          </TouchableOpacity>
+        );
+      case 0: // Recommended (dishes)
+      default:
+        return (
+          <TouchableOpacity style={styles.card}>
+            <View style={styles.dishContainer}>
+              {item.imageUrl && (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.dishImage}
+                  resizeMode="cover"
+                />
+              )}
+              <View style={styles.dishInfo}>
+                <Text style={styles.title}>{truncateText(item.name)}</Text>
+                <Text style={styles.subtitle}>By: {truncateText(item.chef.user.fullName)}</Text>
+                <Text style={styles.description}>{truncateText(item.description)}</Text>
+                <Text style={styles.cuisine}>Cuisine: {truncateText(item.cuisineType)}</Text>
+                <Text style={styles.cookTime}>Cook Time: {item.cookTime} min</Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
+        );
+    }
+  };
+
+  const getData = () => {
+    switch (isSelected) {
+      case 1:
+        return chefs;
+      case 0:
+      default:
+        return dishes;
+    }
+  };
+
+  const renderEmptyMessage = () => {
+    if (isSelected === 1 && chefs.length === 0 && location) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Không có đầu bếp nào gần đây</Text>
         </View>
-      </ScrollView>
+      );
+    }
+    return null;
+  };
+
+  const renderFilterModal = () => (
+    <Modalize
+      ref={modalizeRef}
+      handlePosition="outside"
+      modalStyle={styles.modal}
+      handleStyle={styles.handle}
+      modalHeight={screenHeight * 0.4}
+    >
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Filter Options</Text>
+        <View style={styles.dropdownContainer}>
+          <Text style={styles.dropdownLabel}>Distance</Text>
+          <Dropdown
+            style={styles.dropdown}
+            data={distanceOptions}
+            labelField="label"
+            valueField="value"
+            placeholder="Select distance"
+            value={tempDistance}
+            onChange={(item) => setTempDistance(item.value)}
+            selectedTextStyle={styles.selectedTextStyle}
+            placeholderStyle={styles.placeholderStyle}
+            itemTextStyle={styles.itemTextStyle}
+            containerStyle={styles.dropdownItemContainer}
+          />
+        </View>
+        <View style={styles.modalButtons}>
+          <TouchableOpacity
+            onPress={() => modalizeRef.current?.close()}
+            style={styles.cancelButton}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={applyFilter} style={styles.applyButton}>
+            <Text style={styles.applyButtonText}>Apply Filter</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modalize>
+  );
+
+  const renderAddressModal = () => (
+    <Modalize
+      ref={addressModalizeRef}
+      handlePosition="outside"
+      modalStyle={styles.modal}
+      handleStyle={styles.handle}
+      adjustToContentHeight={true}
+    >
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Select Address</Text>
+        {addresses.length === 0 ? (
+          <Text style={styles.emptyText}>
+            Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ mới!
+          </Text>
+        ) : (
+          addresses.map((item) => (
+            <TouchableOpacity
+              key={item.id.toString()}
+              onPress={() => selectAddress(item)}
+              style={styles.addressItem}
+            >
+              <View style={styles.addressInfo}>
+                <Text style={styles.addressTitle}>{item.title}</Text>
+                <Text style={styles.addressText}>{item.address}</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+        <TouchableOpacity
+          onPress={() => getCurrentLocation()}
+          style={{
+            backgroundColor: "#A64B2A",
+            padding: 15,
+            borderRadius: 10,
+            alignItems: "center",
+            marginVertical: 10,
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+              Sử dụng vị trí hiện tại
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => addressModalizeRef.current?.close()}
+          style={styles.cancelButton}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </Modalize>
+  );
+
+  return (
+    <GestureHandlerRootView style={commonStyles.containerContent}>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text>Loading...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={getData()}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyMessage}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+        />
+      )}
+      {renderFilterModal()}
+      {renderAddressModal()}
     </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
-  // Search Bar Styles
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
-    marginBottom: 20,
+    marginBottom: 10,
     paddingHorizontal: 10,
   },
   backButton: {
@@ -207,102 +610,110 @@ const styles = StyleSheet.create({
     backgroundColor: "#EBE5DD",
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "#4EA0B7", // Changed border color
+    borderColor: "#4EA0B7",
   },
   searchInput: {
     flex: 1,
     height: 50,
     paddingHorizontal: 10,
     fontSize: 16,
-    color: "#4EA0B7", // Changed text color
+    color: "#4EA0B7",
   },
   searchIcon: {
     marginLeft: 15,
   },
-  filterIcon: {
+  filterButton: {
     marginLeft: 10,
   },
-  // Modal Styles
-  modalStyle: {
-    backgroundColor: "#FFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
-  handleStyle: {
-    backgroundColor: "#CCC",
-    width: 40,
-    height: 5,
-    borderRadius: 3,
+  locationIcon: {
+    marginRight: 8,
   },
-  modalContent: {
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  filterOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEE",
-  },
-  filterText: {
-    fontSize: 16,
+  locationText: {
+    fontSize: 14,
     color: "#333",
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
-    padding: 16,
-    paddingTop: 50,
-    alignItems: "center",
-    width: 200,
-    position: "relative",
+    padding: 10,
+    margin: 5,
+    flex: 1,
+    width: screenWidth * 0.45,
+    height: 280,
+    maxWidth: "48%",
   },
-  imageContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 70,
-    backgroundColor: "#FFF",
-    overflow: "hidden",
-    marginBottom: 8,
-    position: "absolute",
-    top: -20,
-    justifyContent: "center",
-    alignItems: "center",
+  chefContainer: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
-  image: {
+  avatar: {
     width: "100%",
-    height: "100%",
+    height: 120,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  chefInfo: {
+    alignItems: "flex-start",
+  },
+  dishContainer: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+  dishImage: {
+    width: "100%",
+    height: 120,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  dishInfo: {
+    alignItems: "flex-start",
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFF",
-    marginTop: 70,
-    textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  button: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: "#F8BF40",
-    justifyContent: "center",
-    alignItems: "center",
+  subtitle: {
+    fontSize: 12,
+    color: "#F8BF40",
+    marginBottom: 4,
   },
-  buttonText: {
-    fontSize: 18,
+  description: {
+    fontSize: 12,
     color: "#FFF",
+    marginBottom: 4,
+  },
+  address: {
+    fontSize: 10,
+    color: "#EBE5DD",
+    marginBottom: 4,
+  },
+  cuisine: {
+    fontSize: 12,
+    color: "#EBE5DD",
+    marginBottom: 4,
+  },
+  serving: {
+    fontSize: 12,
+    color: "#F8BF40",
+  },
+  cookTime: {
+    fontSize: 12,
+    color: "#F8BF40",
   },
   rowNgayGui: {
     marginTop: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 33,
+    marginBottom: 20,
+    paddingHorizontal: 10,
   },
   dayContainer: {
     paddingHorizontal: 20,
@@ -320,6 +731,124 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     color: "#FFF",
+  },
+  row: {
+    justifyContent: "space-between",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+  },
+  modal: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  handle: {
+    backgroundColor: "#4EA0B7",
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  dropdownContainer: {
+    marginBottom: 20,
+  },
+  dropdownLabel: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 10,
+  },
+  dropdown: {
+    height: 50,
+    borderColor: "#4EA0B7",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#EBE5DD",
+  },
+  selectedTextStyle: {
+    fontSize: 16,
+    color: "#333",
+  },
+  placeholderStyle: {
+    fontSize: 16,
+    color: "#4EA0B7",
+  },
+  itemTextStyle: {
+    fontSize: 16,
+    color: "#333",
+  },
+  dropdownItemContainer: {
+    borderRadius: 8,
+    borderColor: "#4EA0B7",
+    borderWidth: 1,
+    maxHeight: 300,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cancelButton: {
+    backgroundColor: "#EBE5DD",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    flex: 1,
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  applyButton: {
+    backgroundColor: "#4EA0B7",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    flex: 1,
+  },
+  applyButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  addressItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  addressInfo: {
+    flex: 1,
+  },
+  addressTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
+  },
+  addressText: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 5,
   },
 });
 

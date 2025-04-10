@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 import React, { useContext, useEffect } from "react";
 import * as WebBrowser from "expo-web-browser";
 import { Redirect, router } from "expo-router";

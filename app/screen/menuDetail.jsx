@@ -33,22 +33,22 @@ const MenuDetails = () => {
     fetchMenuDetails();
   }, [menuId]);
 
-  const handleDishPress = (dish) => {
-    router.push({
-      pathname: "/screen/dishDetails",
-      params: {
-        dishId: dish.dishId,
-        dishName: dish.dishName,
-        menuId,
-        chefId,
-      },
-    });
-  };
+  // const handleDishPress = (dish) => {
+  //   router.push({
+  //     pathname: "/screen/dishDetails",
+  //     params: {
+  //       dishId: dish.dishId,
+  //       dishName: dish.dishName,
+  //       menuId,
+  //       chefId,
+  //     },
+  //   });
+  // };
 
   const renderDishItem = ({ item }) => (
     <TouchableOpacity
       style={styles.dishCard}
-      onPress={() => handleDishPress(item)}
+      // onPress={() => handleDishPress(item)}
       activeOpacity={0.8}
     >
       <View style={styles.dishImageContainer}>
