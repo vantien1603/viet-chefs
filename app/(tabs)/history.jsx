@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -13,86 +12,95 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import AXIOS_API from "../../config/AXIOS_API";
 
-const PendingRoute = ({ bookings, currentPage, totalPages, onPageChange }) => (
-  <View style={{ flex: 1 }}>
-    <ScrollView style={{ padding: 20 }}>
-      {bookings.length > 0 ? (
-        bookings.map((booking) => (
+const PendingRoute = ({ bookings, currentPage, totalPages, onPageChange, refreshBookings }) => {
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView style={{ padding: 20 }}>
+        {bookings.length > 0 ? (
+          bookings.map((booking) => (
+            <TouchableOpacity
+              key={booking.id}
+              style={styles.card}
+              onPress={
+                booking.status === "PENDING"
+                  ? () =>
+                      router.push({
+                        pathname: "/screen/viewBookingDetails",
+                        params: {
+                          bookingId: booking.id,
+                          chefId: booking.chef.id,
+                          bookingType: booking.bookingType,
+                          refreshBookings: refreshBookings.toString(), // Truyền callback dưới dạng chuỗi
+                        },
+                      })
+                  : null
+              }
+            >
+              <View style={styles.leftSection}>
+                <Text style={styles.packageName}>
+                  {booking.bookingPackage?.name || ""}
+                </Text>
+                <Text style={styles.guestCount}>
+                  {booking.guestCount} guests
+                </Text>
+                <Text style={styles.chefName}>
+                  Chef: {booking.chef.user.fullName}
+                </Text>
+                <Text style={styles.phone}>
+                  Phone: {booking.chef.user.phone}
+                </Text>
+              </View>
+              <View style={styles.rightSection}>
+                <Text style={styles.address}>
+                  {booking.bookingDetails?.[0]?.location || ""}
+                </Text>
+                {booking.bookingDetails && booking.bookingDetails[0] && (
+                  <>
+                    <Text style={styles.date}>
+                      Date: {booking.bookingDetails[0].sessionDate}
+                    </Text>
+                    <Text style={styles.time}>
+                      Time: {booking.bookingDetails[0].startTime}
+                    </Text>
+                  </>
+                )}
+                <Text style={styles.guestCount}>
+                  Type: {booking.bookingType}
+                </Text>
+                <Text style={styles.totalPrice}>
+                  Total Price: ${booking.totalPrice}
+                </Text>
+                <Text style={styles.status}>
+                  Status:{" "}
+                  {booking.status === "PENDING"
+                    ? "PENDING"
+                    : "PENDING_FIRST_CYCLE"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.noOrders}>No pending orders</Text>
+        )}
+      </ScrollView>
+      <View style={styles.paginationContainer}>
+        {Array.from({ length: totalPages }, (_, i) => (
           <TouchableOpacity
-            key={booking.id}
-            style={styles.card}
-            onPress={
-              (booking.status === "PENDING" ||
-                booking.status === "PENDING_FIRST_CYCLE") &&
-              booking.bookingType === "LONG_TERM"
-                ? () =>
-                    router.push({
-                      pathname: "/screen/longTermDetails",
-                      params: {
-                        bookingId: booking.id,
-                        chefId: booking.chef.id,
-                      },
-                    })
-                : null
-            }
+            key={i}
+            style={[
+              styles.pageButton,
+              currentPage === i ? styles.activePageButton : null,
+            ]}
+            onPress={() => onPageChange(i)}
           >
-            <View style={styles.leftSection}>
-              <Text style={styles.packageName}>
-                {booking.bookingPackage?.name || ""}
-              </Text>
-              <Text style={styles.guestCount}>{booking.guestCount} guests</Text>
-              <Text style={styles.chefName}>
-                Chef: {booking.chef.user.fullName}
-              </Text>
-              <Text style={styles.phone}>Phone: {booking.chef.user.phone}</Text>
-            </View>
-            <View style={styles.rightSection}>
-              <Text style={styles.address}>
-                {booking.bookingDetails?.[0]?.location || ""}
-              </Text>
-              {booking.bookingDetails && booking.bookingDetails[0] && (
-                <>
-                  <Text style={styles.date}>
-                    Date: {booking.bookingDetails[0].sessionDate}
-                  </Text>
-                  <Text style={styles.time}>
-                    Time: {booking.bookingDetails[0].startTime}
-                  </Text>
-                </>
-              )}
-              <Text style={styles.guestCount}>Type: {booking.bookingType}</Text>
-              <Text style={styles.totalPrice}>
-                Total Price: ${booking.totalPrice}
-              </Text>
-              <Text style={styles.status}>
-                Status:{" "}
-                {booking.status === "PENDING"
-                  ? "PENDING"
-                  : "PENDING_FIRST_CYCLE"}
-              </Text>
-            </View>
+            <Text style={styles.pageText}>{i + 1}</Text>
           </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.noOrders}>No pending orders</Text>
-      )}
-    </ScrollView>
-    <View style={styles.paginationContainer}>
-      {Array.from({ length: totalPages }, (_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.pageButton,
-            currentPage === i ? styles.activePageButton : null,
-          ]}
-          onPress={() => onPageChange(i)}
-        >
-          <Text style={styles.pageText}>{i + 1}</Text>
-        </TouchableOpacity>
-      ))}
+        ))}
+      </View>
     </View>
-  </View>
-);
+  );
+};
+
 
 const PaidDepositRoute = ({
   bookings,
@@ -104,7 +112,19 @@ const PaidDepositRoute = ({
     <ScrollView style={{ padding: 20 }}>
       {bookings.length > 0 ? (
         bookings.map((booking) => (
-          <TouchableOpacity key={booking.id} style={styles.card}>
+          <TouchableOpacity
+            key={booking.id}
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/longTermDetails",
+                params: {
+                  bookingId: booking.id,
+                  chefId: booking.chef.id,
+                },
+              })
+            }
+          >
             <View style={styles.leftSection}>
               <Text style={styles.packageName}>
                 {booking.bookingPackage?.name || ""}
@@ -136,7 +156,7 @@ const PaidDepositRoute = ({
                 STATUS:{" "}
                 {booking.status === "PAID"
                   ? "PAID"
-                  : booking.status === "DEPOSIT"
+                  : booking.status === "DEPOSITED"
                   ? "DEPOSITED"
                   : "PAID_FIRST_CYCLE"}
               </Text>
@@ -384,7 +404,7 @@ const OrderHistories = () => {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      const response = await AXIOS_API.get("/bookings/users/my-bookings", {
+      const response = await AXIOS_API.get("/bookings/my-bookings", {
         params: {
           pageNo: page,
           pageSize: PAGE_SIZE,
@@ -418,16 +438,23 @@ const OrderHistories = () => {
   };
 
   const pendingBookings = bookings.filter(
-    (booking) => booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE"
+    (booking) =>
+      booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE"
   );
   const paidDepositBookings = bookings.filter(
-    (booking) => booking.status === "PAID" || booking.status === "DEPOSITED" || booking.status === "PAID_FIRST_CYCLE"
+    (booking) =>
+      booking.status === "PAID" ||
+      booking.status === "DEPOSITED" ||
+      booking.status === "PAID_FIRST_CYCLE"
   );
   const completedBookings = bookings.filter(
-    (booking) => booking.status === "COMPLETED" 
+    (booking) => booking.status === "COMPLETED"
   );
   const confirmedBookings = bookings.filter(
-    (booking) => booking.status === "CONFIRMED" || booking.status === "CONFIRMED_PARTIALLY_PAID" || booking.status === "CONFIRMED_PAID"
+    (booking) =>
+      booking.status === "CONFIRMED" ||
+      booking.status === "CONFIRMED_PARTIALLY_PAID" ||
+      booking.status === "CONFIRMED_PAID"
   );
   const cancelledBookings = bookings.filter(
     (booking) => booking.status === "CANCELLED" || booking.status === "OVERDUE"
@@ -442,6 +469,7 @@ const OrderHistories = () => {
             currentPage={pageNo}
             totalPages={totalPages}
             onPageChange={handlePageChange}
+            refreshBookings={fetchBookingDetails} // Truyền hàm làm mới
           />
         );
       case "paidDeposit":
@@ -522,16 +550,16 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexGrow: 0,
     backgroundColor: "#EBE5DD",
-    flexDirection: "row", // Đảm bảo các nút xếp ngang
+    flexDirection: "row",
   },
   tabButton: {
     paddingVertical: 15,
     paddingHorizontal: 20,
-    borderBottomWidth: 0, // Không có border mặc định
+    borderBottomWidth: 0,
   },
   activeTabButton: {
-    borderBottomWidth: 3, // Thêm border dưới khi active
-    borderBottomColor: "#9C583F", // Màu giống indicator của TabView
+    borderBottomWidth: 3,
+    borderBottomColor: "#9C583F",
   },
   tabText: {
     color: "gray",
@@ -539,7 +567,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   activeTabText: {
-    color: "#9C583F", // Màu chữ khi active
+    color: "#9C583F",
   },
   card: {
     backgroundColor: "#B9603F",

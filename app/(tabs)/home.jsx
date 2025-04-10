@@ -28,7 +28,7 @@ export default function Home() {
     const searchQuery = String(query || "").trim();
     router.push({
       pathname: "/screen/searchResult",
-      params: { query: searchQuery }
+      params: { query: searchQuery },
     });
   };
 
@@ -153,7 +153,6 @@ export default function Home() {
           }}
         >
           <Text style={{ fontSize: 20 }}>Popular dishes</Text>
-          <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
 
         <ScrollView
@@ -175,9 +174,7 @@ export default function Home() {
                   />
                 </View>
                 <Text style={styles.title}>{item.name}</Text>
-                <Text style={{ color: "#F8BF40" }}>
-                  {item.description}
-                </Text>
+                <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
               </View>
             </View>
           ))}
@@ -191,7 +188,6 @@ export default function Home() {
           }}
         >
           <Text style={{ fontSize: 20 }}>Recommend chef</Text>
-          <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
         </View>
 
         <ScrollView
@@ -221,9 +217,7 @@ export default function Home() {
                   />
                 </View>
                 <Text style={styles.title}>{item.user.fullName}</Text>
-                <Text style={{ color: "#F8BF40" }}>
-                  {item.specialzation}
-                </Text>
+                <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
               </View>
             </TouchableOpacity>
           ))}

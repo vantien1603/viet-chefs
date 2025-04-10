@@ -81,6 +81,7 @@ const Profile = () => {
     try {
       const response = await AXIOS_API.get("/users/profile");
       setAvatar(response.data.avatarUrl);
+      // console.log("Avatar URL:", response.data.avatarUrl);
     } catch (error) {
       console.log("Error", error);
     }
