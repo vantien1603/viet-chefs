@@ -202,6 +202,12 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
+                  name="screen/chooseFoodForLongterm"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
                   name="screen/chefDetail"
                   options={{
                     headerShown: false,
@@ -358,6 +364,26 @@ export default function RootLayout() {
                     headerShown: false
                   }}
                 />
+                <Stack.Screen
+                  name="screen/allChef"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/viewBookingDetails"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/notification"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+
+
               </Stack>
             </ModalNotiProvider>
           </ModalProvider>

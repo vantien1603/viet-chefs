@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -19,11 +20,25 @@ const ReviewScreen = () => {
   const { bookingId, chefId } = params;
   const [criteria, setCriteria] = useState([]);
   const [description, setDescription] = useState("");
-  const [overallExperience, setOverallExperience] = useState("");
+  // const [overallExperience, setOverallExperience] = useState("");
   const [criteriaRatings, setCriteriaRatings] = useState({});
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
+
+  useEffect(() => {
+    const backAction = () => {
+      router.push("/(tabs)/history"); 
+      return true; 
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove(); 
+  }, []);
 
   const fetchCriteria = async () => {
     try {
@@ -85,11 +100,11 @@ const ReviewScreen = () => {
         chefId: parseInt(chefId),
         bookingId: parseInt(bookingId),
         description: description.trim() || "",
-        overallExperience: overallExperience.trim() || "",
+        // overallExperience: overallExperience.trim() || "",
         mainImage: null,
         additionalImages: [],
         criteriaRatings: { ...criteriaRatings },
-        criteriaComments: { ...criteriaComments },
+        // criteriaComments: { ...criteriaComments },
       };
       console.log("Review Payload:", payload);
       const response = await axiosInstance.post("/reviews", payload);
@@ -139,22 +154,13 @@ const ReviewScreen = () => {
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
-        <Text style={styles.label}>Overall Experience</Text>
+        {/* <Text style={styles.label}>Overall Experience</Text>
         <TextInput
           style={styles.input}
           value={overallExperience}
           onChangeText={setOverallExperience}
           placeholder="Enter your overall experience (optional)"
-        />
-
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Enter your review description (optional)"
-          multiline
-        />
+        /> */}
 
         <Text style={styles.label}>Rating Criteria</Text>
         {criteria.map((criterion) => (
@@ -166,7 +172,7 @@ const ReviewScreen = () => {
                 rating={criteriaRatings[criterion.criteriaId] || 0}
               />
             </View>
-            {criteriaRatings[criterion.criteriaId] > 0 && (
+            {/* {criteriaRatings[criterion.criteriaId] > 0 && (
               <TextInput
                 style={styles.commentInput}
                 placeholder="Comment (optional)"
@@ -175,9 +181,17 @@ const ReviewScreen = () => {
                   handleCommentChange(criterion.criteriaId, text)
                 }
               />
-            )}
+            )} */}
           </View>
         ))}
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Enter your review description (optional)"
+          multiline
+        />
       </ScrollView>
 
       <View style={styles.submitButtonContainer}>
@@ -254,15 +268,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#D3D3D3", // Màu xám cho sao chưa chọn
   },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 10,
-    padding: 10,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    marginTop: 10,
-  },
+  // commentInput: {
+  //   borderWidth: 1,
+  //   borderColor: "#DDD",
+  //   borderRadius: 10,
+  //   padding: 10,
+  //   fontSize: 16,
+  //   backgroundColor: "#fff",
+  //   marginTop: 10,
+  // },
   submitButtonContainer: {
     position: "absolute",
     bottom: 0,

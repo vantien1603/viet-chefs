@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,15 +7,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
-import Header from "../../components/header";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
+import Header from "../../components/header";
 
 const ConfirmBookingScreen = () => {
   const axiosInstance = useAxios();
@@ -30,17 +31,18 @@ const ConfirmBookingScreen = () => {
   const startTime = params.startTime || "N/A";
   const chefId = parseInt(params.chefId);
   const location = params.address || "N/A";
-  const requestDetails = params.requestDetails || "N/A";
+  const requestDetails = params.requestDetails;
   const dishNotes = JSON.parse(params.dishNotes || "{}");
   const numPeople = parseInt(params.numPeople) || 1;
-  const menuId = params.menuId || null; // Lấy menuId từ params
+  const menuId = params.menuId || null;
   const { user } = useContext(AuthContext);
 
   // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
-  const menuDishes = selectedMenu?.menuItems?.map((item) => ({
-    id: item.dishId || item.id,
-    name: item.dishName || item.name || "Unnamed Dish",
-  })) || [];
+  const menuDishes =
+    selectedMenu?.menuItems?.map((item) => ({
+      id: item.dishId || item.id,
+      name: item.dishName || item.name || "Unnamed Dish",
+    })) || [];
 
   const extraDishes = selectedDishes.map((dish) => ({
     id: dish.id,
@@ -52,40 +54,99 @@ const ConfirmBookingScreen = () => {
   const numberOfDishes = allDishes.length;
 
   // Format the dish list: "Menu Name: Dish 1, Dish 2, ..." + extra dishes
-  const menuDishList = menuDishes.length > 0
-    ? `${selectedMenu?.name || "Menu"}: ${menuDishes
-        .map((dish) => {
-          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
-          return `${dish.name}${note}`;
-        })
-        .join(", ")}`
-    : "";
+  const menuDishList =
+    menuDishes.length > 0
+      ? `${selectedMenu?.name || "Menu"}: ${menuDishes
+          .map((dish) => {
+            const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
+            return `${dish.name}${note}`;
+          })
+          .join(", ")}`
+      : "";
 
-  const extraDishList = extraDishes.length > 0
-    ? `${extraDishes
-        .map((dish) => {
-          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
-          return `${dish.name}${note}`;
-        })
-        .join(", ")}`
-    : "";
+  const extraDishList =
+    extraDishes.length > 0
+      ? `${extraDishes
+          .map((dish) => {
+            const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
+            return `${dish.name}${note}`;
+          })
+          .join(", ")}`
+      : "";
 
-  const dishList = [menuDishList, extraDishList].filter(Boolean).join(" | ") || "N/A";
+  const dishList =
+    [menuDishList, extraDishList].filter(Boolean).join(" | ") || "N/A";
 
   const numberOfMenuDishes = menuDishes.length;
 
+  useEffect(() => {
+    const backAction = () => {
+      router.push({
+        pathname: "/screen/booking",
+        params: {
+          chefId: chefId.toString(),
+          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
+          selectedDishes:
+            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
+          dishNotes: JSON.stringify(dishNotes),
+          address: location,
+          sessionDate,
+          startTime,
+          numPeople: numPeople.toString(),
+          requestDetails,
+          menuId: menuId || null,
+        },
+      });
+      return true; // Prevent default back behavior
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove(); // Clean up listener
+  }, [
+    chefId,
+    selectedMenu,
+    selectedDishes,
+    dishNotes,
+    location,
+    sessionDate,
+    startTime,
+    numPeople,
+    requestDetails,
+    menuId,
+  ]);
+
+  const handleBack = () => {
+    router.push({
+      pathname: "/screen/booking",
+      params: {
+        chefId: chefId.toString(),
+        selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
+        selectedDishes:
+          selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
+        dishNotes: JSON.stringify(dishNotes),
+        address: location,
+        sessionDate,
+        startTime,
+        numPeople: numPeople.toString(),
+        requestDetails,
+        menuId: menuId || null,
+      },
+    });
+  };
+
   const handleConfirmBooking = async () => {
     try {
-      // const customerId = await AsyncStorage.getItem("@userId");
       if (!user) {
-        console.log("user befor booo",user);
         throw new Error(
           "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
         );
       }
 
       const selectedDishIds = allDishes.map((dish) => dish.id);
-      console.log("uausduausdasd", user);
       const payload = {
         customerId: user?.userId,
         chefId: parseInt(chefId),
@@ -105,7 +166,7 @@ const ConfirmBookingScreen = () => {
             timeBeginTravel: bookingData.timeBeginTravel || null,
             platformFee: bookingData.platformFee || 0,
             totalChefFeePrice: bookingData.totalChefFeePrice || 0,
-            totalCookTime: (bookingData.cookTimeMinutes || 0)/60,
+            totalCookTime: (bookingData.cookTimeMinutes || 0) / 60,
             isUpdated: false,
             menuId: menuId,
             dishes: selectedDishIds.map((dishId) => ({
@@ -126,7 +187,6 @@ const ConfirmBookingScreen = () => {
         text2: "Booking confirmed successfully!",
       });
 
-      // router.push("(tabs)/home");
       router.push({
         pathname: "/screen/paymentBooking",
         params: {
@@ -159,7 +219,7 @@ const ConfirmBookingScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Confirm & payment" />
+      <Header title="Confirm & Payment" onLeftPress={handleBack} />
       <ScrollView
         style={{ paddingTop: 20, paddingHorizontal: 20 }}
         contentContainerStyle={{ paddingBottom: 170 }}
@@ -246,11 +306,11 @@ const ConfirmBookingScreen = () => {
             )}
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>Danh Sách Món Ăn</Text>
-              <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text> 
+              <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text>
             </View>
           </View>
         </View>
-        <View style={{padding: 5}}/>
+        <View style={{ padding: 5 }} />
       </ScrollView>
 
       <View
@@ -314,6 +374,20 @@ const ConfirmBookingScreen = () => {
 export default ConfirmBookingScreen;
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F8BF40",
+    backgroundColor: "#FDFBF6",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#A9411D",
+    marginLeft: 10,
+  },
   row: {
     margin: 5,
     flexDirection: "row",

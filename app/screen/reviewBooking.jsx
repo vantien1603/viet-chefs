@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import Header from "../../components/header";
-import ProgressBar from "../../components/progressBar";
+// import ProgressBar from "../../components/progressBar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
@@ -111,7 +111,7 @@ const ReviewBookingScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title="Confirm Booking" onLeftPress={handleBackPress}/>
-      <ProgressBar title="Xác nhận" currentStep={4} totalSteps={4} />
+      {/* <ProgressBar title="Xác nhận" currentStep={4} totalSteps={4} /> */}
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Chi tiết đặt chỗ dài hạn</Text>
 

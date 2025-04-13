@@ -1,5 +1,5 @@
-import React, { useContext, useRef, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { commonStyles } from '../../style';
 import { Modalize } from "react-native-modalize";
@@ -9,6 +9,7 @@ import Header from "../../components/header";
 import { AuthContext } from "../../config/AuthContext";
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { router } from "expo-router";
 
 
 
@@ -25,6 +26,20 @@ const Setting = () => {
   const closeModalCountry = () => modalCountryRef.current?.close();
 
   const { user, logout } = useContext(AuthContext);
+
+    useEffect(() => {
+      const backAction = () => {
+        router.push("/(tabs)/profile"); 
+        return true;
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+  
+      return () => backHandler.remove(); 
+    }, []);
 
 
   const selectLanguage = (id) => {

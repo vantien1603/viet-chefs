@@ -36,7 +36,7 @@ const DishNoteScreen = () => {
     const updatedDishNotes = JSON.parse(dishNotes || "{}");
     updatedDishNotes[dishId] = currentNote;
 
-    router.replace({
+    router.push({
       pathname: "/screen/booking",
       params: {
         chefId,

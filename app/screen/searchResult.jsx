@@ -10,6 +10,7 @@ import {
   Dimensions,
   Keyboard,
   ActivityIndicator,
+  BackHandler, // Added
 } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { commonStyles } from "../../style";
@@ -34,7 +35,7 @@ const SearchResultScreen = () => {
   const [chefs, setChefs] = useState([]);
   const [dishes, setDishes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loading, setLoading] = useState(false); // Added for current location button
+  const [loading, setLoading] = useState(false);
   const textInputRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [distance, setDistance] = useState(10);
@@ -54,6 +55,19 @@ const SearchResultScreen = () => {
     { label: "25 km", value: 25 },
   ];
 
+  useEffect(() => {
+    const backAction = () => {
+      router.push("/(tabs)/home");
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [router]);
 
   const fetchAddresses = async () => {
     try {
@@ -74,7 +88,8 @@ const SearchResultScreen = () => {
               }
             );
             if (geocodeResponse.data.status === "OK") {
-              const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
+              const { lat, lng } =
+                geocodeResponse.data.results[0].geometry.location;
               return { ...addr, latitude: lat, longitude: lng };
             }
             return { ...addr, latitude: null, longitude: null };
@@ -166,7 +181,10 @@ const SearchResultScreen = () => {
             longitude: userLocation.coords.longitude,
           });
           console.log("User Location:", userLocation.coords);
-          await fetchInitialData(userLocation.coords.latitude, userLocation.coords.longitude);
+          await fetchInitialData(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude
+          );
         }
       } catch (error) {
         console.log("Error getting location or fetching data:", error);
@@ -222,7 +240,10 @@ const SearchResultScreen = () => {
     const trimmedQuery = searchQuery.trim().toLowerCase();
     if (trimmedQuery === "") return;
 
-    if (!location && (trimmedQuery.includes("near") || trimmedQuery.includes("nearby"))) {
+    if (
+      !location &&
+      (trimmedQuery.includes("near") || trimmedQuery.includes("nearby"))
+    ) {
       Alert.alert(
         "Location Unavailable",
         "Location services are required for nearby searches. Please enable location services in your settings."
@@ -242,14 +263,17 @@ const SearchResultScreen = () => {
       if (matchingDish) {
         setIsSelected(0);
         if (trimmedQuery.includes("near") || trimmedQuery.includes("nearby")) {
-          const nearbyDishesResponse = await axiosInstance.get("/dishes/nearby/search", {
-            params: {
-              keyword: trimmedQuery,
-              customerLat: location.latitude,
-              customerLng: location.longitude,
-              distance,
-            },
-          });
+          const nearbyDishesResponse = await axiosInstance.get(
+            "/dishes/nearby/search",
+            {
+              params: {
+                keyword: trimmedQuery,
+                customerLat: location.latitude,
+                customerLng: location.longitude,
+                distance,
+              },
+            }
+          );
           setDishes(nearbyDishesResponse.data.content);
           setIsSelected(0);
         } else {
@@ -343,7 +367,7 @@ const SearchResultScreen = () => {
   };
 
   const renderHeader = () => (
-    <>
+    <View style={styles.headerContainer}>
       <View style={styles.searchContainer}>
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/home")}
@@ -352,7 +376,12 @@ const SearchResultScreen = () => {
           <Icon name="arrow-back" size={24} color="#4EA0B7" />
         </TouchableOpacity>
         <View style={styles.searchInputWrapper}>
-          <Icon name="search" size={24} color="#4EA0B7" style={styles.searchIcon} />
+          <Icon
+            name="search"
+            size={24}
+            color="#4EA0B7"
+            style={styles.searchIcon}
+          />
           <TextInput
             ref={textInputRef}
             placeholder="Search chefs or dishes"
@@ -365,13 +394,24 @@ const SearchResultScreen = () => {
             autoFocus={true}
           />
         </View>
-        <TouchableOpacity onPress={() => openFilterModal()} style={styles.filterButton}>
+        <TouchableOpacity
+          onPress={() => openFilterModal()}
+          style={styles.filterButton}
+        >
           <Icon name="filter" size={24} color="#4EA0B7" />
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => openAddressModal()} style={styles.locationContainer}>
-        <Icon name="location-outline" size={20} color="#4EA0B7" style={styles.locationIcon} />
+      <TouchableOpacity
+        onPress={() => openAddressModal()}
+        style={styles.locationContainer}
+      >
+        <Icon
+          name="location-outline"
+          size={20}
+          color="#4EA0B7"
+          style={styles.locationIcon}
+        />
         <Text style={styles.locationText}>
           {selectedAddress ? selectedAddress.address : "Current Location"}
         </Text>
@@ -384,10 +424,19 @@ const SearchResultScreen = () => {
           horizontal
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.dayContainer, isSelected === item.index && styles.selectedDay]}
+              style={[
+                styles.dayContainer,
+                isSelected === item.index && styles.selectedDay,
+              ]}
               onPress={() => setIsSelected(item.index)}
             >
-              <Text style={isSelected === item.index ? styles.selectedText : styles.normalText}>
+              <Text
+                style={
+                  isSelected === item.index
+                    ? styles.selectedText
+                    : styles.normalText
+                }
+              >
                 {item.name}
               </Text>
             </TouchableOpacity>
@@ -395,7 +444,7 @@ const SearchResultScreen = () => {
           showsHorizontalScrollIndicator={false}
         />
       </View>
-    </>
+    </View>
   );
 
   const truncateText = (text, maxLength = 40) => {
@@ -404,10 +453,20 @@ const SearchResultScreen = () => {
   };
 
   const renderItem = ({ item }) => {
+    console.log("Item:", item);
+    console.log("chefid:", item.id);
     switch (isSelected) {
       case 1: // Chefs
         return (
-          <TouchableOpacity style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/chefDetail",
+                params: { chefId: item.id },
+              })
+            }
+          >
             <View style={styles.chefContainer}>
               {item.user.avatarUrl && (
                 <Image
@@ -417,10 +476,16 @@ const SearchResultScreen = () => {
                 />
               )}
               <View style={styles.chefInfo}>
-                <Text style={styles.title}>{truncateText(item.user.fullName)}</Text>
-                <Text style={styles.description}>{truncateText(item.description)}</Text>
+                <Text style={styles.title}>
+                  {truncateText(item.user.fullName)}
+                </Text>
+                <Text style={styles.description}>
+                  {truncateText(item.description)}
+                </Text>
                 <Text style={styles.address}>{truncateText(item.address)}</Text>
-                <Text style={styles.serving}>Max Serving: {item.maxServingSize}</Text>
+                <Text style={styles.serving}>
+                  Max Serving: {item.maxServingSize}
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -428,7 +493,15 @@ const SearchResultScreen = () => {
       case 0: // Recommended (dishes)
       default:
         return (
-          <TouchableOpacity style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/dishDetails",
+                params: { dishId: item.id },
+              })
+            }
+          >
             <View style={styles.dishContainer}>
               {item.imageUrl && (
                 <Image
@@ -439,10 +512,18 @@ const SearchResultScreen = () => {
               )}
               <View style={styles.dishInfo}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
-                <Text style={styles.subtitle}>By: {truncateText(item.chef.user.fullName)}</Text>
-                <Text style={styles.description}>{truncateText(item.description)}</Text>
-                <Text style={styles.cuisine}>Cuisine: {truncateText(item.cuisineType)}</Text>
-                <Text style={styles.cookTime}>Cook Time: {item.cookTime} min</Text>
+                <Text style={styles.subtitle}>
+                  By: {truncateText(item.chef.user.fullName)}
+                </Text>
+                <Text style={styles.description}>
+                  {truncateText(item.description)}
+                </Text>
+                <Text style={styles.cuisine}>
+                  Cuisine: {truncateText(item.cuisineType)}
+                </Text>
+                <Text style={styles.cookTime}>
+                  Cook Time: {item.cookTime} min
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -477,7 +558,7 @@ const SearchResultScreen = () => {
       handlePosition="outside"
       modalStyle={styles.modal}
       handleStyle={styles.handle}
-      modalHeight={screenHeight * 0.4}
+      adjustToContentHeight={true}
     >
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Filter Options</Text>
@@ -570,22 +651,18 @@ const SearchResultScreen = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <Text>Loading...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={getData()}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListHeaderComponent={renderHeader}
-          ListEmptyComponent={renderEmptyMessage}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-        />
-      )}
+      {renderHeader()}
+      <FlatList
+        data={getData()}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        // ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyMessage}
+        contentContainerStyle={styles.flatListContainer}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+      />
+
       {renderFilterModal()}
       {renderAddressModal()}
     </GestureHandlerRootView>
@@ -593,6 +670,15 @@ const SearchResultScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    backgroundColor: "#EBE5DD",
+    paddingTop: 10,
+    zIndex: 1,
+  },
+  flatListContainer: {
+    paddingBottom: 10,
+    paddingTop: 20,
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",

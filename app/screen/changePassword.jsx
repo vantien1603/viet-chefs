@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  BackHandler,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +23,20 @@ const ChangePasswordScreen = () => {
   const [newPasswordError, setNewPasswordError] = useState(""); // Error for new password
   const [confirmPasswordError, setConfirmPasswordError] = useState(""); // Error for confirm password
   const axiosInstance = useAxios();
+
+  useEffect(() => {
+    const backAction = () => {
+      router.push("/(tabs)/profile"); 
+      return true; 
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove(); // Dọn dẹp listener khi component unmount
+  }, []);
 
   // Validate new password against current password
   const validateNewPassword = (newPass, currentPass = currentPassword) => {

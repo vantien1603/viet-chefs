@@ -1,136 +1,338 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  BackHandler,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import ProgressBar from "../../components/progressBar";
+import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 
 const ChefDetail = () => {
-  const [expanded, setExpanded] = useState(false);
+  const [expandedBio, setExpandedBio] = useState(false);
+  const [expandedDesc, setExpandedDesc] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false); // New state for additional fields
   const [dishes, setDishes] = useState([]);
-  const { id } = useLocalSearchParams(); // This is the chefId
+  const [loadingDishes, setLoadingDishes] = useState(false);
+  const [loadingChef, setLoadingChef] = useState(false);
+  const { chefId } = useLocalSearchParams();
   const [chefs, setChefs] = useState(null);
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
 
+  // Xử lý nút back vật lý/emulator
   useEffect(() => {
-    const fetchDishes = async () => {
-      try {
-        const response = await axiosInstance.get("/dishes");
-        setDishes(response.data.content);
-      } catch (error) {
-        console.log("Error fetching dishes:", error);
-      }
+    const backAction = () => {
+      router.push("/(tabs)/home");
+      return true;
     };
-    fetchDishes();
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
   }, []);
 
   useEffect(() => {
-    const fetchChefById = async () => {
-      if (!id) return;
+    let isMounted = true;
+    const fetchDishes = async () => {
+      setLoadingDishes(true);
       try {
-        const response = await axiosInstance.get(`/chefs/${id}`);
-        setChefs(response.data);
-        // console.log("e", response.data);
+        const response = await axiosInstance.get("/dishes");
+        if (isMounted) {
+          setDishes(response.data.content);
+        }
       } catch (error) {
-        console.log("Error fetching chef:", error);
+        if (isMounted) {
+          console.log("Error fetching dishes:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải danh sách món ăn",
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingDishes(false);
+        }
+      }
+    };
+    fetchDishes();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchChefById = async () => {
+      if (!chefId) return;
+      setLoadingChef(true);
+      try {
+        const response = await axiosInstance.get(`/chefs/${chefId}`);
+        if (isMounted) {
+          setChefs(response.data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.log("Error fetching chef:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải thông tin đầu bếp",
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingChef(false);
+        }
       }
     };
     fetchChefById();
-  }, [id]);
+    return () => {
+      isMounted = false;
+    };
+  }, [chefId]);
 
   const onOpenModal = () => {
     modalizeRef.current?.open();
+    Toast.show({
+      type: "success",
+      text1: "Mở tùy chọn",
+      text2: "Chọn loại đặt chỗ phù hợp với bạn",
+    });
   };
 
   const handleBack = () => {
     router.push("/(tabs)/home");
-  }
+  };
+
+  const toggleBio = () => setExpandedBio(!expandedBio);
+  const toggleDesc = () => setExpandedDesc(!expandedDesc);
+  const toggleDetails = () => setShowMoreDetails(!showMoreDetails); // New toggle function
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={"Chef's Information"} onLeftPress={handleBack}/>
-      <ProgressBar title="Chọn đầu bếp" currentStep={1} totalSteps={4} />
+      <Header title={"Chef's Information"} onLeftPress={handleBack} />
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <View style={styles.profileContainer}>
-          <View style={styles.header}>
-            <Image source={{ uri: chefs?.user?.avatarUrl }} style={styles.avatar} />
-            <View style={styles.textContainer}>
-              <Text style={styles.name}>{chefs?.user?.fullName}</Text>
-              <Text style={styles.specialty}>{chefs?.bio}</Text>
-              <View style={styles.starContainer}>
-                {Array(5)
-                  .fill()
-                  .map((_, i) => (
-                    <Icon key={i} name="star" size={20} color="#f5a623" />
-                  ))}
+        {loadingChef ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#f5a623" />
+            <Text style={styles.loadingText}>Đang tải thông tin đầu bếp...</Text>
+          </View>
+        ) : (
+          chefs && (
+            <View style={styles.profileContainer}>
+              <View style={styles.header}>
+                <Image
+                  source={
+                    chefs?.user?.avatarUrl === "default"
+                      ? require("../../assets/images/avatar.png")
+                      : { uri: chefs?.user?.avatarUrl }
+                  }
+                  style={styles.avatar}
+                />
+                <View style={styles.textContainer}>
+                  <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                  <Text style={styles.specialty}>{chefs?.specialization}</Text>
+                  <View style={styles.starContainer}>
+                    {Array(5)
+                      .fill()
+                      .map((_, i) => (
+                        <Icon key={i} name="star" size={20} color="#f5a623" />
+                      ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.label}>Bio:</Text>
+                <Text
+                  style={styles.value}
+                  numberOfLines={expandedBio ? undefined : 3}
+                >
+                  {chefs?.bio || "Không có thông tin"}
+                </Text>
+                {chefs?.bio && chefs.bio.length > 100 && (
+                  <TouchableOpacity onPress={toggleBio}>
+                    <Text style={styles.showMore}>
+                      {expandedBio ? "Xem ít hơn" : "Xem thêm"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.label}>Description:</Text>
+                <Text
+                  style={styles.value}
+                  numberOfLines={expandedDesc ? undefined : 3}
+                >
+                  {chefs?.description || "Không có thông tin"}
+                </Text>
+                {chefs?.description && chefs.description.length > 100 && (
+                  <TouchableOpacity onPress={toggleDesc}>
+                    <Text style={styles.showMore}>
+                      {expandedDesc ? "Xem ít hơn" : "Xem thêm"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {showMoreDetails && (
+                <>
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Address:</Text>
+                    <Text style={styles.value}>{chefs?.address}</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Email:</Text>
+                    <Text style={styles.value}>{chefs?.user?.email}</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Phone:</Text>
+                    <Text style={styles.value}>{chefs?.user?.phone}</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Gender:</Text>
+                    <Text style={styles.value}>{chefs?.user?.gender}</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Date of Birth:</Text>
+                    <Text style={styles.value}>{chefs?.user?.dob}</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Country:</Text>
+                    <Text style={styles.value}>{chefs?.country}</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Years of Experience:</Text>
+                    <Text style={styles.value}>
+                      {chefs?.yearsOfExperience || "Not Provided"}
+                    </Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Max Serving Size:</Text>
+                    <Text style={styles.value}>
+                      {chefs?.maxServingSize} people
+                    </Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>Price per Meal:</Text>
+                    <Text style={styles.value}>${chefs?.price}</Text>
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity onPress={toggleDetails}>
+                <Text style={styles.showMore}>
+                  {showMoreDetails ? "Ẩn bớt" : "Xem thêm"}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={onOpenModal}>
+                  <Text style={styles.buttonText}>Book Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/screen/reviewsChef",
+                      params: { chefId: chefId, chefName: chefs?.user?.fullName },
+                    })
+                  }
+                >
+                  <Text style={styles.buttonText}>Reviews</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
-
-          <Text style={styles.description}>
-            {expanded
-              ? chefs?.description
-              : chefs?.description?.slice(0, 100) + "..."}
-          </Text>
-
-          <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-            <Text style={styles.seeAllText}>
-              {expanded ? "See Less" : "See All"}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={onOpenModal}>
-              <Text style={styles.buttonText}>Book now</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={() => router.push("/screen/reviewsChef")}>
-              <Text style={styles.buttonText}>Reviews</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          )
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Featured Dishes</Text>
-          <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-            <Text style={styles.viewAll}>All Dishes</Text>
+          <TouchableOpacity
+            style={styles.viewAllContainer}
+            onPress={() => router.push("/screen/allDish")}
+          >
+            <Icon name="restaurant-outline" size={16} color="#b0532c" />
+            <Text style={styles.viewAll}>Xem tất cả món ăn</Text>
           </TouchableOpacity>
-
         </View>
 
-        <View style={styles.dishContainer}>
-          {dishes.slice(0, 3).map((dish, index) => (
-            <View key={index} style={styles.dishCard}>
-              <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
-              <Text style={styles.dishName}>{dish.name}</Text>
-              <Text style={styles.dishDescription}>{dish.description}</Text>
-            </View>
-          ))}
-        </View>
+        {loadingDishes ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#f5a623" />
+            <Text style={styles.loadingText}>Đang tải món ăn...</Text>
+          </View>
+        ) : (
+          <View style={styles.dishContainer}>
+            {dishes.slice(0, 4).map((dish, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.dishCard}
+                onPress={() =>
+                  router.push({
+                    pathname: "/screen/dishDetails",
+                    params: { dishId: dish.id, chefId },
+                  })
+                }
+              >
+                <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
+                <Text style={styles.dishName}>{dish.name}</Text>
+                <Text style={styles.dishDescription}>{dish.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
-      {/* Modalize cho Book Now */}
-      <Modalize ref={modalizeRef} adjustToContentHeight>
+      <Modalize
+        ref={modalizeRef}
+        adjustToContentHeight
+        modalStyle={styles.modalStyle}
+        handleStyle={styles.handleStyle}
+      >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Choose Booking Type</Text>
+          <Text style={styles.modalTitle}>Chọn loại đặt chỗ</Text>
           <TouchableOpacity
             style={styles.modalButton}
             onPress={() => {
               modalizeRef.current?.close();
               router.push({
                 pathname: "/screen/selectFood",
-                params: { chefId: id },
+                params: { chefId: chefId },
               });
             }}
           >
-            <Text style={styles.modalButtonText}>Booking</Text>
+            <View>
+              <Text style={styles.modalButtonText}>Đặt chỗ thông thường</Text>
+              <Text style={styles.modalButtonDesc}>
+                Chọn món ăn hoặc thực đơn cho một bữa ăn cụ thể.
+              </Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.modalButton}
@@ -138,45 +340,50 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               router.push({
                 pathname: "/screen/longTermBooking",
-                params: { chefId: id },
+                params: { chefId: chefId },
               });
             }}
           >
-            <Text style={styles.modalButtonText}>Long-term Booking</Text>
+            <View>
+              <Text style={styles.modalButtonText}>Đặt chỗ dài hạn</Text>
+              <Text style={styles.modalButtonDesc}>
+                Thuê đầu bếp nấu ăn định kỳ (hàng tuần/tháng).
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </Modalize>
+
+      <Toast />
     </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 16,
-    color: "black",
-    position: "absolute",
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    fontWeight: "bold",
-  },
   profileContainer: {
-    // padding: 20,
-    marginVertical: 20
+    padding: 20,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    margin: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  profileImage: {
-    width: 60,
-    height: 60,
+  avatar: {
+    width: 90,
+    height: 90,
     borderRadius: 45,
-    marginRight: 20
+    backgroundColor: "#eee",
   },
   textContainer: {
-    marginLeft: 30,
+    marginLeft: 16,
+    flex: 1,
   },
   name: {
     fontSize: 22,
@@ -186,53 +393,65 @@ const styles = StyleSheet.create({
   specialty: {
     fontSize: 16,
     color: "#777",
+    marginVertical: 4,
   },
   starContainer: {
     flexDirection: "row",
     marginTop: 5,
   },
-  description: {
-    fontSize: 16,
-    textAlign: "left",
-    color: "#555",
-    marginBottom: 5,
+  section: {
+    marginBottom: 10,
   },
-  seeAllText: {
+  label: {
+    fontSize: 14,
+    color: "#999",
+    marginBottom: 2,
+  },
+  value: {
+    fontSize: 16,
+    color: "#333",
+  },
+  showMore: {
+    fontSize: 14,
     color: "#b0532c",
+    marginTop: 5,
     fontWeight: "bold",
-    // marginBottom: 15,
-    alignSelf: "flex-end",
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
+    marginTop: 20,
   },
   button: {
-    flex: 1,
-    backgroundColor: "#b0532c",
-    padding: 12,
+    backgroundColor: "#f5a623",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 10,
-    marginHorizontal: 5,
-    alignItems: "center",
   },
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
   },
   sectionHeader: {
-    borderTopColor: '#D1D1D1',
+    borderTopColor: "#D1D1D1",
     borderTopWidth: 0.5,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
   },
+  viewAllContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   viewAll: {
     fontSize: 14,
     color: "#b0532c",
+    marginLeft: 5,
   },
   dishContainer: {
     flexDirection: "row",
@@ -252,37 +471,67 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 5,
+    marginBottom: 10,
   },
   dishName: {
-    color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
+    color: "#fff",
   },
   dishDescription: {
+    fontSize: 14,
     color: "#fff",
-    fontSize: 12,
+    textAlign: "center",
   },
   modalContainer: {
     padding: 20,
-    alignItems: "center",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: 20,
+    textAlign: "center",
   },
   modalButton: {
-    backgroundColor: "#b0532c",
+    backgroundColor: "#f5a623",
     padding: 15,
     borderRadius: 10,
-    marginTop: 10,
-    width: "90%",
-    alignItems: "center",
+    marginBottom: 15,
   },
   modalButtonText: {
-    color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
   },
-}
-)
+  modalButtonDesc: {
+    fontSize: 12,
+    color: "#fff",
+    textAlign: "center",
+    marginTop: 5,
+    opacity: 0.8,
+  },
+  modalStyle: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  handleStyle: {
+    backgroundColor: "#b0532c",
+    width: 40,
+    height: 5,
+    borderRadius: 5,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 10,
+  },
+});
+
 export default ChefDetail;

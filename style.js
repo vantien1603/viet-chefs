@@ -8,7 +8,7 @@ export const commonStyles = StyleSheet.create({
   },
   containerContent: {
     flex: 1,
-    padding: 16,
+    padding: 10,
     paddingBottom:0,
     paddingTop: 10,
     backgroundColor: '#EBE5DD',

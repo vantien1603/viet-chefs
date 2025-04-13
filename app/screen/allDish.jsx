@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import useAxios from "../../config/AXIOS_API";
+import { router } from "expo-router";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
@@ -26,7 +27,7 @@ const AllDishScreen = () => {
       try {
         const response = await axiosInstance.get("/dishes");
         setDishes(response.data.content);
-        setFilteredDishes(response.data.content); // Ban đầu hiển thị tất cả món
+        setFilteredDishes(response.data.content);
       } catch (error) {
         console.log("Error dishes:", error);
       }
@@ -92,20 +93,30 @@ const AllDishScreen = () => {
           <View style={styles.row}>
             {item.map((dish) => (
               <View key={dish.id} style={styles.cardContainer}>
-                <View style={styles.card}>
-                  <View style={styles.imageContainer}>
-                    <Image
-                      source={{ uri: dish.imageUrl }}
-                      style={styles.image}
-                      defaultSource={require("../../assets/images/1.jpg")}
-                    />
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: "/screen/dishDetails",
+                      params: { dishId: dish.id },
+                    })
+                  }
+                >
+                  <View style={styles.card}>
+                    <View style={styles.imageContainer}>
+                      <Image
+                        source={{ uri: dish.imageUrl }}
+                        style={styles.image}
+                        defaultSource={require("../../assets/images/1.jpg")}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <Text style={styles.title}>{dish.name}</Text>
+                    <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
+                    <Text style={{ color: "#FFF" }}>
+                      ~ {dish.cookTime} minutes
+                    </Text>
                   </View>
-                  <Text style={styles.title}>{dish.name}</Text>
-                  <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
-                  <Text style={{ color: "#FFF" }}>
-                    ~ {dish.cookTime} minutes
-                  </Text>
-                </View>
+                </TouchableOpacity>
               </View>
             ))}
           </View>
@@ -173,7 +184,7 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+    // resizeMode: "cover",
   },
   title: {
     fontSize: 17,
