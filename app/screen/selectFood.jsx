@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Image,
   StyleSheet,
@@ -6,35 +6,68 @@ import {
   View,
   TouchableOpacity,
   FlatList,
-  Dimensions,
+  TextInput,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Header from "../../components/header";
-import useAxios from "../../config/AXIOS_API";
-import ProgressBar from "../../components/progressBar";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import useAxios from "../../config/AXIOS_API";
+import { commonStyles } from "../../style";
+import Header from "../../components/header";
 
-const initialLayout = { width: Dimensions.get("window").width };
+const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
+  <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
+    <View style={styles.checkbox(isSelected)}>
+      {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
+    </View>
+    <Image
+      source={{ uri: item.imageUrl || "https://via.placeholder.com/80" }}
+      style={styles.image}
+      resizeMode="cover"
+    />
+    <View style={styles.cardContent}>
+      <Text style={styles.title}>{item.name}</Text>
+      <Text style={styles.desc}>{item.description || "Không có mô tả"}</Text>
+      {note ? <Text style={styles.note}>Ghi chú: {note}</Text> : null}
+    </View>
+  </TouchableOpacity>
+);
+
+const MenuCard = ({ item, isSelected, onSelect }) => (
+  <TouchableOpacity
+    style={[
+      styles.menuCard,
+      {
+        borderWidth: 2,
+        borderColor: isSelected ? "#F8BF40" : "transparent",
+      },
+    ]}
+    onPress={onSelect}
+  >
+    <Image
+      source={{
+        uri: item.imageUrl || "https://via.placeholder.com/80",
+      }}
+      style={styles.menuImage}
+      resizeMode="cover"
+    />
+    <View style={styles.cardContent}>
+      <Text style={styles.title}>{item.name}</Text>
+      <Text style={styles.desc}>{item.description || "Không có mô tả"}</Text>
+    </View>
+  </TouchableOpacity>
+);
 
 const SelectFood = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const {
     chefId,
-    date,
-    isLongTerm,
-    currentStep,
-    totalSteps,
     selectedMenu: selectedMenuParam,
     selectedDishes: selectedDishesParam,
     dishNotes: dishNotesParam,
-    selectedPackage,
-    selectedDates,
-    numPeople,
-    address: location,
   } = params;
 
   const [selectedMenu, setSelectedMenu] = useState(
@@ -56,31 +89,21 @@ const SelectFood = () => {
   const [dishNotes, setDishNotes] = useState(
     dishNotesParam && dishNotesParam !== "" ? JSON.parse(dishNotesParam) : {}
   );
-  const [menu, setMenu] = useState([]);
+  const [menus, setMenus] = useState([]);
+  const [dishes, setDishes] = useState([]);
   const axiosInstance = useAxios();
 
-  const [dishes, setDishes] = useState([]);
+  const menuFlatListRef = useRef(null);
+  const dishesFlatListRef = useRef(null);
 
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: "menu", title: "Menu" },
-    { key: "dishes", title: "Dishes" },
-  ]);
-
-  const progressStep = isLongTerm === "true" ? parseInt(currentStep || "3") : 2;
-  const progressTotal = isLongTerm === "true" ? parseInt(totalSteps || "4") : 4;
-  const progressTitle =
-    isLongTerm === "true"
-      ? `Chọn món ăn cho ngày ${date}`
-      : "Chọn menu hoặc món ăn";
-
+  // Fetch menus
   useEffect(() => {
     const fetchMenus = async () => {
       try {
         const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
-        setMenu(menuResponse.data.content || []);
+        setMenus(menuResponse.data.content || []);
       } catch (error) {
-        console.log("Error fetching menus:", error);
+        console.error("Error fetching menus:", error);
         Toast.show({
           type: "error",
           text1: "Error",
@@ -91,20 +114,21 @@ const SelectFood = () => {
     fetchMenus();
   }, [chefId]);
 
+  // Fetch dishes
   useEffect(() => {
     const fetchDishes = async () => {
       try {
         let dishesResponse;
         if (selectedMenu) {
-          dishesResponse = await axiosInstance.get(`/dishes/not-in-menu?menuId=${selectedMenu}`);
-          console.log("Extra dishes (not in menu):", dishesResponse.data.content);
+          dishesResponse = await axiosInstance.get(
+            `/dishes/not-in-menu?menuId=${selectedMenu}`
+          );
         } else {
           dishesResponse = await axiosInstance.get(`/dishes`);
-          console.log("All dishes:", dishesResponse.data.content);
         }
         setDishes(dishesResponse.data.content || []);
       } catch (error) {
-        console.log("Error fetching dishes:", error);
+        console.error("Error fetching dishes:", error);
         Toast.show({
           type: "error",
           text1: "Error",
@@ -116,434 +140,306 @@ const SelectFood = () => {
     fetchDishes();
   }, [selectedMenu]);
 
-  const toggleMenuCheckbox = (id) => {
+  // Handle physical back button
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [chefId, selectedMenu, selectedDishes, extraDishIds, dishNotes]);
+
+  const toggleDish = (id) => {
+    if (selectedMenu) {
+      setExtraDishIds((prev) => {
+        const newState = { ...prev, [id]: !prev[id] };
+        if (!newState[id]) {
+          setDishNotes((prevNotes) => {
+            const updatedNotes = { ...prevNotes };
+            delete updatedNotes[id];
+            return updatedNotes;
+          });
+        }
+        return newState;
+      });
+    } else {
+      setSelectedDishes((prev) => {
+        const newState = { ...prev, [id]: !prev[id] };
+        if (!newState[id]) {
+          setDishNotes((prevNotes) => {
+            const updatedNotes = { ...prevNotes };
+            delete updatedNotes[id];
+            return updatedNotes;
+          });
+        }
+        return newState;
+      });
+    }
+  };
+
+  const handleSelectMenu = (menuId) => {
     const selectedDishesCount =
       Object.values(selectedDishes).filter(Boolean).length;
     if (selectedDishesCount > 0) {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Please deselect all dishes before selecting a menu.",
+        text2: "Bạn phải bỏ chọn tất cả món ăn trước khi chọn menu.",
       });
       return;
     }
-
-    setSelectedMenu((prev) => {
-      const newMenu = prev === id ? null : id;
-      if (!newMenu) {
-        setExtraDishIds({});
-        setIndex(0);
-      } else {
-        setSelectedDishes({});
-        setIndex(1);
-      }
-      return newMenu;
-    });
+    setSelectedMenu((prev) => (prev === menuId ? null : menuId));
+    setSelectedDishes({});
+    setExtraDishIds({});
+    setDishNotes({});
   };
 
-  const toggleDishCheckbox = (id) => {
-    if (selectedMenu) {
-      setExtraDishIds((prev) => ({
-        ...prev,
-        [id]: !prev[id],
-      }));
-    } else {
-      setSelectedDishes((prev) => ({
-        ...prev,
-        [id]: !prev[id],
-      }));
-    }
+  const handleAddNote = (id, text) => {
+    setDishNotes((prev) => ({
+      ...prev,
+      [id]: text,
+    }));
   };
 
-  const handleMenuPress = (menuItem) => {
+  const handleBack = () => {
     router.push({
-      pathname: "/screen/menuDetail",
-      params: { menuId: menuItem.id, menuName: menuItem.name, chefId },
+      pathname: "/screen/chefDetail",
+      params: { chefId },
     });
   };
 
   const handleContinue = () => {
     const selectedMenuData = selectedMenu
-      ? menu.find((item) => item.id === selectedMenu)
+      ? menus.find((item) => item.id === selectedMenu)
       : null;
     const selectedDishesData = selectedMenu
       ? dishes.filter((dish) => extraDishIds[dish.id])
       : dishes.filter((dish) => selectedDishes[dish.id]);
-  
+
     if (!selectedMenuData && selectedDishesData.length === 0) {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Please select at least one menu or dish.",
+        text2: "Vui lòng chọn ít nhất một menu hoặc món ăn.",
       });
       return;
     }
-  
-    if (isLongTerm === "true") {
-      router.push({
-        pathname: "/screen/longTermSelect", // Sửa đường dẫn
-        params: {
-          chefId,
-          date,
-          selectedPackage,
-          selectedDates,
-          selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
-          selectedDishes: selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
-          dishNotes: JSON.stringify(dishNotes),
-          numPeople: numPeople || "", // Đảm bảo truyền numPeople
-          address: location || "", // Sử dụng 'address' thay vì 'location' để đồng bộ
-        },
-      });
-    } else {
-      router.push({
-        pathname: "/screen/booking",
-        params: {
-          selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
-          selectedDishes: selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
-          chefId,
-          dishNotes: JSON.stringify(dishNotes),
-        },
-      });
-    }
-  };
 
-  const getContinueButtonText = () => {
-    const selectedMenuData = selectedMenu
-      ? menu.find((item) => item.id === selectedMenu)
-      : null;
-    const selectedDishesData = selectedMenu
-      ? dishes.filter((dish) => extraDishIds[dish.id])
-      : dishes.filter((dish) => selectedDishes[dish.id]);
-
-    if (selectedMenuData && selectedDishesData.length > 0) {
-      return `Continue with Menu: ${selectedMenuData.name} & ${
-        selectedDishesData.length
-      } Extra Dish${selectedDishesData.length > 1 ? "es" : ""}`;
-    } else if (selectedMenuData) {
-      return `Continue with Menu: ${selectedMenuData.name}`;
-    } else if (selectedDishesData.length > 0) {
-      return `Continue with ${selectedDishesData.length} Dish${
-        selectedDishesData.length > 1 ? "es" : ""
-      }`;
-    }
-    return "Continue";
-  };
-
-  const isContinueButtonVisible = () => {
-    const selectedDishesData = selectedMenu
-      ? dishes.filter((dish) => extraDishIds[dish.id])
-      : dishes.filter((dish) => selectedDishes[dish.id]);
-    return selectedMenu !== null || selectedDishesData.length > 0;
-  };
-
-  const handleIndexChange = (newIndex) => {
-    if (selectedMenu && newIndex === 0) {
-      Toast.show({
-        type: "info",
-        text1: "Menu Selected",
-        text2: "Deselect the current menu to choose a different one.",
-      });
-      return;
-    }
-    setIndex(newIndex);
-  };
-
-  const shouldShowMenuCheckboxes = () => {
-    const selectedDishesCount =
-      Object.values(selectedDishes).filter(Boolean).length;
-    return !selectedMenu && selectedDishesCount === 0;
-  };
-
-  const MenuTab = () => (
-    <FlatList
-      data={menu}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={styles.flatListContent}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.cardContainer}
-          onPress={() => handleMenuPress(item)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.card}>
-            {shouldShowMenuCheckboxes() && (
-              <TouchableOpacity
-                style={styles.checkboxContainer}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  toggleMenuCheckbox(item.id);
-                }}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      backgroundColor:
-                        selectedMenu === item.id ? "#F8BF40" : "transparent",
-                      borderColor:
-                        selectedMenu === item.id ? "#F8BF40" : "#FFF",
-                    },
-                  ]}
-                >
-                  {selectedMenu === item.id && (
-                    <MaterialIcons name="check" size={20} color="white" />
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
-            <View style={styles.contentRow}>
-              <View style={styles.imageContainer}>
-                <Image
-                  source={require("../../assets/images/1.jpg")}
-                  style={styles.image}
-                />
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.title}>{item.name}</Text>
-                <Text style={styles.description}>{item.description}</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      )}
-    />
-  );
-
-  const DishesTab = () => (
-    <View style={{ flex: 1 }}>
-      {selectedMenu && (
-        <View style={styles.selectedMenuContainer}>
-          <Text style={styles.selectedMenuText}>
-            Selected Menu: {menu.find((item) => item.id === selectedMenu)?.name}
-          </Text>
-          <TouchableOpacity
-            onPress={() => toggleMenuCheckbox(selectedMenu)}
-            style={styles.deselectButton}
-          >
-            <Text style={styles.deselectButtonText}>Deselect Menu</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      <FlatList
-        data={dishes}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.flatListContent}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.cardContainer} activeOpacity={0.8}>
-            <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.checkboxContainer}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  toggleDishCheckbox(item.id);
-                }}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      backgroundColor: (
-                        selectedMenu
-                          ? extraDishIds[item.id]
-                          : selectedDishes[item.id]
-                      )
-                        ? "#F8BF40"
-                        : "transparent",
-                      borderColor: (
-                        selectedMenu
-                          ? extraDishIds[item.id]
-                          : selectedDishes[item.id]
-                      )
-                        ? "#F8BF40"
-                        : "#FFF",
-                    },
-                  ]}
-                >
-                  {(selectedMenu
-                    ? extraDishIds[item.id]
-                    : selectedDishes[item.id]) && (
-                    <MaterialIcons name="check" size={20} color="white" />
-                  )}
-                </View>
-              </TouchableOpacity>
-              <View style={styles.contentRow}>
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.image}
-                    resizeMode="cover"
-                  />
-                </View>
-                <View style={styles.textContainer}>
-                  <Text style={styles.title}>{item.name}</Text>
-                  <Text style={styles.description}>
-                    {item.description || "No description"}
-                  </Text>
-                  {dishNotes[item.id] && (
-                    <Text style={styles.noteText}>
-                      Note: {dishNotes[item.id]}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
-    </View>
-  );
-
-  const renderScene = SceneMap({
-    menu: MenuTab,
-    dishes: DishesTab,
-  });
-
-  const handleBackToChefDetail = () => {
     router.push({
-      pathname: "/screen/chefDetail",
-      params: { id: chefId },
+      pathname: "/screen/booking",
+      params: {
+        selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
+        selectedDishes:
+          selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
+        chefId,
+        dishNotes: JSON.stringify(dishNotes),
+      },
     });
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Header onLeftPress={handleBackToChefDetail} />
-      <ProgressBar
-        title={progressTitle}
-        currentStep={progressStep}
-        totalSteps={progressTotal}
-      />
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={handleIndexChange}
-        initialLayout={initialLayout}
-        renderTabBar={(props) => (
-          <TabBar
-            {...props}
-            indicatorStyle={{ backgroundColor: "#9C583F", height: 3 }}
-            style={{ backgroundColor: "#EBE5DD" }}
-            activeColor="#9C583F"
-            inactiveColor="gray"
-            labelStyle={{ fontWeight: "bold" }}
+  const renderDish = ({ item }) => {
+    const isSelected = selectedMenu
+      ? extraDishIds[item.id]
+      : selectedDishes[item.id];
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <DishCard
+          item={item}
+          isSelected={isSelected}
+          onToggle={() => toggleDish(item.id)}
+          note={dishNotes[item.id]}
+          onNoteChange={(text) => handleAddNote(item.id, text)}
+        />
+        {isSelected && (
+          <TextInput
+            style={styles.input}
+            placeholder="Nhập ghi chú cho món này..."
+            value={dishNotes[item.id] || ""}
+            onChangeText={(text) => handleAddNote(item.id, text)}
           />
         )}
-        style={styles.tabView}
+      </View>
+    );
+  };
+
+  const renderMenu = ({ item }) => (
+    <MenuCard
+      item={item}
+      isSelected={selectedMenu === item.id}
+      onSelect={() => handleSelectMenu(item.id)}
+    />
+  );
+
+  return (
+    <SafeAreaView style={commonStyles.containerContent}>
+      <Header title="Chọn món ăn" onBack={handleBack} />
+      <Text style={styles.sectionTitle}>Chọn thực đơn có sẵn:</Text>
+      <FlatList
+        ref={menuFlatListRef}
+        data={menus}
+        horizontal
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderMenu}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>Không có thực đơn nào</Text>
+        }
       />
-      {isContinueButtonVisible() && (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-          >
-            <Text style={styles.continueButtonText}>
-              {getContinueButtonText()}
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <Text style={styles.sectionTitle}>
+        {selectedMenu ? "Chọn món ăn thêm:" : "Hoặc tự chọn món ăn:"}
+      </Text>
+      <FlatList
+        ref={dishesFlatListRef}
+        data={dishes}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderDish}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>Không có món ăn nào</Text>
+        }
+      />
+      {(selectedMenu ||
+        Object.values(selectedDishes).some((val) => val) ||
+        Object.values(extraDishIds).some((val) => val)) && (
+        <TouchableOpacity style={styles.button} onPress={handleContinue}>
+          <Text style={styles.buttonText}>Xác nhận chọn món</Text>
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EBE5DD" },
-  tabView: { flex: 1 },
-  flatListContent: { paddingBottom: 80 },
-  cardContainer: { paddingHorizontal: 20, marginVertical: 10 },
-  card: {
-    backgroundColor: "#A9411D",
-    borderRadius: 16,
-    padding: 16,
-    position: "relative",
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
   },
-  contentRow: {
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 10,
+    marginHorizontal: 16,
+  },
+  menuCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    elevation: 3,
+    marginRight: 16,
+    marginBottom: 12,
+    width: 360,
+    overflow: "hidden",
+  },
+  dishCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingLeft: 40,
-  },
-  imageContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    elevation: 3,
+    marginBottom: 12,
+    width: "100%",
     overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: "#F8BF40",
   },
-  image: { width: "100%", height: "100%" },
-  textContainer: { flex: 1 },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#FFF",
-    textAlign: "left",
-    marginBottom: 5,
-  },
-  description: {
-    fontSize: 14,
-    color: "#F8BF40",
-    textAlign: "left",
-    marginBottom: 5,
-  },
-  noteText: {
-    fontSize: 12,
-    color: "#FFF",
-    textAlign: "left",
-    fontStyle: "italic",
-  },
-  checkboxContainer: { position: "absolute", top: 10, left: 10, zIndex: 1 },
-  checkbox: {
+  checkbox: (selected) => ({
     width: 28,
     height: 28,
-    borderRadius: 4,
+    borderRadius: 8,
+    backgroundColor: selected ? "#F8BF40" : "#fff",
     borderWidth: 2,
+    borderColor: selected ? "#F8BF40" : "#ccc",
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 12,
+    marginTop: 6,
+  }),
+  menuImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginRight: 16,
   },
-  buttonContainer: {
+  image: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 16,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+  },
+  desc: {
+    color: "#555",
+    fontSize: 16,
+    marginTop: 6,
+  },
+  note: {
+    marginTop: 8,
+    fontStyle: "italic",
+    color: "#E76F51",
+    fontSize: 15,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    marginTop: 6,
+    marginLeft: 44,
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+  },
+  button: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#EBE5DD",
-    padding: 10,
-    alignItems: "center",
-  },
-  continueButton: {
-    backgroundColor: "#A64B2A",
-    paddingVertical: 15,
-    paddingHorizontal: 40,
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: "#F8BF40",
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-    width: "100%",
+    elevation: 4,
   },
-  continueButtonText: {
-    color: "white",
-    fontWeight: "bold",
+  buttonText: {
+    color: "#fff",
     fontSize: 18,
+    fontWeight: "700",
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#555",
     textAlign: "center",
+    marginTop: 24,
   },
-  selectedMenuContainer: {
-    padding: 10,
-    backgroundColor: "#FFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  selectedMenuText: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  deselectButton: { backgroundColor: "#A64B2A", padding: 8, borderRadius: 8 },
-  deselectButtonText: { color: "white", fontWeight: "bold" },
 });
 
 export default SelectFood;

@@ -1,3 +1,4 @@
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,113 +7,247 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
-  FlatList
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  BackHandler,
 } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
-import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import Icon from "react-native-vector-icons/Ionicons";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
-import Feather from '@expo/vector-icons/Feather';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { commonStyles } from "../../style";
+import * as Location from "expo-location";
 
 export default function Home() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [chef, setChef] = useState([]);
-  const axiosInstance = useAxios();
-  const [loading, setLoading] = useState(false);
   const [dishes, setDishes] = useState([]);
+  const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [fullName, setFullName] = useState("User");
+  const [location, setLocation] = useState(null);
 
-  const handleSearch = () => {
-    const searchQuery = String(query || "").trim();
-    router.push({
-      pathname: "/screen/searchResult",
-      params: { query: searchQuery },
-    });
-  };
-
-  const loadData = async () => {
-    try {
-      const savedAddress = await AsyncStorage.getItem("selectedAddress");
-      if (savedAddress) {
-        setSelectedAddress(JSON.parse(savedAddress));
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        return true;
       }
-      const name = await AsyncStorage.getItem("@fullName");
-      setFullName(name || "User");
+    );
+    return () => backHandler.remove();
+  }, []);
+
+  // Hàm lấy vị trí hiện tại nếu không có tọa độ trong savedAddress
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Quyền truy cập vị trí bị từ chối",
+          "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn."
+        );
+        return null;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      return {
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      };
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Lỗi khi lấy vị trí:", error);
+      Alert.alert("Lỗi", "Không thể lấy vị trí hiện tại.");
+      return null;
     }
   };
 
+  const loadData = async () => {
+    let mounted = true;
+    try {
+      const savedAddress = await AsyncStorage.getItem("selectedAddress");
+
+      if (!mounted) {
+        console.log("Component unmounted, aborting loadData state update.");
+        return;
+      }
+
+      // Xử lý địa chỉ
+      if (savedAddress) {
+        const parsedAddress = JSON.parse(savedAddress);
+        console.log("Địa chỉ đã lưu:", parsedAddress);
+        setSelectedAddress(parsedAddress);
+
+        if (parsedAddress.latitude && parsedAddress.longitude) {
+          setLocation({
+            latitude: parsedAddress.latitude,
+            longitude: parsedAddress.longitude,
+          });
+        } else {
+          const currentCoords = await getCurrentLocation();
+          if (currentCoords) {
+            setLocation(currentCoords);
+          }
+        }
+      } else {
+        const currentCoords = await getCurrentLocation();
+        if (currentCoords) {
+          setLocation(currentCoords);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
+    return () => {
+      mounted = false;
+    };
+  };
+
+  const fetchChef = async () => {
+    let mounted = true;
+    try {
+      if (!location) {
+        console.log("Chưa có vị trí, bỏ qua fetchChef.");
+        return;
+      }
+      const response = await axiosInstance.get("/chefs/nearby", {
+        params: {
+          customerLat: location.latitude,
+          customerLng: location.longitude,
+          distance: 30,
+          pageNo: 0,
+          pageSize: 30,
+          sortBy: "id",
+          sortDir: "asc",
+        },
+      });
+      if (!mounted) {
+        console.log("Component unmounted, aborting chef state update.");
+        return;
+      }
+      setChef(response.data.content.slice(0, 7));
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      } else {
+        console.error(error.message);
+      }
+    }
+    return () => {
+      mounted = false;
+    };
+  };
+
+  const fetchDishes = async () => {
+    let mounted = true;
+    try {
+      if (!location) {
+        console.log("Chưa có vị trí, bỏ qua fetchDishes.");
+        return;
+      }
+      const response = await axiosInstance.get("/dishes/nearby", {
+        params: {
+          customerLat: location.latitude,
+          customerLng: location.longitude,
+          distance: 30,
+          pageNo: 0,
+          pageSize: 30,
+          sortBy: "id",
+          sortDir: "asc",
+        },
+      });
+      if (!mounted) {
+        console.log("Component unmounted, aborting dishes state update.");
+        return;
+      }
+      setDishes(response.data.content.slice(0, 7));
+    } catch (error) {
+      if (error.response) {
+        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      } else {
+        console.error(error.message);
+      }
+    }
+    return () => {
+      mounted = false;
+    };
+  };
+
   useEffect(() => {
-    const fetchChef = async () => {
-      setLoading(true);
-      try {
-        const response = await axiosInstance.get("/chefs");
-        // console.log("Chefs:", response.data.content);
-        setChef(response.data.content.slice(0, 3));
-      } catch (error) {
-        if (error.response) {
-          console.error(`Lỗi ${error.response.status}:`, error.response.data);
-        }
-        else {
-          console.error(error.message);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-
-    const fetchDishes = async () => {
-      try {
-        const response = await axiosInstance.get("/dishes");
-        // console.log("Dishes:", response.data.content);
-        setDishes(response.data.content.slice(0, 3));
-      } catch (error) {
-        if (error.response) {
-          console.error(`Lỗi ${error.response.status}:`, error.response.data);
-        }
-        else {
-          console.error(error.message);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchChef();
-    fetchDishes();
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (location) {
+      fetchChef();
+      fetchDishes();
+    }
+  }, [location]);
+
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       loadData();
     }, [])
   );
 
+  const renderDishItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/screen/dishDetails",
+          params: { dishId: item.id },
+        })
+      }
+    >
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+      </View>
+      <Text style={styles.title}>{item.name}</Text>
+      <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderChefItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/screen/chefDetail",
+          params: { chefId: item.id },
+        })
+      }
+    >
+      <View style={styles.imageContainer}>
+        <Image
+          source={{
+            uri:
+              item.user.avatarUrl === "default"
+                ? "https://via.placeholder.com/120"
+                : item.user.avatarUrl,
+          }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+      </View>
+      <Text style={styles.title}>{item.user.fullName}</Text>
+      <Text style={{ color: "#F8BF40" }}>
+        {item.specialization || "Đầu bếp"}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={commonStyles.containerContent}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: 10,
-          borderBottomWidth: 1,
-          borderBottomColor: "#ddd",
-        }}
-      >
+    <SafeAreaView style={commonStyles.containerContent}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image
@@ -122,7 +257,7 @@ export default function Home() {
             />
             <View style={{ marginLeft: 10, maxWidth: 200 }}>
               <Text style={{ fontSize: 18, color: "#383838" }}>
-                Hello, {user?.fullName}
+                Hello, {user?.fullName || "Guest"}
               </Text>
               <Text
                 style={{ fontSize: 12, color: "#968B7B" }}
@@ -130,241 +265,127 @@ export default function Home() {
               >
                 {selectedAddress
                   ? selectedAddress.address
-                  : "Jarkata, Indonesia"}
+                  : "Please select an address"}
               </Text>
             </View>
           </View>
         </TouchableOpacity>
-
-        <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => router.push("/screen/notification")}>
-            <Ionicons name="notifications" size={30} color="#4EA0B7" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => router.push("/screen/notification")}>
+          <Ionicons name="notifications" size={30} color="#4EA0B7" />
+        </TouchableOpacity>
       </View>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-        style={{ paddingTop: 10 }}
-        contentContainerStyle={{ paddingBottom: 50 }}
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        style={{ flex: 1 }}
       >
-        <View style={{ marginBottom: 20 }}>
-          <Image
-            source={require("../../assets/images/promo.png")}
-            style={{ width: "100%", height: 150, borderRadius: 30 }}
-            resizeMode="cover"
-          />
-        </View>
-        <View style={styles.searchContainer}>
-          <TextInput
-            placeholder="Search..."
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-          />
-          <Icon
-            name="search"
-            size={24}
-            color="#4EA0B7"
-            style={styles.searchIcon}
-          />
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 30,
-          }}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 10 }} // Extra padding for tab bar
         >
-          <Text style={{ fontSize: 20 }}>Popular dishes</Text>
-          <TouchableOpacity onPress={() => router.push("screen/chefSchedule")}>
-            <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
-          </TouchableOpacity>
-        </View>
-        <View>
-          {loading ? (
-            <ActivityIndicator size="large" color="#0000ff" />
-          ) : (
-
-            <FlatList
-              style={{ paddingTop: 20 }}
-              data={dishes}
-              keyExtractor={(item) => item.id.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginBottom: 20,
-                    marginRight: 10,
-                  }}
-                >
-                  <View key={item.id} style={styles.card}>
-                    <View style={styles.imageContainer}>
-                      <Image
-                        source={{ uri: item.imageUrl }}
-                        style={styles.image}
-                      />
-                    </View>
-
-                    <Text style={styles.title}>{item.name}</Text>
-                    <Text
-                      style={{ color: "#fff", textAlign: 'center' }}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-
-                    >
-                      {item.description}
-                    </Text>
-                  </View>
-                </View>
-              )}
+          <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
+            <Image
+              source={require("../../assets/images/promo.png")}
+              style={{ width: "100%", height: 150, borderRadius: 30 }}
+              resizeMode="cover"
             />
+          </View>
 
-
-          )}
-
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 30,
-          }}
-        >
-          <Text style={{ fontSize: 20 }}>Recommend chef</Text>
-          <TouchableOpacity onPress={() => router.push("screen/scheduleBlocked")}>
-
-            <Text style={{ fontSize: 18, color: "#968B7B" }}>See all</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ marginBottom: 30 }}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#0000ff" />
-          ) : (
-            <FlatList
-              style={{ paddingTop: 20 }}
-              data={chef}
-              keyExtractor={(item) => item.id.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    backgroundColor: "#A9411D",
-                    borderRadius: 16,
-                    paddingBottom: 10,
-                    marginRight: 10,
-                    // marginBottom: 20,
-                  }}
-                  key={item.id}
-                >
-
-                  <TouchableOpacity
-                    onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
-                  >
-                    <View style={styles.card}>
-                      <View style={styles.imageContainer}>
-                        <Image
-                          source={{
-                            uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-                          }}
-                          style={styles.image}
-                        />
-                      </View>
-                      <Text style={styles.title}>{item.user.fullName}</Text>
-                      <Text style={{ color: "#fff", fontWeight: 'bold' }}>{item.price} $</Text>
-                      <Text style={{ color: "#fff", textAlign: 'center' }} numberOfLines={1} ellipsizeMode="tail">{item.specialization}</Text>
-                    </View>
-                    <Feather style={{ position: 'absolute', right: 5, top: 5 }} name="info" size={24} color="white" />
-
-                  </TouchableOpacity>
-
-
-                  {/* 
-                  <View
-                    style={{
-                      backgroundColor: "#fff",
-                      marginTop: -5,
-                      borderRadius: 30,
-                      padding: 5,
-                      position: "absolute",
-                      bottom: -20,
-                    }}
-                  >
-                    <TouchableOpacity style={styles.button}> */}
-                  {/* <Text style={styles.buttonText}>i</Text> */}
-                  {/* <Feather name="info" size={24} color="white" />
-                    </TouchableOpacity>
-                  </View> */}
-                </View>
-              )}
+          <View style={styles.searchContainer}>
+            <TextInput
+              placeholder="Search..."
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              onSubmitEditing={() => {
+                const searchQuery = String(query || "").trim();
+                router.push({
+                  pathname: "/screen/searchResult",
+                  params: { query: searchQuery },
+                });
+              }}
+              returnKeyType="search"
             />
+            <Icon
+              name="search"
+              size={24}
+              color="#4EA0B7"
+              style={styles.searchIcon}
+            />
+          </View>
 
-            //   chef.map((item, index) => (
-            // <View
-            //   style={{
-            //     width: 200,
-            //     alignItems: "center",
-            //     backgroundColor: "#A9411D",
-            //     borderRadius: 16,
-            //     paddingBottom: 10,
-            //   }}
-            //   key={item.id}
-            // >
-            //   <TouchableOpacity
-            //     key={index}
-            //     onPress={() => router.push({ pathname: "/screen/chefDetail", params: { id: item.id } })}
-            //   >
-            //     <View style={styles.card}>
-            //       <View style={styles.imageContainer}>
-            //         <Image
-            //           source={{
-            //             uri: "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
-            //           }}
-            //           style={styles.image}
-            //         />
-            //       </View>
-            //       <Text style={styles.title}>{item.user.fullName}</Text>
-            //       <Text style={{ color: "#F8BF40" }}>{item.specialzation}</Text>
-            //     </View>
-            //   </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Nearby Dishes</Text>
+            <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
+              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {dishes.map((item, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 200,
+                  alignItems: "center",
+                  marginRight: 20,
+                  marginLeft: index === 0 ? 16 : 0,
+                }}
+              >
+                {renderDishItem({ item })}
+              </View>
+            ))}
+          </ScrollView>
 
-            //   <View
-            //     style={{
-            //       backgroundColor: "#fff",
-            //       marginTop: -5,
-            //       borderRadius: 30,
-            //       padding: 5,
-            //       position: "absolute",
-            //       bottom: -20,
-            //     }}
-            //   >
-            //     <TouchableOpacity style={styles.button}>
-            //       <Text style={styles.buttonText}>i</Text>
-            //     </TouchableOpacity>
-            //   </View>
-            // </View>
-            // ))
-          )}
-
-        </View>
-      </ScrollView>
-    </View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Nearby Chefs</Text>
+            <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
+              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {chef.map((item, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 200,
+                  alignItems: "center",
+                  marginRight: 20,
+                  marginLeft: index === 0 ? 16 : 0,
+                }}
+              >
+                {renderChefItem({ item })}
+              </View>
+            ))}
+          </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
   searchContainer: {
     position: "relative",
     marginBottom: 20,
+    paddingHorizontal: 16,
   },
   searchInput: {
     backgroundColor: "#FFF8EF",
@@ -374,13 +395,13 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     padding: 20,
     fontSize: 16,
-    marginBottom: 20,
+    paddingRight: 50, // Space for search icon
   },
   searchIcon: {
     position: "absolute",
-    right: 10,
+    right: 26,
     top: "50%",
-    transform: [{ translateY: -20 }],
+    transform: [{ translateY: -12 }],
   },
   card: {
     backgroundColor: "#A9411D",
@@ -411,9 +432,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#F8BF40",
+    color: "#FFF",
     marginTop: 70,
     textAlign: "center",
     marginBottom: 5,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
   },
 });

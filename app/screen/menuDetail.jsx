@@ -6,17 +6,25 @@ import {
   View,
   FlatList,
   TouchableOpacity,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
+import Header from "../../components/header";
 
 const MenuDetails = () => {
   const router = useRouter();
-  const { menuId, menuName, chefId } = useLocalSearchParams();
+  const {
+    menuId,
+    menuName,
+    chefId,
+    selectedDishes: paramSelectedDishes,
+    latestDishId,
+  } = useLocalSearchParams();
   const [menuDetails, setMenuDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedDishes, setSelectedDishes] = useState([]);
   const axiosInstance = useAxios();
 
   useEffect(() => {
@@ -26,7 +34,7 @@ const MenuDetails = () => {
         setMenuDetails(response.data);
         console.log("Menu details:", response.data);
       } catch (error) {
-        console.log("Error fetching menu details:", error);
+        console.error("Error fetching menu details:", error);
       } finally {
         setLoading(false);
       }
@@ -34,35 +42,113 @@ const MenuDetails = () => {
     fetchMenuDetails();
   }, [menuId]);
 
-  // const handleDishPress = (dish) => {
-  //   router.push({
-  //     pathname: "/screen/dishDetails",
-  //     params: {
-  //       dishId: dish.dishId,
-  //       dishName: dish.dishName,
-  //       menuId,
-  //       chefId,
-  //     },
-  //   });
-  // };
+  useEffect(() => {
+    if (paramSelectedDishes) {
+      try {
+        const parsedDishes = JSON.parse(paramSelectedDishes);
+        setSelectedDishes((prev) => {
+          const newDishes = parsedDishes.filter(
+            (dish) => !prev.some((existing) => existing.id === dish.id)
+          );
+          return [...prev, ...newDishes];
+        });
+      } catch (error) {
+        console.error("Error parsing selectedDishes:", error);
+      }
+    }
+  }, [paramSelectedDishes]);
+
+  useEffect(() => {
+    const backAction = () => {
+      router.push({
+        pathname: "/screen/selectFood",
+        params: {
+          chefId,
+          selectedMenu: JSON.stringify({
+            id: parseInt(menuId),
+            // name: menuName,
+          }),
+          selectedDishes: JSON.stringify(selectedDishes),
+          latestDishId,
+        },
+      });
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [router, chefId, menuId, menuName, selectedDishes, latestDishId]);
+
+  const handleDishPress = (dish) => {
+    router.push({
+      pathname: "/screen/dishDetails",
+      params: {
+        dishId: dish.dishId,
+        dishName: dish.dishName,
+        menuId,
+        chefId,
+      },
+    });
+  };
+
+  const handleBack = () => {
+    router.push({
+      pathname: "/screen/selectFood",
+      params: {
+        chefId,
+        selectedMenu: JSON.stringify({ id: parseInt(menuId), name: menuName }),
+        selectedDishes: JSON.stringify(selectedDishes),
+        latestDishId,
+      },
+    });
+  };
+
+  const handleBooking = () => {
+    router.push({
+      pathname: "/screen/booking",
+      params: {
+        chefId,
+        selectedMenu: JSON.stringify({ id: parseInt(menuId), name: menuName }),
+        selectedDishes: JSON.stringify(selectedDishes),
+        latestDishId,
+        menuId,
+      },
+    });
+  };
 
   const renderDishItem = ({ item }) => (
     <TouchableOpacity
-      style={styles.dishCard}
-      // onPress={() => handleDishPress(item)}
+      style={[
+        styles.dishCard,
+        latestDishId &&
+          item.dishId === parseInt(latestDishId) &&
+          styles.latestDish,
+      ]}
+      onPress={() => handleDishPress(item)}
       activeOpacity={0.8}
     >
       <View style={styles.dishImageContainer}>
         <Image
-          source={require("../../assets/images/1.jpg")} //ảnh mặc định
+          source={
+            item.imageUrl
+              ? { uri: item.imageUrl }
+              : require("../../assets/images/1.jpg")
+          }
           style={styles.dishImage}
         />
       </View>
       <View style={styles.dishTextContainer}>
         <Text style={styles.dishName}>{item.dishName || "Unnamed Dish"}</Text>
         <Text style={styles.dishDescription}>
-          {item.description || ""}
+          {item.description || "No description"}
         </Text>
+        {latestDishId && item.dishId === parseInt(latestDishId) && (
+          <Text style={styles.latestTag}>Mới chọn</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -70,7 +156,8 @@ const MenuDetails = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Header title="Menu Details" />
+        <Header title={menuName || "Menu Details"} onLeftPress={handleBack} />
+
         <View style={styles.loadingContainer}>
           <Text>Loading...</Text>
         </View>
@@ -81,7 +168,8 @@ const MenuDetails = () => {
   if (!menuDetails) {
     return (
       <SafeAreaView style={styles.container}>
-        <Header title="Menu Details" />
+        <Header title={menuName || "Menu Details"} onLeftPress={handleBack} />
+
         <View style={styles.loadingContainer}>
           <Text>No menu details available.</Text>
         </View>
@@ -95,7 +183,8 @@ const MenuDetails = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={menuName || "Menu Details"} />
+      <Header title={menuName || "Menu Details"} onLeftPress={handleBack} />
+
       <View style={styles.contentContainer}>
         <FlatList
           data={menuItems}
@@ -123,16 +212,37 @@ const MenuDetails = () => {
           showsVerticalScrollIndicator={true}
         />
       </View>
+      {selectedDishes.length > 0 && (
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleBooking}>
+            <Text style={styles.actionButtonText}>
+              Booking - {selectedDishes.length} item
+              {selectedDishes.length > 1 ? "s" : ""}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
-
-export default MenuDetails;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FDFBF6",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F8BF40",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#A9411D",
+    marginLeft: 10,
   },
   contentContainer: {
     flex: 1,
@@ -163,6 +273,10 @@ const styles = StyleSheet.create({
     margin: 10,
     alignItems: "center",
     maxWidth: "45%",
+  },
+  latestDish: {
+    borderWidth: 2,
+    borderColor: "#F8BF40",
   },
   dishImageContainer: {
     width: 80,
@@ -196,6 +310,14 @@ const styles = StyleSheet.create({
     color: "#F8BF40",
     textAlign: "center",
   },
+  latestTag: {
+    fontSize: 12,
+    color: "#FFF",
+    backgroundColor: "#F8BF40",
+    padding: 4,
+    borderRadius: 4,
+    marginTop: 5,
+  },
   emptyContainer: {
     padding: 20,
     alignItems: "center",
@@ -204,4 +326,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A9411D",
   },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FDFBF6",
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  actionButton: {
+    width: "100%",
+    backgroundColor: "#A64B2A",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  actionButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
 });
+
+export default MenuDetails;

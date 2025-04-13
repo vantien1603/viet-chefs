@@ -67,7 +67,7 @@ const EditAddress = () => {
         {
           params: {
             place_id: placeId,
-            key: GOOGLE_PLACES_API_KEY,
+            key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
             fields: "formatted_address",
             language: "vi",
           },

@@ -6,59 +6,63 @@ import Header from "../../components/header";
 import { useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 
-const ReviewsChefScreen = () => {
-  const { id } = useLocalSearchParams();
-  const [reviews, setReviews] = useState([]);
-  const [chefName, setChefName] = useState("");
-  const axiosInstance = useAxios();
 
-  // Dữ liệu giả để hiển thị
-  const mockReviews = [
-    {
-      user: {
-        name: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-      },
-      foodQuality: 4, //chất lượng thức ăn
-      serviceAttitude: 5, //thái độ phục vụ
-      prepTime: 3, //thời gian chuẩn bị
-      hygiene: 4, //vệ sinh
-      comment: "Great food and excellent service! Preparation time could be faster.",
-      averageRating: 4.0,
-      createdAt: "2025-03-20T10:00:00Z",
-    },
-    {
-      user: {
-        name: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/2.jpg",
-      },
-      foodQuality: 5,
-      serviceAttitude: 4,
-      prepTime: 4,
-      hygiene: 5,
-      comment: "Really impressed with the hygiene and food quality!",
-      averageRating: 4.5,
-      createdAt: "2025-03-21T14:30:00Z",
-    },
-    {
-      user: {
-        name: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-      },
-      foodQuality: 3,
-      serviceAttitude: 3,
-      prepTime: 2,
-      hygiene: 4,
-      comment: "Food was okay, but took too long to prepare.",
-      averageRating: 3.0,
-      createdAt: "2025-03-22T09:15:00Z",
-    },
-  ];
+const ReviewsChefScreen = () => {
+  const { chefId, chefName } = useLocalSearchParams();
+  const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [ratingDistribution, setRatingDistribution] = useState({
+    "1-star": 0,
+    "2-star": 0,
+    "3-star": 0,
+    "4-star": 0,
+    "5-star": 0,
+  });
+  const [pageNo, setPageNo] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const axiosInstance = useAxios();
+  const PAGE_SIZE = 10;
+
+  const fetchReviewChef = async (page = 0) => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.get(`/reviews/chef/${chefId}`, {
+        params: {
+          pageNo: page,
+          pageSize: PAGE_SIZE,
+        },
+      });
+      const data = response.data;
+      setReviews((prev) =>
+        page === 0 ? data.reviews : [...prev, ...data.reviews]
+      );
+      const calculatedAvg =
+        data.reviews.length > 0
+          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) / data.reviews.length
+          : 0;
+      setAverageRating(data.averageRating || calculatedAvg);
+      setRatingDistribution(data.ratingDistribution || {});
+      setTotalPages(data.totalPages || 1);
+      setPageNo(page);
+      console.log("Reviews fetched successfully:", data);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setReviews(mockReviews);
-    setChefName("Chef Gordon Ramsay");
-  }, [id]);
+    fetchReviewChef(0);
+  }, [chefId]);
+
+  const handleLoadMore = () => {
+    if (pageNo < totalPages - 1 && !isLoading) {
+      fetchReviewChef(pageNo + 1);
+    }
+  };
 
   const RatingStars = ({ rating }) => (
     <View style={styles.starsContainer}>
@@ -67,79 +71,96 @@ const ReviewsChefScreen = () => {
         .map((_, i) => (
           <Icon
             key={i}
-            name={i < rating ? "star" : "star-outline"}
+            name={i < Math.round(rating) ? "star" : "star-outline"}
             size={14}
-            color="#f5a623"
+            color={i < Math.round(rating) ? "#f5a623" : "#ccc"}
             style={styles.star}
           />
         ))}
     </View>
   );
 
-  const ReviewCard = ({ review }) => (
-    <View style={styles.reviewCard}>
+  const RatingDistributionBar = ({ rating, count, maxCount }) => {
+    const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
+    return (
+      <View style={styles.distributionRow}>
+        <View style={styles.distributionLabel}>
+          <RatingStars rating={rating} />
+        </View>
+        <View style={styles.barContainer}>
+          <View style={[styles.bar, { width: `${barWidth}%` }]} />
+        </View>
+      </View>
+    );
+  };
+
+  const ReviewCard = ({ review, index }) => (
+    <View
+      style={[
+        styles.reviewCard,
+        { backgroundColor: index % 2 === 0 ? "#E0E0E0" : "#ADD8E6" },
+      ]}
+    >
       <View style={styles.reviewHeader}>
         <Image
-          source={{ uri: review.user?.avatar || "https://via.placeholder.com/50" }}
+          source={{ uri: "https://via.placeholder.com/50" }}
           style={styles.userAvatar}
         />
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{review.user?.name || "Anonymous"}</Text>
-          <View style={styles.ratingContainer}>
-            {Array(5)
-              .fill()
-              .map((_, i) => (
-                <Icon
-                  key={i}
-                  name={i < Math.round(review.averageRating) ? "star" : "star-outline"}
-                  size={16}
-                  color="#f5a623"
-                />
-              ))}
-          </View>
+          <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
+          <RatingStars rating={review.rating} />
         </View>
       </View>
 
-      <Text style={styles.reviewText}>{review.comment}</Text>
-
-      <View style={styles.reviewAspects}>
-        <View style={styles.aspectItem}>
-          <Text style={styles.aspectLabel}>Food Quality: </Text>
-          <RatingStars rating={review.foodQuality} />
-        </View>
-        <View style={styles.aspectItem}>
-          <Text style={styles.aspectLabel}>Service Attitude: </Text>
-          <RatingStars rating={review.serviceAttitude} />
-        </View>
-        <View style={styles.aspectItem}>
-          <Text style={styles.aspectLabel}>Prep Time: </Text>
-          <RatingStars rating={review.prepTime} />
-        </View>
-        <View style={styles.aspectItem}>
-          <Text style={styles.aspectLabel}>Hygiene: </Text>
-          <RatingStars rating={review.hygiene} />
-        </View>
-      </View>
+      <Text style={styles.reviewText}>{review.description}</Text>
 
       <Text style={styles.reviewDate}>
-        {new Date(review.createdAt).toLocaleDateString()}
+        {new Date(review.createAt).toLocaleDateString()}
       </Text>
     </View>
   );
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      const response = await axiosInstance.get(`/reviews/chef/${id}`);
-    }
-  }, [])
+  const maxCount = Math.max(
+    ...Object.values(ratingDistribution).map((count) => count),
+    1
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <Header title={`Reviews for ${chefName}`} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        onMomentumScrollEnd={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          if (
+            contentOffset.y + layoutMeasurement.height >= contentSize.height - 20 &&
+            !isLoading
+          ) {
+            handleLoadMore();
+          }
+        }}
+      >
+        <View style={styles.summaryContainer}>
+          <Text style={styles.summaryTitle}>Overall Rating</Text>
+          <View style={styles.averageRatingContainer}>
+            <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
+            <RatingStars rating={Math.round(averageRating)} />
+          </View>
+          <View style={styles.ratingDistribution}>
+            {[5, 4, 3, 2, 1].map((rating) => (
+              <RatingDistributionBar
+                key={rating}
+                rating={rating}
+                count={ratingDistribution[`${rating}-star`] || 0}
+                maxCount={maxCount}
+              />
+            ))}
+          </View>
+        </View>
+
         {reviews.length > 0 ? (
           reviews.map((review, index) => (
-            <ReviewCard key={index} review={review} />
+            <ReviewCard key={review.id} review={review} index={index} />
           ))
         ) : (
           <Text style={styles.noReviews}>No reviews yet for this chef</Text>
@@ -157,8 +178,60 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-  reviewCard: {
+  summaryContainer: {
     backgroundColor: "#fff",
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  averageRatingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+  averageRating: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#f5a623",
+    marginRight: 10,
+  },
+  ratingDistribution: {
+    marginTop: 10,
+  },
+  distributionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  distributionLabel: {
+    width: 80,
+  },
+  barContainer: {
+    flex: 1,
+    height: 8,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  bar: {
+    height: "100%",
+    backgroundColor: "#666",
+    borderRadius: 4,
+  },
+  reviewCard: {
     borderRadius: 15,
     padding: 15,
     marginBottom: 15,
@@ -187,37 +260,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  ratingContainer: {
-    flexDirection: "row",
-    marginTop: 2,
-  },
   reviewText: {
     color: "#555",
     fontSize: 14,
     marginBottom: 10,
     lineHeight: 20,
-  },
-  reviewAspects: {
-    backgroundColor: "#f9f9f9",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  aspectItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  aspectLabel: {
-    color: "#666",
-    fontSize: 14,
-  },
-  starsContainer: {
-    flexDirection: "row",
-  },
-  star: {
-    marginLeft: 2,
   },
   reviewDate: {
     fontSize: 12,
@@ -229,6 +276,12 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 16,
     marginTop: 20,
+  },
+  starsContainer: {
+    flexDirection: "row",
+  },
+  star: {
+    marginLeft: 2,
   },
 });
 

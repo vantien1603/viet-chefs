@@ -197,7 +197,7 @@ console.log("cc", chefId);
 
       console.log("Update data:", JSON.stringify(updateData, null, 2));
 
-      router.replace({
+      router.push({
         pathname: "/screen/bookingDetails",
         params: { bookingDetailId, updateData: JSON.stringify(updateData) },
       });
