@@ -24,6 +24,7 @@ import { Dropdown } from "react-native-element-dropdown";
 import Toast from "react-native-toast-message";
 import axios from "axios";
 import useAxios from "../../config/AXIOS_API";
+import { API_GEO_KEY } from "@env"; // Ensure you have this in your .env file
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -82,7 +83,7 @@ const SearchResultScreen = () => {
               {
                 params: {
                   address: addr.address,
-                  key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
+                  key: API_GEO_KEY,
                   language: "vi",
                 },
               }
