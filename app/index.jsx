@@ -1,8 +1,8 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native'
-import React, { useContext, useEffect } from 'react'
+import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import * as WebBrowser from 'expo-web-browser'
 import { Redirect, router } from 'expo-router'
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications'
@@ -10,15 +10,10 @@ import * as Device from 'expo-device'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function WelcomeScreen() {
   const navigation = useNavigation();
+  const [isCheckingUser, setIsCheckingUser] = useState(false);
 
   useEffect(() => {
     const setupNotifications = async () => {
-      // // Kiểm tra xem có phải thiết bị thật không
-      // if (!Device.isDevice) {
-      //   console.log('Must use physical device for Push Notifications')
-      //   return
-      // }
-
       // Yêu cầu quyền thông báo
       const { status: existingStatus } = await Notifications.getPermissionsAsync()
       let finalStatus = existingStatus
@@ -37,7 +32,6 @@ export default function WelcomeScreen() {
       const token = (await Notifications.getExpoPushTokenAsync()).data
       console.log("expo index", token);
       console.log('🔥 Device token:', token);
-      const expotoken = await AsyncStorage.setItem("expoPushToken", token);
 
       // Cấu hình xử lý thông báo khi app đang chạy
       Notifications.setNotificationHandler({
@@ -74,23 +68,50 @@ export default function WelcomeScreen() {
   const handleLogin = () => {
     router.push("screen/login");
   };
+  const [hasNavigated, setHasNavigated] = useState(false);
 
-  const { user } = useContext(AuthContext);
-  // console.log(user);
-  // if (!user) {
-  //   console.log("AuthContext is not provided");
-  //   // return;
-  // }
+  const { user, loading } = useContext(AuthContext);
+  // console.log('userr truoc ne', user);
 
 
-  useEffect(() => {
-    console.log('User:', user);
-    if (user) {
-      // return <Redirect href="/home" />;
-      navigation.navigate("(tabs)", { screen: "home" });
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      setIsCheckingUser(true);
+      const timeout = setTimeout(() => {
+        if (user) {
+          if (user.roleName === "ROLE_CHEF") {
+            navigation.navigate("(chef)", { screen: "dashboard" });
+          } else if (user.roleName === "ROLE_CUSTOMER") {
+            navigation.navigate("(tabs)", { screen: "home" });
+          }
+        } else {
+          setIsCheckingUser(false);
+        }
+      }, 1000);
 
+      return () => {
+        clearTimeout(timeout);
+        setIsCheckingUser(false)
+      }
+    }, [user])
+  );
+
+
+
+  // // useEffect(() => {
+  //   if (user) {
+  //     // if (user && !hasNavigated && !loading) {
+  //     console.log("login roiiiii", user);
+  //     if (user?.roleName === "ROLE_CHEF") {
+  //       navigation.navigate("(chef)", { screen: "dashboard" })
+  //     }
+  //   } else if (user?.roleName === "ROLE_CUSTOMER") {
+  //     navigation.navigate("(tabs)", { screen: "home" });
+  //   }
+  //   // setHasNavigated(true);
+
+  //   // navigation.navigate("(tabs)", { screen: "home" });
+  // // }, [user])
 
   return (
     <SafeAreaView
@@ -133,20 +154,25 @@ export default function WelcomeScreen() {
             borderColor: "#383737",
             width: 300,
           }}
+          disabled={isCheckingUser}
         >
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 18,
-              color: "#fff",
-              fontFamily: "nunito-bold",
-            }}
-          >
-            SIGN UP
-          </Text>
+          {isCheckingUser ? (<ActivityIndicator size="small" color="#0000ff" />
+          ) : (
+            <Text
+              style={{
+                textAlign: "center",
+                fontSize: 18,
+                color: "#fff",
+                fontFamily: "nunito-bold",
+              }}
+            >
+              SIGN UP
+            </Text>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleLogin}
+          disabled={isCheckingUser}
           style={{
             padding: 13,
             marginTop: 10,
@@ -156,19 +182,23 @@ export default function WelcomeScreen() {
             width: 300,
           }}
         >
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 18,
-              color: "#383737",
-              fontFamily: "nunito-bold",
-            }}
-          >
-            LOGIN
-          </Text>
+          {isCheckingUser ? (<ActivityIndicator size="small" color="#0000ff" />
+          ) : (
+            <Text
+              style={{
+                textAlign: "center",
+                fontSize: 18,
+                color: "#383737",
+                fontFamily: "nunito-bold",
+              }}
+            >
+              LOGIN
+            </Text>
+          )}
+
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate("(tabs)", { screen: "home" })} style={{ alignItems: 'center', marginTop: 10, position: 'absolute', bottom: 10, }}>
+      <TouchableOpacity disabled={isCheckingUser} onPress={() => navigation.navigate("(tabs)", { screen: "home" })} style={{ alignItems: 'center', marginTop: 10, position: 'absolute', bottom: 10, }}>
         <Text style={{ textDecorationLine: 'underline', }}>Continue as guest</Text>
       </TouchableOpacity>
     </SafeAreaView>

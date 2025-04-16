@@ -86,14 +86,14 @@ const ScheduleBlocked = () => {
             setSelectedDates(marks);
         } catch (error) {
             if (error.response) {
-              console.log(`Lỗi ${error.response.status}:`, error.response.data);
+                console.log(`Lỗi ${error.response.status}:`, error.response.data);
             }
             else {
-              console.error(error.message);
+                console.error(error.message);
             }
-          } finally {
+        } finally {
             setLoading(false);
-          }
+        }
     };
 
     const handleDayPress = (day) => {
@@ -122,10 +122,12 @@ const ScheduleBlocked = () => {
         }
 
         setSelectedDates(updatedSelected);
-        setMarkedDates({
-            ...markedDates,
-            ...updatedSelected
-        });
+        // setMarkedDates({
+        //     ...markedDates,
+        //     ...updatedSelected
+        // });
+        setMarkedDates(updatedSelected);
+
     };
 
     const handleFieldChange = (date, index, field, value) => {
@@ -221,7 +223,7 @@ const ScheduleBlocked = () => {
     return (
         <SafeAreaView style={commonStyles.container}>
             <Header title={"Blocked schedule"} />
-            <ScrollView style={commonStyles.containerContent} contentContainerStyle={{paddingBottom:80}}>
+            <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }}>
                 <Calendar
                     markedDates={markedDates}
                     onDayPress={handleDayPress}
@@ -249,7 +251,7 @@ const ScheduleBlocked = () => {
                     return (
                         <View style={styles.formContainer} key={date}>
                             <Text style={styles.dateTitle}>
-                                Ngày: {date} 
+                                Ngày: {date}
                                 {/* {isExisting ? "(Đã có lịch, chỉ xem)" : ""} */}
                             </Text>
                             {schedule[date]?.map((item, index) => (

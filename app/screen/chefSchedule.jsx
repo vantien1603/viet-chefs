@@ -20,10 +20,10 @@ import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import useAxios from "../../config/AXIOS_API";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Ionicons from '@expo/vector-icons/Ionicons';
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useCommonNoification } from "../../context/commonNoti";
-
+import FloatingDraggableButton from "../../components/FloatingButton";
+import { useRouter } from "expo-router";
 
 const dayInWeek = [
   { id: 0, label: "Mon", full: "Monday" },
@@ -47,7 +47,7 @@ export default function ChefScheduleScreen() {
   const [currentField, setCurrentField] = useState(null);
   const [pickerState, setPickerState] = useState({ show: false, mode: "start", dayId: null, index: null });
   const { showModal } = useCommonNoification();
-
+  const route = useRouter();
 
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
 
@@ -221,11 +221,11 @@ export default function ChefScheduleScreen() {
         fetchSchedule();
         if (result.status === "fulfilled") {
           successCount++;
-          console.log(`✅ Slot ${index + 1} thành công`, result.value.data);
+          console.log(` Slot ${index + 1} thành công`, result.value.data);
           showModal("Success", "Success")
         } else {
           errorCount++;
-          console.error(`❌ Tạo slot ở ${dayName} thất bại`, result.reason);
+          console.error(` Tạo slot ở ${dayName} thất bại`, result.reason);
         }
       });
 
@@ -340,7 +340,7 @@ export default function ChefScheduleScreen() {
   const renderScene = ({ route }) => {
     const day = dayInWeek.find((d) => d.full === route.title);
     const dayId = day?.id;
-    const slots = schedules.filter(slot => slot.dayOfWeek === dayId) || [];
+    const slots = schedules?.filter(slot => slot.dayOfWeek === dayId) || [];
 
     return (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -370,6 +370,8 @@ export default function ChefScheduleScreen() {
               </TouchableOpacity>
             ))
           ))}
+
+
       </ScrollView>
     );
   };
@@ -386,25 +388,35 @@ export default function ChefScheduleScreen() {
     <GestureHandlerRootView >
       <SafeAreaView style={commonStyles.container}>
         <Header title={"Schedule"} rightIcon={"add"} onRightPress={() => openModalAdd()} />
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: Dimensions.get("window").width }}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              scrollEnabled
-              inactiveColor="gray"
-              activeColor="#9C583F"
-              indicatorStyle={{ backgroundColor: "#A9411D" }}
-              style={{ backgroundColor: '#EBE5DD', elevation: 0, shadowOpacity: 0, borderBottomWidth: 0 }}
-              labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
-              tabStyle={{ paddingVertical: 0, width: 130 }}
+        {loading ? (
+          <ActivityIndicator size="large" color="#A9411D" style={{ marginTop: 20 }} />
+        ) : (
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            onIndexChange={setIndex}
+            initialLayout={{ width: Dimensions.get("window").width }}
+            renderTabBar={(props) => (
+              <TabBar
+                {...props}
+                scrollEnabled
+                inactiveColor="gray"
+                activeColor="#9C583F"
+                indicatorStyle={{ backgroundColor: "#A9411D" }}
+                style={{
+                  backgroundColor: '#EBE5DD',
+                  elevation: 0,
+                  shadowOpacity: 0,
+                  borderBottomWidth: 0
+                }}
+                labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
+                tabStyle={{ paddingVertical: 0, width: 130 }}
+              />
+            )}
+          />
+        )}
 
-            />
-          )}
-        />
+        <FloatingDraggableButton onPress={() => route.push("/screen/scheduleBlocked")} />
 
         <Modalize ref={modalizeRef} adjustToContentHeight>
           <View style={styles.modalContent}>
@@ -488,8 +500,7 @@ export default function ChefScheduleScreen() {
 
         <Modalize ref={modalizeAddRef} adjustToContentHeight >
           <View style={styles.modalContentAdd}>
-            <ScrollView style={{ padding: 10 }} contentContainerStyle={{ paddingBottom: 100 }}
-            >
+            <ScrollView style={{ padding: 10 }} contentContainerStyle={{ paddingBottom: 100 }}>
               <View style={{ marginBottom: 20 }}>
                 <View style={styles.daySelector}>
                   {dayInWeek.map((day) => (
@@ -511,7 +522,7 @@ export default function ChefScheduleScreen() {
 
               {selectedDays.map((dayId) => {
                 const dayLabel = dayInWeek.find((d) => d.id === dayId)?.full;
-                const oldSlots = schedules.filter(c => c.dayOfWeek === dayId) || [];
+                const oldSlots = schedules?.filter(c => c.dayOfWeek === dayId) || [];
 
                 return (
                   <View key={dayId} style={styles.section2}>

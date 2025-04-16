@@ -19,26 +19,34 @@ export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-  const { user, login } = useContext(AuthContext);
+  const { user, login, loading } = useContext(AuthContext);
   const modalRef = useRef(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingA, setLoadingA] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   const requireNetwork = useActionCheckNetwork();
 
   useEffect(() => {
-    if (user?.token !== undefined) {
-      console.log("login roiiiii", user)
+    if (user?.token !== undefined && !hasNavigated && !loading) {
+      // console.log("login roiiiii", user);
+      if (user?.roleName === "ROLE_CHEF") {
+        console.log("????")
+        navigation.navigate("(chef)", { screen: "dashboard" })
+      }
+    } else if (user?.roleName === "ROLE_CUSTOMER") {
+      // console.log("gi vay troi")
       navigation.navigate("(tabs)", { screen: "home" });
-
     }
-  }, [user])
+    setHasNavigated(true);
+
+    // navigation.navigate("(tabs)", { screen: "home" });
+  }, [user, hasNavigated, loading])
 
   const [expoToken, setExpoToken] = useState(null);
 
   useEffect(() => {
     const getToken = async () => {
       const token = await AsyncStorage.getItem("expoPushToken");
-      console.log("✅ Token lấy từ AsyncStorage:", token);
       setExpoToken(token);
     };
     getToken();
@@ -49,19 +57,29 @@ export default function LoginScreen() {
       return;
     }
     console.log('cc');
-    setLoading(true);
+    setLoadingA(true);
     console.log("toi day ne")
     const result = await login(usernameOrEmail, password, expoToken);
-    if (result === true) {
+    // if (result === true) {
+    // navigation.navigate("(tabs)", { screen: "home" });
+    if (result ) {
+      console.log("login roiiiii", result);
+      if (result?.roleName === "ROLE_CHEF") {
+        console.log("????")
+        navigation.navigate("(chef)", { screen: "dashboard" })
+      }
+    } else if (result?.roleName === "ROLE_CUSTOMER") {
+      console.log("gi vay troi")
       navigation.navigate("(tabs)", { screen: "home" });
     }
-    else {
+    // }
+    else {console.log(result)
       if (modalRef.current) {
         modalRef.current.open();
       }
       // console.log('Login Failed', 'Invalid username or password');
     }
-    setLoading(false);
+    setLoadingA(false);
   };
 
   return (
@@ -91,7 +109,6 @@ export default function LoginScreen() {
         </View>
         <View style={{ alignItems: "center" }}>
           <TouchableOpacity
-            // onPress={handleLogin}
             onPress={() => requireNetwork(() => handleLogin())}
             style={{
               padding: 13,
@@ -103,7 +120,7 @@ export default function LoginScreen() {
               width: 300,
             }}
           >
-            {loading ? (
+            {loadingA ? (
               <ActivityIndicator size="large" color="#fff" />
             ) : (
               <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>

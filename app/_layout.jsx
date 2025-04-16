@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import Toast, { BaseToast } from "react-native-toast-message";
-import { AuthProvider } from "../config/AuthContext";
+import { AuthContext, AuthProvider } from "../config/AuthContext";
 import { Alert, PermissionsAndroid } from "react-native";
 import { NetworkProvider } from "../hooks/networkProvider";
 import NetworkAlert from "../components/networkNoti";
@@ -12,7 +12,7 @@ import { ModalNotiProvider } from "../context/commonNoti";
 // SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-
+  // const {user} = useContext(AuthContext);
   const toastConfig = {
     success: (props) => (
       <BaseToast
@@ -354,6 +354,42 @@ export default function RootLayout() {
                 />
                 <Stack.Screen
                   name="screen/bookingDetails"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/detailsBooking"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/dashboard"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/chefDishes"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/addFood"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/menu"
+                  options={{
+                    headerShown: false
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/packages"
                   options={{
                     headerShown: false
                   }}

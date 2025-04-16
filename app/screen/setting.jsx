@@ -26,7 +26,7 @@ const Setting = () => {
 
   const { user, logout } = useContext(AuthContext);
 
-
+  
   const selectLanguage = (id) => {
     setSelectedLang(id);
     i18n.changeLanguage(id);

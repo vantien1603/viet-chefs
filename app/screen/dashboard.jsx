@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,11 @@ import {
 import { LineChart } from "react-native-gifted-charts";
 import { Ionicons } from "@expo/vector-icons";
 import { Dropdown } from "react-native-element-dropdown";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../../config/AuthContext";
 
 const DashboardScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("Daily");
-
-  const fullName = AsyncStorage.getItem("@fullName");
-
+  const {user} = useContext(AuthContext);
   const dailyData = [
     { value: 204, label: "10AM" },
     { value: 255, label: "11AM" },
@@ -80,7 +78,6 @@ const DashboardScreen = () => {
   return (
     <ScrollView style={styles.scrollContainer}>
       <View style={styles.container}>
-        {/* Phần header */}
         <View
           style={{
             flexDirection: "row",
@@ -109,7 +106,7 @@ const DashboardScreen = () => {
                 <Text
                   style={{ fontSize: 24, color: "#383838", fontWeight: "bold" }}
                 >
-                  {fullName}
+                  {user?.fullName}
                 </Text>
               </View>
             </View>

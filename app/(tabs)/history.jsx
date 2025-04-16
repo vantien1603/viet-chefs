@@ -9,7 +9,7 @@ import useAxios from '../../config/AXIOS_API';
 import { AuthContext } from '../../config/AuthContext';
 import { useCommonNoification } from '../../context/commonNoti';
 
-const PendingRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, payment }) => {
+const PendingRoute = ({ bookings, onLoadMore, refreshing, onRefresh, payment }) => {
   const renderItem = ({ item: booking }) => (
     <View style={{
       backgroundColor: "#B9603F",
@@ -99,7 +99,7 @@ const PendingRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, payme
   );
 };
 
-const PaidDepositRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, onAccept, onReject }) => {
+const PaidDepositRoute = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject }) => {
   const renderItem = ({ item: booking }) => (
     <View style={{
       backgroundColor: "#B9603F",
@@ -132,16 +132,6 @@ const PaidDepositRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, o
           </Text>
         </View>
       </TouchableOpacity>
-      {(role === "ROLE_CHEF" && (booking.status === "PAID" || booking.status === "DEPOSIT" || booking.status === "DEPOSITED" || booking.status === "PAID_FIRST_CYCLE")) && (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.acceptButton} onPress={() => onAccept(booking.id)} >
-            <Text style={styles.buttonText}>Đồng ý</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.rejectButton} onPress={() => onReject(booking.id)}>
-            <Text style={styles.buttonText}>Từ chối</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
 
   );
@@ -163,7 +153,7 @@ const PaidDepositRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role, o
   );
 };
 
-const CompletedRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => {
+const CompletedRoute = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
   const renderItem = ({ item: booking }) => (
     <View key={booking.id} style={styles.card}>
       <View style={styles.leftSection}>
@@ -214,7 +204,7 @@ const CompletedRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) =
   );
 };
 
-const ConfirmRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => {
+const ConfirmRoute = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
   const renderItem = ({ item: booking }) => (
     <TouchableOpacity key={booking.id} style={styles.card}>
       <View style={styles.leftSection}>
@@ -256,7 +246,7 @@ const ConfirmRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => 
   );
 };
 
-const CancelRoute = ({ bookings, onLoadMore, refreshing, onRefresh, role }) => {
+const CancelRoute = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
   const renderItem = ({ item: booking }) => (
     <TouchableOpacity key={booking.id} style={styles.card}>
       <Text>{booking.id}</Text>
@@ -413,7 +403,6 @@ const OrderHistories = () => {
 
   const handleAccept = (id) => {
     try {
-      console.log("Toi se acept cai nafy", id);
       setLoading(true);
       const response = axiosInstance.put(`/bookings/${id}/confirm`);
       showModal("Success", "Confirmed successfully");
@@ -431,41 +420,40 @@ const OrderHistories = () => {
   }
 
   const handlePayment = async (id) => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.post(`/bookings/${id}/payment`, {});
-      if (response.status === 200) {
-        showModal("Success", "Payment successfully");
-        fetchBookingDetails(0, true);
-      }
-    } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      }
-      else {
-        console.error(error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
+    // try {
+    //   setLoading(true);
+    //   const response = await axiosInstance.post(`/bookings/${id}/payment`, {});
+    //   if (response.status === 200) {
+    //     showModal("Success", "Payment successfully");
+    //     fetchBookingDetails(0, true);
+    //   }
+    // } catch (error) {
+    //   if (error.response) {
+    //     console.error(`Lỗi ${error.response.status}:`, error.response.data);
+    //   }
+    //   else {
+    //     console.error(error.message);
+    //   }
+    // } finally {
+    //   setLoading(false);
+    // }
 
   }
 
   useEffect(() => {
-    user?.roleName === "ROLE_CHEF" ? fetchRequestBooking(0) :
       fetchBookingDetails(0);
   }, []);
 
   const handleLoadMore = () => {
     if (pageNo < totalPages - 1 && !isLoading) {
-      user?.roleName === "ROLE_CHEF" ? fetchRequestBooking(pageNo + 1) : fetchBookingDetails(pageNo + 1);
+     fetchBookingDetails(pageNo + 1);
     }
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setBookings([]);
-    user?.roleName === "ROLE_CHEF" ? fetchRequestBooking(0, true) : fetchBookingDetails(0, true);
+    fetchBookingDetails(0, true);
   }, []);
 
   const pendingBookings = bookings.filter(
@@ -499,7 +487,6 @@ const OrderHistories = () => {
         refreshing={refreshing}
         onRefresh={onRefresh}
         payment={handlePayment}
-        role={user?.roleName}
       />
     ),
     paidDeposit: () => (
@@ -508,7 +495,6 @@ const OrderHistories = () => {
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
         onAccept={handleAccept}
         onReject={handleReject}
       />
@@ -520,7 +506,6 @@ const OrderHistories = () => {
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
 
       />
     ),
@@ -530,7 +515,6 @@ const OrderHistories = () => {
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
 
       />
     ),
@@ -540,7 +524,6 @@ const OrderHistories = () => {
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
 
       />
     ),

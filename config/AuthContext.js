@@ -15,11 +15,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const bootstrapAsync = async () => {
       const refresh_token = await SecureStore.getItemAsync('refreshToken');
-      console.log("refresh token", refresh_token);
-      
+      // console.log("refresh token", refresh_token);
+
       if (refresh_token) {
         try {
-          console.log("refresh token1", refresh_token);
+          // console.log("refresh token1", refresh_token);
 
           const response = await axios.post(
             'http://35.240.147.10/no-auth/refresh-token',
@@ -33,10 +33,10 @@ export const AuthProvider = ({ children }) => {
 
           if (response.status === 200) {
 
-            console.log("Duoc roif neennnnn")
-            const { accessToken } = response.data;
-            const decoded = jwtDecode(accessToken);
-            setUser({ token: accessToken, ...decoded });
+            // console.log("Duoc roif neennnnn", response.data)
+            const { access_token } = response.data;
+            const decoded = jwtDecode(access_token);
+            setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
             setIsGuest(false);
           }
         } catch (error) {
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password, expoToken) => {
     try {
-      console.log("expo", expoToken);
+      // console.log("expo", expoToken);
       const loginPayload = {
         usernameOrEmail: username,
         password: password,
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
       };
       // const response = await axios.post('http://35.240.147.10/no-auth/login', loginPayload);
       const response = await axios.post('http://35.240.147.10/no-auth/login', loginPayload);
-      console.log(response);
+      // console.log(response);
       if (response.status === 200) {
         console.log("auth", response.data);
         const { access_token, refresh_token } = response.data;
@@ -69,6 +69,8 @@ export const AuthProvider = ({ children }) => {
         console.log("decode", decoded);
         console.log("userID", decoded.userId);
         setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
+        const loggedUser = { fullName: response.data.fullName, token: access_token, ...decoded };
+
         setIsGuest(false);
         if (decoded) {
           const userDocRef = doc(database, 'users', decoded.userId);
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children }) => {
             avatar: 'https://i.pravatar.cc/300',
           });
         }
-        return true;
+        return loggedUser;
       }
       // const response = await axios.post('http://192.168.1.52:8080/no-auth/login', loginPayload);
 
@@ -89,7 +91,7 @@ export const AuthProvider = ({ children }) => {
       // else {
       //   console.error(error.message);
       // }
-      return false;
+      return null;
     }
   };
 
@@ -105,7 +107,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isGuest, login, logout }}>
+    <AuthContext.Provider value={{ user, isGuest, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
