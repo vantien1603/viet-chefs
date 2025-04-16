@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
@@ -18,6 +19,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
+import { t } from "i18next";
 
 const LongTermBookingScreen = () => {
   const router = useRouter();
@@ -152,7 +154,7 @@ const LongTermBookingScreen = () => {
             textAlign: "center",
           }}
         >
-          Chọn Địa Chỉ
+          {t("selectAddress")}
         </Text>
         {addresses.length === 0 ? (
           <Text
@@ -163,7 +165,7 @@ const LongTermBookingScreen = () => {
               marginVertical: 20,
             }}
           >
-            Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ mới!
+            {t("noAddressMessage")}
           </Text>
         ) : (
           addresses.map((item) => (
@@ -213,7 +215,7 @@ const LongTermBookingScreen = () => {
           }}
         >
           <Text style={{ color: "#333", fontWeight: "bold", fontSize: 16 }}>
-            Hủy
+            {t("cancel")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -240,9 +242,9 @@ const LongTermBookingScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title={"Long-term Booking"} />
+        <Header title={t("longTermBooking")} />
         <View style={{ padding: 20 }}>
-          <Text>Đang tải...</Text>
+          <ActivityIndicator size="large" color="#4EA0B7" />
         </View>
       </SafeAreaView>
     );
@@ -251,7 +253,7 @@ const LongTermBookingScreen = () => {
   if (error) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title={"Long-term Booking"} />
+        <Header title={t("longTermBooking")} />
         <View style={{ padding: 20 }}>
           <Text style={{ color: "red" }}>{error}</Text>
         </View>
@@ -272,11 +274,11 @@ const LongTermBookingScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title={"Long-term Booking"} onLeftPress={handleBack} />
+        <Header title={t("longTermBooking")} onLeftPress={handleBack} />
         {/* <ProgressBar title="Chọn gói" currentStep={2} totalSteps={4} /> */}
         <ScrollView style={{ padding: 20, backgroundColor: "#EBE5DD" }}>
           <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
-            Chọn Gói Dịch Vụ:
+            {t("selectServicePackage")}:
           </Text>
           <View>
             {displayedPackages.length > 0 ? (
@@ -296,13 +298,13 @@ const LongTermBookingScreen = () => {
                       fontSize: 16,
                     }}
                   >
-                    {pkg.name} - {pkg.durationDays} days
+                    {pkg.name} - {pkg.durationDays} {t("days")}
                   </Text>
                 </TouchableOpacity>
               ))
             ) : (
               <Text style={{ fontSize: 16, color: "#777" }}>
-                Không có gói dịch vụ nào cho đầu bếp này.
+                {t("noPackageForChef")}
               </Text>
             )}
           </View>
@@ -316,11 +318,14 @@ const LongTermBookingScreen = () => {
               marginBottom: 5,
             }}
           >
-            <Text style={{ fontSize: 20, fontWeight: "bold" }}>Số Người:</Text>
+            <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+              {t("numberOfPeople")}:
+            </Text>
 
             {selectedPackage && (
               <Text style={{ fontSize: 14, color: "#666" }}>
-                Tối đa: {selectedPackage.maxGuestCountPerMeal} người
+                {t("maximum")}: {selectedPackage.maxGuestCountPerMeal}{" "}
+                {t("people")}
               </Text>
             )}
           </View>
@@ -339,7 +344,7 @@ const LongTermBookingScreen = () => {
                 setNumPeople(text);
               }
             }}
-            placeholder="Nhập số người"
+            placeholder={t("enterNumberOfPeople")}
           />
 
           <Text
@@ -350,7 +355,7 @@ const LongTermBookingScreen = () => {
               marginBottom: 5,
             }}
           >
-            Địa Chỉ:
+            {t("address")}:
           </Text>
           <TouchableOpacity
             onPress={() => openAddressModal()}
@@ -371,7 +376,7 @@ const LongTermBookingScreen = () => {
                   flexWrap: "wrap",
                 }}
               >
-                {address || "Chọn địa chỉ"}
+                {address || t("selectAddress")}
               </Text>
             </View>
           </TouchableOpacity>
@@ -419,7 +424,7 @@ const LongTermBookingScreen = () => {
                 fontSize: 18,
               }}
             >
-              Tiếp Tục
+              {t("continue")}
             </Text>
           </TouchableOpacity>
         </View>

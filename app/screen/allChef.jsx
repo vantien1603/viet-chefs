@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
+import { t } from "i18next";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
@@ -91,7 +92,8 @@ const AllChefs = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#e74c3c" />
-          <Text style={styles.loadingText}>Đang tải danh sách đầu bếp...</Text>
+          <Text style={styles.loadingText}>Đang tải danh sách đầu bếp...</Text> 
+          {/* hiệu ứng loading */}
         </View>
       </SafeAreaView>
     );
@@ -112,7 +114,7 @@ const AllChefs = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Tất cả đầu bếp" />
+      <Header title={t("allChefs")} />
       <FlatList
         data={chefs}
         renderItem={renderChefItem}

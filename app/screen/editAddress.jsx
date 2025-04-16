@@ -20,6 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
 import { API_GEO_KEY } from "@env"; 
+import { t } from "i18next";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -337,7 +338,7 @@ const EditAddress = () => {
           <Text
             style={{ color: "#A9411D", fontWeight: "bold", marginRight: 15 }}
           >
-            Sửa
+            {t("edit")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDeleteAddress(item.id)}>
@@ -349,7 +350,7 @@ const EditAddress = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"Địa chỉ"} />
+      <Header title={t("address")} />
       <ScrollView style={{ marginBottom: 80 }}>
         <View
           style={{
@@ -358,10 +359,10 @@ const EditAddress = () => {
             marginBottom: 10,
           }}
         >
-          <Text style={{ color: "#666", fontSize: 16 }}>Danh sách địa chỉ</Text>
+          <Text style={{ color: "#666", fontSize: 16 }}>{t("addressList")}</Text>
           <TouchableOpacity onPress={() => setModalVisible(true)}>
             <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
-              Thêm mới
+              {t("addNew")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -372,12 +373,12 @@ const EditAddress = () => {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>
-                {editingAddress ? "Sửa địa chỉ" : "Thêm địa chỉ mới"}
+                {editingAddress ? t("editAddress") : t("addNewAddress")}
               </Text>
 
               <TextInput
                 style={styles.input}
-                placeholder="Tiêu đề (ví dụ: Nhà, Cơ quan)"
+                placeholder={t("addressLabel")}
                 value={editingAddress ? editingAddress.title : newAddress.title}
                 onChangeText={(text) =>
                   editingAddress
@@ -388,7 +389,7 @@ const EditAddress = () => {
 
               <TextInput
                 style={styles.input}
-                placeholder="Địa chỉ"
+                placeholder={t("address")}
                 value={
                   editingAddress ? editingAddress.address : newAddress.address
                 }
@@ -432,7 +433,7 @@ const EditAddress = () => {
                   }}
                   style={styles.cancelButton}
                 >
-                  <Text style={styles.cancelText}>Hủy</Text>
+                  <Text style={styles.cancelText}>{t("cancel")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={
@@ -443,7 +444,7 @@ const EditAddress = () => {
                   style={styles.saveButton}
                 >
                   <Text style={styles.saveText}>
-                    {editingAddress ? "Cập nhật" : "Lưu"}
+                    {editingAddress ? t("update") : t("save")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -470,7 +471,7 @@ const EditAddress = () => {
           <ActivityIndicator size="small" color="white" />
         ) : (
           <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-            Sử dụng vị trí hiện tại
+            {t("useCurrentLocation")}
           </Text>
         )}
       </TouchableOpacity>

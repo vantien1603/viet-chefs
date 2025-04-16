@@ -14,12 +14,15 @@ import { commonStyles } from "../../style";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const menuItems = [
   { id: "1", icon: "wallet", title: "VietPay" },
   { id: "2", icon: "briefcase", title: "Create chef account" },
   { id: "3", icon: "lock-closed", title: "Change password" },
   { id: "4", icon: "settings", title: "Setting" },
+  { id: "5", icon: "", title: "Checkin - Checkout" },
+  { id: "6", icon: "", title: "Customer Schedule" },
 ];
 
 const Profile = () => {
@@ -66,6 +69,12 @@ const Profile = () => {
       case "4":
         router.push("/screen/setting");
         break;
+      case "5":
+        router.push("/screen/checkinout");
+        break;
+      case "6":
+        router.push("/screen/customerSchedule");
+        break;
       default:
         router.push("/screen/profileDetail");
         break;
@@ -104,7 +113,7 @@ const Profile = () => {
           <Text style={styles.fullName}>{user.fullName || "Guest"}</Text>
           <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
             <Text style={styles.viewProfileText}>
-              Xem hồ sơ {">"}
+              {t("viewProfile")} {">"}
             </Text>
           </TouchableOpacity>
         </View>

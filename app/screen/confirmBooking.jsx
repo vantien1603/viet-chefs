@@ -17,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
+import { t } from "i18next";
 
 const ConfirmBookingScreen = () => {
   const axiosInstance = useAxios();
@@ -35,7 +36,10 @@ const ConfirmBookingScreen = () => {
   const dishNotes = JSON.parse(params.dishNotes || "{}");
   const numPeople = parseInt(params.numPeople) || 1;
   const menuId = params.menuId || null;
+  const chefBringIngredients = params.chefBringIngredients;
   const { user } = useContext(AuthContext);
+
+  console.log("in", chefBringIngredients);
 
   // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
   const menuDishes =
@@ -95,9 +99,10 @@ const ConfirmBookingScreen = () => {
           numPeople: numPeople.toString(),
           requestDetails,
           menuId: menuId || null,
+          chefBringIngredients,
         },
       });
-      return true; // Prevent default back behavior
+      return true; 
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -105,7 +110,7 @@ const ConfirmBookingScreen = () => {
       backAction
     );
 
-    return () => backHandler.remove(); // Clean up listener
+    return () => backHandler.remove();
   }, [
     chefId,
     selectedMenu,
@@ -117,6 +122,7 @@ const ConfirmBookingScreen = () => {
     numPeople,
     requestDetails,
     menuId,
+    chefBringIngredients
   ]);
 
   const handleBack = () => {
@@ -134,18 +140,13 @@ const ConfirmBookingScreen = () => {
         numPeople: numPeople.toString(),
         requestDetails,
         menuId: menuId || null,
+        chefBringIngredients
       },
     });
   };
 
   const handleConfirmBooking = async () => {
     try {
-      if (!user) {
-        throw new Error(
-          "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
-        );
-      }
-
       const selectedDishIds = allDishes.map((dish) => dish.id);
       const payload = {
         customerId: user?.userId,
@@ -173,6 +174,7 @@ const ConfirmBookingScreen = () => {
               dishId: dishId,
               notes: dishNotes[dishId] || null,
             })),
+            chefBringIngredients
           },
         ],
       };
@@ -219,7 +221,7 @@ const ConfirmBookingScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Confirm & Payment" onLeftPress={handleBack} />
+      <Header title={t("confirmAndPayment")} onLeftPress={handleBack} />
       <ScrollView
         style={{ paddingTop: 20, paddingHorizontal: 20 }}
         contentContainerStyle={{ paddingBottom: 170 }}
@@ -227,7 +229,7 @@ const ConfirmBookingScreen = () => {
       >
         <View>
           <Text style={{ fontSize: 18, fontWeight: "500", marginBottom: 10 }}>
-            Location
+            {t("location")}
           </Text>
           <View
             style={{
@@ -244,7 +246,7 @@ const ConfirmBookingScreen = () => {
 
         <View>
           <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
-            Information
+            {t("infor")}
           </Text>
           <View
             style={{
@@ -256,57 +258,63 @@ const ConfirmBookingScreen = () => {
             }}
           >
             {/* Subsection: Thời Gian Làm Việc */}
-            <Text style={styles.subSectionTitle}>Thời Gian Làm Việc</Text>
+            <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Date</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
               <Text style={styles.details}>{sessionDate}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
               <Text style={styles.details}>{`${startTime}`}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time Begin Travel</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginTravel")}</Text>
               <Text style={styles.details}>
                 {bookingData.timeBeginTravel || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Time Begin Cook</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginCook")}</Text>
               <Text style={styles.details}>
                 {bookingData.timeBeginCook || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Cook Time</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("cookTime")}</Text>
               <Text style={styles.details}>
                 {bookingData.cookTimeMinutes
-                  ? `${bookingData.cookTimeMinutes} minutes`
+                  ? `${bookingData.cookTimeMinutes} ${t("minutes")}`
                   : "N/A"}
               </Text>
             </View>
 
             {/* Subsection: Chi Tiết Công Việc */}
             <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
-              Chi Tiết Công Việc
+            {t("jobDetails")}
             </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Số Người Ăn</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("numberOfPeople")}</Text>
               <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Tổng Số Món Ăn</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("totalNumberOfDishes")}</Text>
               <Text style={styles.details}>{numberOfDishes}</Text>
             </View>
             {selectedMenu && (
               <View style={styles.row}>
-                <Text style={{ fontSize: 14, flex: 1 }}>Số Món Trong Menu</Text>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("dishesInMenu")}</Text>
                 <Text style={styles.details}>{numberOfMenuDishes}</Text>
               </View>
             )}
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>Danh Sách Món Ăn</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("dishList")}</Text>
               <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredientPreparation")}</Text>
+              <Text style={styles.details}>
+                {chefBringIngredients === "true" ? t("chefWillPrepareIngredients") : t("IWillPrepareIngredients")}
+              </Text>
             </View>
           </View>
         </View>
@@ -336,7 +344,7 @@ const ConfirmBookingScreen = () => {
         >
           <View style={styles.costRow}>
             <Text style={{ flex: 1, fontSize: 18, fontWeight: "bold" }}>
-              Total:
+            {t("total")}:
             </Text>
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>
               {bookingData.totalPrice?.toLocaleString("en-US", {
@@ -362,11 +370,12 @@ const ConfirmBookingScreen = () => {
             <ActivityIndicator size="small" color="white" />
           ) : (
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Confirm booking
+              {t("confirmBooking")}
             </Text>
           )}
         </TouchableOpacity>
       </View>
+      <Toast />
     </SafeAreaView>
   );
 };

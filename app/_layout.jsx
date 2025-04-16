@@ -12,7 +12,6 @@ import { ModalNotiProvider } from "../context/commonNoti";
 // SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-
   const toastConfig = {
     success: (props) => (
       <BaseToast
@@ -68,7 +67,6 @@ export default function RootLayout() {
           <ModalProvider>
             <ModalNotiProvider>
               <Stack
-
                 screenOptions={{
                   headerTitleAlign: "center",
                   headerTitleStyle: {
@@ -333,57 +331,74 @@ export default function RootLayout() {
                   options={{
                     headerShown: false,
                   }}
-                /><Stack.Screen
+                />
+                <Stack.Screen
                   name="screen/updateBookingDetail"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
 
                 <Stack.Screen
                   name="screen/paymentBooking"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
                 <Stack.Screen
                   name="screen/review"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
                 <Stack.Screen
                   name="screen/scheduleBlocked"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
                 <Stack.Screen
                   name="screen/bookingDetails"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
                 <Stack.Screen
                   name="screen/allChef"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
                 <Stack.Screen
                   name="screen/viewBookingDetails"
                   options={{
-                    headerShown: false
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/viewDetailBookingDetails"
+                  options={{
+                    headerShown: false,
                   }}
                 />
                 <Stack.Screen
                   name="screen/notification"
                   options={{
-                    headerShown: false
+                    headerShown: false,
                   }}
                 />
-
-
+                <Stack.Screen
+                  name="screen/checkinout"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="screen/customerSchedule"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
               </Stack>
             </ModalNotiProvider>
           </ModalProvider>
@@ -391,11 +406,5 @@ export default function RootLayout() {
         </AuthProvider>
       </NetworkProvider>
     </GestureHandlerRootView>
-
-
-
-
-
-
   );
 }

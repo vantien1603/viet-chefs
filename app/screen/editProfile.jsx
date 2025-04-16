@@ -7,21 +7,23 @@ import {
   Image,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
 import * as ImagePicker from "expo-image-picker";
-import AXIOS_API from "../../config/AXIOS_API";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
+import Toast from "react-native-toast-message";
 
 const EditProfile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
   const params = useLocalSearchParams();
+  const axiosInstance = useAxiosFormData();
 
   const profileData = params.profileData ? JSON.parse(params.profileData) : {};
 
@@ -40,23 +42,28 @@ const EditProfile = () => {
     return displayGender === "Nam" ? "Male" : "Female";
   };
 
-  // Khởi tạo state
-  const [username, setUserName] = useState(profileData.username || "");
+  // State
+  const [username] = useState(profileData.username || "");
   const [name, setName] = useState(profileData.fullName || "");
-  const [email, setEmail] = useState(profileData.email || "");
+  const [email] = useState(profileData.email || "");
   const [phone, setPhone] = useState(profileData.phone || "");
   const [dob, setDob] = useState(profileData.dob || "");
   const [gender, setGender] = useState(
     mapGenderToDisplay(profileData.gender) || "Nam"
   );
   const [avatar, setAvatar] = useState(profileData.avatarUrl || null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Chọn ảnh từ thư viện
+  // Pick image with compression
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("Cần cấp quyền truy cập thư viện ảnh!");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Cần cấp quyền truy cập thư viện ảnh!",
+      });
       return;
     }
 
@@ -64,7 +71,7 @@ const EditProfile = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.5, // Compress image
     });
 
     if (!result.canceled) {
@@ -72,8 +79,18 @@ const EditProfile = () => {
     }
   };
 
-  // Cập nhật hồ sơ
+  // Update profile
   const handleUpdateProfile = async () => {
+    if (!name || !phone || !dob) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng điền đầy đủ thông tin bắt buộc!",
+      });
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append("fullName", name);
@@ -81,8 +98,8 @@ const EditProfile = () => {
       formData.append("gender", mapGenderToApi(gender));
       formData.append("phone", phone);
 
-      // Kiểm tra nếu có ảnh mới, thêm vào formData
-      if (avatar) {
+      // Only append new avatar
+      if (avatar && avatar !== profileData.avatarUrl) {
         const filename = avatar.split("/").pop();
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : "image";
@@ -94,62 +111,101 @@ const EditProfile = () => {
         });
       }
 
-      const response = await useAxiosFormData.put("/users/profile", formData);
+      const response = await axiosInstance.put("/users/profile", formData);
 
       if (response.status === 200) {
         await AsyncStorage.setItem("@fullName", name);
         await AsyncStorage.setItem("@phone", phone);
         await AsyncStorage.setItem("@dob", dob);
         await AsyncStorage.setItem("@gender", mapGenderToApi(gender));
-        await AsyncStorage.setItem("@avatar", avatar);
+        if (avatar && avatar !== profileData.avatarUrl) {
+          await AsyncStorage.setItem("@avatar", avatar);
+        }
 
-        alert("Cập nhật hồ sơ thành công!");
-        console.log("Ok", response.data);
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Cập nhật hồ sơ thành công!",
+        });
         setTimeout(() => {
           router.back();
-        }, 1000);
+        }, 1500); // Increased delay to ensure toast is visible
       }
     } catch (error) {
-      console.error("Lỗi cập nhật hồ sơ:", error.response?.data || error);
-      alert("Có lỗi khi cập nhật hồ sơ. Vui lòng thử lại.");
+      console.error("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
+      let message = "Có lỗi khi cập nhật hồ sơ. Vui lòng thử lại.";
+      if (error.code === "ECONNABORTED") {
+        message = "Kết nối quá chậm. Vui lòng kiểm tra mạng và thử lại.";
+      } else if (error.message === "Network Error") {
+        message = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.";
+      }
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: message,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Chỉnh sửa hồ sơ" />
-      <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
-        <View style={{ alignItems: "center", marginBottom: 20 }}>
-          <Image source={{ uri: avatar }} style={styles.avatar} />
-          <TouchableOpacity onPress={pickImage}>
-            <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.avatarContainer}>
+          <Image
+            source={{ uri: avatar || "https://via.placeholder.com/100" }}
+            style={styles.avatar}
+          />
+          <TouchableOpacity onPress={pickImage} disabled={isLoading}>
+            <Text style={[styles.changeImageText, isLoading && styles.disabledText]}>
+              Thay đổi ảnh
+            </Text>
           </TouchableOpacity>
         </View>
 
         <Text style={styles.label}>Username</Text>
-        <TextInput style={styles.input} value={username} editable={false} />
+        <TextInput
+          style={[styles.input, styles.disabledInput]}
+          value={username}
+          editable={false}
+        />
 
-        <Text style={styles.label}>Họ và tên</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} />
+        <Text style={styles.label}>Họ và tên *</Text>
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          editable={!isLoading}
+          placeholder="Nhập họ và tên"
+        />
 
         <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} value={email} editable={false} />
+        <TextInput
+          style={[styles.input, styles.disabledInput]}
+          value={email}
+          editable={false}
+        />
 
-        <Text style={styles.label}>Số điện thoại</Text>
+        <Text style={styles.label}>Số điện thoại *</Text>
         <TextInput
           style={styles.input}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
+          editable={!isLoading}
+          placeholder="Nhập số điện thoại"
         />
 
-        <Text style={styles.label}>Ngày sinh</Text>
+        <Text style={styles.label}>Ngày sinh *</Text>
         <TextInput
           style={styles.input}
           value={dob}
           onChangeText={setDob}
           placeholder="YYYY-MM-DD"
           keyboardType="numeric"
+          editable={!isLoading}
         />
 
         <Text style={styles.label}>Giới tính</Text>
@@ -160,6 +216,7 @@ const EditProfile = () => {
               gender === "Nam" && styles.genderSelected,
             ]}
             onPress={() => setGender("Nam")}
+            disabled={isLoading}
           >
             <Text
               style={
@@ -175,6 +232,7 @@ const EditProfile = () => {
               gender === "Nữ" && styles.genderSelected,
             ]}
             onPress={() => setGender("Nữ")}
+            disabled={isLoading}
           >
             <Text
               style={
@@ -189,10 +247,15 @@ const EditProfile = () => {
 
       <View style={styles.fixedButtonContainer}>
         <TouchableOpacity
-          style={styles.saveButton}
+          style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
           onPress={handleUpdateProfile}
+          disabled={isLoading}
         >
-          <Text style={styles.saveButtonText}>Lưu</Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Lưu</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -200,45 +263,61 @@ const EditProfile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
+  scrollContent: {
+    padding: 15,
+    paddingBottom: 100,
+  },
+  avatarContainer: {
+    alignItems: "center",
+    marginBottom: 20,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
+    backgroundColor: "#EEE",
   },
   changeImageText: {
     color: "#A9411D",
-    marginTop: 15,
+    fontSize: 16,
+    marginTop: 10,
+  },
+  disabledText: {
+    color: "#AAA",
   },
   label: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 10,
+    borderColor: "#DDD",
+    borderRadius: 10,
+    padding: 12,
     fontSize: 16,
     marginBottom: 16,
+    backgroundColor: "#FFF",
+  },
+  disabledInput: {
+    backgroundColor: "#F5F5F5",
+    color: "#666",
   },
   genderContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   genderButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: "#DDD",
+    borderRadius: 10,
     alignItems: "center",
     marginHorizontal: 5,
+    backgroundColor: "#FFF",
   },
   genderSelected: {
     backgroundColor: "#A9411D",
@@ -246,28 +325,32 @@ const styles = StyleSheet.create({
   },
   genderText: {
     fontSize: 16,
-    color: "black",
+    color: "#333",
   },
   genderTextSelected: {
     fontSize: 16,
-    color: "white",
+    color: "#FFF",
+    fontWeight: "600",
   },
   fixedButtonContainer: {
     position: "absolute",
     bottom: 20,
-    left: 10,
-    right: 10,
+    left: 15,
+    right: 15,
   },
   saveButton: {
     backgroundColor: "#A9411D",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: "center",
   },
+  saveButtonDisabled: {
+    backgroundColor: "#AAA",
+  },
   saveButtonText: {
-    color: "white",
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
 });
 

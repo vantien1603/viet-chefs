@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
+import { t } from "i18next";
 
 // Utility Functions
 const getDaysInMonth = (month, year) => {
@@ -68,6 +69,7 @@ const BookingScreen = () => {
       numPeople: params.numPeople ? parseInt(params.numPeople) : 1,
       requestDetails: params.requestDetails || "",
       menuId: params.menuId || null,
+      dishIds: params.dishIds,
     }),
     [
       params.chefId,
@@ -83,6 +85,7 @@ const BookingScreen = () => {
       params.numPeople,
       params.requestDetails,
       params.menuId,
+      params.dishIds
     ]
   );
 
@@ -100,6 +103,7 @@ const BookingScreen = () => {
     numPeople: paramNumPeople,
     requestDetails: paramRequestDetails,
     menuId,
+    chefBringIngredients,
   } = parsedParams;
 
   const [month, setMonth] = useState(moment().format("MM"));
@@ -121,7 +125,8 @@ const BookingScreen = () => {
   const [dishIds, setDishIds] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [isFetchingAvailability, setIsFetchingAvailability] = useState(false);
-  const [ingredientPrep, setIngredientPrep] = useState("user");
+  const [ingredientPrep, setIngredientPrep] = useState("customer");
+  const [unavailableDates, setUnavailableDates] = useState([]); // Thêm state cho ngày không khả dụng
 
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
@@ -140,6 +145,33 @@ const BookingScreen = () => {
       setStartTime(paramStartTime);
     }
   }, [paramStartTime]);
+
+  // Fetch unavailable dates
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUnavailableDates = async () => {
+      try {
+        const response = await axiosInstance.get(`/bookings/unavailable-dates?chefId=${chefId}`);
+        if (isMounted) {
+          setUnavailableDates(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching unavailable dates:", error?.response?.data || error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Unable to fetch unavailable dates.",
+        });
+      }
+    };
+
+    fetchUnavailableDates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [chefId]);
 
   useEffect(() => {
     const backAction = () => {
@@ -198,7 +230,6 @@ const BookingScreen = () => {
     const menuDishIds = parsedSelectedMenu?.menuItems?.map((item) => item.dishId || item.id) || [];
     const extraDishIds = parsedSelectedDishes.map((dish) => dish.id);
     const allDishIds = [...new Set([...menuDishIds, ...extraDishIds])];
-    console.log("Calculated dishIds:", allDishIds);
     setDishIds(allDishIds);
 
     if (latestDishId) {
@@ -211,7 +242,6 @@ const BookingScreen = () => {
 
     const fetchAvailability = async () => {
       if (!selectedDay || !address) {
-        console.log("Skipping fetchAvailability: missing selectedDay or address");
         return;
       }
 
@@ -219,14 +249,14 @@ const BookingScreen = () => {
       try {
         const date = selectedDay.format("YYYY-MM-DD");
         const menuIdParam = parsedSelectedMenu ? parsedSelectedMenu.id : null;
-        console.log("Fetching availability with params:", {
-          chefId,
-          date,
-          customerLocation: address,
-          guestCount: numPeople,
-          menuId: menuIdParam,
-          dishIds,
-        });
+        // console.log("Fetching availability with params:", {
+        //   chefId,
+        //   date,
+        //   customerLocation: address,
+        //   guestCount: numPeople,
+        //   menuId: menuIdParam,
+        //   dishIds,
+        // });
         const response = await axiosInstance.get(
           `/availability/chef/${chefId}/single-date`,
           {
@@ -253,7 +283,6 @@ const BookingScreen = () => {
         );
         if (isMounted) {
           setAvailability(response.data);
-          console.log("Availability data:", response.data);
         }
       } catch (error) {
         console.error("Error fetching availability:", error.response?.data || error);
@@ -324,6 +353,8 @@ const BookingScreen = () => {
   const isBeforeToday = (date) => date.isBefore(today, "day");
   const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
+
+  const isTodayOrBefore = (date) => date.isSameOrBefore(today, "day");
 
   const incrementPeople = () => setNumPeople((prev) => (prev < 10 ? prev + 1 : prev));
   const decrementPeople = () => setNumPeople((prev) => (prev > 1 ? prev - 1 : 1));
@@ -411,7 +442,7 @@ const BookingScreen = () => {
           dishId,
           notes: dishNotes[dishId] || "",
         })),
-        ingredientPreparation: ingredientPrep,
+        chefBringIngredients: ingredientPrep === "chef",
       },
     };
 
@@ -435,11 +466,12 @@ const BookingScreen = () => {
           dishNotes: JSON.stringify(dishNotes),
           numPeople: numPeople.toString(),
           menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
+          chefBringIngredients: ingredientPrep === "chef"
         },
       });
-      console.log("Booking response:", JSON.stringify(response.data));
+      // console.log("Booking response:", JSON.stringify(response.data));
     } catch (error) {
-      console.error("Error calling calculate-single-booking:", error);
+      console.error("Error calling calculate-single-booking:", error.response?.data);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -488,7 +520,7 @@ const BookingScreen = () => {
         <Text style={styles.modalTitle}>Select Address</Text>
         {addresses.length === 0 ? (
           <Text style={styles.noAddressesText}>
-            Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ mới!
+            {t("noAddresses")}
           </Text>
         ) : (
           addresses.map((item) => (
@@ -508,7 +540,7 @@ const BookingScreen = () => {
           onPress={() => addressModalizeRef.current?.close()}
           style={styles.cancelButton}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
         </TouchableOpacity>
       </View>
     </Modalize>
@@ -516,8 +548,6 @@ const BookingScreen = () => {
 
   const initialIndex = days.findIndex((item) => isToday(item.date));
   const safeInitialIndex = initialIndex >= 0 ? initialIndex : 0;
-
-  console.log("Rendering BookingScreen");
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" onLeftPress={handleBack} />
@@ -527,7 +557,7 @@ const BookingScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Number of People</Text>
+          <Text style={styles.sectionTitle}>{t("numberOfPeople")}</Text>
           <View style={styles.numberPicker}>
             <TouchableOpacity
               style={[styles.numberButton, numPeople <= 1 && styles.disabledButton]}
@@ -550,7 +580,7 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address</Text>
+          <Text style={styles.sectionTitle}>{t("address")}</Text>
           <TouchableOpacity onPress={openAddressModal} style={styles.locationContainer}>
             <MaterialIcons name="location-on" size={20} color="#A64B2A" style={styles.locationIcon} />
             <Text style={styles.locationText}>
@@ -560,7 +590,7 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Date</Text>
+          <Text style={styles.sectionTitle}>{t("selectDate")}</Text>
           <FlatList
             data={days}
             keyExtractor={(item) => item.day.toString()}
@@ -568,33 +598,66 @@ const BookingScreen = () => {
             initialScrollIndex={safeInitialIndex}
             showsHorizontalScrollIndicator={false}
             getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.dayContainer,
-                  isBeforeToday(item.date) && styles.disabledDay,
-                  isSelectedDay(item.date) && styles.selectedDay,
-                ]}
-                disabled={isBeforeToday(item.date)}
-                onPress={() => {
-                  setSelectedDay(item.date);
-                  setStartTime(null);
-                }}
-              >
-                <Text style={[styles.dayOfWeek, isSelectedDay(item.date) && styles.selectedText]}>
-                  {item.dayOfWeek}
-                </Text>
-                <Text style={[styles.day, isSelectedDay(item.date) && styles.selectedText]}>
-                  {item.day}
-                </Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const isUnavailable = unavailableDates.includes(
+                item.date.format("YYYY-MM-DD")
+              );
+              const isTodayOrPast = isTodayOrBefore(item.date);
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.dayContainer,
+                    isTodayOrPast && styles.disabledDay,
+                    isSelectedDay(item.date) && styles.selectedDay,
+                    isUnavailable && styles.unavailableDay,
+                  ]}
+                  disabled={isTodayOrPast || isUnavailable}
+                  onPress={() => {
+                    if (!isUnavailable && !isTodayOrPast) {
+                      setSelectedDay(item.date);
+                      setStartTime(null);
+                    } else if(isUnavailable){
+                      Toast.show({
+                        type: "error",
+                        text1: "Unavailable",
+                        text2: "This date is fully booked.",
+                      });
+                    } else {
+                      Toast.show({
+                        type: "error",
+                        text1: "Invalid Date",
+                        text2: "Cannot select today or past dates.",
+                      });
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.dayOfWeek,
+                      isSelectedDay(item.date) && styles.selectedText,
+                      (isUnavailable || isTodayOrPast) && styles.unavailableText,
+                    ]}
+                  >
+                    {item.dayOfWeek}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.day,
+                      isSelectedDay(item.date) && styles.selectedText,
+                      (isUnavailable || isTodayOrPast) && styles.unavailableText,
+                    ]}
+                  >
+                    {item.day}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
           />
         </View>
 
         {selectedDay && (
           <View style={styles.timeContainer}>
-            <Text style={styles.sectionTitle}>Start Time</Text>
+            <Text style={styles.sectionTitle}>{t("startTime")}</Text>
             {isFetchingAvailability ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#A64B2A" />
@@ -617,7 +680,7 @@ const BookingScreen = () => {
                 ))}
               </ScrollView>
             ) : (
-              <Text style={styles.noTimeText}>No available time slots for this day.</Text>
+              <Text style={styles.noTimeText}>{t("noSlotsAvailable")}</Text>
             )}
           </View>
         )}
@@ -629,7 +692,7 @@ const BookingScreen = () => {
               onPress={() => setIsMenuExpanded(!isMenuExpanded)}
             >
               <Text style={styles.sectionTitle}>
-                {parsedSelectedMenu ? parsedSelectedMenu.name : "Order"}
+                {parsedSelectedMenu ? parsedSelectedMenu.name : t("order")}
               </Text>
               <MaterialIcons
                 name={isMenuExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
@@ -638,7 +701,7 @@ const BookingScreen = () => {
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleAddItems}>
-              <Text style={styles.addItemsText}>Add items</Text>
+              <Text style={styles.addItemsText}>{t("addItems")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -669,13 +732,13 @@ const BookingScreen = () => {
                         </Text>
                         {dishNotes[item.dishId || item.id] && (
                           <Text style={styles.noteText}>
-                            Note: {dishNotes[item.dishId || item.id]}
+                            {t("note")}: {dishNotes[item.dishId || item.id]}
                           </Text>
                         )}
                       </View>
                     </View>
                     <TouchableOpacity onPress={openModal}>
-                      <Text style={styles.editText}>Edit Notes</Text>
+                      <Text style={styles.editText}>{t("editNotes")}</Text>
                     </TouchableOpacity>
                   </View>
                 ))
@@ -703,32 +766,32 @@ const BookingScreen = () => {
                       <View style={styles.dishText}>
                         <Text style={styles.dishName}>{dish.name || "Unnamed Dish"}</Text>
                         {dishNotes[dish.id] && (
-                          <Text style={styles.noteText}>Note: {dishNotes[dish.id]}</Text>
+                          <Text style={styles.noteText}>{t("note")}: {dishNotes[dish.id]}</Text>
                         )}
-                        {latestDishId && dish.id === parseInt(latestDishId) && (
+                        {/* {latestDishId && dish.id === parseInt(latestDishId) && (
                           <Text style={styles.latestTag}>Mới thêm</Text>
-                        )}
+                        )} */}
                       </View>
                     </View>
                     <TouchableOpacity onPress={openModal}>
-                      <Text style={styles.editText}>Edit Notes</Text>
+                      <Text style={styles.editText}>{t("editNotes")}</Text>
                     </TouchableOpacity>
                   </View>
                 ))
               )}
 
               {!parsedSelectedMenu && parsedSelectedDishes.length === 0 && (
-                <Text style={styles.noItemsText}>No menus or dishes selected.</Text>
+                <Text style={styles.noItemsText}>{t("noMenus")}</Text>
               )}
             </View>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Special Request</Text>
+          <Text style={styles.sectionTitle}>{t("specialRequest")}</Text>
           <TextInput
             style={styles.specialRequestInput}
-            placeholder="Enter your request"
+            placeholder={t("enterYourRequest")}
             value={specialRequest}
             onChangeText={setSpecialRequest}
             multiline
@@ -736,18 +799,18 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ingredient Preparation</Text>
+          <Text style={styles.sectionTitle}>{t("ingredientPreparation")}</Text>
           <View style={styles.ingredientPrepContainer}>
             <TouchableOpacity
               style={styles.checkboxContainer}
-              onPress={() => setIngredientPrep("user")}
+              onPress={() => setIngredientPrep("customer")}
             >
               <MaterialIcons
-                name={ingredientPrep === "user" ? "check-box" : "check-box-outline-blank"}
+                name={ingredientPrep === "customer" ? "check-box" : "check-box-outline-blank"}
                 size={24}
-                color={ingredientPrep === "user" ? "#A64B2A" : "#333"}
+                color={ingredientPrep === "customer" ? "#A64B2A" : "#333"}
               />
-              <Text style={styles.checkboxText}>I will prepare ingredients</Text>
+              <Text style={styles.checkboxText}>{t("IWillPrepareIngredients")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.checkboxContainer}
@@ -758,7 +821,7 @@ const BookingScreen = () => {
                 size={24}
                 color={ingredientPrep === "chef" ? "#A64B2A" : "#333"}
               />
-              <Text style={styles.checkboxText}>Chef will prepare ingredients</Text>
+              <Text style={styles.checkboxText}>{t("chefWillPrepareIngredients")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -769,7 +832,7 @@ const BookingScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+            <Text style={styles.confirmButtonText}>{t("confirmBooking")}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -782,34 +845,34 @@ const BookingScreen = () => {
         handleStyle={styles.handleStyle}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Edit Notes for Dishes</Text>
+          <Text style={styles.modalTitle}>{t("editNotesForDishes")}</Text>
           {allDishes.length > 0 ? (
             allDishes.map((dish) => (
               <View key={dish.id} style={styles.dishNoteContainer}>
                 <Text style={styles.dishNoteLabel}>{dish.name}</Text>
                 <TextInput
                   style={styles.dishNoteInput}
-                  placeholder="Add your request here..."
+                  placeholder={t("addYourRequestHere")}
                   value={tempDishNotes[dish.id] || ""}
                   onChangeText={(text) =>
                     setTempDishNotes((prev) => ({ ...prev, [dish.id]: text }))
                   }
                   multiline
                 />
-                {dish.isLatest && (
+                {/* {dish.isLatest && (
                   <Text style={styles.latestTag}>Mới thêm</Text>
-                )}
+                )} */}
               </View>
             ))
           ) : (
-            <Text style={styles.noDishesText}>No dishes to add notes for.</Text>
+            <Text style={styles.noDishesText}>{t("noDishesToAddNotesFor")}</Text>
           )}
           <View style={styles.modalButtons}>
             <TouchableOpacity style={styles.cancelButton} onPress={cancelNotes}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={saveNotes}>
-              <Text style={styles.saveButtonText}>Save Notes</Text>
+              <Text style={styles.saveButtonText}>{t("save")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -974,9 +1037,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#F8BF40",
   },
+  unavailableDay: {
+    backgroundColor: "#FF4D4D",
+    opacity: 0.7,
+  },
   selectedText: {
     color: "white",
     fontWeight: "bold",
+  },
+  unavailableText: {
+    color: "white",
   },
   timeContainer: {
     paddingVertical: 10,

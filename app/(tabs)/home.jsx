@@ -21,6 +21,7 @@ import { AuthContext } from "../../config/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import * as Location from "expo-location";
+import { t } from "i18next";
 
 export default function Home() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function Home() {
   const { user } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [location, setLocation] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -42,7 +44,23 @@ export default function Home() {
     return () => backHandler.remove();
   }, []);
 
-  // Hàm lấy vị trí hiện tại nếu không có tọa độ trong savedAddress
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axiosInstance.get("/notifications/my");
+      if (response.status === 200) {
+        const unread = response.data.content.filter(
+          (notification) => !notification.read
+        ).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.log("Error fetching unread count", error);
+    }
+  };
+  useEffect(() => {
+    fetchUnreadCount();
+  }, []);
+
   const getCurrentLocation = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -76,7 +94,6 @@ export default function Home() {
         return;
       }
 
-      // Xử lý địa chỉ
       if (savedAddress) {
         const parsedAddress = JSON.parse(savedAddress);
         console.log("Địa chỉ đã lưu:", parsedAddress);
@@ -271,7 +288,16 @@ export default function Home() {
           </View>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push("/screen/notification")}>
-          <Ionicons name="notifications" size={30} color="#4EA0B7" />
+          <View style={styles.notificationIconContainer}>
+            <Ionicons name="notifications" size={30} color="#4EA0B7" />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -283,7 +309,7 @@ export default function Home() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 10 }} // Extra padding for tab bar
+          contentContainerStyle={{ paddingBottom: 10 }}
         >
           <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
             <Image
@@ -303,7 +329,12 @@ export default function Home() {
                 const searchQuery = String(query || "").trim();
                 router.push({
                   pathname: "/screen/searchResult",
-                  params: { query: searchQuery },
+                  params: {
+                    query: searchQuery,
+                    selectedAddress: selectedAddress
+                      ? JSON.stringify(selectedAddress)
+                      : null,
+                  },
                 });
               }}
               returnKeyType="search"
@@ -317,9 +348,11 @@ export default function Home() {
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Nearby Dishes</Text>
+            <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>See all</Text>
+              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                {t("seeAll")}
+              </Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -343,9 +376,11 @@ export default function Home() {
           </ScrollView>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Nearby Chefs</Text>
+            <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>See all</Text>
+              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                {t("seeAll")}
+              </Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -395,7 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     padding: 20,
     fontSize: 16,
-    paddingRight: 50, // Space for search icon
+    paddingRight: 50,
   },
   searchIcon: {
     position: "absolute",
@@ -448,5 +483,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#333",
+  },
+  notificationIconContainer: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    right: -8,
+    top: -8,
+    backgroundColor: '#A9411D',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

@@ -14,6 +14,8 @@ import Header from "../../components/header";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import useAxios from "../../config/AXIOS_API";
 import { router } from "expo-router";
+import { commonStyles } from "../../style";
+import { t } from "i18next";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
@@ -64,9 +66,9 @@ const AllDishScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={commonStyles.containerContent}>
       <Header
-        title={isSearching ? "" : "All dishes"}
+        title={t("allDishes")}
         rightIcon={"search"}
         onRightPress={toggleSearch}
       />
@@ -113,7 +115,7 @@ const AllDishScreen = () => {
                     <Text style={styles.title}>{dish.name}</Text>
                     <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
                     <Text style={{ color: "#FFF" }}>
-                      ~ {dish.cookTime} minutes
+                      ~ {dish.cookTime} {t("minutes")}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -152,22 +154,28 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    marginTop: 20,
+    paddingHorizontal: 16,
+    marginBottom: 24,
   },
   cardContainer: {
-    width: "48%", // 2 món trên 1 hàng
-    alignItems: "center",
+    width: "48%",
   },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
-    padding: 16,
-    paddingTop: 50,
+    paddingTop: 90,
+    paddingBottom: 20,
+    paddingHorizontal: 12,
     alignItems: "center",
-    width: "100%", // Đảm bảo card chiếm toàn bộ chiều rộng của cardContainer
+    width: "100%",
     position: "relative",
+    minHeight: 200,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    marginTop: 30,
   },
   imageContainer: {
     width: 130,
@@ -175,25 +183,27 @@ const styles = StyleSheet.create({
     borderRadius: 65,
     backgroundColor: "#FFF",
     overflow: "hidden",
-    marginBottom: 8,
     position: "absolute",
-    top: -20,
+    top: -30,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#EAEAEA",
   },
   image: {
     width: "100%",
     height: "100%",
-    // resizeMode: "cover",
+    resizeMode: "cover",
   },
   title: {
     fontSize: 17,
     fontWeight: "bold",
     color: "#FFF",
-    marginTop: 70,
+    marginTop: 12,
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 6,
   },
 });
+
 
 export default AllDishScreen;

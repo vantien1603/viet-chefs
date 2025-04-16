@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { Ionicons } from '@expo/vector-icons';
 import useActionCheckNetwork from "../../hooks/useAction";
+import { t } from "i18next";
 
 
 
@@ -68,7 +69,7 @@ export default function LoginScreen() {
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <SafeAreaView >
         <Text style={commonStyles.subTitleText}>
-          Login to your account to use...
+          {t("loginToUse")}
         </Text>
         <Image
           source={require("../../assets/images/logo.png")}
@@ -86,7 +87,7 @@ export default function LoginScreen() {
         <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
         <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
           <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
-            <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
+            <Text style={{ color: "#968B7B" }}>{t("forgot")}</Text>
           </TouchableOpacity>
         </View>
         <View style={{ alignItems: "center" }}>
@@ -107,7 +108,7 @@ export default function LoginScreen() {
               <ActivityIndicator size="large" color="#fff" />
             ) : (
               <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
-                Login
+                {t("login")}
               </Text>
             )}
 
@@ -116,9 +117,9 @@ export default function LoginScreen() {
       </SafeAreaView>
       <Modalize ref={modalRef} adjustToContentHeight>
         <View style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: "bold", textAlign: 'center' }}>Login failed</Text>
+          <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: "bold", textAlign: 'center' }}>{t("loginFailed")}</Text>
           <Ionicons name="close-circle" size={60} color="red" />
-          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: 'center' }}>Please check your account or password again.</Text>
+          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: 'center' }}>{t("checkAccountOrPassword")}</Text>
           <TouchableOpacity
             style={{
               padding: 5,
@@ -132,7 +133,7 @@ export default function LoginScreen() {
             onPress={() => modalRef.current?.close()}
           >
             <Text style={{ textAlign: "center", fontSize: 16, color: "#fff" }}>
-              Try again
+              {t("tryAgain")}
             </Text>
           </TouchableOpacity>
         </View>

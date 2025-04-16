@@ -51,7 +51,7 @@ const BookingDetailScreen = () => {
         setDishNames(dishNamesMap);
       }
     } catch (error) {
-      console.error("Error fetching booking detail:", error);
+      console.error(" detail 1:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -135,7 +135,7 @@ const BookingDetailScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="Booking Detail" />
+        <Header title={t("bookingDetail")} />
         <ActivityIndicator
           size="large"
           color="#A64B2A"
@@ -148,7 +148,7 @@ const BookingDetailScreen = () => {
   if (!bookingDetail) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="Booking Detail" />
+        <Header title={t("bookingDetail")} />
         <Text style={styles.noDataText}>No booking detail available</Text>
       </SafeAreaView>
     );
@@ -156,78 +156,78 @@ const BookingDetailScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title="Booking Detail" />
+      <Header title={t("bookingDetail")} />
       <ScrollView style={commonStyles.containerContent}>
         <View style={styles.detailCard}>
-          <Text style={styles.sectionTitle}>Booking Information</Text>
+          <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
           <Text style={styles.detailText}>
-            Session Date: {bookingDetail.sessionDate}
+          {t("sessionDate")}: {bookingDetail.sessionDate}
           </Text>
           <Text style={styles.detailText}>
-            Start Time: {bookingDetail.startTime}
+          {t("startTime")}: {bookingDetail.startTime}
           </Text>
-          {bookingDetail.endTime && (
+          {/* {bookingDetail.endTime && (
             <Text style={styles.detailText}>
               End Time: {bookingDetail.endTime}
             </Text>
-          )}
+          )} */}
           <Text style={styles.detailText}>
-            Location: {bookingDetail.location}
+          {t("location")}: {bookingDetail.location}
           </Text>
-          <Text style={styles.detailText}>Status: {bookingDetail.status}</Text>
+          <Text style={styles.detailText}>{t("status")}: {bookingDetail.status}</Text>
           <Text style={styles.detailText}>
-            Total Price: ${bookingDetail.totalPrice}
+          {t("totalPrice")}: ${bookingDetail.totalPrice}
           </Text>
 
-          <Text style={styles.sectionTitle}>Fee Details</Text>
+          <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
           <Text style={styles.detailText}>
-            Chef Cooking Fee: ${bookingDetail.chefCookingFee}
+          {t("chefCookingFee")}: ${bookingDetail.chefCookingFee}
           </Text>
           <Text style={styles.detailText}>
-            Price of Dishes: ${bookingDetail.priceOfDishes}
+          {t("priceOfDishes")}: ${bookingDetail.priceOfDishes}
           </Text>
           <Text style={styles.detailText}>
-            Arrival Fee: ${bookingDetail.arrivalFee}
+          {t("arrivalFee")}: ${bookingDetail.arrivalFee}
           </Text>
           {bookingDetail.chefServingFee && (
             <Text style={styles.detailText}>
-              Chef Serving Fee: ${bookingDetail.chefServingFee}
+              {t("chefServingFee")}: ${bookingDetail.chefServingFee}
             </Text>
           )}
           <Text style={styles.detailText}>
-            Platform Fee: ${bookingDetail.platformFee}
+          {t("platformFee")}: ${bookingDetail.platformFee}
           </Text>
           <Text style={styles.detailText}>
-            Total Chef Fee: ${bookingDetail.totalChefFeePrice}
+          {t("totalChefFee")}: ${bookingDetail.totalChefFeePrice}
           </Text>
           <Text style={styles.detailText}>
-            Discount Amount: ${bookingDetail.discountAmout}
+          {t("discountAmount")}: ${bookingDetail.discountAmout}
           </Text>
 
-          <Text style={styles.sectionTitle}>Schedule</Text>
+          <Text style={styles.sectionTitle}>{t("schedule")}</Text>
           <Text style={styles.detailText}>
-            Time Begin Cook: {bookingDetail.timeBeginCook}
+          {t("timeBeginCook")}: {bookingDetail.timeBeginCook}
           </Text>
           <Text style={styles.detailText}>
-            Time Begin Travel: {bookingDetail.timeBeginTravel}
-          </Text>
-
-          <Text style={styles.sectionTitle}>Menu</Text>
-          <Text style={styles.detailText}>
-            Menu ID: {bookingDetail.menuId || "Not selected"}
+          {t("timeBeginTravel")}: {bookingDetail.timeBeginTravel}
           </Text>
 
-          <Text style={styles.sectionTitle}>Dishes</Text>
+          <Text style={styles.sectionTitle}>{t("menu")}</Text>
+          <Text style={styles.detailText}>
+          {t("menuId")}: {bookingDetail.menuId || "Not selected"}
+          </Text>
+
+          <Text style={styles.sectionTitle}>{t("dishes")}</Text>
           {!bookingDetail.dishes || bookingDetail.dishes.length === 0 ? (
-            <Text style={styles.detailText}>Chưa có món ăn</Text>
+            <Text style={styles.detailText}>{t("noFoodYet")}</Text>
           ) : (
             bookingDetail.dishes.map((dish, index) => (
               <View key={index} style={styles.dishItem}>
                 <Text style={styles.detailText}>
-                  Dish Name: {dishNames[dish.dish.id] || "Loading..."}
+                {t("dishName")}: {dishNames[dish.dish.id] || "Loading..."}
                 </Text>
                 {dish.notes && (
-                  <Text style={styles.detailText}>Notes: {dish.notes}</Text>
+                  <Text style={styles.detailText}>{t("note")}: {dish.notes}</Text>
                 )}
               </View>
             ))
@@ -244,7 +244,7 @@ const BookingDetailScreen = () => {
           {updating ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.updateButtonText}>Update</Text>
+            <Text style={styles.updateButtonText}>{t("update")}</Text>
           )}
         </TouchableOpacity>
       )}

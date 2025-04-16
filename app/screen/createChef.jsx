@@ -39,7 +39,7 @@ const CreateChefScreen = () => {
 
   useEffect(() => {
     const backAction = () => {
-      router.push("/(tabs)/profile"); 
+      router.push("/(tabs)/profile");
       return true;
     };
 
@@ -127,56 +127,54 @@ const CreateChefScreen = () => {
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Bio (Short Introduction)"
+            placeholder={t("bioS")}
             value={bio}
             onChangeText={setBio}
             multiline
           />
           <TextInput
             style={styles.input}
-            placeholder="Description (Additional Details)"
+            placeholder={t("descriptionS")}
             value={description}
             onChangeText={setDescription}
             multiline
           />
           <TextInput
             style={styles.input}
-            placeholder="Address"
+            placeholder={t("address")}
             value={address}
             onChangeText={setAddress}
           />
           <TextInput
             style={styles.input}
-            placeholder="Country"
+            placeholder={t("country")}
             value={country}
             onChangeText={setCountry}
           />
           <TextInput
             style={styles.input}
-            placeholder="Price (e.g., per service)"
+            placeholder={t("price")}
             value={price}
             onChangeText={setPrice}
             keyboardType="numeric"
           />
           <TextInput
             style={styles.input}
-            placeholder="Max Serving Size (number of people)"
+            placeholder={t("maxServingSizes")}
             value={maxServingSize}
             onChangeText={setMaxServingSize}
             keyboardType="numeric"
           />
           <TextInput
             style={styles.input}
-            placeholder="Years of Experience"
+            placeholder={t("experienceYears")}
             value={yearsOfExperience}
             onChangeText={setYearsOfExperience}
             keyboardType="numeric"
           />
 
           <View style={styles.specialtySection}>
-            <Text style={styles.sectionTitle}>
-              Specialty (Vietnamese Cuisine)
-            </Text>
+            <Text style={styles.sectionTitle}>{t("specialty")}</Text>
             <View style={styles.specialtyButtons}>
               <TouchableOpacity
                 style={[
@@ -185,7 +183,7 @@ const CreateChefScreen = () => {
                 ]}
                 onPress={() => toggleSpecialty("north")}
               >
-                <Text style={styles.buttonText}>Northern</Text>
+                <Text style={styles.buttonText}>{t("northern")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -194,7 +192,7 @@ const CreateChefScreen = () => {
                 ]}
                 onPress={() => toggleSpecialty("center")}
               >
-                <Text style={styles.buttonText}>Central</Text>
+                <Text style={styles.buttonText}>{t("central")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -203,17 +201,17 @@ const CreateChefScreen = () => {
                 ]}
                 onPress={() => toggleSpecialty("south")}
               >
-                <Text style={styles.buttonText}>Southern</Text>
+                <Text style={styles.buttonText}>{t("southern")}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.certificateSection}>
             <Text style={styles.sectionTitle}>
-              Do you have a culinary certificate?
+              {t("haveCertificateQuestion")}
             </Text>
             <View style={styles.switchContainer}>
-              <Text style={styles.switchLabel}>Have Certificate</Text>
+              <Text style={styles.switchLabel}>{t("haveCertificate")}</Text>
               <Switch
                 value={hasCertificate === true}
                 onValueChange={(value) => setHasCertificate(value)}
@@ -224,10 +222,10 @@ const CreateChefScreen = () => {
 
             {hasCertificate === true && (
               <View style={styles.uploadSection}>
-                <Text style={styles.uploadTitle}>Certificate Image URL</Text>
+                <Text style={styles.uploadTitle}>{t("certificateImageUrl")}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter the URL of your certificate image"
+                  placeholder={t("enterCertificateUrl")}
                   value={certification}
                   onChangeText={setCertification}
                 />
@@ -240,7 +238,7 @@ const CreateChefScreen = () => {
       {/* Fixed Submit Button */}
       <View style={styles.submitContainer}>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Submit</Text>
+          <Text style={styles.submitButtonText}>{t("submit")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
