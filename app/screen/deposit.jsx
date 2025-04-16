@@ -17,6 +17,7 @@ import WebView from "react-native-webview";
 import Toast from "react-native-toast-message";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const DepositScreen = () => {
   const [amount, setAmount] = useState("");
@@ -94,19 +95,19 @@ const DepositScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Deposit in VietPay" onLeftPress={handleBack} />
+      <Header title={t("depositToWallet")} onLeftPress={handleBack} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.balanceContainer}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={styles.sectionTitle}>Số dư hiện tại</Text>
+            <Text style={styles.sectionTitle}>{t("currentBalance")}</Text>
             <Text style={styles.sectionTitle}>{balance}</Text>
           </View>
           <View style={styles.separator} />
           <TextInput
-            placeholder="Nhập số tiền cần nạp"
+            placeholder={t("enterDepositAmount")}
             keyboardType="numeric"
             style={styles.input}
             placeholderTextColor="#999"
@@ -116,7 +117,7 @@ const DepositScreen = () => {
         </View>
 
         <View style={styles.paymentContainer}>
-          <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+          <Text style={styles.sectionTitle}>{t("paymentMethod")}</Text>
           <View style={styles.paymentMethod}>
             <View style={styles.paymentRow}>
               <View style={styles.paymentIconText}>
@@ -142,7 +143,7 @@ const DepositScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.depositText}>Nạp tiền</Text>
+            <Text style={styles.depositText}>{t("deposit")}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -160,7 +161,7 @@ const DepositScreen = () => {
             >
               <Ionicons name="close" size={24} color="#A9411D" />
             </TouchableOpacity>
-            <Text style={styles.webViewTitle}>Thanh toán qua PayPal</Text>
+            <Text style={styles.webViewTitle}>{t("payWithPaypal")}</Text>
           </View>
           {paymentUrl ? (
             <WebView
@@ -171,7 +172,7 @@ const DepositScreen = () => {
               domStorageEnabled={true}
             />
           ) : (
-            <Text style={styles.errorText}>Đang tải thanh toán...</Text>
+            <Text style={styles.errorText}>{t("loadingPayment")}</Text>
           )}
           {loading && (
             <ActivityIndicator

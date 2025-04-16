@@ -34,7 +34,7 @@ const ForgotPasswordScreen = () => {
                         <Text style={styles.contentText}>Via email</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={{ fontSize: 40 }}>•••••••</Text>
-                            <Text style={{ fontSize: 22 }}>@gmil.com</Text>
+                            <Text style={{ fontSize: 22 }}>@gmail.com</Text>
                         </View>
                     </View>
                 </TouchableOpacity>

@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import useAxios from "../../config/AXIOS_API";
 import { router, useLocalSearchParams } from "expo-router";
+import { t } from "i18next";
 
 const DishDetails = () => {
   const navigation = useNavigation();
@@ -141,23 +142,23 @@ const DishDetails = () => {
         <View style={styles.detailsContainer}>
           <View style={styles.detailItem}>
             <Ionicons name="restaurant-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>Cuisine: {dish.cuisineType}</Text>
+            <Text style={styles.detailText}>{t("cuisine")}: {dish.cuisineType}</Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="home-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>Type: {dish.serviceType}</Text>
+            <Text style={styles.detailText}>{t("type")}: {dish.serviceType}</Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="time-outline" size={20} color="#555" />
             <Text style={styles.detailText}>
-              Cook Time: {dish.cookTime} mins
+              {t("cookTime")}: {dish.cookTime} {t("minutes")}
             </Text>
           </View>
         </View>
 
         {chef && (
           <View style={styles.chefContainer}>
-            <Text style={styles.sectionTitle}>Đầu bếp</Text>
+            <Text style={styles.sectionTitle}>{t("chef")}</Text>
             <View style={styles.chefInfo}>
               <Image
                 source={{
@@ -171,10 +172,10 @@ const DishDetails = () => {
               />
               <View style={styles.chefText}>
                 <Text style={styles.chefName}>
-                  {chef.user?.fullName || "Đầu bếp"}
+                  {chef.user?.fullName || t("chef")}
                 </Text>
                 <Text style={styles.chefBio} numberOfLines={2}>
-                  {chef.bio || "Không có thông tin"}
+                  {chef.bio || t("noInformation")}
                 </Text>
               </View>
             </View>
@@ -191,7 +192,7 @@ const DishDetails = () => {
             <Text style={styles.actionButtonText}>
               {selectedDishes.length > 0
                 ? `Booking - ${selectedDishes.length} item${selectedDishes.length > 1 ? "s" : ""}`
-                : "Add Item"}
+                : t("addItem")}
             </Text>
           </TouchableOpacity>
         </View>

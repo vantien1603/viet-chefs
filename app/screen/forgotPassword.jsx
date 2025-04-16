@@ -43,8 +43,7 @@ const ForgotPasswordScreen = () => {
       <Header title="Forgot Password" />
       <View style={styles.container}>
         <Text style={styles.description}>
-          Enter your email address and we will send you a code to reset your
-          password.
+          {t("enterEmailToResetPassword")}
         </Text>
         <Text style={styles.textLabel}>Email Address</Text>
         <TextInput
@@ -63,7 +62,7 @@ const ForgotPasswordScreen = () => {
         ) : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSend}>
-          <Text style={styles.buttonText}>Send Code</Text>
+          <Text style={styles.buttonText}>{t("sendCode")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

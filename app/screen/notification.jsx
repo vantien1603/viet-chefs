@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,47 +6,71 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-} from 'react-native';
-import Header from "../../components/header"; 
-import { commonStyles } from '../../style';
-
-// Dữ liệu mẫu cho thông báo
-const dummyNotifications = [
-  {
-    id: '1',
-    title: 'Cập nhật mới',
-    message: 'Ứng dụng vừa được cập nhật phiên bản mới',
-    time: '2 giờ trước',
-  },
-  {
-    id: '2',
-    title: 'Tin nhắn mới',
-    message: 'Bạn có tin nhắn từ Minh',
-    time: '3 giờ trước',
-  },
-  {
-    id: '3',
-    title: 'Nhắc nhở',
-    message: 'Đừng quên cuộc họp lúc 14:00',
-    time: '1 ngày trước',
-  },
-];
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Header from "../../components/header";
+import { commonStyles } from "../../style";
+import useAxios from "../../config/AXIOS_API";
 
 const NotificationScreen = () => {
-  const [notifications, setNotifications] = useState(dummyNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const axiosInstance = useAxios();
 
-  // Component render từng item thông báo
+  const fetchNotification = async () => {
+    try {
+      const response = await axiosInstance.get("/notifications/my");
+      if (response.status === 200) {
+        // Sort notifications by createdAt descending
+        const sortedNotifications = response.data.content.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setNotifications(sortedNotifications);
+      }
+    } catch (error) {
+      console.log("Error", error);
+    }
+  };
+
+  const toggleReadStatus = (notificationId) => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read: !notification.read }
+          : notification
+      )
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.map((notification) => ({ ...notification, read: true }))
+    );
+  };
+
+  useEffect(() => {
+    fetchNotification();
+  }, []);
+
   const renderNotificationItem = ({ item }) => (
     <TouchableOpacity style={styles.notificationItem}>
       <View style={styles.notificationContent}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.message}>{item.message}</Text>
-        <Text style={styles.time}>{item.time}</Text>
+        <Text style={styles.time}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
       </View>
+      <TouchableOpacity
+        onPress={() => toggleReadStatus(item.id)}
+        style={styles.readButton}
+      >
+        {item.read && (
+          <Ionicons name="checkmark-done" size={24} color="#ccc" />
+        )}
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
-  // Hiển thị khi không có thông báo
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>Không có thông báo nào</Text>
@@ -56,10 +80,15 @@ const NotificationScreen = () => {
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Thông báo" />
+      <View style={styles.headerActions}>
+        <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
+          <Text style={styles.markAllText}>Đánh dấu tất cả đã đọc</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={notifications}
         renderItem={renderNotificationItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.listContainer}
       />
@@ -70,55 +99,64 @@ const NotificationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
-  header: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+  headerActions: {
+    padding: 10,
+    alignItems: "flex-end",
   },
-  headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  markAllButton: {
+    padding: 8,
+    backgroundColor: "#4EA0B7",
+    borderRadius: 5,
+  },
+  markAllText: {
+    color: "#fff",
+    fontSize: 14,
   },
   listContainer: {
     flexGrow: 1,
   },
   notificationItem: {
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    backgroundColor: "#fff",
     padding: 15,
     marginVertical: 5,
     marginHorizontal: 10,
     borderRadius: 8,
     elevation: 2,
+    alignItems: "center",
   },
   notificationContent: {
     flex: 1,
   },
   title: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
   },
   message: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     marginBottom: 5,
   },
   time: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
+  },
+  readButton: {
+    padding: 5,
+    minWidth: 34,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
 });
 

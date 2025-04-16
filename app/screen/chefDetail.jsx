@@ -18,6 +18,7 @@ import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const ChefDetail = () => {
   const [expandedBio, setExpandedBio] = useState(false);
@@ -126,12 +127,12 @@ const ChefDetail = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={"Chef's Information"} onLeftPress={handleBack} />
+      <Header title={t("chefInfo")} onLeftPress={handleBack} />
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {loadingChef ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f5a623" />
-            <Text style={styles.loadingText}>Đang tải thông tin đầu bếp...</Text>
+            <Text style={styles.loadingText}>{t("loadingChefInfo")}</Text>
           </View>
         ) : (
           chefs && (
@@ -159,34 +160,34 @@ const ChefDetail = () => {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>Bio:</Text>
+                <Text style={styles.label}>{t("bio")}:</Text>
                 <Text
                   style={styles.value}
                   numberOfLines={expandedBio ? undefined : 3}
                 >
-                  {chefs?.bio || "Không có thông tin"}
+                  {chefs?.bio || t("noInformation")}
                 </Text>
                 {chefs?.bio && chefs.bio.length > 100 && (
                   <TouchableOpacity onPress={toggleBio}>
                     <Text style={styles.showMore}>
-                      {expandedBio ? "Xem ít hơn" : "Xem thêm"}
+                      {expandedBio ? t("seeLess") : t("seeMore")}
                     </Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>Description:</Text>
+                <Text style={styles.label}>{t("description")}:</Text>
                 <Text
                   style={styles.value}
                   numberOfLines={expandedDesc ? undefined : 3}
                 >
-                  {chefs?.description || "Không có thông tin"}
+                  {chefs?.description || t("noInformation")}
                 </Text>
                 {chefs?.description && chefs.description.length > 100 && (
                   <TouchableOpacity onPress={toggleDesc}>
                     <Text style={styles.showMore}>
-                      {expandedDesc ? "Xem ít hơn" : "Xem thêm"}
+                      {expandedDesc ? t("seeLess") : t("seeMore")}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -195,7 +196,7 @@ const ChefDetail = () => {
               {showMoreDetails && (
                 <>
                   <View style={styles.section}>
-                    <Text style={styles.label}>Address:</Text>
+                    <Text style={styles.label}>{t("address")}:</Text>
                     <Text style={styles.value}>{chefs?.address}</Text>
                   </View>
 
@@ -205,41 +206,41 @@ const ChefDetail = () => {
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Phone:</Text>
+                    <Text style={styles.label}>{t("phone")}:</Text>
                     <Text style={styles.value}>{chefs?.user?.phone}</Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Gender:</Text>
+                    <Text style={styles.label}>{t("gender")}:</Text>
                     <Text style={styles.value}>{chefs?.user?.gender}</Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Date of Birth:</Text>
+                    <Text style={styles.label}>{t("dob")}:</Text>
                     <Text style={styles.value}>{chefs?.user?.dob}</Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Country:</Text>
+                    <Text style={styles.label}>{t("country")}:</Text>
                     <Text style={styles.value}>{chefs?.country}</Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Years of Experience:</Text>
+                    <Text style={styles.label}>{t("experienceYears")}:</Text>
                     <Text style={styles.value}>
-                      {chefs?.yearsOfExperience || "Not Provided"}
+                      {chefs?.yearsOfExperience || t("noInformation")}
                     </Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Max Serving Size:</Text>
+                    <Text style={styles.label}>{t("maxServingSize")}:</Text>
                     <Text style={styles.value}>
-                      {chefs?.maxServingSize} people
+                      {chefs?.maxServingSize} {t("people")}
                     </Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>Price per Meal:</Text>
+                    <Text style={styles.label}>{t("pricePerMeal")}:</Text>
                     <Text style={styles.value}>${chefs?.price}</Text>
                   </View>
                 </>
@@ -247,13 +248,13 @@ const ChefDetail = () => {
 
               <TouchableOpacity onPress={toggleDetails}>
                 <Text style={styles.showMore}>
-                  {showMoreDetails ? "Ẩn bớt" : "Xem thêm"}
+                  {showMoreDetails ? t("seeLess") : t("seeMore")}
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.button} onPress={onOpenModal}>
-                  <Text style={styles.buttonText}>Book Now</Text>
+                  <Text style={styles.buttonText}>{t("bookNow")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.button}
@@ -264,7 +265,7 @@ const ChefDetail = () => {
                     })
                   }
                 >
-                  <Text style={styles.buttonText}>Reviews</Text>
+                  <Text style={styles.buttonText}>{t("reviews")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -272,20 +273,20 @@ const ChefDetail = () => {
         )}
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Featured Dishes</Text>
+          <Text style={styles.sectionTitle}>{t("featuredDishes")}</Text>
           <TouchableOpacity
             style={styles.viewAllContainer}
             onPress={() => router.push("/screen/allDish")}
           >
             <Icon name="restaurant-outline" size={16} color="#b0532c" />
-            <Text style={styles.viewAll}>Xem tất cả món ăn</Text>
+            <Text style={styles.viewAll}>{t("seeAllDishes")}</Text>
           </TouchableOpacity>
         </View>
 
         {loadingDishes ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f5a623" />
-            <Text style={styles.loadingText}>Đang tải món ăn...</Text>
+            <Text style={styles.loadingText}>{t("loadingFood")}</Text>
           </View>
         ) : (
           <View style={styles.dishContainer}>
@@ -316,7 +317,7 @@ const ChefDetail = () => {
         handleStyle={styles.handleStyle}
       >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Chọn loại đặt chỗ</Text>
+          <Text style={styles.modalTitle}>{t("selectBookingType")}</Text>
           <TouchableOpacity
             style={styles.modalButton}
             onPress={() => {
@@ -328,9 +329,9 @@ const ChefDetail = () => {
             }}
           >
             <View>
-              <Text style={styles.modalButtonText}>Đặt chỗ thông thường</Text>
+              <Text style={styles.modalButtonText}>{t("regularBooking")}</Text>
               <Text style={styles.modalButtonDesc}>
-                Chọn món ăn hoặc thực đơn cho một bữa ăn cụ thể.
+              {t("regularBookingDescription")}
               </Text>
             </View>
           </TouchableOpacity>
@@ -345,9 +346,9 @@ const ChefDetail = () => {
             }}
           >
             <View>
-              <Text style={styles.modalButtonText}>Đặt chỗ dài hạn</Text>
+              <Text style={styles.modalButtonText}>{t("longTermBooking")}</Text>
               <Text style={styles.modalButtonDesc}>
-                Thuê đầu bếp nấu ăn định kỳ (hàng tuần/tháng).
+              {t("longTermBookingDescription")}
               </Text>
             </View>
           </TouchableOpacity>

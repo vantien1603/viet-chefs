@@ -23,6 +23,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useCommonNoification } from "../../context/commonNoti";
+import { t } from "i18next";
 
 
 const dayInWeek = [
@@ -348,13 +349,13 @@ export default function ChefScheduleScreen() {
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
           slots.length === 0 ? (
-            <Text style={{ color: "#888" }}>Không có slot nào.</Text>
+            <Text style={{ color: "#888" }}>{t("noSlotsAvailable")}</Text>
           ) : (
             slots.map((slot, index) => (
               <TouchableOpacity key={index} onPress={() => openModal(slot)} style={styles.section}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Time start</Text>
-                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Time end</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeStart")}</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeEnd")}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5 }}>
                   <Text style={styles.slotText}>
@@ -385,7 +386,7 @@ export default function ChefScheduleScreen() {
   return (
     <GestureHandlerRootView >
       <SafeAreaView style={commonStyles.container}>
-        <Header title={"Schedule"} rightIcon={"add"} onRightPress={() => openModalAdd()} />
+        <Header title={t("schedule")} rightIcon={"add"} onRightPress={() => openModalAdd()} />
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
@@ -411,11 +412,11 @@ export default function ChefScheduleScreen() {
             {selectedSlot ? (
               <>
                 <View style={styles.section1}>
-                  <Text style={styles.sectionTitle}>Update</Text>
+                  <Text style={styles.sectionTitle}>{t("update")}</Text>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Time start</Text>
-                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Time end</Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeStart")}</Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeEnd")}</Text>
                   </View>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5, marginVertical: 10 }}>
@@ -452,19 +453,19 @@ export default function ChefScheduleScreen() {
                       style={styles.updateButton}
                       onPress={() => handleUpdateSlot()}
                     >
-                      <Text style={styles.buttonText}>Save</Text>
+                      <Text style={styles.buttonText}>{t("save")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={() => handleDeleteSlot()}
                     >
-                      <Text style={styles.buttonText}>Delete</Text>
+                      <Text style={styles.buttonText}>{t("delete")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </>
             ) : (
-              <Text>Không có thông tin chi tiết</Text>
+              <Text>{t("noDetailsAvailable")}</Text>
             )}
           </View>
 
@@ -520,7 +521,7 @@ export default function ChefScheduleScreen() {
                       <View key={`old-${index}`} style={styles.slotRow}>
 
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>Start time</Text>
+                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>{t("startTime")}</Text>
 
                           <TextInput
                             style={{ fontWeight: "bold", fontSize: 15 }}
@@ -537,7 +538,7 @@ export default function ChefScheduleScreen() {
                             value={(slot.endTime)}
                             editable={false}
                           />
-                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>End time</Text>
+                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>{t("endTime")}</Text>
 
                         </View>
                       </View>
@@ -545,7 +546,7 @@ export default function ChefScheduleScreen() {
                     {slots[dayId]?.map((slot, index) => (
                       <View key={index} style={styles.slotRow}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>Start time</Text>
+                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>{t("startTime")}</Text>
                           <TouchableOpacity
                             onPress={() => showPickerAdd(dayId, index, "start")}
                           >
@@ -569,7 +570,7 @@ export default function ChefScheduleScreen() {
                               editable={false}
                             />
                           </TouchableOpacity>
-                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>End time</Text>
+                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>{t("endTime")}</Text>
 
                         </View>
 
@@ -586,7 +587,7 @@ export default function ChefScheduleScreen() {
                         style={styles.addSlotButton}
                         onPress={() => handleAddSlot(dayId)}
                       >
-                        <Text style={{ color: "white", fontWeight: "bold" }}>+ Add Slot</Text>
+                        <Text style={{ color: "white", fontWeight: "bold" }}>+ {t("addSlot")}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -625,7 +626,7 @@ export default function ChefScheduleScreen() {
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                  Save
+                  {t("save")}
                 </Text>
               )}
             </TouchableOpacity>

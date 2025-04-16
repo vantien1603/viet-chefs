@@ -41,7 +41,7 @@ const ViewBookingDetailsScreen = () => {
       console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
-      console.error("Error fetching booking details:", error);
+      console.error("Error fetching booking details 4:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -111,7 +111,7 @@ const ViewBookingDetailsScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="View Booking Details" />
+        <Header title="View Detail Bookings" />
         <ActivityIndicator
           size="large"
           color="#A64B2A"
@@ -166,11 +166,11 @@ const ViewBookingDetailsScreen = () => {
             <Text style={styles.detailText}>
               Arrival Fee: ${detail.arrivalFee || 0}
             </Text>
-            {detail.chefServingFee !== undefined && (
+            {/* {detail.chefServingFee !== undefined && (
               <Text style={styles.detailText}>
                 Chef Serving Fee: ${detail.chefServingFee}
               </Text>
-            )}
+            )} */}
             <Text style={styles.detailText}>
               Platform Fee: ${detail.platformFee || 0}
             </Text>
@@ -209,9 +209,9 @@ const ViewBookingDetailsScreen = () => {
                   <Text style={styles.detailText}>
                     Service Type: {dishItem.dish?.serviceType || "N/A"}
                   </Text>
-                  <Text style={styles.detailText}>
+                  {/* <Text style={styles.detailText}>
                     Base Price: ${dishItem.dish?.basePrice || 0}
-                  </Text>
+                  </Text> */}
                   {dishItem.notes && (
                     <Text style={styles.detailText}>Notes: {dishItem.notes}</Text>
                   )}

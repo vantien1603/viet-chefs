@@ -144,7 +144,7 @@ const MenuDetails = () => {
       <View style={styles.dishTextContainer}>
         <Text style={styles.dishName}>{item.dishName || "Unnamed Dish"}</Text>
         <Text style={styles.dishDescription}>
-          {item.description || "No description"}
+          {item.description || t("noInformation")}
         </Text>
         {latestDishId && item.dishId === parseInt(latestDishId) && (
           <Text style={styles.latestTag}>Mới chọn</Text>

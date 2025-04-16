@@ -21,6 +21,7 @@ import Toast from "react-native-toast-message";
 import moment from "moment";
 import { commonStyles } from "../../style";
 import { MaterialIcons } from "@expo/vector-icons"; // Added for icons
+import { t } from "i18next";
 
 // Utility Functions
 const generateTimeSlots = () => {
@@ -102,6 +103,7 @@ const LongTermSelectBooking = () => {
   const modalizeRef = useRef(null);
   const infoModalizeRef = useRef(null);
   const lastProcessedParams = useRef(null);
+  const [unavailableDates, setUnavailableDates] = useState([]); // Thêm state cho ngày không khả dụng
 
   const todayString = moment().format("YYYY-MM-DD");
 
@@ -146,7 +148,7 @@ const LongTermSelectBooking = () => {
         params.selectedMenu !== "null" &&
         params.selectedMenu !== ""
           ? JSON.parse(params.selectedMenu)
-          : {};
+          : null;
       const selectedDishesData =
         typeof params.selectedDishes === "string" &&
         params.selectedDishes !== "null" &&
@@ -160,11 +162,19 @@ const LongTermSelectBooking = () => {
           ? JSON.parse(params.dishNotes)
           : {};
 
+      // Khôi phục trạng thái lặp lại
+      if (params.isRepeatEnabled) {
+        setIsRepeatEnabled(JSON.parse(params.isRepeatEnabled));
+      }
+      if (params.selectedWeekdays) {
+        setSelectedWeekdays(JSON.parse(params.selectedWeekdays));
+      }
+
       setSelectedDates((prev) => {
         const existingDate = prev[date] || {
           selected: true,
-          selectedColor: "#6C63FF",
-          showMenu: true,
+          selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
+          showMenu: false,
           startTime: "",
           menuId: null,
           extraDishIds: [],
@@ -176,27 +186,35 @@ const LongTermSelectBooking = () => {
           ...prev,
           [date]: {
             ...existingDate,
+            showMenu: true, // Bật showMenu khi chọn món
             menuId: selectedMenuData?.id || null,
             extraDishIds: selectedDishesData.map((dish) => dish.id),
-            menuDishNotes: Object.fromEntries(
-              Object.entries(newDishNotes).filter(([dishId]) =>
-                selectedMenuData?.menuItems?.some(
-                  (item) => item.dishId === parseInt(dishId)
+            menuDishNotes: selectedMenuData
+              ? Object.fromEntries(
+                  Object.entries(newDishNotes).filter(([dishId]) =>
+                    selectedMenuData?.menuItems?.some(
+                      (item) => item.dishId === parseInt(dishId)
+                    )
+                  )
                 )
-              )
-            ),
-            extraDishNotes: Object.fromEntries(
-              Object.entries(newDishNotes).filter(([dishId]) =>
-                selectedDishesData.some((dish) => dish.id === parseInt(dishId))
-              )
-            ),
+              : {},
+            extraDishNotes:
+              selectedDishesData.length > 0
+                ? Object.fromEntries(
+                    Object.entries(newDishNotes).filter(([dishId]) =>
+                      selectedDishesData.some(
+                        (dish) => dish.id === parseInt(dishId)
+                      )
+                    )
+                  )
+                : {},
           },
         };
       });
 
       lastProcessedParams.current = paramsString;
     }
-  }, [params]);
+  }, [params, isRepeatEnabled]);
 
   const handleRepeatSelection = () => {
     if (!isRepeatEnabled || selectedWeekdays.length === 0) {
@@ -208,15 +226,33 @@ const LongTermSelectBooking = () => {
       return;
     }
 
+    // Kiểm tra xem đã có món ăn được chọn chưa
+    const hasSelectedFood = Object.values(selectedDates).some(
+      (date) =>
+        date.menuId || (date.extraDishIds && date.extraDishIds.length > 0)
+    );
+    if (hasSelectedFood) {
+      Toast.show({
+        type: "info",
+        text1: "Thông báo",
+        text2:
+          "Bạn đã chọn món ăn. Vui lòng xóa các ngày hiện tại trước khi áp dụng lịch mới.",
+      });
+      return;
+    }
+
     const maxDays = selectedPackage.durationDays;
     let newDates = {};
-    let currentDate = moment(todayString);
+    let currentDate = moment(todayString).add(1, "day");
     let selectedCount = 0;
 
     while (selectedCount < maxDays) {
       const dayOfWeek = currentDate.day();
-      if (selectedWeekdays.includes(dayOfWeek)) {
-        const dateString = currentDate.format("YYYY-MM-DD");
+      const dateString = currentDate.format("YYYY-MM-DD");
+      if (
+        selectedWeekdays.includes(dayOfWeek) &&
+        !unavailableDates.includes(dateString)
+      ) {
         newDates[dateString] = {
           selected: true,
           selectedColor: "#FF9800",
@@ -245,7 +281,7 @@ const LongTermSelectBooking = () => {
     Toast.show({
       type: "success",
       text1: "Đã chọn ngày",
-      text2: `Đã chọn ${selectedCount} ngày theo lịch lặp lại.`,
+      text2: `Đã chọn ${selectedCount} ngày theo lịch lặp lại. Bạn có thể chỉnh sửa thủ công trên lịch.`,
     });
   };
 
@@ -304,6 +340,38 @@ const LongTermSelectBooking = () => {
       console.log("Error fetching dishes:", error);
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUnavailableDates = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `/bookings/unavailable-dates?chefId=${chefId}`
+        );
+        if (isMounted) {
+          setUnavailableDates(response.data);
+          console.log("Unavailable dates:", response.data);
+        }
+      } catch (error) {
+        console.error(
+          "Error fetching unavailable dates:",
+          error?.response?.data || error
+        );
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Unable to fetch unavailable dates.",
+        });
+      }
+    };
+
+    fetchUnavailableDates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [chefId]);
 
   const fetchAvailability = async () => {
     setIsFetchingAvailability(true);
@@ -383,8 +451,7 @@ const LongTermSelectBooking = () => {
         type: "error",
         text1: "Error",
         text2:
-          error.response?.data?.message ||
-          "Unable to fetch chef availability.",
+          error.response?.data?.message || "Unable to fetch chef availability.",
       });
       setAvailability({});
     } finally {
@@ -441,7 +508,7 @@ const LongTermSelectBooking = () => {
 
   const onDayPress = (day) => {
     const dateString = day.dateString;
-    if (moment(dateString).isBefore(todayString, "day")) {
+    if (moment(dateString).isSameOrBefore(todayString, "day")) {
       Toast.show({
         type: "error",
         text1: "Error",
@@ -450,11 +517,11 @@ const LongTermSelectBooking = () => {
       return;
     }
 
-    if (isRepeatEnabled) {
+    if (unavailableDates.includes(dateString)) {
       Toast.show({
-        type: "info",
-        text1: "Repeat Mode",
-        text2: "Please use the repeat settings to select days.",
+        type: "error",
+        text1: "Unavailable",
+        text2: "This date is fully booked.",
       });
       return;
     }
@@ -467,7 +534,7 @@ const LongTermSelectBooking = () => {
     ) {
       newSelection[dateString] = {
         selected: true,
-        selectedColor: "#6C63FF",
+        selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
         showMenu: false,
         startTime: "",
         menuId: null,
@@ -580,6 +647,27 @@ const LongTermSelectBooking = () => {
           type: "error",
           text1: "Error",
           text2: `Selected time ${selectedTime} for ${date} is not available.`,
+        });
+        return;
+      }
+
+      const isWithinFourDays = moment(date).isBetween(
+        moment(todayString),
+        moment(todayString).add(4, "days"),
+        undefined,
+        "[]"
+      );
+      if (
+        isWithinFourDays &&
+        selectedDates[date].showMenu &&
+        !selectedDates[date].menuId &&
+        (!selectedDates[date].extraDishIds ||
+          selectedDates[date].extraDishIds.length === 0)
+      ) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: `Please select dishes for ${date} to allow the chef to prepare.`,
         });
         return;
       }
@@ -705,20 +793,23 @@ const LongTermSelectBooking = () => {
         }),
         numPeople: numPeople || "",
         address: address || "",
+        isRepeatEnabled: JSON.stringify(isRepeatEnabled), // Thêm trạng thái switch
+        selectedWeekdays: JSON.stringify(selectedWeekdays), // Thêm ngày trong tuần
       },
     });
   };
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title={"Long-term Booking"} onLeftPress={handleBack} />
+      <Header title={t("longTermBooking")} onLeftPress={handleBack} />
       <View style={styles.container}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
         >
           <Text style={styles.title}>
-            Chọn Ngày (Cần chọn đúng {selectedPackage?.durationDays || 0} ngày):
+            {t("selectedDate")} (Cần chọn đúng{" "}
+            {selectedPackage?.durationDays || 0} ngày):
           </Text>
           <Text style={styles.summary}>
             Đã chọn: {Object.keys(selectedDates).length}/
@@ -729,22 +820,20 @@ const LongTermSelectBooking = () => {
             <View style={styles.repeatContainer}>
               <View style={styles.switchContainer}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.label}>Lặp lại lịch: </Text>
+                  <Text style={styles.label}>{t("repeatSchedule")}: </Text>
                   <TouchableOpacity
                     style={styles.infoButton}
                     onPress={showRepeatInfo}
                   >
-                    <Text style={styles.infoButtonText}>?</Text>
+                    <Text style={styles.infoButtonText}>{t("apply")}</Text>
                   </TouchableOpacity>
                 </View>
-
                 <Switch
                   value={isRepeatEnabled}
                   onValueChange={(value) => {
                     setIsRepeatEnabled(value);
                     if (!value) {
                       setSelectedWeekdays([]);
-                      setSelectedDates({});
                     }
                   }}
                   trackColor={{ false: "#767577", true: "#A64B2A" }}
@@ -754,7 +843,7 @@ const LongTermSelectBooking = () => {
               {isRepeatEnabled && (
                 <View>
                   <View style={styles.weekdayContainer}>
-                    {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map(
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                       (day, index) => (
                         <TouchableOpacity
                           key={day}
@@ -794,7 +883,30 @@ const LongTermSelectBooking = () => {
           )}
 
           <Calendar
-            markedDates={selectedDates}
+            markedDates={{
+              ...Object.keys(selectedDates).reduce(
+                (acc, date) => ({
+                  ...acc,
+                  [date]: {
+                    selected: true,
+                    selectedColor: "#6C63FF",
+                  },
+                }),
+                {}
+              ),
+
+              ...unavailableDates.reduce(
+                (acc, date) => ({
+                  ...acc,
+                  [date]: {
+                    marked: true,
+                    dotColor: "#FF4D4D",
+                    disableTouchEvent: true,
+                  },
+                }),
+                {}
+              ),
+            }}
             onDayPress={onDayPress}
             style={styles.calendar}
             theme={{
@@ -804,7 +916,7 @@ const LongTermSelectBooking = () => {
               selectedDayBackgroundColor: "#6C63FF",
               selectedDayTextColor: "#FFFFFF",
             }}
-            minDate={todayString}
+            minDate={moment().add(1, "day").format("YYYY-MM-DD")}
             maxDate={moment().add(1, "year").format("YYYY-MM-DD")}
           />
 
@@ -825,173 +937,194 @@ const LongTermSelectBooking = () => {
               </TouchableOpacity>
               {expandedWeeks[index] !== false && (
                 <View style={styles.weekContent}>
-                  {week.dates.map((date) => (
-                    <View
-                      key={date}
-                      style={[
-                        styles.dateCard,
-                        !selectedDates[date].startTime && styles.incompleteCard,
-                      ]}
-                    >
-                      <View style={styles.dateHeader}>
-                        <Text style={styles.dateTitle}>{date}</Text>
-                        <TouchableOpacity
-                          style={styles.removeButton}
-                          onPress={() => removeDate(date)}
-                        >
-                          <MaterialIcons
-                            name="close"
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </TouchableOpacity>
-                      </View>
+                  {week.dates.map((date) => {
+                    const isWithinFourDays = moment(date).isBetween(
+                      moment(todayString),
+                      moment(todayString).add(4, "days"),
+                      undefined,
+                      "[]"
+                    );
+                    const needsMenuSelection =
+                      isWithinFourDays &&
+                      !selectedDates[date].showMenu &&
+                      !selectedDates[date].menuId &&
+                      (!selectedDates[date].extraDishIds ||
+                        selectedDates[date].extraDishIds.length === 0);
 
-                      <View style={styles.switchContainer}>
-                        <Text style={styles.label}>Chọn món ăn:</Text>
-                        <Switch
-                          value={selectedDates[date].showMenu}
-                          onValueChange={(value) =>
-                            updateBookingDetail(date, "showMenu", value)
-                          }
-                          trackColor={{ false: "#767577", true: "#81b0ff" }}
-                          thumbColor={
-                            selectedDates[date].showMenu ? "#f5dd4b" : "#f4f3f4"
-                          }
-                        />
-                      </View>
-
-                      {selectedDates[date].showMenu && (
-                        <>
+                    return (
+                      <View
+                        key={date}
+                        style={[
+                          styles.dateCard,
+                          !selectedDates[date].startTime &&
+                            styles.incompleteCard,
+                          needsMenuSelection && styles.warningCard,
+                        ]}
+                      >
+                        <View style={styles.dateHeader}>
+                          <Text style={styles.dateTitle}>{date}</Text>
                           <TouchableOpacity
-                            onPress={() => navigateToSelectFood(date)}
+                            style={styles.removeButton}
+                            onPress={() => removeDate(date)}
                           >
-                            <Text style={styles.addItemsText}>
-                              {(selectedDates[date].menuId ||
-                                selectedDates[date].extraDishIds?.length > 0)
-                                ? "Add items"
-                                : "Add menu or food"}
-                            </Text>
+                            <MaterialIcons
+                              name="close"
+                              size={16}
+                              color="#FFFFFF"
+                            />
                           </TouchableOpacity>
+                        </View>
 
-                          {selectedDates[date].menuId && (
-                            <>
-                              <View style={styles.menuHeader}>
-                                <Text style={styles.summaryText}>
-                                  Menu:{" "}
-                                  {
-                                    menuItems.find(
-                                      (m) => m.id === selectedDates[date].menuId
-                                    )?.name
-                                  }
-                                </Text>
-                                <TouchableOpacity
-                                  style={styles.removeItemButton}
-                                  onPress={() => removeMenu(date)}
-                                >
-                                  <MaterialIcons
-                                    name="close"
-                                    size={16}
-                                    color="#FFFFFF"
-                                  />
-                                </TouchableOpacity>
-                              </View>
-                              <Text style={styles.subTitle}>
-                                Món trong menu:
+                        {needsMenuSelection && (
+                          <Text style={styles.warningText}>
+                            {t("selectDishesMessage")}
+                          </Text>
+                        )}
+
+                        <View style={styles.switchContainer}>
+                          <Text style={styles.label}>{t("selectDish")}:</Text>
+                          <Switch
+                            value={selectedDates[date].showMenu}
+                            onValueChange={(value) =>
+                              updateBookingDetail(date, "showMenu", value)
+                            }
+                            trackColor={{ false: "#767577", true: "#81b0ff" }}
+                            thumbColor={
+                              selectedDates[date].showMenu
+                                ? "#f5dd4b"
+                                : "#f4f3f4"
+                            }
+                          />
+                        </View>
+
+                        {selectedDates[date].showMenu && (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => navigateToSelectFood(date)}
+                            >
+                              <Text style={styles.addItemsText}>
+                                {selectedDates[date].menuId ||
+                                selectedDates[date].extraDishIds?.length > 0
+                                  ? t("addItems")
+                                  : t("addMenuOrFood")}
                               </Text>
-                              {menuItems
-                                .find(
-                                  (m) => m.id === selectedDates[date].menuId
-                                )
-                                ?.menuItems.map((item) => (
-                                  <View
-                                    key={item.dishId}
-                                    style={styles.dishItem}
+                            </TouchableOpacity>
+
+                            {selectedDates[date].menuId && (
+                              <>
+                                <View style={styles.menuHeader}>
+                                  <Text style={styles.summaryText}>
+                                    {t("menu")}:{" "}
+                                    {
+                                      menuItems.find(
+                                        (m) =>
+                                          m.id === selectedDates[date].menuId
+                                      )?.name
+                                    }
+                                  </Text>
+                                  <TouchableOpacity
+                                    style={styles.removeItemButton}
+                                    onPress={() => removeMenu(date)}
                                   >
-                                    <Text style={styles.dishText}>
-                                      {item.dishName}{" "}
-                                      {selectedDates[date].menuDishNotes[
-                                        item.dishId
-                                      ] &&
-                                        `(Ghi chú: ${
-                                          selectedDates[date].menuDishNotes[
-                                            item.dishId
-                                          ]
-                                        })`}
-                                    </Text>
-                                    <TouchableOpacity
-                                      style={styles.editButton}
-                                      onPress={() =>
-                                        handleEditNote(date, item.dishId, true)
-                                      }
+                                    <MaterialIcons
+                                      name="close"
+                                      size={16}
+                                      color="#FFFFFF"
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                                <Text style={styles.subTitle}>
+                                  {t("dishesInMenus")}:
+                                </Text>
+                                {menuItems
+                                  .find(
+                                    (m) => m.id === selectedDates[date].menuId
+                                  )
+                                  ?.menuItems.map((item) => (
+                                    <View
+                                      key={item.dishId}
+                                      style={styles.dishItem}
                                     >
-                                      <Text style={styles.editButtonText}>
-                                        Ghi chú
+                                      <Text style={styles.dishText}>
+                                        {item.dishName}{" "}
+                                        {selectedDates[date].menuDishNotes[
+                                          item.dishId
+                                        ] &&
+                                          `(${t("note")}: ${
+                                            selectedDates[date].menuDishNotes[
+                                              item.dishId
+                                            ]
+                                          })`}
                                       </Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                ))}
-                            </>
-                          )}
-                          {selectedDates[date].extraDishIds?.length > 0 && (
-                            <>
-                              <Text style={styles.subTitle}>
-                                {selectedDates[date].menuId
-                                  ? "Món thêm:"
-                                  : "Món ăn:"}
-                              </Text>
-                              {selectedDates[date].extraDishIds.map(
-                                (dishId) => (
-                                  <View key={dishId} style={styles.dishItem}>
-                                    <Text style={styles.dishText}>
-                                      {dishes.find((d) => d.id === dishId)
-                                        ?.name || "Unknown Dish"}{" "}
-                                      {selectedDates[date].extraDishNotes[
-                                        dishId
-                                      ] &&
-                                        `(Ghi chú: ${selectedDates[date].extraDishNotes[dishId]})`}
-                                    </Text>
-                                    <View style={styles.dishActions}>
                                       <TouchableOpacity
                                         style={styles.editButton}
                                         onPress={() =>
-                                          handleEditNote(date, dishId, false)
+                                          handleEditNote(
+                                            date,
+                                            item.dishId,
+                                            true
+                                          )
                                         }
                                       >
                                         <Text style={styles.editButtonText}>
-                                          Ghi chú
+                                          {t("note")}
                                         </Text>
                                       </TouchableOpacity>
-                                      <TouchableOpacity
-                                        style={styles.removeItemButton}
-                                        onPress={() =>
-                                          removeExtraDish(date, dishId)
-                                        }
-                                      >
-                                        <MaterialIcons
-                                          name="close"
-                                          size={16}
-                                          color="#FFFFFF"
-                                        />
-                                      </TouchableOpacity>
                                     </View>
-                                  </View>
-                                )
-                              )}
-                            </>
-                          )}
-                        </>
-                      )}
+                                  ))}
+                              </>
+                            )}
+                            {selectedDates[date].extraDishIds?.length > 0 && (
+                              <>
+                                <Text style={styles.subTitle}>
+                                  {selectedDates[date].menuId
+                                    ? t("additionalDishes")
+                                    : t("dishes")}
+                                </Text>
+                                {selectedDates[date].extraDishIds.map(
+                                  (dishId) => (
+                                    <View key={dishId} style={styles.dishItem}>
+                                      <Text style={styles.dishText}>
+                                        {dishes.find((d) => d.id === dishId)
+                                          ?.name || "Unknown Dish"}{" "}
+                                        {selectedDates[date].extraDishNotes[
+                                          dishId
+                                        ] &&
+                                          `(Ghi chú: ${selectedDates[date].extraDishNotes[dishId]})`}
+                                      </Text>
+                                      <View style={styles.dishActions}>
+                                        <TouchableOpacity
+                                          style={styles.editButton}
+                                          onPress={() =>
+                                            handleEditNote(date, dishId, false)
+                                          }
+                                        >
+                                          <Text style={styles.editButtonText}>
+                                            {t("note")}
+                                          </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                          style={styles.removeItemButton}
+                                          onPress={() =>
+                                            removeExtraDish(date, dishId)
+                                          }
+                                        >
+                                          <MaterialIcons
+                                            name="close"
+                                            size={16}
+                                            color="#FFFFFF"
+                                          />
+                                        </TouchableOpacity>
+                                      </View>
+                                    </View>
+                                  )
+                                )}
+                              </>
+                            )}
+                          </>
+                        )}
 
-                      <Text style={styles.label}>Giờ bắt đầu:</Text>
-                      {isFetchingAvailability ? (
-                        <View style={styles.loadingContainer}>
-                          <ActivityIndicator size="small" color="#A64B2A" />
-                          <Text style={styles.loadingText}>
-                            Đang tải giờ khả dụng...
-                          </Text>
-                        </View>
-                      ) : (
+                        <Text style={styles.label}>{t("startTime")}:</Text>
                         <ScrollView
                           horizontal
                           showsHorizontalScrollIndicator={false}
@@ -1022,13 +1155,13 @@ const LongTermSelectBooking = () => {
                             ))
                           ) : (
                             <Text style={styles.noTimeText}>
-                              Không có giờ khả dụng cho ngày này.
+                              {t("noAvailableTimeSlots")}
                             </Text>
                           )}
                         </ScrollView>
-                      )}
-                    </View>
-                  ))}
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -1047,7 +1180,7 @@ const LongTermSelectBooking = () => {
               selectedPackage?.durationDays
             }
           >
-            <Text style={styles.buttonText}>Xác Nhận Đặt Chỗ</Text>
+            <Text style={styles.buttonText}>{t("confirmBooking")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1061,12 +1194,12 @@ const LongTermSelectBooking = () => {
         onClose={() => setModalVisible(false)}
       >
         <View style={styles.modalInner}>
-          <Text style={styles.modalTitle}>Ghi chú</Text>
+          <Text style={styles.modalTitle}>{t("note")}</Text>
           <TextInput
             style={styles.modalInput}
             value={noteText}
             onChangeText={setNoteText}
-            placeholder="Nhập ghi chú cho món ăn"
+            placeholder={t("enterNoteForDish")}
             multiline
           />
           <View style={styles.modalButtons}>
@@ -1074,10 +1207,10 @@ const LongTermSelectBooking = () => {
               style={styles.modalButton}
               onPress={() => modalizeRef.current?.close()}
             >
-              <Text style={styles.modalButtonText}>Hủy</Text>
+              <Text style={styles.modalButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modalButton} onPress={saveNote}>
-              <Text style={styles.modalButtonText}>Lưu</Text>
+              <Text style={styles.modalButtonText}>{t("save")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1092,21 +1225,24 @@ const LongTermSelectBooking = () => {
         onClose={() => setInfoModalVisible(false)}
       >
         <View style={styles.modalInner}>
-          <Text style={styles.modalTitle}>Hướng Dẫn Lặp Lại Lịch</Text>
+          <Text style={styles.modalTitle}>{t("repeatScheduleGuideTitle")}</Text>
           <Text style={styles.modalText}>
-            Tính năng "Lặp lại lịch" giúp bạn tự động chọn các ngày đặt chỗ theo lịch lặp lại (ví dụ: mỗi Thứ Hai, Thứ Ba) cho gói từ 10 ngày trở lên, nhằm tiết kiệm thời gian chọn từng ngày trên lịch.
+            {t("repeatScheduleGuideDescription")}
           </Text>
           <Text style={styles.modalText}>
-            - Bật công tắc "Lặp lại lịch".{"\n"}
-            - Chọn các ngày trong tuần (CN, T2, T3,...) mà bạn muốn đặt chỗ định kỳ.{"\n"}
-            - Nhấn "Áp dụng" để tự động chọn các ngày phù hợp, bắt đầu từ hôm nay và tiếp tục cho đến khi đủ số ngày của gói ({selectedPackage?.durationDays} ngày).{"\n"}
-            - Bạn có thể tắt tính năng này để chọn ngày thủ công trên lịch.
+            - {t("repeatScheduleStep1")}
+            {"\n"}- {t("repeatScheduleStep2")}
+            {"\n"}-{" "}
+            {t("repeatScheduleStep3", {
+              durationDays: selectedPackage?.durationDays || "unknown",
+            })}
+            {"\n"}- {t("repeatScheduleStep4")}.
           </Text>
           <TouchableOpacity
             style={[styles.modalButton, { alignSelf: "center", width: "50%" }]}
             onPress={() => infoModalizeRef.current?.close()}
           >
-            <Text style={styles.modalButtonText}>Đóng</Text>
+            <Text style={styles.modalButtonText}>{t("close")}</Text>
           </TouchableOpacity>
         </View>
       </Modalize>
@@ -1420,6 +1556,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#777",
     marginVertical: 8,
+  },
+  warningCard: {
+    borderColor: "#FF9800",
+    borderWidth: 2,
+    backgroundColor: "#FFF3E0", // Nền vàng nhạt để nổi bật
+  },
+  warningText: {
+    fontSize: 14,
+    color: "#D32F2F",
+    fontWeight: "600",
+    marginBottom: 8,
   },
 });
 

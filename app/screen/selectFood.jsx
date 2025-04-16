@@ -16,6 +16,7 @@ import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
+import { t } from "i18next";
 
 const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
   <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
@@ -29,8 +30,8 @@ const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
     />
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
-      <Text style={styles.desc}>{item.description || "Không có mô tả"}</Text>
-      {note ? <Text style={styles.note}>Ghi chú: {note}</Text> : null}
+      <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
+      {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
     </View>
   </TouchableOpacity>
 );
@@ -55,7 +56,7 @@ const MenuCard = ({ item, isSelected, onSelect }) => (
     />
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
-      <Text style={styles.desc}>{item.description || "Không có mô tả"}</Text>
+      <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
     </View>
   </TouchableOpacity>
 );
@@ -143,7 +144,10 @@ const SelectFood = () => {
   // Handle physical back button
   useEffect(() => {
     const backAction = () => {
-      handleBack();
+      router.push({
+        pathname: "/screen/chefDetail",
+        params: { chefId: chefId },
+      });
       return true;
     };
 
@@ -236,7 +240,9 @@ const SelectFood = () => {
       params: {
         selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
         selectedDishes:
-          selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
+          selectedDishesData.length > 0
+            ? JSON.stringify(selectedDishesData)
+            : "",
         chefId,
         dishNotes: JSON.stringify(dishNotes),
       },
@@ -259,7 +265,7 @@ const SelectFood = () => {
         {isSelected && (
           <TextInput
             style={styles.input}
-            placeholder="Nhập ghi chú cho món này..."
+            placeholder={t("dishNotePlaceholder")}
             value={dishNotes[item.id] || ""}
             onChangeText={(text) => handleAddNote(item.id, text)}
           />
@@ -278,8 +284,8 @@ const SelectFood = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Chọn món ăn" onBack={handleBack} />
-      <Text style={styles.sectionTitle}>Chọn thực đơn có sẵn:</Text>
+      <Header title={t("selectDish")} onLeftPress={handleBack} />
+      <Text style={styles.sectionTitle}>{t("selectAvailableMenu")}:</Text>
       <FlatList
         ref={menuFlatListRef}
         data={menus}
@@ -288,11 +294,11 @@ const SelectFood = () => {
         renderItem={renderMenu}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Không có thực đơn nào</Text>
+          <Text style={styles.emptyText}>{t("noMenuAvailable")}</Text>
         }
       />
       <Text style={styles.sectionTitle}>
-        {selectedMenu ? "Chọn món ăn thêm:" : "Hoặc tự chọn món ăn:"}
+        {selectedMenu ? t("chooseMoreDishes") : t("selectDishesManually")}
       </Text>
       <FlatList
         ref={dishesFlatListRef}
@@ -301,14 +307,14 @@ const SelectFood = () => {
         renderItem={renderDish}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Không có món ăn nào</Text>
+          <Text style={styles.emptyText}>{t("noDishesAvailable")}</Text>
         }
       />
       {(selectedMenu ||
         Object.values(selectedDishes).some((val) => val) ||
         Object.values(extraDishIds).some((val) => val)) && (
         <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Xác nhận chọn món</Text>
+          <Text style={styles.buttonText}>{t("confirmDishSelection")}</Text>
         </TouchableOpacity>
       )}
     </SafeAreaView>
@@ -348,7 +354,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginRight: 16,
     marginBottom: 12,
-    width: 360,
+    width: 340,
     overflow: "hidden",
   },
   dishCard: {

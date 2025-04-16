@@ -12,6 +12,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const PaymentBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -27,7 +28,10 @@ const PaymentBookingScreen = () => {
   const handleCompletePayment = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.post(`/bookings/${bookingId}/payment`, {});
+      const response = await axiosInstance.post(
+        `/bookings/${bookingId}/payment`,
+        {}
+      );
       console.log("Payment Response:", response.data);
 
       Toast.show({
@@ -67,11 +71,11 @@ const PaymentBookingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Payment" />
+      <Header title={t("confirmAndPayment")} />
       <View style={styles.content}>
-        <Text style={styles.title}>Thanh toán đặt chỗ</Text>
+        <Text style={styles.title}>{t("bookingPayment")}</Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Tổng số tiền:</Text>
+          <Text style={styles.priceLabel}>{t("totalAmount")}:</Text>
           <Text style={styles.priceValue}>
             {totalPrice.toLocaleString("en-US", {
               style: "currency",
@@ -86,7 +90,7 @@ const PaymentBookingScreen = () => {
             onPress={handleBackHome}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>Back Home</Text>
+            <Text style={styles.buttonText}>{t("backHome")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.paymentButton]}
@@ -96,7 +100,7 @@ const PaymentBookingScreen = () => {
             {loading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={styles.buttonText}>Hoàn tất thanh toán</Text>
+              <Text style={styles.buttonText}>{t("completePayment")}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -111,27 +115,27 @@ const PaymentBookingScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Xác nhận thanh toán</Text>
+            <Text style={styles.modalTitle}>{t("confirmPayment")}</Text>
             <Text style={styles.modalText}>
-              Bạn có chắc chắn muốn thanh toán{" "}
-              {totalPrice.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}{" "}
-              cho đặt chỗ này không?
+              {t("confirmPaymentWithAmount", {
+                amount: totalPrice.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }),
+              })}
             </Text>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalButtonText}>Hủy</Text>
+                <Text style={styles.modalButtonText}>{t("cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmPayment}
               >
-                <Text style={styles.modalButtonText}>Xác nhận</Text>
+                <Text style={styles.modalButtonText}>{t("confirm")}</Text>
               </TouchableOpacity>
             </View>
           </View>

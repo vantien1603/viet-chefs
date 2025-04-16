@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, Image } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Image, BackHandler } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
-
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -23,6 +22,21 @@ const ReviewsChefScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const axiosInstance = useAxios();
   const PAGE_SIZE = 10;
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+      const backAction = () => {
+        router.push({ pathname: "/screen/chefDetail", params: { chefId } });
+        return true;
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+  
+      return () => backHandler.remove();
+    }, []);
 
   const fetchReviewChef = async (page = 0) => {
     if (isLoading) return;
@@ -40,12 +54,14 @@ const ReviewsChefScreen = () => {
       );
       const calculatedAvg =
         data.reviews.length > 0
-          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) / data.reviews.length
+          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) /
+            data.reviews.length
           : 0;
       setAverageRating(data.averageRating || calculatedAvg);
       setRatingDistribution(data.ratingDistribution || {});
       setTotalPages(data.totalPages || 1);
       setPageNo(page);
+      setTotalItems(data.totalItems || 0);
       console.log("Reviews fetched successfully:", data);
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -94,31 +110,38 @@ const ReviewsChefScreen = () => {
     );
   };
 
-  const ReviewCard = ({ review, index }) => (
-    <View
-      style={[
-        styles.reviewCard,
-        { backgroundColor: index % 2 === 0 ? "#E0E0E0" : "#ADD8E6" },
-      ]}
-    >
-      <View style={styles.reviewHeader}>
-        <Image
-          source={{ uri: "https://via.placeholder.com/50" }}
-          style={styles.userAvatar}
-        />
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
-          <RatingStars rating={review.rating} />
+  const ReviewCard = ({ review, index }) => {
+    const timeAgo = (date) => {
+      const now = new Date();
+      const diff = Math.floor((now - new Date(date)) / 1000); // Difference in seconds
+
+      if (diff < 60) return `${diff} seconds ago`;
+      if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+      return `${Math.floor(diff / 86400)} days ago`;
+    };
+
+    return (
+      <View style={styles.reviewCard}>
+        <View style={styles.reviewHeader}>
+          <Image
+            source={{ uri: "https://via.placeholder.com/50" }}
+            style={styles.userAvatar}
+          />
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>
+              {review.userName || "Anonymous"}
+            </Text>
+            <RatingStars rating={review.rating} />
+          </View>
         </View>
+
+        <Text style={styles.reviewText}>{review.description}</Text>
+
+        <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
       </View>
-
-      <Text style={styles.reviewText}>{review.description}</Text>
-
-      <Text style={styles.reviewDate}>
-        {new Date(review.createAt).toLocaleDateString()}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   const maxCount = Math.max(
     ...Object.values(ratingDistribution).map((count) => count),
@@ -127,13 +150,14 @@ const ReviewsChefScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={`Reviews for ${chefName}`} />
+      <Header title="Reviews for" subtitle={`${chefName}`} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         onMomentumScrollEnd={({ nativeEvent }) => {
           const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
           if (
-            contentOffset.y + layoutMeasurement.height >= contentSize.height - 20 &&
+            contentOffset.y + layoutMeasurement.height >=
+              contentSize.height - 20 &&
             !isLoading
           ) {
             handleLoadMore();
@@ -146,6 +170,8 @@ const ReviewsChefScreen = () => {
             <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
             <RatingStars rating={Math.round(averageRating)} />
           </View>
+          <Text style={styles.totalItems}>{totalItems} reviews</Text>
+
           <View style={styles.ratingDistribution}>
             {[5, 4, 3, 2, 1].map((rating) => (
               <RatingDistributionBar
@@ -200,7 +226,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 15,
+    marginBottom: 5,
   },
   averageRating: {
     fontSize: 24,
@@ -232,14 +258,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   reviewCard: {
-    borderRadius: 15,
-    padding: 15,
+    // borderRadius: 15,
+    padding: 5,
     marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: "#EBE5DD",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
   reviewHeader: {
     flexDirection: "row",
@@ -251,6 +275,8 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
   },
   userInfo: {
     flex: 1,
@@ -282,6 +308,11 @@ const styles = StyleSheet.create({
   },
   star: {
     marginLeft: 2,
+  },
+  totalItems: {
+    fontSize: 12,
+    color: "#888",
+    textAlign: "center",
   },
 });
 

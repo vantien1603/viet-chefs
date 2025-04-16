@@ -13,6 +13,7 @@ import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const LongTermDetailsScreen = () => {
   const { bookingId, chefId } = useLocalSearchParams();
@@ -89,7 +90,7 @@ const LongTermDetailsScreen = () => {
 
   const renderCycleItem = (cycle) => (
     <View key={cycle.id} style={styles.cycleCard}>
-      <Text style={styles.cycleTitle}>Cycle {cycle.cycleOrder}</Text>
+      <Text style={styles.cycleTitle}>{t("cycle")} {cycle.cycleOrder}</Text>
       <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 1 }}>
         <Text style={{ fontWeight: "bold", fontSize: 18 }}>{cycle.status}</Text>
         <View style={{ flexDirection: "row" }}>
@@ -100,7 +101,7 @@ const LongTermDetailsScreen = () => {
       </View>
 
       <View style={styles.cycleInfo}>
-        <Text style={{ fontWeight: "400" }}>Amount Due: ${cycle.amountDue}</Text>
+        <Text style={{ fontWeight: "400" }}>{t("amountDue")}: ${cycle.amountDue}</Text>
       </View>
       <View style={styles.bookingDetailsContainer}>
         {cycle.bookingDetails.map((detail) => (
@@ -121,16 +122,16 @@ const LongTermDetailsScreen = () => {
                 style={{ flexDirection: "row", padding: 1, justifyContent: "space-between" }}
               >
                 <Text style={styles.detailText}>
-                  Session Date: {detail.sessionDate}
+                  {t("sessionDate")}: {detail.sessionDate}
                 </Text>
                 <Text style={{ fontWeight: "bold", fontSize: 14 }}>{detail.status}</Text>
               </View>
               <Text style={styles.detailText}>
-                Start Time: {detail.startTime}
+                {t("startTime")}: {detail.startTime}
               </Text>
-              <Text style={styles.detailText}>Location: {detail.location}</Text>
+              <Text style={styles.detailText}>{t("location")}: {detail.location}</Text>
               <Text style={{ fontWeight: "bold", fontSize: 14 }}>
-                Total Price: ${detail.totalPrice}
+                {t("totalPrice")}: ${detail.totalPrice}
               </Text>
             </TouchableOpacity>
           </View>
@@ -146,7 +147,7 @@ const LongTermDetailsScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.paymentButtonText}>Pay Cycle</Text>
+            <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
           )}
         </TouchableOpacity>
       )}
@@ -155,7 +156,7 @@ const LongTermDetailsScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Long Term Booking Details" />
+      <Header title={t("longTermBookingDetails")} />
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -167,7 +168,7 @@ const LongTermDetailsScreen = () => {
           {longTermDetails.length > 0 ? (
             <>{longTermDetails.map(renderCycleItem)}</>
           ) : (
-            <Text style={styles.noDataText}>No payment cycles available</Text>
+            <Text style={styles.noDataText}>{t("noPaymentCyclesAvailable")}</Text>
           )}
         </ScrollView>
       )}
