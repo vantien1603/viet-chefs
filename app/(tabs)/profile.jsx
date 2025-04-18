@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
@@ -16,16 +17,7 @@ import useAxios from "../../config/AXIOS_API";
 
 const menuItems = [
   { id: "1", icon: "wallet", title: "VietPay" },
-  // { id: '2', icon: 'gift', title: 'Ưu đãi của tôi', badge: 2 },
-  // { id: '3', icon: 'ribbon', title: 'bRewards' },
-  // { id: '4', icon: 'ticket', title: 'Gói Ưu Đãi' },
-  // { id: '5', icon: 'heart', title: 'Tasker yêu thích' },
-  // { id: '6', icon: 'ban', title: 'Danh sách chặn' },
-  // { id: '7', icon: 'share-social', title: 'Săn quà giới thiệu' },
-  // { id: '8', icon: 'help-circle', title: 'Trợ giúp' },
   { id: "2", icon: "briefcase", title: "Create chef account" },
-  // { id: '3', icon: 'flag', title: 'Country' },
-  // { id: '4', icon: 'language', title: 'Language' },
   { id: "3", icon: "lock-closed", title: "Change password" },
   { id: "4", icon: "settings", title: "Setting" },
 ];
@@ -33,114 +25,117 @@ const menuItems = [
 const Profile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
-  const [avatar, setAvatar] = useState("");
-  const axiosInstance = useAxios();
-
   const handleSetting = (id) => {
     switch (id) {
-      case "1": {
+      case "1":
         router.push("/screen/wallet");
         break;
-      }
-      case "2": {
+      case "2":
         router.push("/screen/createChef");
         break;
-      }
-      case '2': {
+      case "3":
+        router.push("/screen/changePassword");
         break;
-      }
-      case "4": {
+      case "4":
         router.push("/screen/setting");
         break;
-      }
-      default: {
+      default:
         router.push("/screen/profileDetail");
         break;
-      }
     }
   };
 
-  const avatarUrl = async () => {
-    try {
-      const response = await axiosInstance.get("/users/profile");
-      setAvatar(response.data.avatarUrl);
-      // console.log("Avatar URL:", response.data.avatarUrl);
-    } catch (error) {
-      console.log("Error", error);
-    }
-  };
-
-  useEffect(() => {
-    avatarUrl();
-  }, []);
 
   return (
     <ScrollView style={commonStyles.containerContent}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 , padding:10, borderBottomColor:"#ddd",borderBottomWidth:1}}>
+      <View style={styles.profileHeader}>
         <Image
           source={
-            avatar && avatar.trim() !== ""
-              ? {
-                  uri: avatar,
-                }
-              : null
+            user?.avatarUrl && user?.avatarUrl.trim() !== ""
+              ? { uri: user?.avatarUrl }
+              : require("../../assets/images/avatar.png")
           }
-          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
+          style={styles.avatar}
         />
         <View>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>{user?.fullName}</Text>
-          <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
-            <Text
-              style={{ color: "#A9411D", fontWeight: "bold", fontSize: 16 }}
-            >
-              Xem hồ sơ {">"}
+          <Text style={styles.fullName}>{user?.fullName || "Guest"}</Text>
+          <TouchableOpacity onPress={() => user ? handleSetting("viewProfile") : router.replace('/')}>
+            <Text style={styles.viewProfileText}>
+              {user ? `Xem hồ sơ` : "Login/Register "}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
-      {/* <View style={{backgroundColor:"#fff", paddingVertical:5, marginHorizontal:-20}}> */}
 
-      {/* </View> */}
       {menuItems.map((item) => (
         <TouchableOpacity
           key={item.id}
           onPress={() => handleSetting(item.id)}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: "#ddd",
-          }}
+          style={styles.menuItem}
         >
           <Ionicons
             name={item.icon}
             size={24}
             color="black"
-            style={{ marginRight: 16 }}
+            style={styles.menuIcon}
           />
-          <Text style={{ flex: 1, fontSize: 16 }}>{item.title}</Text>
-
-          {item.badge && (
-            <View
-              style={{
-                backgroundColor: "#FFA500",
-                paddingHorizontal: 8,
-                borderRadius: 12,
-                marginRight: 8,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                {item.badge}
-              </Text>
-            </View>
-          )}
-
+          <Text style={styles.menuTitle}>{item.title}</Text>
           <Ionicons name="chevron-forward" size={20} color="gray" />
         </TouchableOpacity>
       ))}
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#A9411D",
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    padding: 10,
+    borderBottomColor: "#ddd",
+    borderBottomWidth: 1,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  fullName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  viewProfileText: {
+    color: "#A9411D",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  menuIcon: {
+    marginRight: 16,
+  },
+  menuTitle: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+  },
+});
 
 export default Profile;

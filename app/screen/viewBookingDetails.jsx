@@ -9,10 +9,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import AXIOS_API from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
+import useAxios from "../../config/AXIOS_API";
 
 // Hàm chuyển đổi thời gian từ object thành chuỗi (nếu cần)
 const formatTime = (timeObj) => {
@@ -24,15 +24,15 @@ const formatTime = (timeObj) => {
 };
 
 const ViewBookingDetailsScreen = () => {
-  const { bookingId, bookingType, refreshBookings } = useLocalSearchParams();
+  const { bookingId, bookingType, refreshing } = useLocalSearchParams();
   const [bookingDetails, setBookingDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [depositLoading, setDepositLoading] = useState(false);
+  const axiosInstance = useAxios();
 
-  // Log để kiểm tra
   console.log("bookingType:", bookingType);
   console.log("bookingId:", bookingId);
-  console.log("refreshBookings:", refreshBookings);
+  console.log("refreshing:", refreshing);
 
   const fetchBookingDetails = async () => {
     setLoading(true);
@@ -56,22 +56,40 @@ const ViewBookingDetailsScreen = () => {
     setDepositLoading(true);
     try {
       const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Deposit successful",
-      });
-      await fetchBookingDetails(); // Làm mới dữ liệu trong ViewBookingDetailsScreen
+      console.log("Deposit response:", JSON.stringify(response.data, null, 2));
 
-      // Gọi hàm refreshBookings nếu tồn tại
-      if (refreshBookings) {
-        const refreshFunc = eval(refreshBookings); // Chuyển chuỗi thành hàm
-        if (typeof refreshFunc === "function") {
-          await refreshFunc(0); // Gọi với page 0 để làm mới danh sách
+      // Kiểm tra xem deposit có thành công không (dựa trên status hoặc response)
+      const depositSuccessful = response.status === 200 || response.data?.status === "DEPOSITED";
+
+      if (depositSuccessful) {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Deposit successful",
+        });
+
+        // Refetch booking details to confirm the status update
+        await fetchBookingDetails();
+
+        // Kiểm tra lại trạng thái sau khi refetch
+        const updatedDetails = bookingDetails.some((detail) => detail.status === "DEPOSITED");
+        if (updatedDetails || depositSuccessful) {
+          // Chỉ navigate nếu deposit được xác nhận
+          router.push("/(tabs)/home");
+        } else {
+          Toast.show({
+            type: "info",
+            text1: "Info",
+            text2: "Deposit processed but status not updated yet. Please wait.",
+          });
         }
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Deposit failed. Please try again.",
+        });
       }
-
-      router.push("/(tabs)/home"); // Chuyển hướng về trang chính
     } catch (error) {
       console.error("Error making deposit:", error);
       Toast.show({
@@ -112,9 +130,8 @@ const ViewBookingDetailsScreen = () => {
     );
   }
 
-  // Log để kiểm tra điều kiện nút "Make Deposit"
   console.log("Can show deposit button:", bookingType === "LONG_TERM");
-  console.log("bookingDetails statuses:", bookingDetails.map(detail => detail.status));
+  console.log("bookingDetails statuses:", bookingDetails.map((detail) => detail.status));
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>

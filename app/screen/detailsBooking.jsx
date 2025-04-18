@@ -7,6 +7,7 @@ import { useRoute } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 import { commonStyles } from '../../style'
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useCommonNoification } from '../../context/commonNoti'
 const DetailsBooking = () => {
     const [loading, setLoading] = useState(false);
     const axiosInstance = useAxios();
@@ -14,33 +15,38 @@ const DetailsBooking = () => {
     const router = useRouter();
     const { bookingId } = route.params;
     const [booking, setBooking] = useState({});
+    const { showModal } = useCommonNoification();
+
+
     useEffect(() => {
-        const fetchBooking = async () => {
-            try {
-                setLoading(true);
-                const response = await axiosInstance.get(`/bookings/${bookingId}`);
-                // console.log(response.data);
-                if (response.status === 200) {
-                    setBooking(response.data);
-                }
-
-            } catch (error) {
-                if (error.response) {
-                    console.error(`Lỗi ${error.response.status}:`, error.response.data);
-                    showModal("Error", error.response.data)
-
-                }
-                else {
-                    console.error(error.message);
-                    showModal("Error", error.message)
-
-                }
-            } finally {
-                setLoading(false);
-            }
-        }
         fetchBooking();
     }, [bookingId]);
+
+
+    const fetchBooking = async () => {
+        try {
+            setLoading(true);
+            const response = await axiosInstance.get(`/bookings/${bookingId}`);
+            // console.log(response.data);
+            if (response.status === 200) {
+                setBooking(response.data);
+            }
+
+        } catch (error) {
+            if (error.response) {
+                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+                showModal("Error", error.response.data)
+
+            }
+            else {
+                console.error(error.message);
+                showModal("Error", error.message)
+
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
 
     let sessionDateDisplay = '';
 
@@ -91,7 +97,7 @@ const DetailsBooking = () => {
         try {
             setLoading(true);
             const response = axiosInstance.put(`/bookings/${id}/reject`);
-            fetchRequestBooking(0, true)
+            fetchBooking()
             showModal("Success", "Reject successfully");
 
         } catch (error) {
@@ -111,8 +117,11 @@ const DetailsBooking = () => {
             console.log("Toi se acept cai nafy", id);
             setLoading(true);
             const response = axiosInstance.put(`/bookings/${id}/confirm`);
-            showModal("Success", "Confirmed successfully");
-            fetchRequestBooking(0, true)
+            if (response.status === 200) {
+                showModal("Success", "Confirmed successfully");
+
+            }
+            fetchBooking()
         } catch (error) {
             if (error.response) {
                 console.error(`Lỗi ${error.response.status}:`, error.response.data);
@@ -259,12 +268,8 @@ const DetailsBooking = () => {
                                                     )}
                                                 </View>
                                             </View>
-
                                         ))}
                                     </View>
-
-
-
                                 </View>
                             </View>
 

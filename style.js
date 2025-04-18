@@ -8,8 +8,8 @@ export const commonStyles = StyleSheet.create({
   },
   containerContent: {
     flex: 1,
-    padding: 16,
-    paddingBottom:0,
+    padding: 10,
+    paddingBottom: 0,
     paddingTop: 10,
     backgroundColor: '#EBE5DD',
     // fontFamily: 'nunito-medium',
@@ -43,10 +43,10 @@ export const commonStyles = StyleSheet.create({
     width: 40,
     height: 40,
   },
-  labelInput:{
-    fontWeight:'bold',
-    fontSize:16,
-    marginTop:10
+  labelInput: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 10
   },
   input: {
     height: 50,
@@ -54,7 +54,7 @@ export const commonStyles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 10,
     marginBottom: 15,
-    marginTop:10,
+    marginTop: 10,
     paddingLeft: 20,
     paddingRight: 20,
     backgroundColor: '#FFF8EF',
@@ -121,7 +121,7 @@ export const commonStyles = StyleSheet.create({
     marginLeft: 10,
   },
   searchContainer: {
-    flexDirection: 'row', 
+    flexDirection: 'row',
     backgroundColor: '#F2F2F2',
     borderRadius: 25,
     margin: 10,

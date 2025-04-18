@@ -182,6 +182,11 @@ const ChefDishes = () => {
                         onPress={() => {
                             if (selectionMode) {
                                 toggleSelection(dish.id);
+                            } else {
+                                router.push({
+                                    pathname: "/screen/dishDetails",
+                                    params: { dishId: dish.id},
+                                })
                             }
                         }}
                     >
@@ -247,7 +252,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         width: "100%",
         //   height:'100%',
-        maxHeight: 200,
+        height: 220,
         position: "relative",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },

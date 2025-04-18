@@ -4,8 +4,6 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
-  Dimensions,
   ActivityIndicator,
   StyleSheet,
   FlatList,
@@ -16,7 +14,7 @@ import { useCommonNoification } from '../../context/commonNoti';
 import Header from '../../components/header';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { commonStyles } from '../../style';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 const dayInWeek = [
   { id: 0, label: 'Mon', full: 'Monday' },
@@ -28,35 +26,61 @@ const dayInWeek = [
   { id: 6, label: 'Sun', full: 'Sunday' },
 ];
 
-const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail,loading }) => {
-  const renderItem = ({ item }) => (
-    <TouchableOpacity key={item.id} style={styles.section} onPress={() => onViewDetail(item.id)}>
-      <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Bui Anh Khoa</Text>
-        <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: 10/10/2025</Text>
-      </View>
-      <Text numberOfLines={1} ellipsizeMode="tail">
-        <Text style={styles.itemContentLabel}>Address: </Text>
-        <Text style={styles.itemContent}>46/1 Tan Hoa 2, Hiep Phu, Q9</Text>
-      </Text>
-      <Text>
-        <Text style={styles.itemContentLabel}>Dinner time: </Text>
-        <Text style={styles.itemContent}>10:00</Text>
-      </Text>
-      <Text>
-        <Text style={styles.itemContentLabel}>Travel time: </Text>
-        <Text style={styles.itemContent}>9:00</Text>
-      </Text>
-      <Text numberOfLines={2} ellipsizeMode="tail">
-        <Text style={styles.itemContentLabel}>Note: </Text>
-        <Text style={styles.itemContent}>
-          Nhin lai nguoi con gai anh tung rat nang niu, du ngay dem van khong ngai gio mua
-        </Text>
-      </Text>
-      <Text style={styles.itemContentLabel}>Price: 90.0</Text>
-    </TouchableOpacity>
-  );
+const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail, loading }) => {
+  // const currentDate = new Date();
 
+  const renderItem = ({ item }) => {
+    // const sessionDate = new Date(item.sessionDate);
+    // const isSameDay =
+    //   sessionDate.getDate() === currentDate.getDate() &&
+    //   sessionDate.getMonth() === currentDate.getMonth() &&
+    //   sessionDate.getFullYear() === currentDate.getFullYear();
+
+    // const isFutureTime = sessionDate.getTime() <= currentDate.getTime();
+    // const today = new Date(currentDate.setHours(0, 0, 0, 0));
+
+    // const bookingDate = new Date(item.sessionDate);
+    // bookingDate.setHours(0, 0, 0, 0);
+
+    // const isTodayAndUpcoming = isSameDay && isFutureTime;
+    return (
+      <TouchableOpacity key={item.id} style={[styles.section, item.status === "in_PROGRESS" && styles.highlighted]} onPress={() => onViewDetail(item.id)}>
+        <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
+          <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
+        </View>
+        <Text numberOfLines={1} ellipsizeMode="tail">
+          <Text style={styles.itemContentLabel}>Address: </Text>
+          <Text style={styles.itemContent}>{item.location}</Text>
+        </Text>
+        <Text>
+          <Text style={styles.itemContentLabel}>Dinner time: </Text>
+          <Text style={styles.itemContent}>{item.startTime}</Text>
+        </Text>
+        <Text>
+          <Text style={styles.itemContentLabel}>Travel time: </Text>
+          <Text style={styles.itemContent}>{item.timeBeginTravel}</Text>
+        </Text>
+        <Text numberOfLines={2} ellipsizeMode="tail">
+          <Text style={styles.itemContentLabel}>Dishes: </Text>
+          {item.dishes?.length === 0 && (
+            <Text style={styles.itemContent}>
+              Not yet
+            </Text>
+          )}
+          {item.dishes && item.dishes.map((dish) => (
+            // <View>
+            <Text key={dish.id} style={styles.itemContent}>{dish.dish?.name}, </Text>
+            // </View>
+          ))}
+
+        </Text>
+        <Text style={styles.itemContentLabel}>Price: {item.totalPrice}</Text>
+      </TouchableOpacity>
+    )
+
+    // );
+  }
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -69,7 +93,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>No pending orders</Text>}
-        ListFooterComponent={ (loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
+        ListFooterComponent={(loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
       />
     </View>
   );
@@ -89,6 +113,7 @@ const Schedule = () => {
   const [index, setIndex] = useState(0);
   const [refresh, setRefresh] = useState(false);
   const navigation = useNavigation();
+  const [totalPages, setTotalPages] = useState(0);
 
   const [routes] = useState(dayInWeek.map((day) => ({ key: day.full, title: day.full })));
 
@@ -108,25 +133,36 @@ const Schedule = () => {
           pageNo: pageNum,
           pageSize: PAGE_SIZE,
           sortBy: 'id',
-          sortDir: 'desc',
+          sortDir: 'asc',
         },
       });
 
       if (response.status === 200) {
         const data = response.data.content || [];
-        setHasMore(data.length >0); 
+        setTotalPages(response.data.totalPages);
+        setHasMore(data.length > 0);
 
         const categorizedSchedules = isRefresh
           ? dayInWeek.reduce((acc, day) => {
-              acc[day.full] = [];
-              return acc;
-            }, {})
+            acc[day.full] = [];
+            return acc;
+          }, {})
           : { ...schedules };
 
+        // data.forEach((booking) => {
+        //   const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
+        //   const dayName = dayInWeek[dayOfWeekId].full;
+        //   categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
+        // });
+
         data.forEach((booking) => {
-          const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
-          const dayName = dayInWeek[dayOfWeekId].full;
-          categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
+          const bookingDate = new Date(booking.sessionDate);
+          const currentDate = new Date();
+          if (booking.status === 'SCHEDULED_COMPLETE' || booking.status === 'in_PROGRESS') {
+            const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
+            const dayName = dayInWeek[dayOfWeekId].full;
+            categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
+          }
         });
 
         setSchedules(categorizedSchedules);
@@ -139,12 +175,18 @@ const Schedule = () => {
     }
   };
 
-  useEffect(() => {
-    fetchBookingDetails(0);
-  }, []);
+  // useEffect(() => {
+  //   fetchBookingDetails(0, true);
+  // }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchBookingDetails(0, true);
+    }, [])
+  );
 
   const loadMoreData = async () => {
-    if (!loading && hasMore) {
+    if (!loading && page + 1 <= totalPages - 1) {
       const nextPage = page + 1;
       setPage(nextPage);
       await fetchBookingDetails(nextPage);
@@ -159,9 +201,20 @@ const Schedule = () => {
 
   const renderScene = ({ route }) => {
     const bookingsOfDay = schedules[route.key] || [];
+    const currentDate = new Date();
+    const today = new Date(currentDate.setHours(0, 0, 0, 0));
+
+    const pastBookings = bookingsOfDay.filter((item) => {
+      const bookingDate = new Date(item.sessionDate);
+      bookingDate.setHours(0, 0, 0, 0);
+      return bookingDate >= today;
+    });
+
+    const sortedBookings = pastBookings.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
+
     return (
       <ScheduleRender
-        bookings={bookingsOfDay}
+        bookings={sortedBookings}
         onLoadMore={loadMoreData}
         refreshing={refresh}
         onRefresh={handleRefresh}
@@ -171,7 +224,7 @@ const Schedule = () => {
   };
 
   const viewDetail = useCallback((id) => {
-    navigation.navigate('screen/detailsBooking', { bookingId: id });
+    navigation.navigate('screen/detailsScheduleBooking', { bookingId: id });
   }, [navigation]);
 
   return (
@@ -202,8 +255,8 @@ const Schedule = () => {
 const styles = StyleSheet.create({
   section: {
     gap: 5,
-    maxHeight: 200,
-    backgroundColor: '#fff',
+    maxHeight: 250,
+    backgroundColor: '#F9F5F0',
     marginVertical: 10,
     padding: 25,
     borderRadius: 12,
@@ -219,6 +272,10 @@ const styles = StyleSheet.create({
   itemContent: {
     fontSize: 14,
   },
+  highlighted: {
+    borderWidth: 3,
+    borderColor: "#F8BF40",
+  }
 });
 
 export default Schedule;

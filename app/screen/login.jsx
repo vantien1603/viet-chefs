@@ -62,7 +62,7 @@ export default function LoginScreen() {
     const result = await login(usernameOrEmail, password, expoToken);
     // if (result === true) {
     // navigation.navigate("(tabs)", { screen: "home" });
-    if (result ) {
+    if (result) {
       console.log("login roiiiii", result);
       if (result?.roleName === "ROLE_CHEF") {
         console.log("????")
@@ -73,7 +73,8 @@ export default function LoginScreen() {
       navigation.navigate("(tabs)", { screen: "home" });
     }
     // }
-    else {console.log(result)
+    else {
+      console.log(result)
       if (modalRef.current) {
         modalRef.current.open();
       }
@@ -85,6 +86,18 @@ export default function LoginScreen() {
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <SafeAreaView >
+        <TouchableOpacity onPress={() => navigation.navigate('index')}>
+          <View style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            justifyContent: "center",
+            alignItems: "center",
+          }}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </View>
+        </TouchableOpacity>
+
         <Text style={commonStyles.subTitleText}>
           Login to your account to use...
         </Text>

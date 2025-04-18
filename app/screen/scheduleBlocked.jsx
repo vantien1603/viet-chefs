@@ -122,10 +122,6 @@ const ScheduleBlocked = () => {
         }
 
         setSelectedDates(updatedSelected);
-        // setMarkedDates({
-        //     ...markedDates,
-        //     ...updatedSelected
-        // });
         setMarkedDates(updatedSelected);
 
     };
@@ -161,20 +157,6 @@ const ScheduleBlocked = () => {
 
     const handleSave = async () => {
         const allBlocks = [];
-
-        // Object.keys(selectedDates).forEach(date => {
-        //     if (schedule[date]) {
-        //         const validBlocks = schedule[date]
-        //             .filter(item => item.startTime && item.endTime)
-        //             .map(item => ({
-        //                 blockedDate: date,
-        //                 startTime: item.startTime,
-        //                 endTime: item.endTime,
-        //                 reason: item.reason,
-        //             }));
-        //         allBlocks.push(...validBlocks);
-        //     }
-        // });
         Object.keys(selectedDates).forEach(date => {
             if (!existingDates[date] && schedule[date]) {
                 const validBlocks = schedule[date]
@@ -199,19 +181,26 @@ const ScheduleBlocked = () => {
             );
             const results = await Promise.allSettled(promises);
 
-            results.forEach((result, index) => {
-                const block = allBlocks[index];
-                if (result.status === "fulfilled") {
-                    console.log(` Create blocked schedule success ${block.blockedDate}: ${block.startTime} - ${block.endTime}`);
-                } else {
-                    console.error(`Create blocked schedule failed ${block.blockedDate}: ${result.reason?.message}`);
-                }
-            });
+            // results.forEach((result, index) => {
+            //     const block = allBlocks[index];
+            //     if (result.status === "fulfilled") {
+            //         console.log(` Create blocked schedule success ${block.blockedDate}: ${block.startTime} - ${block.endTime}`);
+            //     } else {
+            //         console.error(`Create blocked schedule failed ${block.blockedDate}: ${result.reason?.message}`);
+            //     }
+            // });
 
             Alert.alert("Xong!", "Đã lưu lịch chặn.");
             fetchSchedule(); // reload lại
-        } catch (err) {
-            Alert.alert("Lỗi", "Không thể lưu lịch.");
+        } catch (error) {
+            if (error.response) {
+                const mes = error.response.data.message;
+                console.log(mes);
+                showModal("Error", mes);
+            }
+            else {
+                console.error(error.message);
+            }
         } finally {
             setLoading(false);
         }
@@ -384,14 +373,14 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     addButton: {
-        backgroundColor: "#888",
-        padding: 10,
+        // backgroundColor: "#888",
+        // padding: 10,
         borderRadius: 8,
-        alignItems: "center",
+        alignItems: "flex-end",
         marginBottom: 10,
     },
     addButtonText: {
-        color: "white",
+        color: "grey",
         fontWeight: "bold",
     },
     saveButton: {

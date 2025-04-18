@@ -37,7 +37,8 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
     borderBottomWidth: 1.5,
     borderBottomColor: "#e0e0e0",
-    paddingBottom: 20,
+    // paddingBottom: 20,
+    // marginBottom:20
   },
   iconContainer: {
     width: 60,

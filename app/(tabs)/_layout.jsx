@@ -64,8 +64,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                       ? "chatbubble-outline"
                       : route.name === "history"
                       ? "time-outline"
-                      : route.name === "history"
-                      ? "time-outline"
                       : route.name === "bag"
                       ? "briefcase-outline"
                       : "person-outline"

@@ -19,6 +19,7 @@ import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
+// import { API_GEO_KEY } from '@env';
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -67,7 +68,7 @@ const EditAddress = () => {
         {
           params: {
             place_id: placeId,
-            key: GOOGLE_PLACES_API_KEY,
+            key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
             fields: "formatted_address",
             language: "vi",
           },

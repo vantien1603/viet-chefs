@@ -1,69 +1,55 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
   ScrollView,
+  Switch,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router"; // Import router for navigation
+import Toast from "react-native-toast-message"; // Import Toast for notifications
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
 
 const CreateChefScreen = () => {
-  const [fullname, setFullname] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [experience, setExperience] = useState("");
+  const [bio, setBio] = useState("");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [country, setCountry] = useState("");
+  const [price, setPrice] = useState("");
+  const [maxServingSize, setMaxServingSize] = useState("");
   const [specialties, setSpecialties] = useState({
     north: false,
     center: false,
     south: false,
   });
+  const [yearsOfExperience, setYearsOfExperience] = useState("");
   const [hasCertificate, setHasCertificate] = useState(null);
-  const [certificateImage, setCertificateImage] = useState(null);
+  const [certification, setCertification] = useState(""); // URL for the certificate image
 
-  const pickImage = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert("Permission to access gallery is required!");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled) {
-      setCertificateImage(result.assets[0].uri);
-    }
-  };
+  const axiosInstance = useAxios();
+  const { user } = useContext(AuthContext);
 
-  const takePhoto = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert("Permission to access camera is required!");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled) {
-      setCertificateImage(result.assets[0].uri);
-    }
-  };
+  useEffect(() => {
+    const backAction = () => {
+      router.push("/(tabs)/profile"); 
+      return true;
+    };
 
-  const removeImage = () => {
-    setCertificateImage(null); // Xóa ảnh bằng cách đặt lại state về null
-  };
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   const toggleSpecialty = (region) => {
     setSpecialties((prev) => ({
@@ -72,16 +58,66 @@ const CreateChefScreen = () => {
     }));
   };
 
-  const handleSubmit = () => {
-    console.log({
-      fullname,
-      email,
-      phoneNumber,
-      experience,
-      specialties,
-      hasCertificate,
-      certificateImage,
-    });
+  const handleSubmit = async () => {
+    // Construct the specialization string from selected specialties
+    const selectedSpecialties = [];
+    if (specialties.north)
+      selectedSpecialties.push("Northern Vietnamese Cuisine");
+    if (specialties.center)
+      selectedSpecialties.push("Central Vietnamese Cuisine");
+    if (specialties.south)
+      selectedSpecialties.push("Southern Vietnamese Cuisine");
+    const specialization =
+      selectedSpecialties.join(", ") || "General Vietnamese Cuisine";
+
+    // Prepare the POST body
+    const payload = {
+      bio,
+      description,
+      address,
+      country,
+      price: parseFloat(price) || 0,
+      maxServingSize: parseInt(maxServingSize) || 0,
+      specialization,
+      yearsOfExperience: parseInt(yearsOfExperience) || 0,
+      certification: hasCertificate ? certification : "",
+    };
+
+    try {
+      const response = await axiosInstance.post(
+        `/chefs/register/${user.userId}`,
+        payload
+      );
+      console.log("Chef registered successfully:", response.data);
+
+      // Show success toast
+      Toast.show({
+        type: "success",
+        text1: "🎉 You’ve Successfully Registered!",
+        text2:
+          "Thanks for registering. Your profile is under review — we’ll notify you soon.",
+        position: "top",
+      });
+
+      setTimeout(() => {
+        router.push("/screen/login");
+      }, 1500);
+    } catch (error) {
+      let errorMessage = "Failed to register chef";
+      if (error.response) {
+        console.log(`Error ${error.response.status}:`, error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+      } else {
+        console.log("Error:", error.message);
+      }
+
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: errorMessage,
+        position: "top",
+      });
+    }
   };
 
   return (
@@ -91,29 +127,49 @@ const CreateChefScreen = () => {
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
-            value={fullname}
-            onChangeText={setFullname}
+            placeholder="Bio (Short Introduction)"
+            value={bio}
+            onChangeText={setBio}
+            multiline
           />
           <TextInput
             style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
+            placeholder="Description (Additional Details)"
+            value={description}
+            onChangeText={setDescription}
+            multiline
           />
           <TextInput
             style={styles.input}
-            placeholder="Phone Number"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
+            placeholder="Address"
+            value={address}
+            onChangeText={setAddress}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Country"
+            value={country}
+            onChangeText={setCountry}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Price (e.g., per service)"
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="numeric"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Max Serving Size (number of people)"
+            value={maxServingSize}
+            onChangeText={setMaxServingSize}
+            keyboardType="numeric"
           />
           <TextInput
             style={styles.input}
             placeholder="Years of Experience"
-            value={experience}
-            onChangeText={setExperience}
+            value={yearsOfExperience}
+            onChangeText={setYearsOfExperience}
             keyboardType="numeric"
           />
 
@@ -156,61 +212,25 @@ const CreateChefScreen = () => {
             <Text style={styles.sectionTitle}>
               Do you have a culinary certificate?
             </Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  hasCertificate === true && styles.selectedButton,
-                ]}
-                onPress={() => setHasCertificate(true)}
-              >
-                <Text style={styles.buttonText}>Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  hasCertificate === false && styles.selectedButton,
-                ]}
-                onPress={() => setHasCertificate(false)}
-              >
-                <Text style={styles.buttonText}>No</Text>
-              </TouchableOpacity>
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Have Certificate</Text>
+              <Switch
+                value={hasCertificate === true}
+                onValueChange={(value) => setHasCertificate(value)}
+                trackColor={{ false: "#ccc", true: "#A9411D" }}
+                thumbColor={hasCertificate ? "#fff" : "#fff"}
+              />
             </View>
 
             {hasCertificate === true && (
               <View style={styles.uploadSection}>
-                <Text style={styles.uploadTitle}>Upload Certificate</Text>
-                {certificateImage ? (
-                  <View style={styles.imageContainer}>
-                    <Image
-                      source={{ uri: certificateImage }}
-                      style={styles.certificateImage}
-                    />
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={removeImage}
-                    >
-                      <Ionicons name="close-circle" size={24} color="red" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={styles.uploadButtons}>
-                    <TouchableOpacity
-                      style={styles.uploadButton}
-                      onPress={takePhoto}
-                    >
-                      <Ionicons name="camera" size={24} color="white" />
-                      <Text style={styles.uploadButtonText}>Take Photo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.uploadButton}
-                      onPress={pickImage}
-                    >
-                      <Ionicons name="image" size={24} color="white" />
-                      <Text style={styles.uploadButtonText}>Gallery</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                <Text style={styles.uploadTitle}>Certificate Image URL</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter the URL of your certificate image"
+                  value={certification}
+                  onChangeText={setCertification}
+                />
               </View>
             )}
           </View>
@@ -274,61 +294,14 @@ const styles = StyleSheet.create({
   certificateSection: {
     marginBottom: 20,
   },
-  buttonContainer: {
+  switchContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  optionButton: {
-    flex: 1,
-    padding: 15,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
     alignItems: "center",
-  },
-  uploadSection: {
-    marginTop: 20,
-  },
-  uploadTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    justifyContent: "space-between",
+    marginTop: 10,
     marginBottom: 10,
   },
-  imageContainer: {
-    position: "relative",
-  },
-  certificateImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  removeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderRadius: 12,
-    padding: 2,
-  },
-  uploadButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  uploadButton: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "#A9411D",
-    padding: 15,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  uploadButtonText: {
-    color: "white",
-    marginLeft: 10,
+  switchLabel: {
     fontSize: 16,
   },
   submitContainer: {

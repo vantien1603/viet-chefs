@@ -1,10 +1,10 @@
-import React, { createContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
+import React, { createContext, useState, useEffect } from "react";
+import * as SecureStore from "expo-secure-store";
+import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import { doc, setDoc } from 'firebase/firestore';
-import { database } from '../config/firebase';
-import { useRouter } from 'expo-router';
+import { doc, setDoc } from "firebase/firestore";
+import { database } from "../config/firebase";
+import { useRouter } from "expo-router";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -22,12 +22,12 @@ export const AuthProvider = ({ children }) => {
           // console.log("refresh token1", refresh_token);
 
           const response = await axios.post(
-            'http://35.240.147.10/no-auth/refresh-token',
+            "http://35.240.147.10/no-auth/refresh-token",
             {},
             {
               headers: {
-                'Authorization': `Bearer ${refresh_token}`
-              }
+                Authorization: `Bearer ${refresh_token}`,
+              },
             }
           );
 
@@ -40,7 +40,10 @@ export const AuthProvider = ({ children }) => {
             setIsGuest(false);
           }
         } catch (error) {
-          console.log('Cannot refresh token:', error?.response?.data || error.message);
+          console.log(
+            "Cannot refresh token:",
+            error?.response?.data || error.message
+          );
         }
       }
       setLoading(false);
@@ -48,7 +51,6 @@ export const AuthProvider = ({ children }) => {
 
     bootstrapAsync();
   }, []);
-
 
   const login = async (username, password, expoToken) => {
     try {
@@ -64,26 +66,25 @@ export const AuthProvider = ({ children }) => {
       if (response.status === 200) {
         console.log("auth", response.data);
         const { access_token, refresh_token } = response.data;
-        await SecureStore.setItemAsync('refreshToken', refresh_token);
+        await SecureStore.setItemAsync("refreshToken", refresh_token);
         const decoded = jwtDecode(access_token);
-        console.log("decode", decoded);
-        console.log("userID", decoded.userId);
+        console.log(decoded)
+        if (decoded?.roleName === "ROLE_ADMIN") return null;
         setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
-        const loggedUser = { fullName: response.data.fullName, token: access_token, ...decoded };
+        const loggedUser = { fullName: response.data.fullName, token: access_token, avatarUrl: data.avatarUrl, ...decoded };
 
         setIsGuest(false);
         if (decoded) {
-          const userDocRef = doc(database, 'users', decoded.userId);
+          const userDocRef = doc(database, "users", decoded.userId);
           await setDoc(userDocRef, {
             _id: decoded.userId,
             name: response.data.fullName,
-            avatar: 'https://i.pravatar.cc/300',
+            avatar: "https://i.pravatar.cc/300",
           });
         }
         return loggedUser;
       }
       // const response = await axios.post('http://192.168.1.52:8080/no-auth/login', loginPayload);
-
     } catch (error) {
       // if (error.response) {
       //   console.error(`Lỗi ${error.response.status}:`, error.response.data);
@@ -96,7 +97,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync('refreshToken');
+    await SecureStore.deleteItemAsync("refreshToken");
     setUser(null);
     setIsGuest(true);
     router.push("/");
@@ -107,7 +108,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isGuest, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, isGuest, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -59,7 +59,7 @@ const Home = () => {
                         { label: 'Dishes', path: '/screen/chefDishes' },
                         { label: 'Menu', path: '/screen/menu' },
                         { label: 'Packages', path: '/screen/packages' },
-                        { label: 'Review', path: null },
+                        { label: 'Review', path: '/screen/reviewsChef' },
                     ].map((item, index) => (
                         <TouchableOpacity
                             key={index}

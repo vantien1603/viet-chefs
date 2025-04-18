@@ -42,7 +42,7 @@ export default function ChefScheduleScreen() {
   const axiosInstance = useAxios();
   const modalizeRef = React.useRef(null);
   const modalizeAddRef = React.useRef(null);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState({});
   const [showPicker, setShowPicker] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [pickerState, setPickerState] = useState({ show: false, mode: "start", dayId: null, index: null });
@@ -54,7 +54,6 @@ export default function ChefScheduleScreen() {
 
   const openModal = (slot) => {
     setSelectedSlot(slot);
-    console.log("slecslot", selectedSlot);
     modalizeRef.current?.open();
   };
 
@@ -153,6 +152,7 @@ export default function ChefScheduleScreen() {
 
 
   const handleOpenPicker = (field) => {
+    console.log("oaksjdhaskjdhkjahsd")
     setCurrentField(field);
     setShowPicker(true);
   };

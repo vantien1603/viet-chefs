@@ -26,8 +26,8 @@ const LongTermDetailsScreen = () => {
       const response = await axiosInstance.get(
         `/bookings/${bookingId}/payment-cycles`
       );
-      setLongTermDetails(response.data || []);
       console.log("Payment cycles:", JSON.stringify(response.data, null, 2));
+      setLongTermDetails(response.data || []);
     } catch (error) {
       console.error("Error fetching payment cycles:", error);
       Toast.show({
@@ -40,20 +40,37 @@ const LongTermDetailsScreen = () => {
     }
   };
 
-  const handlePayment = async (cycleId) => {
+  const handlePayment = async (paymentCycleId) => {
     setLoading(true);
     try {
       const response = await axiosInstance.post(
-        `/bookings/${bookingId}/payment-cycles/${cycleId}/pay`
+        `/bookings/payment-cycles/${paymentCycleId}/pay`
       );
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Payment successful",
-      });
-      fetchLongTermDetails(); // Cập nhật lại danh sách sau khi thanh toán
+      console.log("Payment response:", JSON.stringify(response.data, null, 2));
+
+      // Kiểm tra xem thanh toán có thành công không
+      const paymentSuccessful = response.status === 200 || response.data?.status === "PAID";
+
+      if (paymentSuccessful) {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Payment successful",
+        });
+        // Cập nhật lại danh sách payment cycles
+        await fetchLongTermDetails();
+
+        // Điều hướng về /(tabs)/history sau khi thanh toán thành công
+        router.push("/(tabs)/history");
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Payment failed. Please try again.",
+        });
+      }
     } catch (error) {
-      console.error("Error making payment:", error);
+      // console.error("Error making payment:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -73,15 +90,13 @@ const LongTermDetailsScreen = () => {
   const renderCycleItem = (cycle) => (
     <View key={cycle.id} style={styles.cycleCard}>
       <Text style={styles.cycleTitle}>Cycle {cycle.cycleOrder}</Text>
-      <View style={{ flexDirection: "row", justifyContent: 'space-between', padding: 1 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 1 }}>
         <Text style={{ fontWeight: "bold", fontSize: 18 }}>{cycle.status}</Text>
         <View style={{ flexDirection: "row" }}>
           <Text style={{ fontWeight: "400" }}>{cycle.startDate}</Text>
           <Text>~</Text>
           <Text style={{ fontWeight: "400" }}> {cycle.endDate}</Text>
         </View>
-
-
       </View>
 
       <View style={styles.cycleInfo}>
@@ -89,8 +104,10 @@ const LongTermDetailsScreen = () => {
       </View>
       <View style={styles.bookingDetailsContainer}>
         {cycle.bookingDetails.map((detail) => (
-          <View key={detail.id}
-            style={{ borderBottomWidth: 0.5, borderBottomColor: "#333" }}>
+          <View
+            key={detail.id}
+            style={{ borderBottomWidth: 0.5, borderBottomColor: "#333" }}
+          >
             <TouchableOpacity
               style={styles.detailItem}
               onPress={() =>
@@ -100,13 +117,14 @@ const LongTermDetailsScreen = () => {
                 })
               }
             >
-              <View style={{ flexDirection: 'row', padding: 1, justifyContent: "space-between" }}>
+              <View
+                style={{ flexDirection: "row", padding: 1, justifyContent: "space-between" }}
+              >
                 <Text style={styles.detailText}>
                   Session Date: {detail.sessionDate}
                 </Text>
                 <Text style={{ fontWeight: "bold", fontSize: 14 }}>{detail.status}</Text>
               </View>
-
               <Text style={styles.detailText}>
                 Start Time: {detail.startTime}
               </Text>
@@ -116,7 +134,6 @@ const LongTermDetailsScreen = () => {
               </Text>
             </TouchableOpacity>
           </View>
-
         ))}
       </View>
       {/* Nút thanh toán cho từng kỳ */}
@@ -167,7 +184,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 2,
     borderWidth: 1,
-    borderWidth: 1,
     borderColor: "#DDD",
   },
   cycleTitle: {
@@ -187,19 +203,13 @@ const styles = StyleSheet.create({
   },
   bookingDetailsContainer: {
     borderWidth: 1,
-    borderWidth: 1,
     borderColor: "#DDD",
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
   },
   detailItem: {
-    // backgroundColor: "#F9F9F9", 
-    // borderBottomWidth: 1,
-    borderColor: "#DDD",
-    // borderRadius: 5,
-    // padding: 10,
-    marginVertical: 10
+    marginVertical: 10,
   },
   detailText: {
     fontSize: 14,

@@ -17,12 +17,25 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
+import { SceneMap, TabBar, TabView } from "react-native-tab-view";
+
+
+
+
 
 const EditProfile = () => {
   const router = useRouter();
   const { user } = useContext(AuthContext);
   const params = useLocalSearchParams();
-
+  const [index, setIndex] = useState(0);
+  const [routes] = useState(
+    user?.roleName === "ROLE_CHEF"
+      ? [
+        { key: 'profile', title: 'Thông tin cá nhân' },
+        { key: 'chef', title: 'Thông tin đầu bếp' },
+      ]
+      : [{ key: 'profile', title: 'Thông tin cá nhân' }]
+  );
   const profileData = params.profileData ? JSON.parse(params.profileData) : {};
 
   const mapGenderToDisplay = (apiGender) => {
@@ -40,7 +53,6 @@ const EditProfile = () => {
     return displayGender === "Nam" ? "Male" : "Female";
   };
 
-  // Khởi tạo state
   const [username, setUserName] = useState(profileData.username || "");
   const [name, setName] = useState(profileData.fullName || "");
   const [email, setEmail] = useState(profileData.email || "");
@@ -50,8 +62,9 @@ const EditProfile = () => {
     mapGenderToDisplay(profileData.gender) || "Nam"
   );
   const [avatar, setAvatar] = useState(profileData.avatarUrl || null);
+  const axiosInstanceForm = useAxiosFormData();
 
-  // Chọn ảnh từ thư viện
+
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -72,7 +85,6 @@ const EditProfile = () => {
     }
   };
 
-  // Cập nhật hồ sơ
   const handleUpdateProfile = async () => {
     try {
       const formData = new FormData();
@@ -81,7 +93,6 @@ const EditProfile = () => {
       formData.append("gender", mapGenderToApi(gender));
       formData.append("phone", phone);
 
-      // Kiểm tra nếu có ảnh mới, thêm vào formData
       if (avatar) {
         const filename = avatar.split("/").pop();
         const match = /\.(\w+)$/.exec(filename);
@@ -94,7 +105,7 @@ const EditProfile = () => {
         });
       }
 
-      const response = await useAxiosFormData.put("/users/profile", formData);
+      const response = await axiosInstanceForm.put("/users/profile", formData);
 
       if (response.status === 200) {
         await AsyncStorage.setItem("@fullName", name);
@@ -115,86 +126,224 @@ const EditProfile = () => {
     }
   };
 
+  const renderProfileTab = () => (
+    <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
+      <View style={{ alignItems: "center", marginBottom: 20 }}>
+        <Image source={{ uri: avatar }} style={styles.avatar} />
+        <TouchableOpacity onPress={pickImage}>
+          <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.label}>Username</Text>
+      <TextInput style={styles.input} value={username} editable={false} />
+
+      <Text style={styles.label}>Họ và tên</Text>
+      <TextInput style={styles.input} value={name} onChangeText={setName} />
+
+      <Text style={styles.label}>Email</Text>
+      <TextInput style={styles.input} value={email} editable={false} />
+
+      <Text style={styles.label}>Số điện thoại</Text>
+      <TextInput
+        style={styles.input}
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+      />
+
+      <Text style={styles.label}>Ngày sinh</Text>
+      <TextInput style={styles.input} value={dob} onChangeText={setDob} placeholder="YYYY-MM-DD" keyboardType="numeric" />
+
+      <Text style={styles.label}>Giới tính</Text>
+      <View style={styles.genderContainer}>
+        <TouchableOpacity
+          style={[
+            styles.genderButton,
+            gender === "Nam" && styles.genderSelected,
+          ]}
+          onPress={() => setGender("Nam")}
+        >
+          <Text
+            style={
+              gender === "Nam" ? styles.genderTextSelected : styles.genderText
+            }
+          >
+            Nam
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.genderButton,
+            gender === "Nữ" && styles.genderSelected,
+          ]}
+          onPress={() => setGender("Nữ")}
+        >
+          <Text
+            style={
+              gender === "Nữ" ? styles.genderTextSelected : styles.genderText
+            }
+          >
+            Nữ
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+
+  const renderChefTab = () => (
+    <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
+      <Text style={styles.label}>Bio</Text>
+      <TextInput
+        placeholder="Bio"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Description</Text>
+      <TextInput
+        placeholder="Description"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Country</Text>
+      <TextInput
+        placeholder="Country"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Price</Text>
+      <TextInput
+        placeholder="Price"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Max Serving Size</Text>
+      <TextInput
+        placeholder="Max Serving Size"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Specialization</Text>
+      <TextInput
+        placeholder="Specialization"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Years of experience</Text>
+      <TextInput
+        placeholder="Years of experience"
+        style={styles.input}
+      // onChangeText, value...
+      />
+      <Text style={styles.label}>Certification</Text>
+      <TextInput
+        placeholder="Specialization"
+        style={styles.input}
+      // onChangeText, value...
+      />
+    </ScrollView>
+  );
+  const renderScene = SceneMap({
+    profile: renderProfileTab,
+    chef: renderChefTab,
+  });
+
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Chỉnh sửa hồ sơ" />
-      <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
-        <View style={{ alignItems: "center", marginBottom: 20 }}>
-          <Image source={{ uri: avatar }} style={styles.avatar} />
-          <TouchableOpacity onPress={pickImage}>
-            <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>Username</Text>
-        <TextInput style={styles.input} value={username} editable={false} />
-
-        <Text style={styles.label}>Họ và tên</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} />
-
-        <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} value={email} editable={false} />
-
-        <Text style={styles.label}>Số điện thoại</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
+      {user?.roleName === "ROLE_CHEF" ? (
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          renderTabBar={(props) => (
+            <TabBar
+              {...props}
+              indicatorStyle={{ backgroundColor: '#A9411D' }}
+              style={{ backgroundColor: '#fff' }}
+              activeColor="#A9411D"
+              inactiveColor="gray"
+              labelStyle={{ fontWeight: 'bold' }}
+            />
+          )}
         />
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
+          <View style={{ alignItems: "center", marginBottom: 20 }}>
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+            <TouchableOpacity onPress={pickImage}>
+              <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.label}>Ngày sinh</Text>
-        <TextInput
-          style={styles.input}
-          value={dob}
-          onChangeText={setDob}
-          placeholder="YYYY-MM-DD"
-          keyboardType="numeric"
-        />
+          <Text style={styles.label}>Username</Text>
+          <TextInput style={styles.input} value={username} editable={false} />
 
-        <Text style={styles.label}>Giới tính</Text>
-        <View style={styles.genderContainer}>
-          <TouchableOpacity
-            style={[
-              styles.genderButton,
-              gender === "Nam" && styles.genderSelected,
-            ]}
-            onPress={() => setGender("Nam")}
-          >
-            <Text
-              style={
-                gender === "Nam" ? styles.genderTextSelected : styles.genderText
-              }
+          <Text style={styles.label}>Họ và tên</Text>
+          <TextInput style={styles.input} value={name} onChangeText={setName} />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput style={styles.input} value={email} editable={false} />
+
+          <Text style={styles.label}>Số điện thoại</Text>
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+          />
+
+          <Text style={styles.label}>Ngày sinh</Text>
+          <TextInput
+            style={styles.input}
+            value={dob}
+            onChangeText={setDob}
+            placeholder="YYYY-MM-DD"
+            keyboardType="numeric"
+          />
+
+          <Text style={styles.label}>Giới tính</Text>
+          <View style={styles.genderContainer}>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                gender === "Nam" && styles.genderSelected,
+              ]}
+              onPress={() => setGender("Nam")}
             >
-              Nam
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.genderButton,
-              gender === "Nữ" && styles.genderSelected,
-            ]}
-            onPress={() => setGender("Nữ")}
-          >
-            <Text
-              style={
-                gender === "Nữ" ? styles.genderTextSelected : styles.genderText
-              }
+              <Text
+                style={
+                  gender === "Nam" ? styles.genderTextSelected : styles.genderText
+                }
+              >
+                Nam
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                gender === "Nữ" && styles.genderSelected,
+              ]}
+              onPress={() => setGender("Nữ")}
             >
-              Nữ
-            </Text>
+              <Text
+                style={
+                  gender === "Nữ" ? styles.genderTextSelected : styles.genderText
+                }
+              >
+                Nữ
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleUpdateProfile}
+          >
+            <Text style={styles.saveButtonText}>Lưu</Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
 
-      <View style={styles.fixedButtonContainer}>
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleUpdateProfile}
-        >
-          <Text style={styles.saveButtonText}>Lưu</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };

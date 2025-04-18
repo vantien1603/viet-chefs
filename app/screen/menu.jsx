@@ -157,7 +157,7 @@ const ChefMenu = () => {
                 //   }
                 // })
                 router.replace({
-                  pathname: "/screen/menuDetail",
+                  pathname: "/screen/menuDetails",
                   params: { id: item.id },
                 });
               }

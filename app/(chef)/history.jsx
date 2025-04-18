@@ -7,49 +7,50 @@ import { commonStyles } from '../../style'
 import useAxios from '../../config/AXIOS_API'
 import { AuthContext } from '../../config/AuthContext'
 import { useNavigation } from '@react-navigation/native'
+import { useCommonNoification } from '../../context/commonNoti'
 
 
-const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail }) => {
+const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject, onCancel, onViewDetail }) => {
   // console.log("renderrr", bookings);
   const renderItem = ({ item }) => {
     let sessionDateDisplay = '';
 
     if (
-        item.bookingType === 'SINGLE' &&
-        Array.isArray(item.bookingDetails) &&
-        item.bookingDetails.length > 0
+      item.bookingType === 'SINGLE' &&
+      Array.isArray(item.bookingDetails) &&
+      item.bookingDetails.length > 0
     ) {
-        sessionDateDisplay = item.bookingDetails[0]?.sessionDate || '';
+      sessionDateDisplay = item.bookingDetails[0]?.sessionDate || '';
     } else if (
       item.bookingType === 'LONG_TERM' &&
-        Array.isArray(item.bookingDetails) &&
-        item.bookingDetails.length > 0
+      Array.isArray(item.bookingDetails) &&
+      item.bookingDetails.length > 0
     ) {
-        const details = item.bookingDetails
-            .map((d) => d?.sessionDate)
-            .filter(Boolean)
-            .sort();
+      const details = item.bookingDetails
+        .map((d) => d?.sessionDate)
+        .filter(Boolean)
+        .sort();
 
-        if (details.length <= 5) {
-            const grouped = {};
+      if (details.length <= 5) {
+        const grouped = {};
 
-            for (let date of details) {
-                const [year, month, day] = date.split('-');
-                const key = `${year}-${month}`;
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push(day.replace(/^0/, '')); 
-            }
-
-            const formatted = Object.entries(grouped)
-                .map(([key, days]) => `${key}-${days.join(',')}`)
-                .join(' | ');
-
-            sessionDateDisplay = formatted;
-        } else {
-            const first = details[0];
-            const last = details[details.length - 1];
-            sessionDateDisplay = `${first} ~ ${last}`;
+        for (let date of details) {
+          const [year, month, day] = date.split('-');
+          const key = `${year}-${month}`;
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push(day.replace(/^0/, ''));
         }
+
+        const formatted = Object.entries(grouped)
+          .map(([key, days]) => `${key}-${days.join(',')}`)
+          .join(' | ');
+
+        sessionDateDisplay = formatted;
+      } else {
+        const first = details[0];
+        const last = details[details.length - 1];
+        sessionDateDisplay = `${first} ~ ${last}`;
+      }
     }
 
     return (
@@ -87,16 +88,16 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onViewD
         </TouchableOpacity>
         {item.status === "PAID" || item.status === "DEPOSITED" || item.status === "PAID_FIRST_CYCLE" ? (
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-around' }}>
-            <TouchableOpacity style={{ backgroundColor: "green", padding: 10, borderRadius: 10, width: "30%" }}>
+            <TouchableOpacity style={{ backgroundColor: "green", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onAccept(item.id)}>
               <Text style={{ textAlign: 'center', color: 'white' }}>Confirm</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }}>
+            <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onReject(item.id)}>
               <Text style={{ textAlign: 'center', color: 'white' }}>Reject</Text>
             </TouchableOpacity>
           </View>
         ) : item.status === "CONFIRMED_PAID" || item.status === "CONFIRMED_PARTIALLY_PAID" || item.status === "CONFIRMED" && (
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'flex-end' }}>
-            <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }}>
+            <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onCancel(item.id, item.bookingType === "SINGLE" && "single")}>
               <Text style={{ textAlign: 'center', color: 'white' }}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -114,7 +115,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onViewD
         contentContainerStyle={{ paddingHorizontal: 10 }}
         keyExtractor={(item) => item.id.toString()}
         onEndReached={onLoadMore}
-        onEndReachedThreshold={0.1}
+        onEndReachedThreshold={0.4}
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>No pending orders</Text>}
@@ -133,8 +134,8 @@ const Histories = () => {
   const [newBooking, setNewBooking] = useState([]);
   const [confirmBooking, setConfirmBooking] = useState([]);
   const [cancelBooking, setCancelBooking] = useState([]);
-  const [hasMore, setHasMore] = useState(false);
   const PAGE_SIZE = 10;
+  const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(0);
   const [index, setIndex] = React.useState(0);
   const navigation = useNavigation();
@@ -144,10 +145,12 @@ const Histories = () => {
     { key: 'canceled', title: 'Canceled' },
   ]);
 
+  const { showModal } = useCommonNoification();
 
   useEffect(() => {
     fetchRequestBooking(0, true);
   }, []);
+  let d = 0
 
   const fetchRequestBooking = async (page, isRefresh = false) => {
 
@@ -159,13 +162,13 @@ const Histories = () => {
           pageNo: page,
           pageSize: PAGE_SIZE,
           sortBy: "id",
-          sortDir: "desc",
+          sortDir: "asc",
         },
       });
 
       if (response.status === 200) {
         const bookingData = response.data.content || response.data || [];
-        setHasMore(bookingData.length > 0);
+        setTotalPages(response.data.totalPages);
 
         // setBookings(prev => {
         //   const newData = isRefresh ? bookingData : [...prev, ...bookingData];
@@ -173,46 +176,59 @@ const Histories = () => {
         //   return uniqueData;
         // });
 
-        const updatedList = (isRefresh ? bookingData : [...bookings, ...bookingData]);
-        const uniqueData = Array.from(new Map(updatedList.map(item => [item.id, item])).values());
+        // const updatedList = (isRefresh ? bookingData : [...bookings, ...bookingData]);
+        // const uniqueData = Array.from(new Map(updatedList.map(item => [item.id, item])).values());
 
-        setBookings(updatedList);
-        // console.log("bookinaskjdhjasjkdhjasd", updatedList.length);
+        // console.log("kasd", updatedList.length)
+        // setBookings((prevList) => {
+        //   return isRefresh ? bookingData : [...prevList, ...bookingData];
+        // });
 
-        isRefresh ?
-          setNewBooking(updatedList?.filter((booking) =>
+        setBookings(isRefresh ? bookingData : (pre) => [...pre, ...bookingData]);
+
+        if (isRefresh) {
+          setNewBooking(bookingData.filter((booking) =>
             booking.status === "PAID" ||
             booking.status === "DEPOSITED" ||
             booking.status === "PAID_FIRST_CYCLE"
-          )) :
-          ((pre) => [...pre, ...updatedList.filter((booking) =>
-            booking.status === "PAID" ||
-            booking.status === "DEPOSITED" ||
-            booking.status === "PAID_FIRST_CYCLE"
-          )]);
-
-
-        isRefresh ?
-          setConfirmBooking(updatedList?.filter((booking) =>
+          ));
+          setConfirmBooking(bookingData.filter((booking) =>
             booking.status === "CONFIRMED" ||
             booking.status === "CONFIRMED_PARTIALLY_PAID" ||
             booking.status === "CONFIRMED_PAID"
-          )) :
-          ((pre) => [...pre, ...updatedList.filter((booking) =>
-            booking.status === "CONFIRMED" ||
-            booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-            booking.status === "CONFIRMED_PAID"
-          )]);
+          ));
+          setCancelBooking(bookingData.filter((booking) =>
+            booking.status === "CANCELLED" ||
+            booking.status === "OVERDUE"
+          ));
+        } else {
+          setNewBooking((pre) => [
+            ...pre,
+            ...bookingData.filter((booking) =>
+              booking.status === "PAID" ||
+              booking.status === "DEPOSITED" ||
+              booking.status === "PAID_FIRST_CYCLE"
+            ),
+          ]);
 
-        isRefresh ?
-          setCancelBooking(updatedList?.filter((booking) =>
-            booking.status === "CANCELLED" ||
-            booking.status === "OVERDUE"
-          )) :
-          ((pre) => [...pre, ...updatedList.filter((booking) =>
-            booking.status === "CANCELLED" ||
-            booking.status === "OVERDUE"
-          )]);
+          setConfirmBooking((pre) => [
+            ...pre,
+            ...bookingData.filter((booking) =>
+              booking.status === "CONFIRMED" ||
+              booking.status === "CONFIRMED_PARTIALLY_PAID" ||
+              booking.status === "CONFIRMED_PAID"
+            ),
+          ]);
+
+          setCancelBooking((pre) => [
+            ...pre,
+            ...bookingData.filter((booking) =>
+              booking.status === "CANCELED" ||
+              booking.status === "OVERDUE"
+            ),
+          ]);
+        }
+
       }
     } catch (error) {
       console.error("Error fetching booking details:", error.message);
@@ -225,7 +241,10 @@ const Histories = () => {
 
 
   const loadMoreData = async () => {
-    if (!loading && hasMore) {
+    console.log('cc');
+    if (!loading && page + 1 <= totalPages - 1) {
+      let c = 1
+      console.log("goi load more lan", c++)
       const nextPage = page + 1;
       setPage(nextPage);
       await fetchRequestBooking(nextPage);
@@ -239,16 +258,21 @@ const Histories = () => {
   };
 
 
-  const handleReject = (id) => {
+  const handleReject = async (id) => {
+    setLoading(true);
     try {
       setLoading(true);
-      const response = axiosInstance.put(`/bookings/${id}/reject`);
-      fetchRequestBooking(0, true)
-      showModal("Success", "Reject successfully");
+      const response = await axiosInstance.put(`/bookings/${id}/reject`);
+      if (response.status === 200) {
+        showModal("Success", "Reject successfully");
+        fetchRequestBooking(0, true)
+      }
 
     } catch (error) {
       if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+        const mes = error.response.data.message;
+        console.log(mes);
+        showModal("Error", mes);
       }
       else {
         console.error(error.message);
@@ -258,16 +282,43 @@ const Histories = () => {
     }
   }
 
-  const handleAccept = (id) => {
+  const handleAccept = async (id) => {
+    setLoading(true);
     try {
-      console.log("Toi se acept cai nafy", id);
       setLoading(true);
-      const response = axiosInstance.put(`/bookings/${id}/confirm`);
-      showModal("Success", "Confirmed successfully");
-      fetchRequestBooking(0, true)
+      const response = await axiosInstance.put(`/bookings/${id}/confirm`);
+      if (response.status === 200) {
+        showModal("Success", "Confirmed successfully");
+        fetchRequestBooking(0, true)
+      }
     } catch (error) {
       if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+        const mes = error.response.data.message;
+        console.log(mes);
+        showModal("Error", mes);
+      }
+      else {
+        console.error(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleCancel = async (id, type) => {
+    console.log("asdasdasd");
+    setLoading(true);
+    try {
+      const response = type = "single" ? await axiosInstance.put(`/bookings/single/cancel/${id}`) : await axiosInstance.put(`/bookings/long-term/cancel/${id}`);
+      if (response.status === 200) {
+        showModal("Success", "Cancel successfully");
+        fetchRequestBooking(0, true)
+      }
+    } catch (error) {
+      if (error.response) {
+        const mes = error.response.data.message;
+        console.log(mes);
+        showModal("Error", mes);
       }
       else {
         console.error(error.message);
@@ -344,7 +395,7 @@ const Histories = () => {
             onLoadMore={loadMoreData}
             refreshing={refresh}
             onRefresh={handleRefresh}
-            onCancel={handleRefresh}
+            onCancel={handleCancel}
             onViewDetail={viewDetail}
           />
         );
@@ -366,7 +417,7 @@ const Histories = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={"A"} />
+      <Header title={"Orders"} />
       <View style={{ flex: 1 }}>
         <TabView
           navigationState={{ index, routes }}
