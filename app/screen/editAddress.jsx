@@ -475,6 +475,7 @@ const EditAddress = () => {
           </Text>
         )}
       </TouchableOpacity>
+      
     </SafeAreaView>
   );
 };

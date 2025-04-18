@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
+import { router } from "expo-router";
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
@@ -51,8 +52,62 @@ const NotificationScreen = () => {
     fetchNotification();
   }, []);
 
+  const handleNotificationPress = (item) => {
+    const { title, bookingId, bookingDetailId } = item;
+    const params = { bookingId };
+    if (bookingDetailId) params.bookingDetailId = bookingDetailId;
+
+    switch (title) {
+      case "Booking Confirmed":
+        router.push({
+          pathname: "/(tabs)/history",
+          params: { tab: "confirm", ...params },
+        });
+        break;
+      case "Booking Expired":
+        router.push({
+          pathname: "(tabs)/history",
+          params: { tab: "cancel", ...params },
+        });
+        break;
+      case "Please Confirm Your Booking with a Deposit":
+        router.push({
+          pathname: "/(tabs)/history",
+          params: { tab: "pending", ...params },
+        });
+        break;
+      case "Booking Created Successfully":
+        router.push({
+          pathname: "/(tabs)/history",
+          params: { tab: "", ...params },
+        });
+        break;
+      case "Deposit Successful":
+        router.push({
+          pathname: "/(tabs)/history",
+          params: { tab: "paidDeposit", ...params },
+        });
+        break;
+      case "Payment Successful":
+        router.push({
+          pathname: "/(tabs)/history",
+          params: { tab: "paidDeposit", ...params },
+        });
+        break;
+      case "Booking Overdue & Refunded":
+        router.push({
+          pathname: "/(tabs)/history",
+          params: { tab: "cancel", ...params },
+        });
+        break;
+    }
+  };
+
   const renderNotificationItem = ({ item }) => (
-    <TouchableOpacity style={styles.notificationItem}>
+    <TouchableOpacity
+      style={styles.notificationItem}
+      onPress={() => handleNotificationPress(item)}
+    >
       <View style={styles.notificationContent}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.message}>{item.message}</Text>
@@ -64,9 +119,7 @@ const NotificationScreen = () => {
         onPress={() => toggleReadStatus(item.id)}
         style={styles.readButton}
       >
-        {item.read && (
-          <Ionicons name="checkmark-done" size={24} color="#ccc" />
-        )}
+        {item.read && <Ionicons name="checkmark-done" size={24} color="#ccc" />}
       </TouchableOpacity>
     </TouchableOpacity>
   );

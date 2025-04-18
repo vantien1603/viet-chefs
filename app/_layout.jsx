@@ -346,6 +346,12 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
+                  name="screen/paymentLongterm"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
                   name="screen/review"
                   options={{
                     headerShown: false,
@@ -383,18 +389,6 @@ export default function RootLayout() {
                 />
                 <Stack.Screen
                   name="screen/notification"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="screen/checkinout"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="screen/customerSchedule"
                   options={{
                     headerShown: false,
                   }}

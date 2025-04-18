@@ -8,6 +8,9 @@ import {
   ScrollView,
   Switch,
   BackHandler,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router"; // Import router for navigation
@@ -17,6 +20,7 @@ import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
+import { t } from "i18next";
 
 const CreateChefScreen = () => {
   const [bio, setBio] = useState("");
@@ -36,6 +40,10 @@ const CreateChefScreen = () => {
 
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   useEffect(() => {
     const backAction = () => {
@@ -121,133 +129,140 @@ const CreateChefScreen = () => {
   };
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Register Chef" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder={t("bioS")}
-            value={bio}
-            onChangeText={setBio}
-            multiline
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("descriptionS")}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("address")}
-            value={address}
-            onChangeText={setAddress}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("country")}
-            value={country}
-            onChangeText={setCountry}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("price")}
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("maxServingSizes")}
-            value={maxServingSize}
-            onChangeText={setMaxServingSize}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("experienceYears")}
-            value={yearsOfExperience}
-            onChangeText={setYearsOfExperience}
-            keyboardType="numeric"
-          />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"} // Adjust behavior for iOS and Android
+      // keyboardVerticalOffset={-80} // Adjust offset to prevent overlap
+    >
+      <SafeAreaView style={commonStyles.containerContent}>
+        <Header title="Register Chef" />
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder={t("bioS")}
+              value={bio}
+              onChangeText={setBio}
+              multiline
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={t("descriptionS")}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={t("address")}
+              value={address}
+              onChangeText={setAddress}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={t("country")}
+              value={country}
+              onChangeText={setCountry}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={t("price")}
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={t("maxServingSizes")}
+              value={maxServingSize}
+              onChangeText={setMaxServingSize}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={t("experienceYears")}
+              value={yearsOfExperience}
+              onChangeText={setYearsOfExperience}
+              keyboardType="numeric"
+            />
 
-          <View style={styles.specialtySection}>
-            <Text style={styles.sectionTitle}>{t("specialty")}</Text>
-            <View style={styles.specialtyButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.specialtyButton,
-                  specialties.north && styles.selectedButton,
-                ]}
-                onPress={() => toggleSpecialty("north")}
-              >
-                <Text style={styles.buttonText}>{t("northern")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.specialtyButton,
-                  specialties.center && styles.selectedButton,
-                ]}
-                onPress={() => toggleSpecialty("center")}
-              >
-                <Text style={styles.buttonText}>{t("central")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.specialtyButton,
-                  specialties.south && styles.selectedButton,
-                ]}
-                onPress={() => toggleSpecialty("south")}
-              >
-                <Text style={styles.buttonText}>{t("southern")}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.certificateSection}>
-            <Text style={styles.sectionTitle}>
-              {t("haveCertificateQuestion")}
-            </Text>
-            <View style={styles.switchContainer}>
-              <Text style={styles.switchLabel}>{t("haveCertificate")}</Text>
-              <Switch
-                value={hasCertificate === true}
-                onValueChange={(value) => setHasCertificate(value)}
-                trackColor={{ false: "#ccc", true: "#A9411D" }}
-                thumbColor={hasCertificate ? "#fff" : "#fff"}
-              />
+            <View style={styles.specialtySection}>
+              <Text style={styles.sectionTitle}>{t("specialty")}</Text>
+              <View style={styles.specialtyButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.specialtyButton,
+                    specialties.north && styles.selectedButton,
+                  ]}
+                  onPress={() => toggleSpecialty("north")}
+                >
+                  <Text style={styles.buttonText}>{t("northern")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.specialtyButton,
+                    specialties.center && styles.selectedButton,
+                  ]}
+                  onPress={() => toggleSpecialty("center")}
+                >
+                  <Text style={styles.buttonText}>{t("central")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.specialtyButton,
+                    specialties.south && styles.selectedButton,
+                  ]}
+                  onPress={() => toggleSpecialty("south")}
+                >
+                  <Text style={styles.buttonText}>{t("southern")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {hasCertificate === true && (
-              <View style={styles.uploadSection}>
-                <Text style={styles.uploadTitle}>{t("certificateImageUrl")}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={t("enterCertificateUrl")}
-                  value={certification}
-                  onChangeText={setCertification}
+            <View style={styles.certificateSection}>
+              <Text style={styles.sectionTitle}>
+                {t("haveCertificateQuestion")}
+              </Text>
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>{t("haveCertificate")}</Text>
+                <Switch
+                  value={hasCertificate === true}
+                  onValueChange={(value) => setHasCertificate(value)}
+                  trackColor={{ false: "#ccc", true: "#A9411D" }}
+                  thumbColor={hasCertificate ? "#fff" : "#fff"}
                 />
               </View>
-            )}
-          </View>
-        </View>
-      </ScrollView>
 
-      {/* Fixed Submit Button */}
-      <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>{t("submit")}</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+              {hasCertificate === true && (
+                <View style={styles.uploadSection}>
+                  <Text style={styles.uploadTitle}>
+                    {t("certificateImageUrl")}
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("enterCertificateUrl")}
+                    value={certification}
+                    onChangeText={setCertification}
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.submitContainer}>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.submitButtonText}>{t("submit")}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 80,
   },
   form: {
     padding: 20,

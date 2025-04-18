@@ -12,7 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
-import Toast from "react-native-toast-message"; // Thêm import
+import Toast from "react-native-toast-message";
 
 const ReviewBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -36,7 +36,6 @@ const ReviewBookingScreen = () => {
 
   const handleConfirmBooking = async () => {
     try {
-      // const customerId = await AsyncStorage.getItem("@userId");
       if (!user) {
         console.log("user before book", user);
         throw new Error(
@@ -71,28 +70,32 @@ const ReviewBookingScreen = () => {
               dishId: dish.dishId,
               notes: dish.notes || "",
             })),
+            chefBringIngredients:
+              selectedDates[dateKey]?.chefBringIngredients ?? false, // Thêm trường này
           };
         }),
       };
 
-      console.log(
-        "Payload for booking confirmation:",
-        JSON.stringify(payload, null, 2)
-      );
+      // console.log(
+      //   "Payload for booking confirmation:",
+      //   JSON.stringify(payload, null, 2)
+      // );
 
       const response = await axiosInstance.post("/bookings/long-term", payload);
-
-      if (response.status === 201 || response.status === 200) {
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Đặt chỗ dài hạn đã được xác nhận!",
-        });
-
-        router.push("/(tabs)/home");
-      }
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Đặt chỗ dài hạn đã được xác nhận!",
+      });
+      router.push({
+        pathname: "/screen/paymentLongterm",
+        params: {
+          bookingId: response.data.id,
+          bookingData: JSON.stringify(bookingData),
+        },
+      });
     } catch (error) {
-      console.error("Error confirming booking:", error);
+      console.error("Error confirming booking:", error?.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         "Có lỗi khi xác nhận đặt chỗ. Vui lòng thử lại.";
@@ -123,7 +126,6 @@ const ReviewBookingScreen = () => {
     });
   };
 
-  // Phần render giữ nguyên
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title="Confirm Booking" onLeftPress={handleBackPress} />
@@ -167,6 +169,14 @@ const ReviewBookingScreen = () => {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Total cook time:</Text>
                 <Text style={styles.detailValue}>{detail.totalCookTime}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Nguyên liệu:</Text>
+                <Text style={styles.detailValue}>
+                  {selectedDates[detail.sessionDate]?.chefBringIngredients
+                    ? "Đầu bếp chuẩn bị"
+                    : "Khách hàng chuẩn bị"}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, styles.totalLabel]}>
@@ -220,11 +230,11 @@ const ReviewBookingScreen = () => {
           <Text style={styles.confirmButtonText}>Xác nhận đặt chỗ</Text>
         </TouchableOpacity>
       </View>
+      <Toast />
     </SafeAreaView>
   );
 };
 
-// Styles giữ nguyên
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

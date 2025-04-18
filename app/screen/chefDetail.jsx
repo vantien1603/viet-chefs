@@ -355,7 +355,6 @@ const ChefDetail = () => {
         </View>
       </Modalize>
 
-      <Toast />
     </GestureHandlerRootView>
   );
 };

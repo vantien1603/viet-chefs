@@ -11,16 +11,13 @@ import {
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
-import { useNavigation } from "@react-navigation/native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { SortBy } from "expo-media-library";
 
 const CustomerSchedule = () => {
   const axiosInstance = useAxios();
   const [bookingDetails, setBookingDetails] = useState([]);
-  const navigation = useNavigation();
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: "today", title: "Today" },
@@ -62,7 +59,7 @@ const CustomerSchedule = () => {
 
   // Lọc dữ liệu theo tab
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh
+  today.setHours(0, 0, 0, 0);
 
   const todayDetails = bookingDetails.filter(
     (detail) =>
@@ -141,7 +138,7 @@ const CustomerSchedule = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header />
+      <Header title="Schedule"/>
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

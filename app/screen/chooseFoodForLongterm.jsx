@@ -105,7 +105,7 @@ const ChooseFoodForLongterm = () => {
             `/dishes/not-in-menu?menuId=${selectedMenu}`
           );
         } else {
-          dishesResponse = await axiosInstance.get(`/dishes`);
+          dishesResponse = await axiosInstance.get(`/dishes?chefId=${chefId}`);
         }
         setDishes(dishesResponse.data.content || []);
       } catch (error) {
