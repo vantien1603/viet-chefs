@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, Image, BackHandler } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Image,
+  BackHandler,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
@@ -25,18 +32,18 @@ const ReviewsChefScreen = () => {
   const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
-      const backAction = () => {
-        router.push({ pathname: "/screen/chefDetail", params: { chefId } });
-        return true;
-      };
-  
-      const backHandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        backAction
-      );
-  
-      return () => backHandler.remove();
-    }, []);
+    const backAction = () => {
+      router.push({ pathname: "/screen/chefDetail", params: { chefId } });
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   const fetchReviewChef = async (page = 0) => {
     if (isLoading) return;
@@ -49,9 +56,17 @@ const ReviewsChefScreen = () => {
         },
       });
       const data = response.data;
-      setReviews((prev) =>
-        page === 0 ? data.reviews : [...prev, ...data.reviews]
-      );
+      // Kiểm tra trùng lặp ID
+      const ids = data.reviews.map((r) => r.id);
+      const uniqueIds = new Set(ids);
+      if (ids.length !== uniqueIds.size) {
+        console.warn("Duplicate review IDs detected:", ids);
+      }
+      setReviews((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id));
+        const newReviews = data.reviews.filter((r) => !existingIds.has(r.id));
+        return page === 0 ? data.reviews : [...prev, ...newReviews];
+      });
       const calculatedAvg =
         data.reviews.length > 0
           ? data.reviews.reduce((sum, r) => sum + r.rating, 0) /
@@ -62,7 +77,6 @@ const ReviewsChefScreen = () => {
       setTotalPages(data.totalPages || 1);
       setPageNo(page);
       setTotalItems(data.totalItems || 0);
-      console.log("Reviews fetched successfully:", data);
     } catch (error) {
       console.error("Error fetching reviews:", error);
     } finally {
@@ -186,7 +200,11 @@ const ReviewsChefScreen = () => {
 
         {reviews.length > 0 ? (
           reviews.map((review, index) => (
-            <ReviewCard key={review.id} review={review} index={index} />
+            <ReviewCard
+              key={`${review.id}-${index}`}
+              review={review}
+              index={index}
+            />
           ))
         ) : (
           <Text style={styles.noReviews}>No reviews yet for this chef</Text>
@@ -258,7 +276,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   reviewCard: {
-    // borderRadius: 15,
     padding: 5,
     marginBottom: 15,
     backgroundColor: "#EBE5DD",

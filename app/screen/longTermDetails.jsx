@@ -14,6 +14,16 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
+import { MaterialIcons } from "@expo/vector-icons"; // Chỉ giữ icon cho nút thanh toán và no-data
+
+// Hàm chuyển đổi status có dấu "_" thành dạng dễ đọc
+const formatStatus = (status) => {
+  if (!status) return "";
+  return status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
 
 const LongTermDetailsScreen = () => {
   const { bookingId, chefId } = useLocalSearchParams();
@@ -33,8 +43,8 @@ const LongTermDetailsScreen = () => {
       console.error("Error fetching payment cycles:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to load payment cycles",
+        text1: t("error"),
+        text2: t("failedToLoadPaymentCycles"),
       });
     } finally {
       setLoading(false);
@@ -49,33 +59,29 @@ const LongTermDetailsScreen = () => {
       );
       console.log("Payment response:", JSON.stringify(response.data, null, 2));
 
-      // Kiểm tra xem thanh toán có thành công không
-      const paymentSuccessful = response.status === 200 || response.data?.status === "PAID";
+      const paymentSuccessful =
+        response.status === 200 || response.data?.status === "PAID";
 
       if (paymentSuccessful) {
         Toast.show({
           type: "success",
-          text1: "Success",
-          text2: "Payment successful",
+          text1: t("success"),
+          text2: t("paymentSuccessful"),
         });
-        // Cập nhật lại danh sách payment cycles
         await fetchLongTermDetails();
-
-        // Điều hướng về /(tabs)/history sau khi thanh toán thành công
         router.push("/(tabs)/history");
       } else {
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: "Payment failed. Please try again.",
+          text1: t("error"),
+          text2: t("paymentFailed"),
         });
       }
     } catch (error) {
-      // console.error("Error making payment:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to process payment",
+        text1: t("error"),
+        text2: error.response?.data?.message || t("failedToProcessPayment"),
       });
     } finally {
       setLoading(false);
@@ -90,64 +96,95 @@ const LongTermDetailsScreen = () => {
 
   const renderCycleItem = (cycle) => (
     <View key={cycle.id} style={styles.cycleCard}>
-      <Text style={styles.cycleTitle}>{t("cycle")} {cycle.cycleOrder}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 1 }}>
-        <Text style={{ fontWeight: "bold", fontSize: 18 }}>{cycle.status}</Text>
-        <View style={{ flexDirection: "row" }}>
-          <Text style={{ fontWeight: "400" }}>{cycle.startDate}</Text>
-          <Text>~</Text>
-          <Text style={{ fontWeight: "400" }}> {cycle.endDate}</Text>
-        </View>
+      <Text style={styles.cycleTitle}>
+        {t("cycle")} {cycle.cycleOrder}
+      </Text>
+      <View style={styles.cycleHeader}>
+        <Text
+          style={[
+            styles.statusText,
+            {
+              color:
+                cycle.status === "PAID"
+                  ? "#2ECC71"
+                  : cycle.status === "PENDING"
+                  ? "#A64B2A"
+                  : "#E74C3C",
+            },
+          ]}
+        >
+          {formatStatus(cycle.status)}
+        </Text>
+        <Text style={styles.dateRange}>
+          {cycle.startDate} ~ {cycle.endDate}
+        </Text>
       </View>
 
       <View style={styles.cycleInfo}>
-        <Text style={{ fontWeight: "400" }}>{t("amountDue")}: ${cycle.amountDue}</Text>
+        <Text style={styles.cycleInfoText}>
+          {t("amountDue")}: <Text style={styles.amount}>${cycle.amountDue}</Text>
+        </Text>
       </View>
+
       <View style={styles.bookingDetailsContainer}>
+        <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
         {cycle.bookingDetails.map((detail) => (
-          <View
+          <TouchableOpacity
             key={detail.id}
-            style={{ borderBottomWidth: 0.5, borderBottomColor: "#333" }}
+            style={styles.detailItem}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/bookingDetails",
+                params: { bookingDetailId: detail.id, chefId },
+              })
+            }
           >
-            <TouchableOpacity
-              style={styles.detailItem}
-              onPress={() =>
-                router.push({
-                  pathname: "/screen/bookingDetails",
-                  params: { bookingDetailId: detail.id, chefId },
-                })
-              }
-            >
-              <View
-                style={{ flexDirection: "row", padding: 1, justifyContent: "space-between" }}
-              >
-                <Text style={styles.detailText}>
-                  {t("sessionDate")}: {detail.sessionDate}
-                </Text>
-                <Text style={{ fontWeight: "bold", fontSize: 14 }}>{detail.status}</Text>
-              </View>
+            <View style={styles.detailHeader}>
               <Text style={styles.detailText}>
-                {t("startTime")}: {detail.startTime}
+                {t("sessionDate")}: {detail.sessionDate}
               </Text>
-              <Text style={styles.detailText}>{t("location")}: {detail.location}</Text>
-              <Text style={{ fontWeight: "bold", fontSize: 14 }}>
-                {t("totalPrice")}: ${detail.totalPrice}
+              <Text
+                style={[
+                  styles.detailStatus,
+                  {
+                    color:
+                      detail.status === "CONFIRMED"
+                        ? "#2ECC71"
+                        : detail.status === "PENDING"
+                        ? "#A64B2A"
+                        : "#E74C3C",
+                  },
+                ]}
+              >
+                {formatStatus(detail.status)}
               </Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+            <Text style={styles.detailText}>
+              {t("startTime")}: {detail.startTime}
+            </Text>
+            <Text style={styles.detailText}>
+              {t("location")}: {detail.location}
+            </Text>
+            <Text style={styles.detailTotal}>
+              {t("totalPrice")}: ${detail.totalPrice}
+            </Text>
+          </TouchableOpacity>
         ))}
       </View>
-      {/* Nút thanh toán cho từng kỳ */}
+
       {cycle.status === "PENDING" && (
         <TouchableOpacity
-          style={styles.paymentButton}
+          style={[styles.paymentButton, loading && styles.disabledButton]}
           onPress={() => handlePayment(cycle.id)}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator size="small" color="white" />
+            <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
+            <View style={styles.paymentButtonContent}>
+              <MaterialIcons name="payment" size={16} color="#FFF" />
+              <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
+            </View>
           )}
         </TouchableOpacity>
       )}
@@ -156,83 +193,169 @@ const LongTermDetailsScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("longTermBookingDetails")} />
+      <Header title={t("paymentCycles")} />
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#A64B2A"
-          style={{ marginTop: 20 }}
-        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A64B2A" />
+          <Text style={styles.loadingText}>{t("loading")}</Text>
+        </View>
       ) : (
-        <ScrollView style={{ padding: 20 }}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {longTermDetails.length > 0 ? (
             <>{longTermDetails.map(renderCycleItem)}</>
           ) : (
-            <Text style={styles.noDataText}>{t("noPaymentCyclesAvailable")}</Text>
+            <View style={styles.noDataContainer}>
+              <MaterialIcons name="error-outline" size={36} color="#A64B2A" />
+              <Text style={styles.noDataText}>{t("noPaymentCyclesAvailable")}</Text>
+            </View>
           )}
         </ScrollView>
       )}
-      <Toast />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 20,
+    paddingBottom: 100, // Đảm bảo không bị che bởi Toast
+  },
   cycleCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#DDD",
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cycleTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1E293B",
     textAlign: "center",
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
+    marginBottom: 16,
+  },
+  cycleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  dateRange: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "400",
   },
   cycleInfo: {
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  cycleText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
+  cycleInfoText: {
+    fontSize: 16,
+    color: "#334155",
+    fontWeight: "500",
+  },
+  amount: {
+    fontWeight: "700",
+    color: "#A64B2A",
   },
   bookingDetailsContainer: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 8,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    borderColor: "#E0E0E0",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 12,
   },
   detailItem: {
-    marginVertical: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  detailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
   detailText: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
+    color: "#475569",
+    marginBottom: 8,
+    fontWeight: "400",
+  },
+  detailStatus: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  detailTotal: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginTop: 8,
   },
   paymentButton: {
     backgroundColor: "#A64B2A",
-    padding: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  disabledButton: {
+    backgroundColor: "#B0B0B0",
+  },
+  paymentButtonContent: {
+    flexDirection: "row",
     alignItems: "center",
   },
   paymentButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  noDataContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
   },
   noDataText: {
     fontSize: 16,
-    color: "#9C583F",
+    color: "#A64B2A",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 8,
+    fontWeight: "500",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#A64B2A",
+    marginTop: 8,
+    fontWeight: "500",
   },
 });
 

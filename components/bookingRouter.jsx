@@ -5,33 +5,123 @@ import {
   FlatList,
   TouchableOpacity,
   Pressable,
-  Image,
   StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
+import useAxios from "../config/AXIOS_API"; // Import useAxios
 
-const handleCancel = async (axiosInstance, bookingId, onRefresh) => {
-  try {
-    const response = await axiosInstance.put(
-      `/bookings/single/cancel/${bookingId}`
-    );
-    if (response.status === 200) {
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Booking cancelled successfully",
-      });
-      onRefresh();
+// Custom hook for cancellation logic
+const useBookingCancellation = () => {
+  const axiosInstance = useAxios(); // Use useAxios inside hook
+
+  const handleCancel = async (bookingId, onRefresh) => {
+    try {
+      const response = await axiosInstance.put(
+        `/bookings/single/cancel/${bookingId}`
+      );
+      if (response.status === 200) {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Single booking cancelled successfully",
+          visibilityTime: 4000,
+        });
+        onRefresh();
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to cancel single booking";
+      console.error("Error cancelling single booking:", error?.response?.data);
+      throw new Error(errorMessage);
     }
-  } catch (error) {
-    Toast.show({
-      type: "error",
-      text1: "Error",
-      text2: error?.response?.data?.message || "Failed to cancel booking",
+  };
+
+  const handleCancelBookingLongterm = async (bookingId, onRefresh) => {
+    try {
+      const response = await axiosInstance.put(
+        `/bookings/long-term/cancel/${bookingId}`
+      );
+      if (response.status === 200) {
+        console.log("Long-term cancel success:", response.data);
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Long-term booking cancelled successfully",
+          visibilityTime: 4000,
+        });
+        onRefresh();
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to cancel long-term booking";
+      console.error(
+        "Error cancelling long-term booking:",
+        error?.response?.data
+      );
+      throw new Error(errorMessage);
+    }
+  };
+
+  const handleCancelBooking = (bookingId, bookingType, onRefresh) => {
+    return new Promise((resolve, reject) => {
+      // Validate bookingType
+      if (
+        !bookingType ||
+        !["SINGLE", "LONG_TERM"].includes(bookingType.toUpperCase())
+      ) {
+        console.error(
+          "Invalid bookingType:",
+          bookingType,
+          "for bookingId:",
+          bookingId
+        );
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Invalid booking type",
+          visibilityTime: 4000,
+        });
+        return reject(new Error("Invalid booking type"));
+      }
+
+      Alert.alert(
+        "Cancel Booking",
+        "Are you sure you want to cancel this booking?",
+        [
+          { text: "No", style: "cancel", onPress: () => resolve(false) },
+          {
+            text: "Yes",
+            onPress: async () => {
+              try {
+                if (bookingType === "SINGLE") {
+                  await handleCancel(bookingId, onRefresh);
+                } else if (bookingType === "LONG_TERM") {
+                  await handleCancelBookingLongterm(bookingId, onRefresh);
+                }
+                resolve(true);
+              } catch (error) {
+                Toast.show({
+                  type: "error",
+                  text1: "Error",
+                  text2: error.message,
+                  visibilityTime: 4000,
+                });
+                reject(error);
+              }
+            },
+          },
+        ]
+      );
     });
-  }
+  };
+
+  return { handleCancelBooking };
 };
 
 const BookingCard = ({
@@ -46,15 +136,17 @@ const BookingCard = ({
   refreshing,
   reviewed,
   onPayment,
-  axiosInstance,
 }) => {
   const isSingleBooking = booking.bookingType === "SINGLE";
   const status = booking.status;
+  const [cancellingId, setCancellingId] = useState(null);
 
   const handlePress = () => {
     router.push({
       pathname:
-        status === "DEPOSITED" || booking.bookingType === "LONG_TERM"
+        status === "PENDING"
+          ? "/screen/viewBookingDetails"
+          : status === "DEPOSITED" || booking.bookingType === "LONG_TERM"
           ? "/screen/longTermDetails"
           : "/screen/viewBookingDetails",
       params: {
@@ -93,15 +185,14 @@ const BookingCard = ({
 
     if (
       ["PENDING", "PENDING_FIRST_CYCLE"].includes(status) &&
-      onPayment &&
-      isSingleBooking
+      booking.bookingType === "LONG_TERM" &&
+      onPayment
     ) {
       buttons.push(
         <TouchableOpacity
           key="payment"
           style={[styles.button, styles.secondaryButton]}
           onPress={() => onPayment(booking.id)}
-          accessibilityLabel="Pay for booking"
         >
           <Text style={styles.buttonText}>Pay</Text>
         </TouchableOpacity>
@@ -119,17 +210,27 @@ const BookingCard = ({
         "DEPOSITED",
         "PAID_FIRST_CYCLE",
       ].includes(status) &&
-      isSingleBooking &&
       onCancel
     ) {
       buttons.push(
         <TouchableOpacity
           key="cancel"
           style={[styles.button, styles.cancelButton]}
-          onPress={() => onCancel(booking.id)}
-          accessibilityLabel="Cancel booking"
+          onPress={async () => {
+            setCancellingId(booking.id);
+            try {
+              await onCancel(booking.id);
+            } finally {
+              setCancellingId(null);
+            }
+          }}
+          disabled={cancellingId === booking.id}
         >
-          <Text style={styles.buttonText}>Cancel</Text>
+          {cancellingId === booking.id ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.buttonText}>Cancel</Text>
+          )}
         </TouchableOpacity>
       );
     }
@@ -145,7 +246,6 @@ const BookingCard = ({
           key="accept"
           style={[styles.button, styles.primaryButton]}
           onPress={() => onAccept(booking.id)}
-          accessibilityLabel="Accept booking"
         >
           <Text style={styles.buttonText}>Accept</Text>
         </TouchableOpacity>,
@@ -153,7 +253,6 @@ const BookingCard = ({
           key="reject"
           style={[styles.button, styles.cancelButton]}
           onPress={() => onReject(booking.id)}
-          accessibilityLabel="Reject booking"
         >
           <Text style={styles.buttonText}>Reject</Text>
         </TouchableOpacity>
@@ -167,7 +266,6 @@ const BookingCard = ({
             key="viewReview"
             style={[styles.button, styles.secondaryButton]}
             onPress={() => onViewReview(booking.id, booking.chef.id)}
-            accessibilityLabel="View review"
           >
             <Text style={styles.buttonText}>View Review</Text>
           </TouchableOpacity>
@@ -178,7 +276,6 @@ const BookingCard = ({
             key="review"
             style={[styles.button, styles.secondaryButton]}
             onPress={() => onReview(booking.id, booking.chef.id)}
-            accessibilityLabel="Write review"
           >
             <Text style={styles.buttonText}>Review</Text>
           </TouchableOpacity>
@@ -190,7 +287,6 @@ const BookingCard = ({
             key="rebook"
             style={[styles.button, styles.primaryButton]}
             onPress={() => onRebook(booking)}
-            accessibilityLabel="Rebook this package"
           >
             <Text style={styles.buttonText}>Rebook</Text>
           </TouchableOpacity>
@@ -212,10 +308,6 @@ const BookingCard = ({
       onPress={handlePress}
     >
       <View style={styles.card}>
-        {/* <Image
-          source={{ uri: booking.chef?.user?.imageUrl || "https://via.placeholder.com/40" }}
-          style={styles.avatar}
-        /> */}
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
             <Text style={styles.packageName} numberOfLines={1}>
@@ -273,10 +365,11 @@ const BookingList = ({
   onAccept,
   onReject,
   onPayment,
-  axiosInstance,
 }) => {
+  const axiosInstance = useAxios(); // Use useAxios for rebooking
   const [loadingBookingId, setLoadingBookingId] = useState(null);
   const [reviewed, setReviewed] = useState(false);
+  const { handleCancelBooking } = useBookingCancellation(); // Use custom hook
 
   const handleRebook = async (booking) => {
     setLoadingBookingId(booking.id);
@@ -292,15 +385,13 @@ const BookingList = ({
 
       let selectedMenu = null;
       if (bookingDetails.menuId) {
-        // Get the dish IDs from the original booking details
         const allowedDishIds = bookingDetails.dishes.map(({ dish }) => dish.id);
 
-        // Validate menu using POST request
         const menuValidationResponse = await axiosInstance.post(
           `/menus/${bookingDetails.menuId}/validate`,
           allowedDishIds
         );
-        const isMenuValid = menuValidationResponse.data.success; 
+        const isMenuValid = menuValidationResponse.data.success;
         if (!isMenuValid) {
           throw new Error(
             menuValidationResponse.data.message ||
@@ -343,6 +434,7 @@ const BookingList = ({
         type: "error",
         text1: "Error",
         text2: "Failed to initiate rebooking.",
+        visibilityTime: 4000,
       });
     } finally {
       setLoadingBookingId(null);
@@ -367,24 +459,25 @@ const BookingList = ({
     <View style={styles.listContainer}>
       <FlatList
         data={bookings}
-        renderItem={({ item }) => (
-          <BookingCard
-            booking={{ ...item, status: item.status || "UNKNOWN" }}
-            role={role}
-            onCancel={(bookingId) =>
-              handleCancel(axiosInstance, bookingId, onRefresh)
-            }
-            onAccept={onAccept}
-            onReject={onReject}
-            onRebook={handleRebook}
-            onReview={handleReview}
-            onViewReview={handleViewReview}
-            reviewed={reviewed}
-            refreshing={refreshing}
-            onPayment={onPayment}
-            axiosInstance={axiosInstance}
-          />
-        )}
+        renderItem={({ item }) => {
+          return (
+            <BookingCard
+              booking={{ ...item, status: item.status || "UNKNOWN" }}
+              role={role}
+              onCancel={(bookingId) =>
+                handleCancelBooking(bookingId, item.bookingType, onRefresh)
+              }
+              onAccept={onAccept}
+              onReject={onReject}
+              onRebook={handleRebook}
+              onReview={handleReview}
+              onViewReview={handleViewReview}
+              reviewed={reviewed}
+              refreshing={refreshing}
+              onPayment={onPayment}
+            />
+          );
+        }}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         onEndReached={onLoadMore}
@@ -423,13 +516,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 12,
     alignItems: "center",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#e5e7eb",
-    marginRight: 12,
   },
   cardContent: {
     flex: 1,

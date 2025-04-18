@@ -497,14 +497,13 @@ const BookingScreen = () => {
 
   const allDishes = [
     ...(parsedSelectedMenu?.menuItems || []).map((item) => ({
-      id: item.dishId || item.id,
-      name: item.dishName || item.name || "Unnamed Dish",
-      isLatest: latestDishId && (item.dishId || item.id) === parseInt(latestDishId),
+      id: item.dishId,
+      name: item.dishName,
+      image: item.dishImageUrl
     })),
     ...parsedSelectedDishes.map((dish) => ({
       id: dish.id,
-      name: dish.name || "Unnamed Dish",
-      isLatest: latestDishId && dish.id === parseInt(latestDishId),
+      name: dish.name,
     })),
   ];
 
@@ -713,14 +712,14 @@ const BookingScreen = () => {
                     key={idx}
                     style={[
                       styles.dishRow,
-                      latestDishId && (item.dishId || item.id) === parseInt(latestDishId),
+                      latestDishId && (item.dishId) === parseInt(latestDishId),
                     ]}
                   >
                     <View style={styles.dishInfo}>
                       <Image
                         source={
-                          item.imageUrl
-                            ? { uri: item.imageUrl }
+                          item.dishImageUrl
+                            ? { uri: item.dishImageUrl }
                             : require("../../assets/images/1.jpg")
                         }
                         style={styles.dishImage}
@@ -728,11 +727,11 @@ const BookingScreen = () => {
                       />
                       <View style={styles.dishText}>
                         <Text style={styles.dishName}>
-                          {item.dishName || item.name || "Unnamed Dish"}
+                          {item.dishName}
                         </Text>
                         {dishNotes[item.dishId || item.id] && (
                           <Text style={styles.noteText}>
-                            {t("note")}: {dishNotes[item.dishId || item.id]}
+                            {t("note")}: {dishNotes[item.dishId]}
                           </Text>
                         )}
                       </View>

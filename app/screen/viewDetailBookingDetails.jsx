@@ -21,8 +21,8 @@ const ViewDetailBookingDetails = () => {
   const axiosInstance = useAxios();
   const [bookingDetails, setBookingDetails] = useState(null);
   const [reportReasonDetail, setReportReasonDetail] = useState("");
+  const [isReported, setIsReported] = useState(false);
   const modalizeRef = useRef(null);
-  console.log("b", bookingDetailsId);
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -31,7 +31,7 @@ const ViewDetailBookingDetails = () => {
           `/bookings/booking-details/${bookingDetailsId}`
         );
         setBookingDetails(response.data);
-        console.log("Booking details:", response.data);
+        setIsReported(response.data.reported || false);
       } catch (error) {
         console.log("Error fetching booking details:", error);
       }
@@ -68,11 +68,10 @@ const ViewDetailBookingDetails = () => {
 
   const closeReportModal = () => {
     modalizeRef.current?.close();
-    setReportReasonDetail(""); // Reset input
+    setReportReasonDetail("");
   };
 
   const handleSubmitReport = async () => {
-    // console.log("cc", bookingDetails?.booking?.customer?.id);
     try {
       const reporterId = bookingDetails?.booking?.customer?.id;
       if (!reporterId) {
@@ -80,14 +79,14 @@ const ViewDetailBookingDetails = () => {
       }
 
       const reportedChefId = bookingDetails?.booking?.chef?.id;
-      if(!reportedChefId){
+      if (!reportedChefId) {
         throw new Error("Reported chef id not found");
       }
       const reportRequest = {
         reportedChefId,
         reason: "CHEF_NO_SHOW",
         reasonDetail: reportReasonDetail.trim() || null,
-        bookingDetailId: bookingDetailsId
+        bookingDetailId: bookingDetailsId,
       };
 
       const response = await axiosInstance.post(
@@ -95,13 +94,28 @@ const ViewDetailBookingDetails = () => {
         reportRequest
       );
 
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Report submitted successfully",
-      });
+      if (response.status === 200) {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Report submitted successfully",
+        });
 
-      closeReportModal();
+        try {
+          const updatedResponse = await axiosInstance.get(
+            `/bookings/booking-details/${bookingDetailsId}`
+          );
+          setBookingDetails(updatedResponse.data);
+          setIsReported(updatedResponse.data.reported || true);
+        } catch (fetchError) {
+          console.log("Error fetching updated booking details:", fetchError);
+          setBookingDetails({ ...bookingDetails, status: "REPORTED" });
+          setIsReported(true);
+        }
+
+        closeReportModal();
+        router.replace("(tabs)/schedule");
+      }
     } catch (error) {
       console.log("Error submitting report:", error?.response?.data?.message);
       Toast.show({
@@ -112,7 +126,6 @@ const ViewDetailBookingDetails = () => {
     }
   };
 
-  // Render loading state after all Hooks
   if (!bookingDetails) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
@@ -219,12 +232,14 @@ const ViewDetailBookingDetails = () => {
           </View>
         </ScrollView>
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#dc3545" }]}
-            onPress={openReportModal}
-          >
-            <Text style={styles.buttonText}>Report</Text>
-          </TouchableOpacity>
+          {!isReported && bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: "#dc3545" }]}
+              onPress={openReportModal}
+            >
+              <Text style={styles.buttonText}>Report</Text>
+            </TouchableOpacity>
+          )}
           {bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
             <TouchableOpacity
               style={[styles.button, { backgroundColor: "#28a745" }]}
@@ -373,7 +388,7 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: "row",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
   modalButton: {
     flex: 1,

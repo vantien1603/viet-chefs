@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
 import { SafeAreaView, StyleSheet } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
@@ -14,7 +14,8 @@ const OrderHistories = () => {
   const axiosInstance = useAxios(); // Use hook to get Axios instance
   const { showModal } = useCommonNoification();
 
-  const [index, setIndex] = useState(0);
+  const initialIndex = tab ? routes.findIndex((route) => route.key === tab) : 0;
+  const [index, setIndex] = useState(initialIndex !== -1 ? initialIndex : 0);
   const [routes] = useState([
     { key: "pending", title: "Pending" },
     { key: "paidDeposit", title: "Paid/Deposit" },
@@ -29,6 +30,18 @@ const OrderHistories = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const PAGE_SIZE = 10;
+  const params = useLocalSearchParams();
+  const { tab } = params;
+
+
+  useEffect(() => {
+    if (tab) {
+      const tabIndex = routes.findIndex((route) => route.key === tab);
+      if (tabIndex !== -1 && tabIndex !== index) {
+        setIndex(tabIndex);
+      }
+    }
+  }, [tab, index]);
 
   const fetchRequestBooking = async (page, isRefresh = false) => {
     if (isLoading && !isRefresh) return;
@@ -59,7 +72,7 @@ const OrderHistories = () => {
       );
       setPageNo(page);
     } catch (error) {
-      console.error("Error fetching booking details:", error.message);
+      console.log("Error fetching booking details:", error.message);
     } finally {
       setIsLoading(false);
       if (isRefresh) setRefreshing(false);
@@ -95,7 +108,7 @@ const OrderHistories = () => {
       );
       setPageNo(page);
     } catch (error) {
-      console.error("Error fetching booking details:", error.message);
+      console.log("Error fetching booking details:", error.message);
     } finally {
       setIsLoading(false);
       if (isRefresh) setRefreshing(false);
@@ -199,7 +212,7 @@ const OrderHistories = () => {
         onAccept={handleAccept}
         onReject={handleReject}
         onPayment={handlePayment}
-        axiosInstance={axiosInstance}
+        // axiosInstance={axiosInstance}
       />
     ),
     paidDeposit: () => (
@@ -212,7 +225,7 @@ const OrderHistories = () => {
         onAccept={handleAccept}
         onReject={handleReject}
         onPayment={handlePayment}
-        axiosInstance={axiosInstance}
+        // axiosInstance={axiosInstance}
       />
     ),
     confirm: () => (
@@ -225,7 +238,7 @@ const OrderHistories = () => {
         onAccept={handleAccept}
         onReject={handleReject}
         onPayment={handlePayment}
-        axiosInstance={axiosInstance}
+        // axiosInstance={axiosInstance}
       />
     ),
     completed: () => (
@@ -238,7 +251,7 @@ const OrderHistories = () => {
         onAccept={handleAccept}
         onReject={handleReject}
         onPayment={handlePayment}
-        axiosInstance={axiosInstance}
+        // axiosInstance={axiosInstance}
       />
     ),
     cancel: () => (
@@ -251,7 +264,7 @@ const OrderHistories = () => {
         onAccept={handleAccept}
         onReject={handleReject}
         onPayment={handlePayment}
-        axiosInstance={axiosInstance}
+        // axiosInstance={axiosInstance}
       />
     ),
   });

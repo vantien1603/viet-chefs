@@ -13,8 +13,9 @@ import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
+import { MaterialIcons } from "@expo/vector-icons";
 
-// Hàm chuyển đổi thời gian từ object thành chuỗi (nếu cần)
+// Hàm chuyển đổi thời gian từ object thành chuỗi
 const formatTime = (timeObj) => {
   if (!timeObj || typeof timeObj !== "object") return timeObj || "N/A";
   const { hour, minute, second } = timeObj;
@@ -30,10 +31,6 @@ const ViewBookingDetailsScreen = () => {
   const [depositLoading, setDepositLoading] = useState(false);
   const axiosInstance = useAxios();
 
-  console.log("bookingType:", bookingType);
-  console.log("bookingId:", bookingId);
-  console.log("refreshing:", refreshing);
-
   const fetchBookingDetails = async () => {
     setLoading(true);
     try {
@@ -41,7 +38,7 @@ const ViewBookingDetailsScreen = () => {
       console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
-      console.error("Error fetching booking details 4:", error);
+      console.error("Error fetching booking details:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -58,7 +55,6 @@ const ViewBookingDetailsScreen = () => {
       const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
       console.log("Deposit response:", JSON.stringify(response.data, null, 2));
 
-      // Kiểm tra xem deposit có thành công không (dựa trên status hoặc response)
       const depositSuccessful = response.status === 200 || response.data?.status === "DEPOSITED";
 
       if (depositSuccessful) {
@@ -67,14 +63,10 @@ const ViewBookingDetailsScreen = () => {
           text1: "Success",
           text2: "Deposit successful",
         });
-
-        // Refetch booking details to confirm the status update
         await fetchBookingDetails();
 
-        // Kiểm tra lại trạng thái sau khi refetch
         const updatedDetails = bookingDetails.some((detail) => detail.status === "DEPOSITED");
         if (updatedDetails || depositSuccessful) {
-          // Chỉ navigate nếu deposit được xác nhận
           router.push("/(tabs)/home");
         } else {
           Toast.show({
@@ -106,133 +98,172 @@ const ViewBookingDetailsScreen = () => {
     if (bookingId) {
       fetchBookingDetails();
     }
-  }, [bookingId]);
+  }, [bookingId, refreshing]);
 
   if (loading) {
     return (
-      <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="View Detail Bookings" />
-        <ActivityIndicator
-          size="large"
-          color="#A64B2A"
-          style={{ marginTop: 20 }}
-        />
+      <SafeAreaView style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}>
+        <Header title="Booking Details" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A64B2A" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   if (!bookingDetails || bookingDetails.length === 0) {
     return (
-      <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="View Booking Details" />
-        <Text style={styles.noDataText}>No booking details available</Text>
+      <SafeAreaView style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}>
+        <Header title="Booking Details" />
+        <View style={styles.noDataContainer}>
+          <MaterialIcons name="error-outline" size={40} color="#A64B2A" />
+          <Text style={styles.noDataText}>No booking details available</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
-  console.log("Can show deposit button:", bookingType === "LONG_TERM");
-  console.log("bookingDetails statuses:", bookingDetails.map((detail) => detail.status));
-
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="View Booking Details" />
-      <ScrollView style={{ padding: 20 }}>
+    <SafeAreaView style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}>
+      <Header title="Booking Details" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {bookingDetails.map((detail, index) => (
-          <View key={detail.id || index} style={styles.detailCard}>
+          <React.Fragment key={detail.id || index}>
             {/* Booking Information */}
-            <Text style={styles.sectionTitle}>Booking Information</Text>
-            <Text style={styles.detailText}>
-              Session Date: {detail.sessionDate || "N/A"}
-            </Text>
-            <Text style={styles.detailText}>
-              Start Time: {formatTime(detail.startTime)}
-            </Text>
-            <Text style={styles.detailText}>
-              Location: {detail.location || "N/A"}
-            </Text>
-            <Text style={styles.detailText}>Status: {detail.status || "N/A"}</Text>
-            <Text style={styles.detailText}>
-              Total Price: ${detail.totalPrice || 0}
-            </Text>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Booking Information</Text>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="calendar-today" size={18} color="#A64B2A" />
+                <Text style={styles.detailLabel}>Session Date:</Text>
+                <Text style={styles.detailValue}>{detail.sessionDate || "N/A"}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="access-time" size={18} color="#A64B2A" />
+                <Text style={styles.detailLabel}>Start Time:</Text>
+                <Text style={styles.detailValue}>{formatTime(detail.startTime)}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="location-on" size={18} color="#A64B2A" />
+                <Text style={styles.detailLabel}>Location:</Text>
+                <Text style={styles.detailValue}>{detail.location || "N/A"}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="info" size={18} color="#A64B2A" />
+                <Text style={styles.detailLabel}>Status:</Text>
+                <Text
+                  style={[
+                    styles.detailValue,
+                    {
+                      color:
+                        detail.status === "CONFIRMED" || detail.status === "DEPOSITED"
+                          ? "#2ECC71"
+                          : detail.status === "PENDING"
+                          ? "#A64B2A"
+                          : "#E74C3C",
+                    },
+                  ]}
+                >
+                  {detail.status || "N/A"}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
+                <Text style={styles.detailLabel}>Total Price:</Text>
+                <Text style={styles.detailValue}>${detail.totalPrice || 0}</Text>
+              </View>
+            </View>
 
             {/* Fee Details */}
-            <Text style={styles.sectionTitle}>Fee Details</Text>
-            <Text style={styles.detailText}>
-              Chef Cooking Fee: ${detail.chefCookingFee || 0}
-            </Text>
-            <Text style={styles.detailText}>
-              Price of Dishes: ${detail.priceOfDishes || 0}
-            </Text>
-            <Text style={styles.detailText}>
-              Arrival Fee: ${detail.arrivalFee || 0}
-            </Text>
-            {/* {detail.chefServingFee !== undefined && (
-              <Text style={styles.detailText}>
-                Chef Serving Fee: ${detail.chefServingFee}
-              </Text>
-            )} */}
-            <Text style={styles.detailText}>
-              Platform Fee: ${detail.platformFee || 0}
-            </Text>
-            <Text style={styles.detailText}>
-              Total Chef Fee: ${detail.totalChefFeePrice || 0}
-            </Text>
-            <Text style={styles.detailText}>
-              Discount Amount: ${detail.discountAmout || 0}
-            </Text>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Fee Details</Text>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>- Chef Cooking Fee:</Text>
+                <Text style={styles.detailValue}>${detail.chefCookingFee || 0}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>- Price of Dishes:</Text>
+                <Text style={styles.detailValue}>${detail.priceOfDishes || 0}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>- Arrival Fee:</Text>
+                <Text style={styles.detailValue}>${detail.arrivalFee || 0}</Text>
+              </View>
+              {detail.chefServingFee !== undefined && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>- Chef Serving Fee:</Text>
+                  <Text style={styles.detailValue}>${detail.chefServingFee || 0}</Text>
+                </View>
+              )}
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>- Platform Fee:</Text>
+                <Text style={styles.detailValue}>${detail.platformFee || 0}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>- Total Chef Fee:</Text>
+                <Text style={styles.detailValue}>${detail.totalChefFeePrice || 0}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>- Discount Amount:</Text>
+                <Text style={styles.detailValue}>${detail.discountAmout || 0}</Text>
+              </View>
+            </View>
 
             {/* Schedule */}
-            <Text style={styles.sectionTitle}>Schedule</Text>
-            <Text style={styles.detailText}>
-              Time Begin Cook: {formatTime(detail.timeBeginCook)}
-            </Text>
-            <Text style={styles.detailText}>
-              Time Begin Travel: {formatTime(detail.timeBeginTravel)}
-            </Text>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Schedule</Text>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Time Begin Cook:</Text>
+                <Text style={styles.detailValue}>{formatTime(detail.timeBeginCook)}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Time Begin Travel:</Text>
+                <Text style={styles.detailValue}>{formatTime(detail.timeBeginTravel)}</Text>
+              </View>
+            </View>
 
             {/* Dishes */}
-            <Text style={styles.sectionTitle}>Dishes</Text>
-            {!detail.dishes || detail.dishes.length === 0 ? (
-              <Text style={styles.detailText}>No dishes selected</Text>
-            ) : (
-              detail.dishes.map((dishItem, dishIndex) => (
-                <View key={dishItem.id || dishIndex} style={styles.dishItem}>
-                  <Text style={styles.detailText}>
-                    Dish Name: {dishItem.dish?.name || "N/A"}
-                  </Text>
-                  <Text style={styles.detailText}>
-                    Description: {dishItem.dish?.description || "N/A"}
-                  </Text>
-                  <Text style={styles.detailText}>
-                    Cuisine Type: {dishItem.dish?.cuisineType || "N/A"}
-                  </Text>
-                  <Text style={styles.detailText}>
-                    Service Type: {dishItem.dish?.serviceType || "N/A"}
-                  </Text>
-                  {/* <Text style={styles.detailText}>
-                    Base Price: ${dishItem.dish?.basePrice || 0}
-                  </Text> */}
-                  {dishItem.notes && (
-                    <Text style={styles.detailText}>Notes: {dishItem.notes}</Text>
-                  )}
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Dishes</Text>
+              {!detail.dishes || detail.dishes.length === 0 ? (
+                <View style={styles.noDataContainer}>
+                  <Text style={[styles.detailValue, { color: "#A64B2A" }]}>No dishes selected</Text>
                 </View>
-              ))
-            )}
-          </View>
+              ) : (
+                detail.dishes.map((dishItem, dishIndex) => (
+                  <View key={dishItem.id || dishIndex} style={styles.dishItem}>
+                    <View style={styles.dishRow}>
+                      <Text style={styles.detailLabel}>Dish Name:</Text>
+                      <Text style={styles.detailValue}>{dishItem.dish?.name || "N/A"}</Text>
+                    </View>
+                    {dishItem.notes && (
+                      <View style={[styles.dishRow, { marginLeft: 20 }]}>
+                        <Text style={styles.detailLabel}>Notes:</Text>
+                        <Text style={styles.detailValue}>{dishItem.notes}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          </React.Fragment>
         ))}
       </ScrollView>
 
       {/* Nút Make Deposit */}
       {bookingType === "LONG_TERM" && (
         <TouchableOpacity
-          style={styles.depositButton}
+          style={[styles.depositButton, depositLoading && styles.disabledButton]}
           onPress={handleDeposit}
           disabled={depositLoading}
         >
           {depositLoading ? (
-            <ActivityIndicator size="small" color="white" />
+            <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.depositButtonText}>Make Deposit</Text>
+            <View style={styles.depositButtonContent}>
+              <MaterialIcons name="payment" size={18} color="#FFF" />
+              <Text style={styles.depositButtonText}>Make Deposit</Text>
+            </View>
           )}
         </TouchableOpacity>
       )}
@@ -243,49 +274,102 @@ const ViewBookingDetailsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  detailCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100, // Đảm bảo nút Deposit không che nội dung
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#333",
-    marginTop: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  detailText: {
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 8,
+    width: 150, // Căn chỉnh nhãn
+  },
+  detailValue: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 5,
+    flex: 1,
   },
   dishItem: {
+    paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#DDD",
-    paddingTop: 10,
-    marginTop: 5,
+    borderTopColor: "#E5E5E5",
+    marginTop: 8,
+  },
+  dishRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  noDataContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
   },
   noDataText: {
     fontSize: 16,
-    color: "#9C583F",
+    color: "#A64B2A",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#A64B2A",
+    marginTop: 8,
   },
   depositButton: {
     backgroundColor: "#A64B2A",
-    padding: 15,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginVertical: 20,
-    marginHorizontal: 20,
+    margin: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  disabledButton: {
+    backgroundColor: "#B0B0B0",
+  },
+  depositButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   depositButtonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontWeight: "700",
     fontSize: 16,
+    marginLeft: 8,
   },
 });
 

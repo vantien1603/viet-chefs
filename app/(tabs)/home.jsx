@@ -54,7 +54,7 @@ export default function Home() {
         setUnreadCount(unread);
       }
     } catch (error) {
-      console.log("Error fetching unread count", error);
+      console.log("Error fetching unread count", error?.response?.data);
     }
   };
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function Home() {
 
       if (savedAddress) {
         const parsedAddress = JSON.parse(savedAddress);
-        console.log("Địa chỉ đã lưu:", parsedAddress);
+        // console.log("Địa chỉ đã lưu:", parsedAddress);
         setSelectedAddress(parsedAddress);
 
         if (parsedAddress.latitude && parsedAddress.longitude) {
@@ -302,8 +302,8 @@ export default function Home() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        // keyboardVerticalOffset={80}
         style={{ flex: 1 }}
       >
         <ScrollView

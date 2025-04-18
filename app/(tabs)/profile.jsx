@@ -21,8 +21,6 @@ const menuItems = [
   { id: "2", icon: "briefcase", title: "Create chef account" },
   { id: "3", icon: "lock-closed", title: "Change password" },
   { id: "4", icon: "settings", title: "Setting" },
-  { id: "5", icon: "", title: "Checkin - Checkout" },
-  { id: "6", icon: "", title: "Customer Schedule" },
 ];
 
 const Profile = () => {
@@ -68,12 +66,6 @@ const Profile = () => {
         break;
       case "4":
         router.push("/screen/setting");
-        break;
-      case "5":
-        router.push("/screen/checkinout");
-        break;
-      case "6":
-        router.push("/screen/customerSchedule");
         break;
       default:
         router.push("/screen/profileDetail");

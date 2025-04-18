@@ -62,6 +62,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
                       ? "home"
                       : route.name === "chat"
                       ? "chatbubble-outline"
+                      : route.name === "schedule"
+                      ? "calendar-outline"
                       : route.name === "history"
                       ? "time-outline"
                       : route.name === "bag"
@@ -96,6 +98,7 @@ export default function TabLayout() {
         >
             <Tabs.Screen name="home" />
             <Tabs.Screen name="chat" />
+            <Tabs.Screen name="schedule" />
             <Tabs.Screen name="history" />
             <Tabs.Screen name="profile" />
         </Tabs>
