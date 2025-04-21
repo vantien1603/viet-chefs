@@ -1,6 +1,6 @@
 import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
-import React, { useContext, useEffect } from 'react';
-import { Redirect, router } from 'expo-router';
+import React, { useCallback, useContext, useEffect } from 'react';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../config/AuthContext';
@@ -37,10 +37,10 @@ export default function WelcomeScreen() {
 
   const setupNotifications = async () => {
     // Kiểm tra xem có phải thiết bị thật không
-    if (!Device.isDevice) {
-      console.log('Must use physical device for Push Notifications');
-      return;
-    }
+    // if (!Device.isDevice) {
+    //   console.log('Must use physical device for Push Notifications');
+    //   return;
+    // }
 
     // Yêu cầu quyền thông báo
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -90,6 +90,12 @@ export default function WelcomeScreen() {
     };
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      setupNotifications();
+    }, [user])
+  );
+
   const setupLocationPermissions = async () => {
     // Yêu cầu quyền truy cập vị trí
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
@@ -122,7 +128,6 @@ export default function WelcomeScreen() {
   };
 
   useEffect(() => {
-    console.log('User:', user);
     if (user) {
       navigation.navigate('(tabs)', { screen: 'home' });
     }

@@ -37,7 +37,7 @@ const Profile = () => {
         const response = await axiosInstance.get("/users/profile");
         setAvatar(response.data.avatarUrl || "");
       } catch (error) {
-        console.error("Error fetching avatar:", error);
+        console.log("Error fetching avatar:", error);
       } finally {
         setLoading(false);
       }

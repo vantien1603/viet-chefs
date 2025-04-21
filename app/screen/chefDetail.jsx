@@ -4,7 +4,7 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   StyleSheet,
   ActivityIndicator,
   BackHandler,
@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { commonStyles } from "../../style";
 import { router, useLocalSearchParams } from "expo-router";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -23,12 +22,11 @@ import { t } from "i18next";
 const ChefDetail = () => {
   const [expandedBio, setExpandedBio] = useState(false);
   const [expandedDesc, setExpandedDesc] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(false); // New state for additional fields
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [dishes, setDishes] = useState([]);
-  const [loadingDishes, setLoadingDishes] = useState(false);
-  const [loadingChef, setLoadingChef] = useState(false);
-  const { chefId } = useLocalSearchParams();
   const [chefs, setChefs] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { chefId } = useLocalSearchParams();
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
 
@@ -39,73 +37,39 @@ const ChefDetail = () => {
       return true;
     };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => backHandler.remove();
   }, []);
 
+  // Gộp API calls
   useEffect(() => {
-    let isMounted = true;
-    const fetchDishes = async () => {
-      setLoadingDishes(true);
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const response = await axiosInstance.get("/dishes");
-        if (isMounted) {
-          setDishes(response.data.content);
-        }
+        const [dishesResponse, chefResponse] = await Promise.all([
+          axiosInstance.get(`/dishes?chefId=${chefId}`, { timeout: 5000 }),
+          axiosInstance.get(`/chefs/${chefId}`, { timeout: 5000 }),
+        ]);
+        setDishes(dishesResponse.data.content);
+        setChefs(chefResponse.data);
       } catch (error) {
-        if (isMounted) {
-          console.log("Error fetching dishes:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải danh sách món ăn",
-          });
+        let message = "Không thể tải dữ liệu";
+        if (error.code === "ECONNABORTED") {
+          message = "Hết thời gian chờ, vui lòng thử lại";
+        } else if (error.response) {
+          message = `Lỗi server: ${error.response.status}`;
         }
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: message,
+        });
       } finally {
-        if (isMounted) {
-          setLoadingDishes(false);
-        }
+        setIsLoading(false);
       }
     };
-    fetchDishes();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchChefById = async () => {
-      if (!chefId) return;
-      setLoadingChef(true);
-      try {
-        const response = await axiosInstance.get(`/chefs/${chefId}`);
-        if (isMounted) {
-          setChefs(response.data);
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.log("Error fetching chef:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải thông tin đầu bếp",
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingChef(false);
-        }
-      }
-    };
-    fetchChefById();
-    return () => {
-      isMounted = false;
-    };
+    if (chefId) fetchData();
   }, [chefId]);
 
   const onOpenModal = () => {
@@ -123,192 +87,192 @@ const ChefDetail = () => {
 
   const toggleBio = () => setExpandedBio(!expandedBio);
   const toggleDesc = () => setExpandedDesc(!expandedDesc);
-  const toggleDetails = () => setShowMoreDetails(!showMoreDetails); // New toggle function
+  const toggleDetails = () => setShowMoreDetails(!showMoreDetails);
+
+  // Component con tối ưu với React.memo
+  const DishCard = React.memo(({ dish, onPress }) => (
+    <TouchableOpacity style={styles.dishCard} onPress={onPress}>
+      <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
+      <Text style={styles.dishName}>{dish.name}</Text>
+      <Text style={styles.dishDescription}>{dish.description}</Text>
+    </TouchableOpacity>
+  ));
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
       <Header title={t("chefInfo")} onLeftPress={handleBack} />
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
-        {loadingChef ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#f5a623" />
-            <Text style={styles.loadingText}>{t("loadingChefInfo")}</Text>
-          </View>
-        ) : (
-          chefs && (
-            <View style={styles.profileContainer}>
-              <View style={styles.header}>
-                <Image
-                  source={
-                    chefs?.user?.avatarUrl === "default"
-                      ? require("../../assets/images/avatar.png")
-                      : { uri: chefs?.user?.avatarUrl }
-                  }
-                  style={styles.avatar}
-                />
-                <View style={styles.textContainer}>
-                  <Text style={styles.name}>{chefs?.user?.fullName}</Text>
-                  <Text style={styles.specialty}>{chefs?.specialization}</Text>
-                  <View style={styles.starContainer}>
-                    {Array(5)
-                      .fill()
-                      .map((_, i) => (
-                        <Icon key={i} name="star" size={20} color="#f5a623" />
-                      ))}
+      <FlatList
+        ListHeaderComponent={
+          <>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#f5a623" />
+                <Text style={styles.loadingText}>{t("loadingData")}</Text>
+              </View>
+            ) : (
+              chefs && (
+                <View style={styles.profileContainer}>
+                  <View style={styles.header}>
+                    <Image
+                      source={
+                        chefs?.user?.avatarUrl === "default"
+                          ? require("../../assets/images/avatar.png")
+                          : { uri: chefs?.user?.avatarUrl }
+                      }
+                      style={styles.avatar}
+                    />
+                    <View style={styles.textContainer}>
+                      <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                      <Text style={styles.specialty}>{chefs?.specialization}</Text>
+                      <View style={styles.starContainer}>
+                        {Array(5)
+                          .fill()
+                          .map((_, i) => (
+                            <Icon key={i} name="star" size={20} color="#f5a623" />
+                          ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>{t("bio")}:</Text>
+                    <Text style={styles.value} numberOfLines={expandedBio ? undefined : 3}>
+                      {chefs?.bio || t("noInformation")}
+                    </Text>
+                    {chefs?.bio && chefs.bio.length > 100 && (
+                      <TouchableOpacity onPress={toggleBio}>
+                        <Text style={styles.showMore}>
+                          {expandedBio ? t("seeLess") : t("seeMore")}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>{t("description")}:</Text>
+                    <Text style={styles.value} numberOfLines={expandedDesc ? undefined : 3}>
+                      {chefs?.description || t("noInformation")}
+                    </Text>
+                    {chefs?.description && chefs.description.length > 100 && (
+                      <TouchableOpacity onPress={toggleDesc}>
+                        <Text style={styles.showMore}>
+                          {expandedDesc ? t("seeLess") : t("seeMore")}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {showMoreDetails && (
+                    <>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("address")}:</Text>
+                        <Text style={styles.value}>{chefs?.address}</Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>Email:</Text>
+                        <Text style={styles.value}>{chefs?.user?.email}</Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("phone")}:</Text>
+                        <Text style={styles.value}>{chefs?.user?.phone}</Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("gender")}:</Text>
+                        <Text style={styles.value}>{chefs?.user?.gender}</Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("dob")}:</Text>
+                        <Text style={styles.value}>{chefs?.user?.dob}</Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("country")}:</Text>
+                        <Text style={styles.value}>{chefs?.country}</Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("experienceYears")}:</Text>
+                        <Text style={styles.value}>
+                          {chefs?.yearsOfExperience || t("noInformation")}
+                        </Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("maxServingSize")}:</Text>
+                        <Text style={styles.value}>
+                          {chefs?.maxServingSize} {t("people")}
+                        </Text>
+                      </View>
+                      <View style={styles.section}>
+                        <Text style={styles.label}>{t("pricePerMeal")}:</Text>
+                        <Text style={styles.value}>${chefs?.price}</Text>
+                      </View>
+                    </>
+                  )}
+
+                  <TouchableOpacity onPress={toggleDetails}>
+                    <Text style={styles.showMore}>
+                      {showMoreDetails ? t("seeLess") : t("seeMore")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity style={styles.button} onPress={onOpenModal}>
+                      <Text style={styles.buttonText}>{t("bookNow")}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/screen/reviewsChef",
+                          params: {
+                            chefId: chefId,
+                            chefName: chefs?.user?.fullName,
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.buttonText}>{t("reviews")}</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              </View>
+              )
+            )}
 
-              <View style={styles.section}>
-                <Text style={styles.label}>{t("bio")}:</Text>
-                <Text
-                  style={styles.value}
-                  numberOfLines={expandedBio ? undefined : 3}
-                >
-                  {chefs?.bio || t("noInformation")}
-                </Text>
-                {chefs?.bio && chefs.bio.length > 100 && (
-                  <TouchableOpacity onPress={toggleBio}>
-                    <Text style={styles.showMore}>
-                      {expandedBio ? t("seeLess") : t("seeMore")}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.label}>{t("description")}:</Text>
-                <Text
-                  style={styles.value}
-                  numberOfLines={expandedDesc ? undefined : 3}
-                >
-                  {chefs?.description || t("noInformation")}
-                </Text>
-                {chefs?.description && chefs.description.length > 100 && (
-                  <TouchableOpacity onPress={toggleDesc}>
-                    <Text style={styles.showMore}>
-                      {expandedDesc ? t("seeLess") : t("seeMore")}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {showMoreDetails && (
-                <>
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("address")}:</Text>
-                    <Text style={styles.value}>{chefs?.address}</Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>Email:</Text>
-                    <Text style={styles.value}>{chefs?.user?.email}</Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("phone")}:</Text>
-                    <Text style={styles.value}>{chefs?.user?.phone}</Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("gender")}:</Text>
-                    <Text style={styles.value}>{chefs?.user?.gender}</Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("dob")}:</Text>
-                    <Text style={styles.value}>{chefs?.user?.dob}</Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("country")}:</Text>
-                    <Text style={styles.value}>{chefs?.country}</Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("experienceYears")}:</Text>
-                    <Text style={styles.value}>
-                      {chefs?.yearsOfExperience || t("noInformation")}
-                    </Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("maxServingSize")}:</Text>
-                    <Text style={styles.value}>
-                      {chefs?.maxServingSize} {t("people")}
-                    </Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>{t("pricePerMeal")}:</Text>
-                    <Text style={styles.value}>${chefs?.price}</Text>
-                  </View>
-                </>
-              )}
-
-              <TouchableOpacity onPress={toggleDetails}>
-                <Text style={styles.showMore}>
-                  {showMoreDetails ? t("seeLess") : t("seeMore")}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={onOpenModal}>
-                  <Text style={styles.buttonText}>{t("bookNow")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/screen/reviewsChef",
-                      params: { chefId: chefId, chefName: chefs?.user?.fullName },
-                    })
-                  }
-                >
-                  <Text style={styles.buttonText}>{t("reviews")}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )
-        )}
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t("featuredDishes")}</Text>
-          <TouchableOpacity
-            style={styles.viewAllContainer}
-            onPress={() => router.push("/screen/allDish")}
-          >
-            <Icon name="restaurant-outline" size={16} color="#b0532c" />
-            <Text style={styles.viewAll}>{t("seeAllDishes")}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {loadingDishes ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#f5a623" />
-            <Text style={styles.loadingText}>{t("loadingFood")}</Text>
-          </View>
-        ) : (
-          <View style={styles.dishContainer}>
-            {dishes.slice(0, 4).map((dish, index) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t("featuredDishes")}</Text>
               <TouchableOpacity
-                key={index}
-                style={styles.dishCard}
-                onPress={() =>
-                  router.push({
-                    pathname: "/screen/dishDetails",
-                    params: { dishId: dish.id, chefId },
-                  })
-                }
+                style={styles.viewAllContainer}
+                onPress={() => router.push("/screen/allDish")}
               >
-                <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
-                <Text style={styles.dishName}>{dish.name}</Text>
-                <Text style={styles.dishDescription}>{dish.description}</Text>
+                <Icon name="restaurant-outline" size={16} color="#b0532c" />
+                <Text style={styles.viewAll}>{t("seeAllDishes")}</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
+          </>
+        }
+        data={dishes.slice(0, 4)}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <DishCard
+            dish={item}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/dishDetails",
+                params: { dishId: item.id, chefId },
+              })
+            }
+          />
         )}
-      </ScrollView>
+        numColumns={2}
+        contentContainerStyle={styles.dishContainer}
+        ListFooterComponent={<View style={{ height: 20 }} />}
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#f5a623" />
+              <Text style={styles.loadingText}>{t("loadingFood")}</Text>
+            </View>
+          ) : null
+        }
+      />
 
       <Modalize
         ref={modalizeRef}
@@ -331,7 +295,7 @@ const ChefDetail = () => {
             <View>
               <Text style={styles.modalButtonText}>{t("regularBooking")}</Text>
               <Text style={styles.modalButtonDesc}>
-              {t("regularBookingDescription")}
+                {t("regularBookingDescription")}
               </Text>
             </View>
           </TouchableOpacity>
@@ -348,13 +312,12 @@ const ChefDetail = () => {
             <View>
               <Text style={styles.modalButtonText}>{t("longTermBooking")}</Text>
               <Text style={styles.modalButtonDesc}>
-              {t("longTermBookingDescription")}
+                {t("longTermBookingDescription")}
               </Text>
             </View>
           </TouchableOpacity>
         </View>
       </Modalize>
-
     </GestureHandlerRootView>
   );
 };
@@ -439,6 +402,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 20,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -454,10 +418,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   dishContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginTop: 10,
+    paddingHorizontal: 16,
   },
   dishCard: {
     backgroundColor: "#b0532c",
@@ -466,6 +427,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "48%",
     marginBottom: 10,
+    marginHorizontal: "1%",
   },
   dishImage: {
     width: 100,

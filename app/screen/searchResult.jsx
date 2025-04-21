@@ -17,30 +17,40 @@ import { commonStyles } from "../../style";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import AXIOS_API from "../../config/AXIOS_API";
+import useAxios from "../../config/AXIOS_API";
 import * as Location from "expo-location";
 import { Modalize } from "react-native-modalize";
 import { Dropdown } from "react-native-element-dropdown";
 import Toast from "react-native-toast-message";
 import axios from "axios";
-import useAxios from "../../config/AXIOS_API";
 import { API_GEO_KEY } from "@env";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const SearchResultScreen = () => {
-  const { query, selectedAddress: selectedAddressParam } = useLocalSearchParams();
+  const {
+    query,
+    selectedAddress: selectedAddressParam,
+    type,
+  } = useLocalSearchParams();
   const router = useRouter();
+  const axiosInstance = useAxios();
   const [searchQuery, setSearchQuery] = useState(query || "");
-  const [isSelected, setIsSelected] = useState(0);
+  const [isSelected, setIsSelected] = useState(type === "chef" ? 1 : 0);
   const [chefs, setChefs] = useState([]);
   const [dishes, setDishes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const textInputRef = useRef(null);
   const [location, setLocation] = useState(null);
-  const [distance, setDistance] = useState(10);
-  const [tempDistance, setTempDistance] = useState(10);
+  const [distance, setDistance] = useState(30);
+  const [tempDistance, setTempDistance] = useState(30);
+  const [priceRange, setPriceRange] = useState(null);
+  const [tempPriceRange, setTempPriceRange] = useState(null);
+  const [minRating, setMinRating] = useState(null);
+  const [tempMinRating, setTempMinRating] = useState(null);
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
@@ -52,7 +62,9 @@ const SearchResultScreen = () => {
       return null;
     }
   });
-  const axiosInstance = useAxios();
+  const [lastParams, setLastParams] = useState(null); // Lưu tham số lần gọi trước
+  const [lastDishResults, setLastDishResults] = useState([]); // Lưu kết quả món ăn
+  const [lastChefResults, setLastChefResults] = useState([]); // Lưu kết quả đầu bếp
 
   const distanceOptions = [
     { label: "1 km", value: 1 },
@@ -61,6 +73,14 @@ const SearchResultScreen = () => {
     { label: "15 km", value: 15 },
     { label: "20 km", value: 20 },
     { label: "25 km", value: 25 },
+    { label: "30 km", value: 30 },
+  ];
+
+  const priceRangeOptions = [
+    { label: "Under $10", value: { min: 0, max: 10 } },
+    { label: "$10 - $100", value: { min: 10, max: 100 } },
+    { label: "$100 - $1000", value: { min: 100, max: 1000 } },
+    { label: "Over $1000", value: { min: 1000, max: Infinity } },
   ];
 
   useEffect(() => {
@@ -78,7 +98,6 @@ const SearchResultScreen = () => {
   }, [router]);
 
   useEffect(() => {
-    // Cập nhật location nếu selectedAddress có tọa độ
     if (selectedAddress?.latitude && selectedAddress?.longitude) {
       setLocation({
         latitude: selectedAddress.latitude,
@@ -92,39 +111,51 @@ const SearchResultScreen = () => {
       const response = await axiosInstance.get("/address/my-addresses");
       const fetchedAddresses = response.data;
 
-      const addressesWithCoords = await Promise.all(
-        fetchedAddresses.map(async (addr) => {
-          try {
-            const geocodeResponse = await axios.get(
-              `https://maps.googleapis.com/maps/api/geocode/json`,
-              {
-                params: {
-                  address: addr.address,
-                  key: API_GEO_KEY,
-                  language: "vi",
-                },
-              }
-            );
-            if (geocodeResponse.data.status === "OK") {
-              const { lat, lng } =
-                geocodeResponse.data.results[0].geometry.location;
-              return { ...addr, latitude: lat, longitude: lng };
+      const addressesWithCoords = [];
+      for (const addr of fetchedAddresses) {
+        try {
+          const geocodeResponse = await axios.get(
+            `https://maps.googleapis.com/maps/api/geocode/json`,
+            {
+              params: {
+                address: addr.address,
+                key: API_GEO_KEY,
+                language: "vi",
+              },
             }
-            return { ...addr, latitude: null, longitude: null };
-          } catch (error) {
-            console.error(`Error geocoding address ${addr.address}:`, error);
-            return { ...addr, latitude: null, longitude: null };
+          );
+          if (geocodeResponse.data.status === "OK") {
+            const { lat, lng } =
+              geocodeResponse.data.results[0].geometry.location;
+            addressesWithCoords.push({
+              ...addr,
+              latitude: lat,
+              longitude: lng,
+            });
+          } else {
+            addressesWithCoords.push({
+              ...addr,
+              latitude: null,
+              longitude: null,
+            });
           }
-        })
-      );
+        } catch (error) {
+          console.error(`Error geocoding address ${addr.address}:`, error);
+          addressesWithCoords.push({
+            ...addr,
+            latitude: null,
+            longitude: null,
+          });
+        }
+      }
 
       setAddresses(addressesWithCoords);
     } catch (error) {
       console.error("Error fetching addresses:", error);
       Toast.show({
         type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tải danh sách địa chỉ",
+        text1: "Error",
+        text2: "Failed to load address list",
       });
     }
   };
@@ -136,8 +167,8 @@ const SearchResultScreen = () => {
       if (status !== "granted") {
         Toast.show({
           type: "error",
-          text1: "Quyền bị từ chối",
-          text2: "Bạn cần bật dịch vụ định vị.",
+          text1: "Permission Denied",
+          text2: "Location services are required.",
         });
         return;
       }
@@ -156,7 +187,7 @@ const SearchResultScreen = () => {
 
         const newAddress = {
           id: Date.now().toString(),
-          title: "Vị trí hiện tại",
+          title: "Current Location",
           address: fullAddress,
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
@@ -169,58 +200,208 @@ const SearchResultScreen = () => {
       console.error("Error getting current location:", error);
       Toast.show({
         type: "error",
-        text1: "Lỗi",
-        text2: "Không thể lấy vị trí",
+        text1: "Error",
+        text2: "Failed to get location",
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchSuggestions = async (keyword) => {
+    if (!keyword || keyword.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const params = {
+      keyword,
+      customerLat: location?.latitude || 0,
+      customerLng: location?.longitude || 0,
+      distance,
+    };
+
+    // Kiểm tra tham số để sử dụng cache
+    if (lastParams && JSON.stringify(params) === JSON.stringify(lastParams)) {
+      setSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+      return;
+    }
+
+    try {
+      const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
+        params,
+      });
+      const chefsResponse = await axiosInstance.get("/chefs/nearby/search", {
+        params,
+      });
+
+      const dishSuggestions = dishesResponse.data.content
+        .map((dish) => ({
+          type: "dish",
+          id: dish.id,
+          name: dish.name,
+          imageUrl: dish.imageUrl,
+        }))
+        .slice(0, 5);
+
+      const chefSuggestions = chefsResponse.data.content
+        .map((chef) => ({
+          type: "chef",
+          id: chef.id,
+          name: chef.user.fullName || chef.user.username,
+          imageUrl: chef.user.avatarUrl,
+        }))
+        .slice(0, 5);
+
+      const combinedSuggestions = [...dishSuggestions, ...chefSuggestions];
+      setSuggestions(combinedSuggestions);
+      setShowSuggestions(combinedSuggestions.length > 0);
+      setLastParams(params); // Cập nhật tham số lần gọi
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchSuggestions(searchQuery);
+    }, 500); // Tăng debounce lên 500ms
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, location, distance]);
+
+  const fetchData = async (params) => {
+    const {
+      keyword = searchQuery || "",
+      lat = location?.latitude,
+      lng = location?.longitude,
+      distance: dist = distance,
+      minPrice = priceRange?.min,
+      maxPrice = priceRange?.max,
+      minRating: rating = minRating,
+      isSearch = false,
+    } = params;
+
+    if (!lat || !lng) {
+      setDishes([]);
+      setChefs([]);
+      return;
+    }
+
+    const apiParams = {
+      keyword,
+      customerLat: lat,
+      customerLng: lng,
+      distance: dist,
+    };
+
+    // Kiểm tra cache
+    if (
+      lastParams &&
+      JSON.stringify({
+        ...apiParams,
+        minPrice,
+        maxPrice,
+        minRating: rating,
+      }) === JSON.stringify(lastParams)
+    ) {
+      setDishes(lastDishResults);
+      setChefs(lastChefResults);
+      if (isSearch) {
+        const isChefPriority =
+          type === "chef" || keyword.toLowerCase().includes("chef");
+        setIsSelected(isChefPriority && lastChefResults.length > 0 ? 1 : 0);
+      }
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
+        params: {
+          ...apiParams,
+          minPrice,
+          maxPrice,
+        },
+      });
+
+      const chefsResponse = await axiosInstance.get("/chefs/nearby/search", {
+        params: {
+          ...apiParams,
+          minRating: rating,
+        },
+      });
+
+      const dishesData = dishesResponse.data.content;
+      const chefsData = chefsResponse.data.content;
+
+      setDishes(dishesData);
+      setChefs(chefsData);
+      setLastDishResults(dishesData);
+      setLastChefResults(chefsData);
+      setLastParams({ ...apiParams, minPrice, maxPrice, minRating: rating });
+
+      if (isSearch) {
+        const isChefPriority =
+          type === "chef" || keyword.toLowerCase().includes("chef");
+        setIsSelected(isChefPriority && chefsData.length > 0 ? 1 : 0);
+      } else if (type === "chef") {
+        setIsSelected(1);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setDishes([]);
+      setChefs([]);
+      if (isSearch) {
+        setIsSelected(1);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const getLocationAndFetchData = async () => {
-      setIsLoading(true);
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           Alert.alert(
             "Permission Denied",
-            "Location permission is required to search nearby chefs and dishes. Please enable location services in your settings."
+            "Location permission is required to search nearby chefs and dishes."
           );
           setLocation(null);
-          const dishesResponse = await axiosInstance.get("/dishes/search", {
-            params: { keyword: "" },
-          });
-          setDishes(dishesResponse.data.content);
-        } else if (!location) {
-          // Chỉ lấy vị trí nếu chưa có từ selectedAddress
+          setDishes([]);
+          setChefs([]);
+          return;
+        }
+
+        if (!location) {
           let userLocation = await Location.getCurrentPositionAsync({});
           setLocation({
             latitude: userLocation.coords.latitude,
             longitude: userLocation.coords.longitude,
           });
-          console.log("User Location:", userLocation.coords);
-          await fetchInitialData(
-            userLocation.coords.latitude,
-            userLocation.coords.longitude
-          );
+          await fetchData({
+            lat: userLocation.coords.latitude,
+            lng: userLocation.coords.longitude,
+          });
         } else {
-          // Sử dụng location từ selectedAddress
-          await fetchInitialData(location.latitude, location.longitude);
+          await fetchData({ lat: location.latitude, lng: location.longitude });
         }
       } catch (error) {
-        console.log("Error getting location or fetching data:", error);
+        console.error("Error getting location:", error);
         Alert.alert(
           "Location Error",
-          "Failed to fetch your location. Please ensure location services are enabled and try again."
+          "Failed to fetch your location. Please ensure location services are enabled."
         );
         setLocation(null);
-        const dishesResponse = await axiosInstance.get("/dishes/search", {
-          params: { keyword: "" },
-        });
-        setDishes(dishesResponse.data.content);
-      } finally {
-        setIsLoading(false);
+        setDishes([]);
+        setChefs([]);
       }
 
       await fetchAddresses();
@@ -233,142 +414,24 @@ const SearchResultScreen = () => {
     getLocationAndFetchData();
   }, [location]);
 
-  const fetchInitialData = async (lat, lng) => {
-    try {
-      const dishesResponse = await axiosInstance.get("/dishes/search", {
-        params: { keyword: "" },
-      });
-      const chefsResponse = await axiosInstance.get("/chefs/nearby", {
-        params: {
-          customerLat: lat,
-          customerLng: lng,
-          distance,
-        },
-      });
-      setDishes(dishesResponse.data.content);
-      setChefs(chefsResponse.data.content);
-    } catch (error) {
-      console.log("Error fetching initial data:", error);
-    }
-  };
-
-  const options = [
-    { index: 0, name: "Recommended" },
-    { index: 1, name: "Chefs" },
-    { index: 2, name: "Ratings" },
-  ];
-
   const handleSearch = async () => {
-    const trimmedQuery = searchQuery.trim().toLowerCase();
+    const trimmedQuery = searchQuery.trim();
     if (trimmedQuery === "") return;
 
-    if (
-      !location &&
-      (trimmedQuery.includes("near") || trimmedQuery.includes("nearby"))
-    ) {
+    if (!location) {
       Alert.alert(
         "Location Unavailable",
-        "Location services are required for nearby searches. Please enable location services in your settings."
+        "Location services are required for searches."
       );
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const dishesSearchResponse = await axiosInstance.get("/dishes/search", {
-        params: { keyword: trimmedQuery },
-      });
-      const matchingDish = dishesSearchResponse.data.content.find((dish) =>
-        dish.name?.toLowerCase().includes(trimmedQuery)
-      );
-
-      if (matchingDish) {
-        setIsSelected(0);
-        if (trimmedQuery.includes("near") || trimmedQuery.includes("nearby")) {
-          const nearbyDishesResponse = await axiosInstance.get(
-            "/dishes/nearby/search",
-            {
-              params: {
-                keyword: trimmedQuery,
-                customerLat: location.latitude,
-                customerLng: location.longitude,
-                distance,
-              },
-            }
-          );
-          setDishes(nearbyDishesResponse.data.content);
-          setIsSelected(0);
-        } else {
-          setDishes(dishesSearchResponse.data.content);
-        }
-      } else {
-        if (!location) {
-          Alert.alert(
-            "Location Unavailable",
-            "Location services are required to search for nearby chefs. Please enable location services in your settings."
-          );
-          return;
-        }
-
-        const chefsResponse = await axiosInstance.get("/chefs/nearby", {
-          params: {
-            customerLat: location.latitude,
-            customerLng: location.longitude,
-            distance,
-          },
-        });
-        const matchingChef = chefsResponse.data.content.find(
-          (chef) =>
-            chef?.user.fullName?.toLowerCase().includes(trimmedQuery) ||
-            chef?.user.username?.toLowerCase().includes(trimmedQuery)
-        );
-
-        if (matchingChef) {
-          setIsSelected(1);
-          setChefs(chefsResponse.data.content);
-        } else {
-          setChefs([]);
-          setIsSelected(1);
-        }
-      }
-    } catch (error) {
-      console.log("Error during search:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const openFilterModal = () => {
-    Keyboard.dismiss();
-    setTempDistance(distance);
-    modalizeRef.current?.open();
-  };
-
-  const applyFilter = async () => {
-    setDistance(tempDistance);
-    if (location) {
-      setIsLoading(true);
-      try {
-        const chefsResponse = await axiosInstance.get("/chefs/nearby", {
-          params: {
-            customerLat: location.latitude,
-            customerLng: location.longitude,
-            distance: tempDistance,
-          },
-        });
-        setChefs(chefsResponse.data.content);
-      } catch (error) {
-        console.log("Error refetching chefs with new distance:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    modalizeRef.current?.close();
-  };
-
-  const openAddressModal = () => {
-    Keyboard.dismiss();
-    addressModalizeRef.current?.open();
+    await fetchData({
+      keyword: trimmedQuery,
+      lat: location.latitude,
+      lng: location.longitude,
+      isSearch: true,
+    });
   };
 
   const selectAddress = (address) => {
@@ -382,10 +445,40 @@ const SearchResultScreen = () => {
     } else {
       Toast.show({
         type: "error",
-        text1: "Lỗi",
-        text2: "Không thể lấy tọa độ của địa chỉ này",
+        text1: "Error",
+        text2: "Cannot retrieve coordinates for this address",
       });
     }
+  };
+
+  const openFilterModal = () => {
+    Keyboard.dismiss();
+    setTempDistance(distance);
+    setTempPriceRange(priceRange);
+    setTempMinRating(minRating);
+    modalizeRef.current?.open();
+  };
+
+  const applyFilter = async () => {
+    setDistance(tempDistance);
+    setPriceRange(tempPriceRange);
+    setMinRating(tempMinRating);
+    if (location) {
+      await fetchData({
+        lat: location.latitude,
+        lng: location.longitude,
+        distance: tempDistance,
+        minPrice: tempPriceRange?.min,
+        maxPrice: tempPriceRange?.max,
+        minRating: tempMinRating,
+      });
+    }
+    modalizeRef.current?.close();
+  };
+
+  const openAddressModal = () => {
+    Keyboard.dismiss();
+    addressModalizeRef.current?.open();
   };
 
   const renderHeader = () => (
@@ -398,12 +491,26 @@ const SearchResultScreen = () => {
           <Icon name="arrow-back" size={24} color="#4EA0B7" />
         </TouchableOpacity>
         <View style={styles.searchInputWrapper}>
-          <Icon
-            name="search"
-            size={24}
-            color="#4EA0B7"
-            style={styles.searchIcon}
-          />
+          <TouchableOpacity
+            onPress={() =>
+              router.push({
+                pathname: "/screen/search",
+                params: {
+                  query: searchQuery,
+                  selectedAddress: selectedAddress
+                    ? JSON.stringify(selectedAddress)
+                    : null,
+                },
+              })
+            }
+          >
+            <Icon
+              name="search"
+              size={24}
+              color="#4EA0B7"
+              style={styles.searchIcon}
+            />
+          </TouchableOpacity>
           <TextInput
             ref={textInputRef}
             placeholder="Search chefs or dishes"
@@ -411,21 +518,30 @@ const SearchResultScreen = () => {
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onSubmitEditing={() => handleSearch()}
+            onSubmitEditing={handleSearch}
+            onPressIn={() =>
+              router.push({
+                pathname: "/screen/search",
+                params: {
+                  query: searchQuery,
+                  selectedAddress: selectedAddress
+                    ? JSON.stringify(selectedAddress)
+                    : null,
+                },
+              })
+            }
             returnKeyType="search"
             autoFocus={true}
+            editable={true} // Ngăn nhập văn bản, chỉ để hiển thị và nhấn
           />
         </View>
-        <TouchableOpacity
-          onPress={() => openFilterModal()}
-          style={styles.filterButton}
-        >
+        <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
           <Icon name="filter" size={24} color="#4EA0B7" />
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        onPress={() => openAddressModal()}
+        onPress={openAddressModal}
         style={styles.locationContainer}
       >
         <Icon
@@ -441,7 +557,11 @@ const SearchResultScreen = () => {
 
       <View style={styles.rowNgayGui}>
         <FlatList
-          data={options}
+          data={[
+            { index: 0, name: "Recommended" },
+            { index: 1, name: "Chefs" },
+            { index: 2, name: "Ratings" },
+          ]}
           keyExtractor={(item) => item.index.toString()}
           horizontal
           renderItem={({ item }) => (
@@ -506,6 +626,9 @@ const SearchResultScreen = () => {
                 <Text style={styles.serving}>
                   Max Serving: {item.maxServingSize}
                 </Text>
+                {item.rating && (
+                  <Text style={styles.rating}>Rating: {item.rating} ⭐</Text>
+                )}
               </View>
             </View>
           </TouchableOpacity>
@@ -544,6 +667,7 @@ const SearchResultScreen = () => {
                 <Text style={styles.cookTime}>
                   Cook Time: {item.cookTime} min
                 </Text>
+                <Text style={styles.price}>Price: ${item.basePrice}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -565,7 +689,14 @@ const SearchResultScreen = () => {
     if (isSelected === 1 && chefs.length === 0 && location) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Không có đầu bếp nào gần đây</Text>
+          <Text style={styles.emptyText}>No chefs found nearby</Text>
+        </View>
+      );
+    }
+    if (isSelected === 0 && dishes.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No dishes found</Text>
         </View>
       );
     }
@@ -582,6 +713,7 @@ const SearchResultScreen = () => {
     >
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Filter Options</Text>
+
         <View style={styles.dropdownContainer}>
           <Text style={styles.dropdownLabel}>Distance</Text>
           <Dropdown
@@ -598,6 +730,41 @@ const SearchResultScreen = () => {
             containerStyle={styles.dropdownItemContainer}
           />
         </View>
+
+        <View style={styles.dropdownContainer}>
+          <Text style={styles.dropdownLabel}>Price Range</Text>
+          <Dropdown
+            style={styles.dropdown}
+            data={[{ label: "Any", value: null }, ...priceRangeOptions]}
+            labelField="label"
+            valueField="value"
+            placeholder="Select price range"
+            value={tempPriceRange}
+            onChange={(item) => setTempPriceRange(item.value)}
+            selectedTextStyle={styles.selectedTextStyle}
+            placeholderStyle={styles.placeholderStyle}
+            itemTextStyle={styles.itemTextStyle}
+            containerStyle={styles.dropdownItemContainer}
+          />
+        </View>
+
+        {/* <View style={styles.dropdownContainer}>
+          <Text style={styles.dropdownLabel}>Minimum Rating</Text>
+          <Dropdown
+            style={styles.dropdown}
+            data={ratingOptions}
+            labelField="label"
+            valueField="value"
+            placeholder="Select rating"
+            value={tempMinRating}
+            onChange={(item) => setTempMinRating(item.value)}
+            selectedTextStyle={styles.selectedTextStyle}
+            placeholderStyle={styles.placeholderStyle}
+            itemTextStyle={styles.itemTextStyle}
+            containerStyle={styles.dropdownItemContainer}
+          />
+        </View> */}
+
         <View style={styles.modalButtons}>
           <TouchableOpacity
             onPress={() => modalizeRef.current?.close()}
@@ -625,7 +792,7 @@ const SearchResultScreen = () => {
         <Text style={styles.modalTitle}>Select Address</Text>
         {addresses.length === 0 ? (
           <Text style={styles.emptyText}>
-            Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ mới!
+            You have no saved addresses. Add a new one!
           </Text>
         ) : (
           addresses.map((item) => (
@@ -642,7 +809,7 @@ const SearchResultScreen = () => {
           ))
         )}
         <TouchableOpacity
-          onPress={() => getCurrentLocation()}
+          onPress={getCurrentLocation}
           style={{
             backgroundColor: "#A64B2A",
             padding: 15,
@@ -655,7 +822,7 @@ const SearchResultScreen = () => {
             <ActivityIndicator size="small" color="white" />
           ) : (
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Sử dụng vị trí hiện tại
+              Use Current Location
             </Text>
           )}
         </TouchableOpacity>
@@ -672,16 +839,21 @@ const SearchResultScreen = () => {
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       {renderHeader()}
-      <FlatList
-        data={getData()}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        ListEmptyComponent={renderEmptyMessage}
-        contentContainerStyle={styles.flatListContainer}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-      />
-
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4EA0B7" />
+        </View>
+      ) : (
+        <FlatList
+          data={getData()}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          ListEmptyComponent={renderEmptyMessage}
+          contentContainerStyle={styles.flatListContainer}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+        />
+      )}
       {renderFilterModal()}
       {renderAddressModal()}
     </GestureHandlerRootView>
@@ -742,7 +914,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 14,
     color: "#333",
-    flex: 1, // Thay flexShrink để hiển thị đầy đủ địa chỉ
+    flex: 1,
     flexWrap: "wrap",
   },
   card: {
@@ -752,7 +924,7 @@ const styles = StyleSheet.create({
     margin: 5,
     flex: 1,
     width: screenWidth * 0.45,
-    height: 280,
+    height: 300,
     maxWidth: "48%",
   },
   chefContainer: {
@@ -812,6 +984,14 @@ const styles = StyleSheet.create({
     color: "#F8BF40",
   },
   cookTime: {
+    fontSize: 12,
+    color: "#F8BF40",
+  },
+  price: {
+    fontSize: 12,
+    color: "#F8BF40",
+  },
+  rating: {
     fontSize: 12,
     color: "#F8BF40",
   },

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -140,6 +140,42 @@ const BookingCard = ({
   const isSingleBooking = booking.bookingType === "SINGLE";
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState(null);
+
+  // console.log("cc", booking.createdAt);
+
+  useEffect(() => {
+    if (
+      !["PENDING", "PENDING_FIRST_CYCLE"].includes(status) ||
+      !booking.createdAt
+    ) {
+      return; // Only apply countdown for PENDING or PENDING_FIRST_CYCLE bookings
+    }
+
+    const calculateTimeRemaining = () => {
+      const createdAt = new Date(booking.createdAt).getTime();
+      const expirationTime = createdAt + 60 * 60 * 1000; // 1 hour from createdAt (in milliseconds)
+      const currentTime = new Date().getTime();
+      const timeDiff = expirationTime - currentTime;
+
+      if (timeDiff <= 0) {
+        setTimeRemaining("Expired");
+      } else {
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+        setTimeRemaining(`${minutes}m ${seconds}s`);
+      }
+    };
+
+    calculateTimeRemaining(); // Initial calculation
+
+    const timer = setInterval(() => {
+      calculateTimeRemaining();
+    }, 1000); // Update every second
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(timer);
+  }, [booking.createdAt, status]);
 
   const handlePress = () => {
     router.push({
@@ -346,6 +382,19 @@ const BookingCard = ({
               <Ionicons name="calendar-outline" size={14} color="#64748b" />{" "}
               {booking.bookingDetails[0].sessionDate} at{" "}
               {booking.bookingDetails[0].startTime}
+            </Text>
+          )}
+          {["PENDING", "PENDING_FIRST_CYCLE"].includes(status) && timeRemaining && (
+            <Text
+              style={[
+                styles.detailText,
+                timeRemaining === "Expired" && styles.expiredText,
+              ]}
+            >
+              <Ionicons name="time-outline" size={14} color="#64748b" />{" "}
+              {timeRemaining === "Expired"
+                ? "Payment Deadline Expired"
+                : `Time to Pay: ${timeRemaining}`}
             </Text>
           )}
           <Text style={styles.price}>${booking.totalPrice}</Text>
@@ -590,6 +639,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#64748b",
     marginTop: 12,
+  },
+  expiredText: {
+    color: "#991b1b", 
+    fontWeight: "600",
   },
 });
 
