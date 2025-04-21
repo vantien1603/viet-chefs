@@ -8,6 +8,7 @@ import useAxios from '../../config/AXIOS_API'
 import { AuthContext } from '../../config/AuthContext'
 import { useNavigation } from '@react-navigation/native'
 import { useCommonNoification } from '../../context/commonNoti'
+import useActionCheckNetwork from '../../hooks/useAction'
 
 
 const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject, onCancel, onViewDetail }) => {
@@ -156,6 +157,11 @@ const Histories = () => {
 
     if (loading && !isRefresh) return;
     setLoading(true);
+    if (isRefresh == true) {
+      setNewBooking([]);
+      setConfirmBooking([]);
+      setCancelBooking([]);
+    }
     try {
       const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
         params: {
@@ -253,6 +259,9 @@ const Histories = () => {
   const handleRefresh = async () => {
     setRefresh(true);
     setPage(0);
+    setNewBooking([]);
+    setConfirmBooking([]);
+    setCancelBooking([]);
     await fetchRequestBooking(0, true);
     setRefresh(false);
   };
@@ -264,15 +273,16 @@ const Histories = () => {
       setLoading(true);
       const response = await axiosInstance.put(`/bookings/${id}/reject`);
       if (response.status === 200) {
+        setNewBooking(prev => prev.filter(item => item.id !== id));
         showModal("Success", "Reject successfully");
-        fetchRequestBooking(0, true)
+        // fetchRequestBooking(0, true)
       }
 
     } catch (error) {
       if (error.response) {
         const mes = error.response.data.message;
         console.log(mes);
-        showModal("Error", mes);
+        showModal("Error", mes, "Failed");
       }
       else {
         console.error(error.message);
@@ -288,14 +298,15 @@ const Histories = () => {
       setLoading(true);
       const response = await axiosInstance.put(`/bookings/${id}/confirm`);
       if (response.status === 200) {
+        setNewBooking(prev => prev.filter(item => item.id !== id));
         showModal("Success", "Confirmed successfully");
-        fetchRequestBooking(0, true)
+        // fetchRequestBooking(0, true)
       }
     } catch (error) {
       if (error.response) {
         const mes = error.response.data.message;
         console.log(mes);
-        showModal("Error", mes);
+        showModal("Error", mes, "Failed");
       }
       else {
         console.error(error.message);
@@ -329,9 +340,6 @@ const Histories = () => {
   }
 
 
-  // const viewDetail = (id) => {
-  //   navigation.navigate("screen/detailsBooking", { bookingId: id });
-  // }
   const viewDetail = useCallback((id) => {
     console.log("goi ne")
     navigation.navigate("screen/detailsBooking", { bookingId: id });

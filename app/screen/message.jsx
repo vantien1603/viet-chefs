@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { collection, addDoc, orderBy, query, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, orderBy, query, onSnapshot, doc, getDocs, getDoc, updateDoc, where } from 'firebase/firestore';
+
 import { database } from '../../config/firebase';
 import { AuthContext } from '../../config/AuthContext';
 import { commonStyles } from '../../style';
@@ -22,14 +23,13 @@ const Message = () => {
     const [loading, setLoading] = useState(false);
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
-    const [receiverId, setReceiverId] = useState(null);
+    const [receiver, setReceiver] = useState(null);
     const { user } = useContext(AuthContext);
     const route = useRoute();
     const router = useRouter();
     const navigation = useNavigation();
     const { contact } = route.params;
 
-    console.log("cconascnac", contact);
     useEffect(() => {
         if (!user.userId || !contact.id) return;
 
@@ -61,21 +61,114 @@ const Message = () => {
         const newMessage = {
             text: inputText,
             createdAt: new Date(),
-            // sender: "1",
             sender: user.userId,
             user: {
-                // _id: "1",
                 _id: user.userId,
                 name: user.fullName,
-                avatar: 'https://i.pravatar.cc/300'
+                avatar: user.avatarUrl
             },
-            // receiver: receiverId,
             receiver: contact.id,
             _id: Math.random().toString(36),
+            // read: false,
         };
         setInputText('');
         await addDoc(collection(database, 'chats'), newMessage);
+
+        const userPromises = [];
+        userPromises.push(getUserById(contact.id).then(userInfo => {
+            if (userInfo) {
+                console.log("reciver:", userInfo);
+                setReceiver(userInfo);
+            }
+        }));
+
+        await Promise.all(userPromises);
+        await sendPushNotification(receiver.token || "", 'Tin nhắn mới từ ' + user?.fullName, 'Bạn có tin nhắn mới', {
+            senderId: user.userId,
+        });
+        await saveOrUpdateNotification(contact.id, user.userId, 'Tin nhắn mới từ ' + user?.fullName, 'Bạn có tin nhắn mới');
+
+
     };
+
+    async function getUserById(userId) {
+        if (typeof userId !== 'string') {
+            return null;
+        }
+        const userDocRef = doc(database, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return userData;
+        } else {
+            return null;
+        }
+    }
+
+
+    const saveOrUpdateNotification = async (userId, senderId, title, body) => {
+        try {
+            const q = query(
+                collection(database, "notifications"),
+                where("userId", "==", userId),
+                where("senderId", "==", senderId)
+            );
+
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const existingDoc = querySnapshot.docs[0];
+                await updateDoc(doc(database, "notifications", existingDoc.id), {
+                    title,
+                    body,
+                    // data,
+                    read: false,
+                    createdAt: new Date(),
+                });
+            } else {
+                await addDoc(collection(database, "notifications"), {
+                    userId,
+                    senderId,
+                    title,
+                    body,
+                    // data,
+                    read: false,
+                    createdAt: new Date(),
+                });
+            }
+        } catch (error) {
+            console.error("Update noti failed:", error);
+        }
+    };
+
+
+    const sendPushNotification = async (expoPushToken, title, body, data = {}) => {
+        const message = {
+            to: expoPushToken,
+            sound: "default",
+            title: title,
+            body: body,
+            data: data,
+        };
+
+        try {
+            const response = await fetch("https://exp.host/--/api/v2/push/send", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Accept-Encoding": "gzip, deflate",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(message),
+            });
+
+            const result = await response.json();
+            console.log("Push notification result:", result);
+        } catch (error) {
+            console.error("Error sending push notification:", error);
+        }
+    };
+
 
     const renderMessage = ({ item }) => (
         <View

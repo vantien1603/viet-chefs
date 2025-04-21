@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   FlatList,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useAxios from '../../config/AXIOS_API';
@@ -15,6 +16,7 @@ import Header from '../../components/header';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { commonStyles } from '../../style';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import useActionCheckNetwork from '../../hooks/useAction';
 
 const dayInWeek = [
   { id: 0, label: 'Mon', full: 'Monday' },
@@ -128,14 +130,16 @@ const Schedule = () => {
     if (loading && !isRefresh) return;
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/bookings/booking-details/chefs', {
-        params: {
-          pageNo: pageNum,
-          pageSize: PAGE_SIZE,
-          sortBy: 'id',
-          sortDir: 'asc',
-        },
-      });
+      const response = await axiosInstance.get('/bookings/booking-details/chefs'
+        , {
+          params: {
+            pageNo: pageNum,
+            pageSize: PAGE_SIZE,
+            sortBy: 'id',
+            sortDir: 'asc',
+          },
+        }
+      );
 
       if (response.status === 200) {
         const data = response.data.content || [];
@@ -149,11 +153,12 @@ const Schedule = () => {
           }, {})
           : { ...schedules };
 
-        // data.forEach((booking) => {
-        //   const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
-        //   const dayName = dayInWeek[dayOfWeekId].full;
-        //   categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
-        // });
+        // setSchedules(data);
+        data.forEach((booking) => {
+          const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
+          const dayName = dayInWeek[dayOfWeekId].full;
+          categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
+        });
 
         data.forEach((booking) => {
           const bookingDate = new Date(booking.sessionDate);
@@ -214,7 +219,7 @@ const Schedule = () => {
 
     return (
       <ScheduleRender
-        bookings={sortedBookings}
+        bookings={schedules}
         onLoadMore={loadMoreData}
         refreshing={refresh}
         onRefresh={handleRefresh}
@@ -227,9 +232,15 @@ const Schedule = () => {
     navigation.navigate('screen/detailsScheduleBooking', { bookingId: id });
   }, [navigation]);
 
+  const handleViewDone = async () => {
+    navigation.navigate('screen/completeBooking');
+  }
+
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={'Schedule'} />
+      <Header title={'Schedule'}
+        rightIcon={'checkmark-done-circle-outline'} onRightPress={() => handleViewDone()}
+      />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
@@ -247,7 +258,47 @@ const Schedule = () => {
             tabStyle={{ paddingVertical: 0, width: 130 }}
           />
         )}
-      />
+      /> *
+
+
+      {/* <ScrollView>
+        {schedules.length > 0 ? schedules.map((item) = (
+          <TouchableOpacity key={item.id} style={[styles.section,]} onPress={() => onViewDetail(item.id)}>
+            <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
+              <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
+            </View>
+            <Text numberOfLines={1} ellipsizeMode="tail">
+              <Text style={styles.itemContentLabel}>Address: </Text>
+              <Text style={styles.itemContent}>{item.location}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.itemContentLabel}>Dinner time: </Text>
+              <Text style={styles.itemContent}>{item.startTime}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.itemContentLabel}>Travel time: </Text>
+              <Text style={styles.itemContent}>{item.timeBeginTravel}</Text>
+            </Text>
+            <Text numberOfLines={2} ellipsizeMode="tail">
+              <Text style={styles.itemContentLabel}>Dishes: </Text>
+              {item.dishes?.length === 0 && (
+                <Text style={styles.itemContent}>
+                  Not yet
+                </Text>
+              )}
+              {item.dishes && item.dishes.map((dish) => (
+                <Text key={dish.id} style={styles.itemContent}>{dish.dish?.name}, </Text>
+              ))}
+
+            </Text>
+            <Text style={styles.itemContentLabel}>Price: {item.totalPrice}</Text>
+          </TouchableOpacity>
+        )) : (
+          <Text style={{ textAlign: 'center' }}>No schedules</Text>
+        )}
+      </ScrollView> */}
+
     </SafeAreaView>
   );
 };

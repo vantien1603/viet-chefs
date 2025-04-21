@@ -11,29 +11,40 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
+import { t } from "i18next";
 
-const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
-  <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
-    <View style={styles.checkbox(isSelected)}>
+const DishCard = ({ item, selectedList, onToggle, note, onNoteChange }) => {
+  console.log(selectedList)
+
+  return (
+    <View style={[styles.dishCard, { flexDirection: 'row', alignItems: 'center', paddingRight: 50 }, selectedList[item.id] && styles.selectedDishes,]}>
+      <TouchableOpacity onPress={onToggle} style={{ flexDirection: 'row' }}>
+        {/* <View style={styles.checkbox(isSelected)}>
       {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
+    </View> */}
+        <Image
+          source={{ uri: item.imageUrl || "https://via.placeholder.com/80" }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        <View style={styles.cardContent}>
+          <Text style={styles.title}>{item.name}</Text>
+          <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
+          {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity style={{ padding: 10, backgroundColor: 'transparent' }}>
+        <Ionicons name="information-outline" size={24} color="black" />
+      </TouchableOpacity>
     </View>
-    <Image
-      source={{ uri: item.imageUrl || "https://via.placeholder.com/80" }}
-      style={styles.image}
-      resizeMode="cover"
-    />
-    <View style={styles.cardContent}>
-      <Text style={styles.title}>{item.name}</Text>
-      <Text style={styles.desc}>{item.description || "Không có mô tả"}</Text>
-      {note ? <Text style={styles.note}>Ghi chú: {note}</Text> : null}
-    </View>
-  </TouchableOpacity>
-);
+
+  );
+}
 
 const MenuCard = ({ item, isSelected, onSelect }) => (
   <TouchableOpacity
@@ -55,7 +66,7 @@ const MenuCard = ({ item, isSelected, onSelect }) => (
     />
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
-      <Text style={styles.desc}>{item.description || "Không có mô tả"}</Text>
+      <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
     </View>
   </TouchableOpacity>
 );
@@ -124,7 +135,7 @@ const SelectFood = () => {
             `/dishes/not-in-menu?menuId=${selectedMenu}`
           );
         } else {
-          dishesResponse = await axiosInstance.get(`/dishes`);
+          dishesResponse = await axiosInstance.get(`/dishes?chefId=${chefId}`);
         }
         setDishes(dishesResponse.data.content || []);
       } catch (error) {
@@ -143,7 +154,10 @@ const SelectFood = () => {
   // Handle physical back button
   useEffect(() => {
     const backAction = () => {
-      handleBack();
+      router.push({
+        pathname: "/screen/chefDetail",
+        params: { chefId: chefId },
+      });
       return true;
     };
 
@@ -236,7 +250,9 @@ const SelectFood = () => {
       params: {
         selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
         selectedDishes:
-          selectedDishesData.length > 0 ? JSON.stringify(selectedDishesData) : "",
+          selectedDishesData.length > 0
+            ? JSON.stringify(selectedDishesData)
+            : "",
         chefId,
         dishNotes: JSON.stringify(dishNotes),
       },
@@ -251,19 +267,19 @@ const SelectFood = () => {
       <View style={{ marginBottom: 12 }}>
         <DishCard
           item={item}
-          isSelected={isSelected}
+          selectedList={selectedDishes}
           onToggle={() => toggleDish(item.id)}
           note={dishNotes[item.id]}
           onNoteChange={(text) => handleAddNote(item.id, text)}
         />
-        {isSelected && (
+        {/* {isSelected && (
           <TextInput
             style={styles.input}
-            placeholder="Nhập ghi chú cho món này..."
+            placeholder={t("dishNotePlaceholder")}
             value={dishNotes[item.id] || ""}
             onChangeText={(text) => handleAddNote(item.id, text)}
           />
-        )}
+        )} */}
       </View>
     );
   };
@@ -277,40 +293,44 @@ const SelectFood = () => {
   );
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Chọn món ăn" onBack={handleBack} />
-      <Text style={styles.sectionTitle}>Chọn thực đơn có sẵn:</Text>
-      <FlatList
-        ref={menuFlatListRef}
-        data={menus}
-        horizontal
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderMenu}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Không có thực đơn nào</Text>
-        }
-      />
-      <Text style={styles.sectionTitle}>
-        {selectedMenu ? "Chọn món ăn thêm:" : "Hoặc tự chọn món ăn:"}
-      </Text>
-      <FlatList
-        ref={dishesFlatListRef}
-        data={dishes}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderDish}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Không có món ăn nào</Text>
-        }
-      />
-      {(selectedMenu ||
-        Object.values(selectedDishes).some((val) => val) ||
-        Object.values(extraDishIds).some((val) => val)) && (
-        <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Xác nhận chọn món</Text>
-        </TouchableOpacity>
-      )}
+    <SafeAreaView style={commonStyles.container}>
+      <Header title={t("selectDish")} onLeftPress={handleBack} />
+      <View style={commonStyles.containerContent}>
+        <Text style={styles.sectionTitle}>{t("selectAvailableMenu")}:</Text>
+        <FlatList
+          ref={menuFlatListRef}
+          data={menus}
+          horizontal
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderMenu}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>{t("noMenuAvailable")}</Text>
+          }
+        />
+        <Text style={styles.sectionTitle}>
+          {selectedMenu ? t("chooseMoreDishes") : t("selectDishesManually")}
+        </Text>
+        <FlatList
+          ref={dishesFlatListRef}
+          data={dishes}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderDish}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 10, marginTop: 5 }}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>{t("noDishesAvailable")}</Text>
+          }
+        />
+        {(selectedMenu ||
+          Object.values(selectedDishes).some((val) => val) ||
+          Object.values(extraDishIds).some((val) => val)) && (
+            <TouchableOpacity style={styles.button} onPress={handleContinue}>
+              <Text style={styles.buttonText}>{t("confirmDishSelection")}</Text>
+            </TouchableOpacity>
+          )}
+      </View>
+
     </SafeAreaView>
   );
 };
@@ -348,7 +368,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginRight: 16,
     marginBottom: 12,
-    width: 360,
+    width: 340,
     overflow: "hidden",
   },
   dishCard: {
@@ -358,10 +378,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     elevation: 3,
-    marginBottom: 12,
+    marginBottom: 5,
     width: "100%",
     overflow: "hidden",
   },
+  selectedDishes: {
+    borderWidth: 3,
+    borderColor: "#F8BF40",
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10,
+    transform: [{ scale: 1.03 }],
+  },
+
   checkbox: (selected) => ({
     width: 28,
     height: 28,

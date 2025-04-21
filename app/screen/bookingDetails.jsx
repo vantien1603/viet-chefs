@@ -13,9 +13,12 @@ import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
+import { useTranslation } from "react-i18next";
+import { MaterialIcons } from "@expo/vector-icons"; // Thêm icon
 
 const BookingDetailScreen = () => {
-  const { bookingDetailId, updateData, chefId } = useLocalSearchParams(); // Lấy updateData trực tiếp từ params
+  const { t } = useTranslation();
+  const { bookingDetailId, updateData, chefId } = useLocalSearchParams();
   const [bookingDetail, setBookingDetail] = useState(null);
   const [dishNames, setDishNames] = useState({});
   const [loading, setLoading] = useState(false);
@@ -35,11 +38,11 @@ const BookingDetailScreen = () => {
       if (response.data.dishes && response.data.dishes.length > 0) {
         const dishPromises = response.data.dishes.map(async (dish) => {
           try {
-            console.log(dish.dish.id)
+            console.log(dish.dish.id);
             const dishResponse = await axiosInstance.get(`/dishes/${dish.dish.id}`);
             return { dishId: dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            console.error(`Error fetching dish ${dish.id}:`, error);
+            console.error(`Error fetching dish ${dish.dish.id}:`, error);
             return { dishId: dish.dish.id, dishName: `Dish ${dish.dish.id}` };
           }
         });
@@ -51,11 +54,11 @@ const BookingDetailScreen = () => {
         setDishNames(dishNamesMap);
       }
     } catch (error) {
-      console.error("Error fetching booking detail:", error);
+      console.error("Error fetching detail:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to load booking detail",
+        text1: t("error"),
+        text2: t("failedToLoadBookingDetail"),
       });
     } finally {
       setLoading(false);
@@ -78,18 +81,18 @@ const BookingDetailScreen = () => {
 
       Toast.show({
         type: "success",
-        text1: "Success",
-        text2: "Booking detail updated successfully",
+        text1: t("success"),
+        text2: t("bookingDetailUpdated"),
       });
 
       if (parsedUpdateData.dishes && parsedUpdateData.dishes.length > 0) {
         const dishPromises = parsedUpdateData.dishes.map(async (dish) => {
           try {
-            const dishResponse = await axiosInstance.get(`/dishes/${dish.dish.dish.id}`);
-            return { dishId: dish.dishId, dishName: dishResponse.data.name };
+            const dishResponse = await axiosInstance.get(`/dishes/${dish.dish.dishId || dish.dish.id}`);
+            return { dishId: dish.dishId || dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            console.error(`Error fetching dish ${dish.dishId}:`, error);
-            return { dishId: dish.dishId, dishName: `Dish ${dish.dishId}` };
+            console.error(`Error fetching dish ${dish.dishId || dish.dish.id}:`, error);
+            return { dishId: dish.dishId || dish.dish.id, dishName: `Dish ${dish.dishId || dish.dish.id}` };
           }
         });
         const dishResults = await Promise.all(dishPromises);
@@ -103,9 +106,8 @@ const BookingDetailScreen = () => {
       console.error("Error updating booking detail:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2:
-          error.response?.data?.message || "Failed to update booking detail",
+        text1: t("error"),
+        text2: error.response?.data?.message || t("failedToUpdateBookingDetail"),
       });
     } finally {
       setUpdating(false);
@@ -135,12 +137,11 @@ const BookingDetailScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="Booking Detail" />
-        <ActivityIndicator
-          size="large"
-          color="#A64B2A"
-          style={{ marginTop: 20 }}
-        />
+        <Header title={t("bookingDetail")} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A64B2A" />
+          <Text style={styles.loadingText}>{t("loading")}</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -148,103 +149,168 @@ const BookingDetailScreen = () => {
   if (!bookingDetail) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="Booking Detail" />
-        <Text style={styles.noDataText}>No booking detail available</Text>
+        <Header title={t("bookingDetail")} />
+        <View style={styles.noDataContainer}>
+          <MaterialIcons name="error-outline" size={40} color="#A64B2A" />
+          <Text style={styles.noDataText}>{t("noBookingDetailAvailable")}</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={commonStyles.container}>
-      <Header title="Booking Detail" />
-      <ScrollView style={commonStyles.containerContent}>
-        <View style={styles.detailCard}>
-          <Text style={styles.sectionTitle}>Booking Information</Text>
-          <Text style={styles.detailText}>
-            Session Date: {bookingDetail.sessionDate}
-          </Text>
-          <Text style={styles.detailText}>
-            Start Time: {bookingDetail.startTime}
-          </Text>
-          {bookingDetail.endTime && (
-            <Text style={styles.detailText}>
-              End Time: {bookingDetail.endTime}
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: "#EBE5DD" }]}>
+      <Header title={t("sessionDetail")} />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Booking Info */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="calendar-today" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("sessionDate")}: </Text>
+            <Text style={styles.detailValue}>{bookingDetail.sessionDate}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="access-time" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("startTime")}: </Text>
+            <Text style={styles.detailValue}>{bookingDetail.startTime}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="location-on" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("location")}: </Text>
+            <Text style={styles.detailValue}>{bookingDetail.location}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="info" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("status")}: </Text>
+            <Text style={[styles.detailValue, { color: bookingDetail.status === "Confirmed" ? "#2ECC71" : "#E74C3C" }]}>
+              {bookingDetail.status}
             </Text>
-          )}
-          <Text style={styles.detailText}>
-            Location: {bookingDetail.location}
-          </Text>
-          <Text style={styles.detailText}>Status: {bookingDetail.status}</Text>
-          <Text style={styles.detailText}>
-            Total Price: ${bookingDetail.totalPrice}
-          </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("totalPrice")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.totalPrice}</Text>
+          </View>
+        </View>
 
-          <Text style={styles.sectionTitle}>Fee Details</Text>
-          <Text style={styles.detailText}>
-            Chef Cooking Fee: ${bookingDetail.chefCookingFee}
-          </Text>
-          <Text style={styles.detailText}>
-            Price of Dishes: ${bookingDetail.priceOfDishes}
-          </Text>
-          <Text style={styles.detailText}>
-            Arrival Fee: ${bookingDetail.arrivalFee}
-          </Text>
+        {/* Fee Details */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t("chefCookingFee")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.chefCookingFee}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t("priceOfDishes")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.priceOfDishes}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t("arrivalFee")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.arrivalFee}</Text>
+          </View>
           {bookingDetail.chefServingFee && (
-            <Text style={styles.detailText}>
-              Chef Serving Fee: ${bookingDetail.chefServingFee}
-            </Text>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t("chefServingFee")}: </Text>
+              <Text style={styles.detailValue}>${bookingDetail.chefServingFee}</Text>
+            </View>
           )}
-          <Text style={styles.detailText}>
-            Platform Fee: ${bookingDetail.platformFee}
-          </Text>
-          <Text style={styles.detailText}>
-            Total Chef Fee: ${bookingDetail.totalChefFeePrice}
-          </Text>
-          <Text style={styles.detailText}>
-            Discount Amount: ${bookingDetail.discountAmout}
-          </Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t("platformFee")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.platformFee}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t("totalChefFee")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.totalChefFeePrice}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t("discountAmount")}: </Text>
+            <Text style={styles.detailValue}>${bookingDetail.discountAmout}</Text>
+          </View>
+        </View>
 
-          <Text style={styles.sectionTitle}>Schedule</Text>
-          <Text style={styles.detailText}>
-            Time Begin Cook: {bookingDetail.timeBeginCook}
-          </Text>
-          <Text style={styles.detailText}>
-            Time Begin Travel: {bookingDetail.timeBeginTravel}
-          </Text>
+        {/* Schedule */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t("schedule")}</Text>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="kitchen" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("timeBeginCook")}: </Text>
+            <Text style={styles.detailValue}>{bookingDetail.timeBeginCook}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="directions-car" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("timeBeginTravel")}: </Text>
+            <Text style={styles.detailValue}>{bookingDetail.timeBeginTravel}</Text>
+          </View>
+        </View>
 
-          <Text style={styles.sectionTitle}>Menu</Text>
-          <Text style={styles.detailText}>
-            Menu ID: {bookingDetail.menuId || "Not selected"}
-          </Text>
+        {/* Menu */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t("menu")}</Text>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="restaurant-menu" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("menuId")}: </Text>
+            <Text style={[styles.detailValue, !bookingDetail.menuId && { color: "#A64B2A" }]}>
+              {bookingDetail.menuId || t("notSelected")}
+            </Text>
+          </View>
+        </View>
 
-          <Text style={styles.sectionTitle}>Dishes</Text>
+        {/* Dishes */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t("dishes")}</Text>
           {!bookingDetail.dishes || bookingDetail.dishes.length === 0 ? (
-            <Text style={styles.detailText}>Chưa có món ăn</Text>
+            <View style={styles.noDataContainer}>
+              <MaterialIcons name="restaurant" size={24} color="#A64B2A" />
+              <Text style={[styles.detailValue, { color: "#A64B2A" }]}>{t("noFoodYet")}</Text>
+            </View>
           ) : (
             bookingDetail.dishes.map((dish, index) => (
               <View key={index} style={styles.dishItem}>
-                <Text style={styles.detailText}>
-                  Dish Name: {dishNames[dish.dish.id] || "Loading..."}
-                </Text>
+                <View style={styles.dishRow}>
+                  <MaterialIcons name="fiber-manual-record" size={10} color="#A64B2A" />
+                  <Text style={styles.detailLabel}>{t("dishName")}: </Text>
+                  <Text style={styles.detailValue}>
+                    {dishNames[dish.dish.id] || t("loading")}
+                  </Text>
+                </View>
                 {dish.notes && (
-                  <Text style={styles.detailText}>Notes: {dish.notes}</Text>
+                  <View style={[styles.dishRow, { marginLeft: 20 }]}>
+                    <MaterialIcons name="note" size={16} color="#666" />
+                    <Text style={styles.detailLabel}>{t("note")}: </Text>
+                    <Text style={styles.detailValue}>{dish.notes}</Text>
+                  </View>
                 )}
               </View>
             ))
           )}
         </View>
+
+        {/* Ingredients */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t("ingredients")}</Text>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="shopping-basket" size={18} color="#A64B2A" />
+            <Text style={styles.detailLabel}>{t("ingredients")}: </Text>
+            <Text style={styles.detailValue}>
+              {bookingDetail.chefBringIngredients
+                ? t("chefBringIngredients")
+                : t("customerBringIngredients")}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
 
       {!bookingDetail.isUpdated && (
         <TouchableOpacity
-          style={styles.updateButton}
+          style={[styles.updateButton, updating && styles.disabledButton]}
           onPress={navigateToUpdateScreen}
           disabled={updating}
         >
           {updating ? (
-            <ActivityIndicator size="small" color="white" />
+            <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.updateButtonText}>Update</Text>
+            <Text style={styles.updateButtonText}>{t("update")}</Text>
           )}
         </TouchableOpacity>
       )}
@@ -255,49 +321,96 @@ const BookingDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  detailCard: {
-    // backgroundColor: "#FFF",
-    borderRadius: 10,
-    marginHorizontal:10
-    // padding: 15,
-    // marginBottom: 15,
-    // elevation: 2,
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100, // Đảm bảo nút Update không che nội dung
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#333",
-    marginTop: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  detailText: {
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 8,
+    width: 150, // Căn chỉnh nhãn
+  },
+  detailValue: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 5,
+    flex: 1,
   },
   dishItem: {
+    paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#DDD",
-    paddingTop: 10,
-    marginTop: 5,
+    borderTopColor: "#E5E5E5",
+    marginTop: 8,
+  },
+  dishRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  noDataContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
   },
   noDataText: {
     fontSize: 16,
-    color: "#9C583F",
+    color: "#A64B2A",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#A64B2A",
+    marginTop: 8,
   },
   updateButton: {
     backgroundColor: "#A64B2A",
-    padding: 15,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginVertical: 20,
-    marginHorizontal: 20,
+    margin: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  disabledButton: {
+    backgroundColor: "#B0B0B0",
   },
   updateButtonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontWeight: "700",
     fontSize: 16,
   },
 });

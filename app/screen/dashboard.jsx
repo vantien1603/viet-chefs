@@ -7,10 +7,11 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
+// import { LineChart } from "react-native-gifted-charts";
 import { Ionicons } from "@expo/vector-icons";
 import { Dropdown } from "react-native-element-dropdown";
 import { AuthContext } from "../../config/AuthContext";
+import Header from "../../components/header";
 
 const DashboardScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("Daily");
@@ -77,6 +78,7 @@ const DashboardScreen = () => {
 
   return (
     <ScrollView style={styles.scrollContainer}>
+      <Header title={'Statistical'}/>
       <View style={styles.container}>
         <View
           style={{
@@ -163,7 +165,7 @@ const DashboardScreen = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 10, minWidth: 500 }}
           >
-            <LineChart
+            {/*<LineChart
               areaChart
               curved
               data={chartData}
@@ -207,7 +209,7 @@ const DashboardScreen = () => {
                   </View>
                 ),
               }}
-            />
+            />*/}
           </ScrollView>
         </View>
 

@@ -11,6 +11,8 @@ import { MaterialIcons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { ActivityIndicator } from 'react-native'
 import { TabBar, TabView } from 'react-native-tab-view'
+import { useConfirmModal } from '../../context/commonConfirm'
+import useRequireAuthAndNetwork from '../../hooks/useRequireAuthAndNetwork'
 
 
 const PackageRender = ({ packages, loading, onLongPress, onChoose, selectionMode, selectedList, type, action }) => {
@@ -86,7 +88,8 @@ const Packages = () => {
     { key: 'subcribe', title: 'Subcribe' },
     { key: 'unsubcribe', title: 'Unsubcribe' },
   ]);
-
+  const requireAuthAndNetWork = useRequireAuthAndNetwork();
+  const { showConfirm } = useConfirmModal();
   useEffect(() => {
     fetchPackagesAndUnsubscribes();
   }, [])
@@ -146,33 +149,37 @@ const Packages = () => {
 
   const handleAction = async (type, mode, id) => {
     console.log("press", type, mode, id);
-    setLoading(true);
-    try {
-      const payload = {
-        chefId: user.chefId,
-        packageIds: mode === "single" ? [id] : selectedPackages
-      }
-      console.log(payload)
-      let response; // 👈 declare before if
+    showConfirm(`${type} confirm`, `Are you sure want to ${type} ${selectedPackages.length} packages?`, () => requireAuthAndNetWork(async () => {
+      setLoading(true);
+      try {
+        const payload = {
+          chefId: user.chefId,
+          packageIds: mode === "single" ? [id] : selectedPackages
+        }
+        console.log(payload)
+        let response;
 
-      if (type === "Unsubscribe") {
-        response = await axiosInstance.post("/packages/unsubscribe", payload)
-      } else {
-        response = await axiosInstance.post("/packages/subscribe", payload)
-      }
-      console.log(response.data, response.status);
-      if (response.status === 200) {
-        showModal("Success", `${type} ${selectedPackages.length} packages successfull`);
-        setSelectedPackages([]);
-      }
-    } catch (error) {
-      showModal("Error", `${type} ${selectedPackages.length} packages failed`);
-      console.error(error.response ? error.response.data : error.message);
-    } finally {
-      setLoading(false);
-      fetchPackagesAndUnsubscribes();
+        if (type === "Unsubscribe") {
+          response = await axiosInstance.post("/packages/unsubscribe", payload)
+        } else {
+          response = await axiosInstance.post("/packages/subscribe", payload)
+        }
+        console.log(response.data, response.status);
+        if (response.status === 200) {
+          showModal("Success", `${type} ${selectedPackages.length} packages successfull`);
+          setSelectedPackages([]);
+        }
+      } catch (error) {
+        showModal("Error", `${type} ${selectedPackages.length} packages failed`);
+        console.error(error.response ? error.response.data : error.message);
+      } finally {
+        setLoading(false);
+        fetchPackagesAndUnsubscribes();
 
-    }
+      }
+    }))
+
+
   }
 
 

@@ -1,78 +1,48 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { SafeAreaView, StyleSheet, View } from "react-native";
+import { SafeAreaView, StyleSheet } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
-
-// Import các component từ BookingRoutes
-import {
-  PendingRoute,
-  PaidDepositRoute,
-  ConfirmRoute,
-  CompletedRoute,
-  CancelRoute,
-} from "../../components/bookingRouter";
+import BookingList from "../../components/bookingRouter";
 
 const OrderHistories = () => {
-  const { user, isGuest } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
+  const axiosInstance = useAxios(); 
+  const { showModal } = useCommonNoification();
 
-  const [index, setIndex] = useState(0);
+  const initialIndex = tab ? routes.findIndex((route) => route.key === tab) : 0;
+  const [index, setIndex] = useState(initialIndex !== -1 ? initialIndex : 0);
   const [routes] = useState([
     { key: "pending", title: "Pending" },
     { key: "paidDeposit", title: "Paid/Deposit" },
     { key: "completed", title: "Completed" },
-    { key: "confirm", title: "Confirm" },
-    { key: "cancel", title: "Cancel" },
+    { key: "confirm", title: "Confirmed" },
+    { key: "cancel", title: "Cancelled" },
   ]);
   const [bookings, setBookings] = useState([]);
   const [pageNo, setPageNo] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const axiosInstance = useAxios();
   const [loading, setLoading] = useState(false);
   const PAGE_SIZE = 10;
-  const { showModal } = useCommonNoification();
+  const params = useLocalSearchParams();
+  const { tab } = params;
 
-  // const fetchRequestBooking = async (page, isRefresh = false) => {
-  //   if (isLoading && !isRefresh) return;
-  //   setIsLoading(true);
-  //   try {
-  //     const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
-  //       params: {
-  //         pageNo: page,
-  //         pageSize: PAGE_SIZE,
-  //         sortBy: "id",
-  //         sortDir: "desc",
-  //       },
-  //     });
 
-  //     const bookingData = response.data.content || response.data || [];
-  //     setBookings((prev) => {
-  //       const newData = isRefresh ? bookingData : [...prev, ...bookingData];
-  //       const uniqueData = Array.from(
-  //         new Map(newData.map((item) => [item.id, item])).values()
-  //       );
-  //       return uniqueData;
-  //     });
-  //     setTotalPages(
-  //       response.data.totalPages ||
-  //         Math.ceil(
-  //           (response.data.totalElements || bookingData.length) / PAGE_SIZE
-  //         )
-  //     );
-  //     setPageNo(page);
-  //   } catch (error) {
-  //     console.error("Error fetching booking details1111:", error.message);
-  //   } finally {
-  //     setIsLoading(false);
-  //     if (isRefresh) setRefreshing(false);
-  //   }
-  // };
+  useEffect(() => {
+    if (tab) {
+      const tabIndex = routes.findIndex((route) => route.key === tab);
+      if (tabIndex !== -1 && tabIndex !== index) {
+        setIndex(tabIndex);
+      }
+    }
+  }, [tab, index]);
+
 
   const fetchBookingDetails = async (page, isRefresh = false) => {
     if (isGuest) return;
@@ -104,60 +74,24 @@ const OrderHistories = () => {
       );
       setPageNo(page);
     } catch (error) {
-      console.error("Error fetching booking details1111:", error.message);
+      console.log("Error fetching booking details:", error.message);
     } finally {
       setIsLoading(false);
       if (isRefresh) setRefreshing(false);
     }
   };
 
-  // const handleReject = async (id) => {
-  //   try {
-  //     setLoading(true);
-  //     await axiosInstance.put(`/bookings/${id}/reject`);
-  //     fetchRequestBooking(0, true);
-  //     showModal("Success", "Reject successfully");
-  //   } catch (error) {
-  //     console.error(
-  //       "Error rejecting booking:",
-  //       error.response?.data || error.message
-  //     );
-  //     showModal("Error", "Failed to reject booking");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const handleAccept = async (id) => {
-  //   try {
-  //     setLoading(true);
-  //     await axiosInstance.put(`/bookings/${id}/confirm`);
-  //     showModal("Success", "Confirmed successfully");
-  //     fetchRequestBooking(0, true);
-  //   } catch (error) {
-  //     console.error(
-  //       "Error confirming booking:",
-  //       error.response?.data || error.message
-  //     );
-  //     showModal("Error", "Failed to confirm booking");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+ 
 
   const handlePayment = async (id) => {
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await axiosInstance.post(`/bookings/${id}/payment`);
       if (response.status === 200) {
         showModal("Success", "Payment successfully");
         fetchBookingDetails(0, true);
       }
     } catch (error) {
-      console.error(
-        "Error processing payment:",
-        error.response?.data || error.message
-      );
       showModal("Error", "Failed to process payment");
     } finally {
       setLoading(false);
@@ -165,7 +99,7 @@ const OrderHistories = () => {
   };
 
   useEffect(() => {
-    fetchBookingDetails(0);
+    fetchBookingDetails(0, true);
   }, []);
 
   const handleLoadMore = () => {
@@ -205,105 +139,100 @@ const OrderHistories = () => {
 
   const renderScene = SceneMap({
     pending: () => (
-      <PendingRoute
+      <BookingList
         bookings={pendingBookings}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        payment={handlePayment}
+        onPayment={handlePayment}
       />
     ),
     paidDeposit: () => (
-      <PaidDepositRoute
+      <BookingList
         bookings={paidDepositBookings}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-      // onAccept={handleAccept}
-      // onReject={handleReject}
+        onPayment={handlePayment}
       />
     ),
     confirm: () => (
-      <ConfirmRoute
+      <BookingList
         bookings={confirmedBookings}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-
+        role={user?.roleName}
+        onPayment={handlePayment}
       />
     ),
     completed: () => (
-      <CompletedRoute
+      <BookingList
         bookings={completedBookings}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-
+        onPayment={handlePayment}
       />
     ),
     cancel: () => (
-      <CancelRoute
+      <BookingList
         bookings={cancelledBookings}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-
+        onPayment={handlePayment}
       />
     ),
   });
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"History"} />
-      <View style={{ flex: 1 }}>
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              scrollEnabled={true}
-              indicatorStyle={{ backgroundColor: "#9C583F", height: 3 }}
-              style={{
-                backgroundColor: "#EBE5DD",
-                elevation: 0,
-                shadowOpacity: 0,
-                borderBottomWidth: 0,
-              }}
-              activeColor="#9C583F"
-              inactiveColor="gray"
-              labelStyle={{ fontWeight: "bold" }}
-            />
-          )}
-        />
-      </View>
+    <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
+      <Header title="Order History" />
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        onIndexChange={setIndex}
+        renderTabBar={(props) => (
+          <TabBar
+            {...props}
+            scrollEnabled={true}
+            indicatorStyle={{ backgroundColor: "#9C583F", height: 3 }}
+            style={{
+              backgroundColor: "#EBE5DD",
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            }}
+            activeColor="#9C583F"
+            inactiveColor="gray"
+            labelStyle={{ fontWeight: "bold" }}
+          />
+        )}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  tabContainer: {
-    flexGrow: 0,
+  container: {
     backgroundColor: "#EBE5DD",
-    flexDirection: "row",
   },
-  tabButton: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 0,
+  tabBar: {
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    elevation: 0,
   },
-  activeTabButton: {
-    borderBottomWidth: 3,
-    borderBottomColor: "#9C583F",
+  tabIndicator: {
+    backgroundColor: "#2dd4bf",
+    height: 3,
+    borderRadius: 2,
   },
-  tabText: {
-    color: "gray",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  activeTabText: {
-    color: "#9C583F",
+  tabLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "none",
   },
 });
 

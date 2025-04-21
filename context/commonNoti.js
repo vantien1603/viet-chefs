@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconContainer: {
-    marginBottom: 12,
+    marginBottom: 5,
   },
   title: {
     fontSize: 20,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   message: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
     color: '#444',
   },

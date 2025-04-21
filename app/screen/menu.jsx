@@ -15,6 +15,8 @@ import { router } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import { useCommonNoification } from "../../context/commonNoti";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { useConfirmModal } from "../../context/commonConfirm";
 
 
 const ChefMenu = () => {
@@ -24,7 +26,8 @@ const ChefMenu = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMenus, setSelectedMenus] = useState([]);
   const { showModal } = useCommonNoification();
-
+  const requireAuthAndNetWork = useRequireAuthAndNetwork();
+  const { showConfirm } = useConfirmModal();
 
 
   useEffect(() => {
@@ -78,46 +81,39 @@ const ChefMenu = () => {
 
   const handleDelete = async () => {
     if (selectedMenus.length === 0) return;
-    let successCount = 0;
-    let errorCount = 0;
-    setLoading(true);
-    try {
-      console.log("hehe", selectedMenus);
-      const promises = selectedMenus.map((item) => axiosInstance.delete(`/menus/${item}`));
-      const results = await Promise.allSettled(promises);
+    showConfirm("Delele confirm", `Are you sure want to delete ${selectedMenus.length} menus?`, () => requireAuthAndNetWork(async () => {
+      let successCount = 0;
+      let errorCount = 0;
+      setLoading(true);
+      try {
+        console.log("hehe", selectedMenus);
+        const promises = selectedMenus.map((item) => axiosInstance.delete(`/menus/${item}`));
+        const results = await Promise.allSettled(promises);
 
-      fetchMenu();
-      setSelectedMenus([]);
-      results.forEach((result) => {
-        if (result.status === "fulfilled") {
-          successCount++;
+        fetchMenu();
+        setSelectedMenus([]);
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        });
+        if (successCount === results.length) {
+          showModal("Success", "All dishes delete successfully.");
+        } else if (errorCount === results.length) {
+          showModal("Error", "All dishes delete failed.");
         } else {
-          errorCount++;
+          showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`);
         }
-      });
-      if (successCount === results.length) {
-        showModal("Success", "All dishes delete successfully.");
-      } else if (errorCount === results.length) {
-        showModal("Error", "All dishes delete failed.");
-      } else {
-        showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`);
+      } catch (error) {
+        console.error("Lỗi khi xóa:", error.response?.data || error.message);
+        alert("Có lỗi xảy ra khi xóa món ăn.");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Lỗi khi xóa:", error.response?.data || error.message);
-      alert("Có lỗi xảy ra khi xóa món ăn.");
-    } finally {
-      setLoading(false);
-    }
+    }))
   }
-
-  const renderRightActions = (id) => (
-    <TouchableOpacity
-      style={styles.deleteButton}
-      onPress={() => handleRemove(id)}
-    >
-      <Text style={styles.deleteText}>Remove</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={commonStyles.container}>

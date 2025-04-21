@@ -55,6 +55,7 @@ const ScheduleBlocked = () => {
     }, []);
 
     const fetchSchedule = async () => {
+        setLoading(true);
         try {
             const response = await axiosInstance.get("/chef-blocked-dates/me");
             const data = response.data;
@@ -206,139 +207,145 @@ const ScheduleBlocked = () => {
         }
     };
 
-
-    if (loading) return <ActivityIndicator size="large" color="#A9411D" />;
-
     return (
         <SafeAreaView style={commonStyles.container}>
             <Header title={"Blocked schedule"} />
-            <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }}>
-                <Calendar
-                    markedDates={markedDates}
-                    onDayPress={handleDayPress}
-                    markingType="simple"
-                    theme={{
-                        backgroundColor: "#EBE5DD",
-                        calendarBackground: "#EBE5DD",
-                        selectedDayBackgroundColor: "#A9411D",
-                        selectedDayTextColor: "white",
-                        todayTextColor: "#A9411D",
-                        dayTextColor: "#2d4150",
-                        textDisabledColor: "#d9e1e8",
-                        arrowColor: "#A9411D",
-                        monthTextColor: "#A9411D",
-                        textDayFontWeight: "500",
-                        textMonthFontWeight: "bold",
-                        textDayFontSize: 16,
-                        textMonthFontSize: 18,
-                    }}
-                />
+            {!loading ? (
+                <>
+                    <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }}>
+                        <Calendar
+                            markedDates={markedDates}
+                            onDayPress={handleDayPress}
+                            markingType="simple"
+                            theme={{
+                                backgroundColor: "#EBE5DD",
+                                calendarBackground: "#EBE5DD",
+                                selectedDayBackgroundColor: "#A9411D",
+                                selectedDayTextColor: "white",
+                                todayTextColor: "#A9411D",
+                                dayTextColor: "#2d4150",
+                                textDisabledColor: "#d9e1e8",
+                                arrowColor: "#A9411D",
+                                monthTextColor: "#A9411D",
+                                textDayFontWeight: "500",
+                                textMonthFontWeight: "bold",
+                                textDayFontSize: 16,
+                                textMonthFontSize: 18,
+                            }}
+                        />
 
 
-                {Object.keys(selectedDates).map(date => {
-                    const isExisting = !!existingDates[date];
-                    return (
-                        <View style={styles.formContainer} key={date}>
-                            <Text style={styles.dateTitle}>
-                                Ngày: {date}
-                                {/* {isExisting ? "(Đã có lịch, chỉ xem)" : ""} */}
-                            </Text>
-                            {schedule[date]?.map((item, index) => (
-                                <View key={index} style={styles.fieldGroup}>
-                                    <TouchableOpacity
-                                        disabled={isExisting}
-                                        onPress={() => openTimePicker(date, index, "startTime")}
-                                    >
-                                        <TextInput
-                                            placeholder="Start Time (hh:mm)"
-                                            value={item.startTime}
-                                            editable={false}
-                                            style={styles.input}
-                                        />
-                                    </TouchableOpacity>
+                        {Object.keys(selectedDates).map(date => {
+                            const isExisting = !!existingDates[date];
+                            return (
+                                <View style={styles.formContainer} key={date}>
+                                    <Text style={styles.dateTitle}>
+                                        Ngày: {date}
+                                        {/* {isExisting ? "(Đã có lịch, chỉ xem)" : ""} */}
+                                    </Text>
+                                    {schedule[date]?.map((item, index) => (
+                                        <View key={index} style={styles.fieldGroup}>
+                                            <TouchableOpacity
+                                                disabled={isExisting}
+                                                onPress={() => openTimePicker(date, index, "startTime")}
+                                            >
+                                                <TextInput
+                                                    placeholder="Start Time (hh:mm)"
+                                                    value={item.startTime}
+                                                    editable={false}
+                                                    style={styles.input}
+                                                />
+                                            </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        disabled={isExisting}
-                                        onPress={() => openTimePicker(date, index, "endTime")}
-                                    >
-                                        <TextInput
-                                            placeholder="End Time (hh:mm)"
-                                            value={item.endTime}
-                                            editable={false}
-                                            style={styles.input}
-                                        />
-                                    </TouchableOpacity>
+                                            <TouchableOpacity
+                                                disabled={isExisting}
+                                                onPress={() => openTimePicker(date, index, "endTime")}
+                                            >
+                                                <TextInput
+                                                    placeholder="End Time (hh:mm)"
+                                                    value={item.endTime}
+                                                    editable={false}
+                                                    style={styles.input}
+                                                />
+                                            </TouchableOpacity>
 
-                                    <TextInput
-                                        placeholder="Reason"
-                                        value={item.reason}
-                                        onChangeText={(text) =>
-                                            handleFieldChange(date, index, "reason", text)
-                                        }
-                                        editable={!isExisting}
-                                        style={styles.input}
-                                    />
+                                            <TextInput
+                                                placeholder="Reason"
+                                                value={item.reason}
+                                                onChangeText={(text) =>
+                                                    handleFieldChange(date, index, "reason", text)
+                                                }
+                                                editable={!isExisting}
+                                                style={styles.input}
+                                            />
+
+                                            {!isExisting && (
+                                                <TouchableOpacity
+                                                    onPress={() => handleRemoveField(date, index)}
+                                                    style={styles.removeButton}
+                                                >
+                                                    <Text style={styles.removeButtonText}>X</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    ))}
 
                                     {!isExisting && (
-                                        <TouchableOpacity
-                                            onPress={() => handleRemoveField(date, index)}
-                                            style={styles.removeButton}
-                                        >
-                                            <Text style={styles.removeButtonText}>X</Text>
+                                        <TouchableOpacity style={styles.addButton} onPress={() => handleAddField(date)}>
+                                            <Text style={styles.addButtonText}>+ Add Field</Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
-                            ))}
+                            );
+                        })}
 
-                            {!isExisting && (
-                                <TouchableOpacity style={styles.addButton} onPress={() => handleAddField(date)}>
-                                    <Text style={styles.addButtonText}>+ Add Field</Text>
-                                </TouchableOpacity>
+
+
+                        {showPicker && (
+                            <DateTimePicker
+                                value={
+                                    schedule[currentField.date]?.[currentField.index]?.[currentField.field]
+                                        ? new Date(`1970-01-01T${schedule[currentField.date][currentField.index][currentField.field]}:00`)
+                                        : new Date()
+                                }
+                                mode="time"
+                                display="spinner"
+                                onChange={handleTimeChange}
+                                is24Hour={true}
+                            />
+                        )}
+                    </ScrollView>
+                    {Object.keys(selectedDates).length > 0 && (
+                        <TouchableOpacity
+                            style={{
+                                position: "absolute",
+                                bottom: 20,
+                                left: 20,
+                                right: 20,
+                                backgroundColor: "#A64B2A",
+                                padding: 15,
+                                borderRadius: 10,
+                                alignItems: "center",
+                                elevation: 5,
+                            }}
+                            onPress={() => requireAuthAndNetWork(() => handleSave())}
+                        >
+                            {loading ? (
+                                <ActivityIndicator size="small" color="white" />
+                            ) : (
+                                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                                    Save
+                                </Text>
                             )}
-                        </View>
-                    );
-                })}
+                        </TouchableOpacity>
 
-
-
-                {showPicker && (
-                    <DateTimePicker
-                        value={
-                            schedule[currentField.date]?.[currentField.index]?.[currentField.field]
-                                ? new Date(`1970-01-01T${schedule[currentField.date][currentField.index][currentField.field]}:00`)
-                                : new Date()
-                        }
-                        mode="time"
-                        display="spinner"
-                        onChange={handleTimeChange}
-                        is24Hour={true}
-                    />
-                )}
-            </ScrollView>
-            {Object.keys(selectedDates).length > 0 && (
-                <TouchableOpacity
-                    style={{
-                        position: "absolute",
-                        bottom: 20,
-                        left: 20,
-                        right: 20,
-                        backgroundColor: "#A64B2A",
-                        padding: 15,
-                        borderRadius: 10,
-                        alignItems: "center",
-                        elevation: 5,
-                    }}
-                    onPress={() => requireAuthAndNetWork(() => handleSave())}
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="white" />
-                    ) : (
-                        <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                            Save
-                        </Text>
                     )}
-                </TouchableOpacity>
+                </>
+
+            ) : (
+                <ActivityIndicator size="large" color="#A9411D" />
             )}
+
 
         </SafeAreaView>
 

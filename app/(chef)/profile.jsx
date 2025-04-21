@@ -41,7 +41,6 @@ const Profile = () => {
 
   return (
     <ScrollView style={[commonStyles.container,]}>
-      {/* User Info */}
       <View style={styles.card}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
@@ -60,7 +59,6 @@ const Profile = () => {
         </View>
       </View>
 
-      {/* Menu List */}
       <View style={styles.menuCard}>
         {menuItems.map((item, index) => (
           <TouchableOpacity

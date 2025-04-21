@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,10 @@ import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
-// import { API_GEO_KEY } from '@env';
+import { t } from "i18next";
+import { AuthContext } from "../../config/AuthContext";
+import { useModalLogin } from "../../context/modalLoginContext";
+// import ENV from '@env';
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -31,8 +34,8 @@ const EditAddress = () => {
   const [editingAddress, setEditingAddress] = useState(null);
   const axiosInstance = useAxios();
   const [suggestions, setSuggestions] = useState([]);
-
-
+  const { isGuest } = useContext(AuthContext);
+  const { showModalLogin } = useModalLogin();
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -44,7 +47,7 @@ const EditAddress = () => {
         {
           params: {
             input: query,
-            key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
+            key: process.env.API_GEO_KEY,
             language: "vi",
             components: "country:vn",
           },
@@ -68,7 +71,7 @@ const EditAddress = () => {
         {
           params: {
             place_id: placeId,
-            key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
+            key: process.env.API_GEO_KEY,
             fields: "formatted_address",
             language: "vi",
           },
@@ -92,6 +95,8 @@ const EditAddress = () => {
   };
 
   useEffect(() => {
+    if (isGuest) showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
+
     fetchAddresses();
     loadSelectedAddress();
   }, []);
@@ -117,6 +122,7 @@ const EditAddress = () => {
   };
 
   const fetchAddresses = async () => {
+    if (isGuest) return;
     try {
       const response = await axiosInstance.get("/address/my-addresses");
       setAddresses(response.data);
@@ -151,9 +157,8 @@ const EditAddress = () => {
 
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
-          addr.city || ""
-        }, ${addr.region || ""}, ${addr.country || ""}`;
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
+          }, ${addr.region || ""}, ${addr.country || ""}`;
 
         const newLocation = {
           title: "Vị trí hiện tại",
@@ -316,8 +321,8 @@ const EditAddress = () => {
             item.type === "home"
               ? "home"
               : item.type === "work"
-              ? "business"
-              : "location-outline"
+                ? "business"
+                : "location-outline"
           }
           size={20}
           color="black"
@@ -337,7 +342,7 @@ const EditAddress = () => {
           <Text
             style={{ color: "#A9411D", fontWeight: "bold", marginRight: 15 }}
           >
-            Sửa
+            {t("edit")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDeleteAddress(item.id)}>
@@ -349,131 +354,137 @@ const EditAddress = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"Địa chỉ"} />
-      <ScrollView style={{ marginBottom: 80 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 10,
-          }}
-        >
-          <Text style={{ color: "#666", fontSize: 16 }}>Danh sách địa chỉ</Text>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
-            <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
-              Thêm mới
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <Header title={t("address")} />
+      {!isGuest && (
+        <>
+          <ScrollView style={{ marginBottom: 80 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 10,
+              }}
+            >
+              <Text style={{ color: "#666", fontSize: 16 }}>{t("addressList")}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
+                  {t("addNew")}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-        {addresses.map(renderAddressItem)}
+            {addresses.map(renderAddressItem)}
 
-        <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {editingAddress ? "Sửa địa chỉ" : "Thêm địa chỉ mới"}
-              </Text>
+            <Modal visible={modalVisible} animationType="slide" transparent>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>
+                    {editingAddress ? t("editAddress") : t("addNewAddress")}
+                  </Text>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Tiêu đề (ví dụ: Nhà, Cơ quan)"
-                value={editingAddress ? editingAddress.title : newAddress.title}
-                onChangeText={(text) =>
-                  editingAddress
-                    ? setEditingAddress({ ...editingAddress, title: text })
-                    : setNewAddress({ ...newAddress, title: text })
-                }
-              />
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("addressLabel")}
+                    value={editingAddress ? editingAddress.title : newAddress.title}
+                    onChangeText={(text) =>
+                      editingAddress
+                        ? setEditingAddress({ ...editingAddress, title: text })
+                        : setNewAddress({ ...newAddress, title: text })
+                    }
+                  />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Địa chỉ"
-                value={
-                  editingAddress ? editingAddress.address : newAddress.address
-                }
-                onChangeText={(text) =>
-                  editingAddress
-                    ? setEditingAddress({ ...editingAddress, address: text })
-                    : setNewAddress({ ...newAddress, address: text })
-                }
-                onSubmitEditing={(event) => {
-                  event.persist();
-                  fetchAddressSuggestions(event.nativeEvent.text);
-                }}
-                returnKeyType="search"
-              />
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("address")}
+                    value={
+                      editingAddress ? editingAddress.address : newAddress.address
+                    }
+                    onChangeText={(text) =>
+                      editingAddress
+                        ? setEditingAddress({ ...editingAddress, address: text })
+                        : setNewAddress({ ...newAddress, address: text })
+                    }
+                    onSubmitEditing={(event) => {
+                      event.persist();
+                      fetchAddressSuggestions(event.nativeEvent.text);
+                    }}
+                    returnKeyType="search"
+                  />
 
-              {suggestions.length > 0 && (
-                <ScrollView
-                  style={styles.suggestionContainer}
-                  nestedScrollEnabled={true}
-                >
-                  {suggestions.map((item, index) => (
-                    <TouchableOpacity
-                      key={`${item.place_id}-${index}`}
-                      onPress={() => selectAddress(item)}
-                      style={styles.suggestionItem}
+                  {suggestions.length > 0 && (
+                    <ScrollView
+                      style={styles.suggestionContainer}
+                      nestedScrollEnabled={true}
                     >
-                      <Text style={styles.suggestionText}>
-                        {item.description}
+                      {suggestions.map((item, index) => (
+                        <TouchableOpacity
+                          key={`${item.place_id}-${index}`}
+                          onPress={() => selectAddress(item)}
+                          style={styles.suggestionItem}
+                        >
+                          <Text style={styles.suggestionText}>
+                            {item.description}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(false);
+                        setEditingAddress(null);
+                        setSuggestions([]);
+                      }}
+                      style={styles.cancelButton}
+                    >
+                      <Text style={styles.cancelText}>{t("cancel")}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={
+                        editingAddress
+                          ? handleUpdateAddress
+                          : () => handleCreateAddress(newAddress)
+                      }
+                      style={styles.saveButton}
+                    >
+                      <Text style={styles.saveText}>
+                        {editingAddress ? t("update") : t("save")}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              )}
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setModalVisible(false);
-                    setEditingAddress(null);
-                    setSuggestions([]);
-                  }}
-                  style={styles.cancelButton}
-                >
-                  <Text style={styles.cancelText}>Hủy</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={
-                    editingAddress
-                      ? handleUpdateAddress
-                      : () => handleCreateAddress(newAddress)
-                  }
-                  style={styles.saveButton}
-                >
-                  <Text style={styles.saveText}>
-                    {editingAddress ? "Cập nhật" : "Lưu"}
-                  </Text>
-                </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-        </Modal>
-      </ScrollView>
+            </Modal>
+          </ScrollView>
 
-      <TouchableOpacity
-        onPress={getCurrentLocation}
-        style={{
-          position: "absolute",
-          bottom: 50,
-          left: 20,
-          right: 20,
-          backgroundColor: "#A64B2A",
-          padding: 15,
-          borderRadius: 10,
-          alignItems: "center",
-          elevation: 5,
-        }}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-            Sử dụng vị trí hiện tại
-          </Text>
-        )}
-      </TouchableOpacity>
+          <TouchableOpacity
+            onPress={getCurrentLocation}
+            style={{
+              position: "absolute",
+              bottom: 50,
+              left: 20,
+              right: 20,
+              backgroundColor: "#A64B2A",
+              padding: 15,
+              borderRadius: 10,
+              alignItems: "center",
+              elevation: 5,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                {t("useCurrentLocation")}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
+
+
     </SafeAreaView>
   );
 };

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { commonStyles } from '../../style';
 import Header from '../../components/header';
 import axios from 'axios';
+import useActionCheckNetwork from '../../hooks/useAction';
 export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
     const [mail, setMail] = useState('');
@@ -25,7 +26,7 @@ export default function SignUpScreen() {
 
             const response = await axios.post('http://35.240.147.10/no-auth/register', signUpPayload,
                 {
-                    headers: { 'Content-Type': 'application/json' } 
+                    headers: { 'Content-Type': 'application/json' }
                 });
             console.log(response.data);
             if (response.status === 201) {
@@ -47,10 +48,9 @@ export default function SignUpScreen() {
 
     return (
 
-        <ScrollView style={commonStyles.containerContent}>
+        <ScrollView style={commonStyles.container}>
             <Header title="Register" />
-            <View>
-
+            <View style={commonStyles.containerContent}>
                 <Text style={{ fontSize: 18, fontWeight: 'bold' }}> Pleasure to be at your service!</Text>
                 <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}> Create an account now to experience our services!</Text>
 
@@ -89,7 +89,7 @@ export default function SignUpScreen() {
 
                 <View style={{ flex: 1, alignItems: 'center' }}>
 
-                    <TouchableOpacity onPress={handleSignUp} style={{
+                    <TouchableOpacity onPress={() => handleSignUp} style={{
                         padding: 13,
                         marginTop: 10,
                         borderWidth: 1,
@@ -107,7 +107,6 @@ export default function SignUpScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
-
         </ScrollView>
     );
 }

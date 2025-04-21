@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Image, FlatList, TextInput, Touchab
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import { commonStyles } from "../../style";
@@ -30,7 +30,7 @@ const ReviewsChefScreen = () => {
   const [hasMore, setHasMore] = useState(false);
   const axiosInstance = useAxios();
   const PAGE_SIZE = 10;
-  const chefIdToCall = user.roleName === "ROLE_CHEF" ? user.chefId : chefId;
+  const chefIdToCall = user?.roleName === "ROLE_CHEF" ? user.chefId : chefId;
   const [replyTexts, setReplyTexts] = useState({});
   const navigation = useNavigation();
 
@@ -59,7 +59,8 @@ const ReviewsChefScreen = () => {
 
       const calculatedAvg =
         data.reviews.length > 0
-          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) / data.reviews.length
+          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) /
+          data.reviews.length
           : 0;
       setAverageRating(data.averageRating || calculatedAvg);
       setRatingDistribution(data.ratingDistribution || {});
@@ -174,7 +175,7 @@ const ReviewsChefScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={user.roleName === "ROLE_CHEF" ? 'Feedback' : `Reviews for ${chefName}`} />
+      <Header title={user?.roleName === "ROLE_CHEF" ? 'Feedback' : `Reviews for ${chefName}`} />
       <FlatList
         data={reviews}
         keyExtractor={(item) => item.id.toString()}
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 15,
+    marginBottom: 5,
   },
   averageRating: {
 
@@ -276,11 +277,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 10,
     marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: "#EBE5DD",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
   reviewHeader: {
     flexDirection: "row",
@@ -292,6 +291,8 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
   },
   userInfo: {
     flex: 1,

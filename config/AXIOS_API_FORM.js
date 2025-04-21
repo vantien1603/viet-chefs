@@ -2,55 +2,80 @@ import axios from "axios";
 import { useContext } from "react";
 import { AuthContext } from "./AuthContext";
 
+// Hook to create and configure Axios instance
 const useAxiosFormData = () => {
-    const { user } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
-    const config = {
-        baseURL: "http://35.240.147.10/api/v1",
-        headers: {
-            "Content-Type": "application/json",
-            ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
-        },
-        timeout: 1000,
-    };
+  // Base configuration
+  const config = {
+    baseURL: "http://35.240.147.10/api/v1",
+    headers: {
+      "Content-Type": "application/json",
+      ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
+    },
+    timeout: 10000, // 10-second timeout
+  };
 
-    const axiosInstance = axios.create(config);
+  // Create Axios instance
+  const axiosInstance = axios.create(config);
 
-    const retryRequest = async (config, maxRetries = 2) => {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                return await axiosInstance(config);
-            } catch (error) {
-                if (attempt === maxRetries || !error.code || error.code !== "ECONNABORTED") {
-                    throw error;
-                }
-                await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-            }
+  // Retry logic for network errors
+  const retryRequest = async (config, maxRetries = 2) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await axiosInstance(config);
+      } catch (error) {
+        if (attempt === maxRetries || !error.code || error.code !== "ECONNABORTED") {
+          throw error;
         }
-    };
+        // Exponential backoff
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  };
 
-    axiosInstance.interceptors.request.use(
-        async (config) => {
-            if (config.data instanceof FormData) {
-                config.headers["Content-Type"] = "multipart/form-data";
-            }
-            return config;
-        },
-        (error) => Promise.reject(error)
-    );
+  // Request interceptor to handle FormData
+  axiosInstance.interceptors.request.use(
+    async (config) => {
+      if (config.data instanceof FormData) {
+        config.headers["Content-Type"] = "multipart/form-data";
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
 
-    axiosInstance.interceptors.response.use(
-        (response) => response,
-        async (error) => {
-            if (error.code === "ECONNABORTED" || error.message === "Network Error") {
-                const originalRequest = error.config;
-                return retryRequest(originalRequest);
-            }
-            return Promise.reject(error);
-        }
-    );
+  axiosInstance.interceptors.request.use(
+    async (config) => {
+      // Check if network is connected
+      if (!isConnected) {
+        showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại kết nối và khởi động lại ứng dụng.");
+        throw new axios.Cancel("Không có mạng");
+      }
 
-    return axiosInstance;
+      // Handle FormData
+      if (config.data instanceof FormData) {
+        config.headers["Content-Type"] = "multipart/form-data";
+      }
+
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  // Response interceptor for retries
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      if (error.code === "ECONNABORTED" || error.message === "Network Error") {
+        const originalRequest = error.config;
+        return retryRequest(originalRequest);
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return axiosInstance;
 };
 
 export default useAxiosFormData;

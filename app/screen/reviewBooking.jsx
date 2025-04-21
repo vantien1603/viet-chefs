@@ -6,14 +6,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import Header from "../../components/header";
-// import ProgressBar from "../../components/progressBar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
+import Toast from "react-native-toast-message";
 
 const ReviewBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -37,9 +36,8 @@ const ReviewBookingScreen = () => {
 
   const handleConfirmBooking = async () => {
     try {
-      const customerId = await AsyncStorage.getItem("@userId");
       if (!user) {
-        console.log("user befor booo",user);
+        console.log("user before book", user);
         throw new Error(
           "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
         );
@@ -72,30 +70,50 @@ const ReviewBookingScreen = () => {
               dishId: dish.dishId,
               notes: dish.notes || "",
             })),
+            chefBringIngredients:
+              selectedDates[dateKey]?.chefBringIngredients ?? false, // Thêm trường này
           };
         }),
       };
 
-      console.log(
-        "Payload for booking confirmation:",
-        JSON.stringify(payload, null, 2)
-      );
+      // console.log(
+      //   "Payload for booking confirmation:",
+      //   JSON.stringify(payload, null, 2)
+      // );
 
       const response = await axiosInstance.post("/bookings/long-term", payload);
-
-      if (response.status === 201 || response.status === 200) {
-        router.push("/(tabs)/home");
-      }
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Đặt chỗ dài hạn đã được xác nhận!",
+      });
+      router.push({
+        pathname: "/screen/paymentLongterm",
+        params: {
+          bookingId: response.data.id,
+          bookingData: JSON.stringify(bookingData),
+        },
+      });
     } catch (error) {
-      console.error("Error confirming booking:", error);
+      console.error("Error confirming booking:", error?.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         "Có lỗi khi xác nhận đặt chỗ. Vui lòng thử lại.";
-      Alert.alert("Lỗi", errorMessage);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: errorMessage,
+      });
     }
   };
 
   const handleBackPress = () => {
+    Toast.show({
+      type: "info",
+      text1: "Quay lại",
+      text2: "Đã quay lại màn hình chọn ngày.",
+      visibilityTime: 2000,
+    });
     router.push({
       pathname: "/screen/longTermSelect",
       params: {
@@ -110,12 +128,10 @@ const ReviewBookingScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title="Confirm Booking" onLeftPress={handleBackPress}/>
-      {/* <ProgressBar title="Xác nhận" currentStep={4} totalSteps={4} /> */}
+      <Header title="Confirm Booking" onLeftPress={handleBackPress} />
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Chi tiết đặt chỗ dài hạn</Text>
 
-        {/* Booking Details for Each Date */}
         {bookingData.bookingDetails?.map((detail, index) => (
           <View key={index} style={styles.dateContainer}>
             <Text style={styles.dateTitle}>{detail.sessionDate}</Text>
@@ -144,11 +160,6 @@ const ReviewBookingScreen = () => {
                   ${(detail.priceOfDishes || 0).toFixed(2)}
                 </Text>
               </View>
-
-              {/* <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí nền tảng:</Text>
-                <Text style={styles.detailValue}>${(detail.platformFee || 0).toFixed(2)}</Text>
-              </View> */}
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Discount:</Text>
                 <Text style={styles.detailValue}>
@@ -158,6 +169,14 @@ const ReviewBookingScreen = () => {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Total cook time:</Text>
                 <Text style={styles.detailValue}>{detail.totalCookTime}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Nguyên liệu:</Text>
+                <Text style={styles.detailValue}>
+                  {selectedDates[detail.sessionDate]?.chefBringIngredients
+                    ? "Đầu bếp chuẩn bị"
+                    : "Khách hàng chuẩn bị"}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, styles.totalLabel]}>
@@ -171,7 +190,6 @@ const ReviewBookingScreen = () => {
           </View>
         ))}
 
-        {/* Summary Section */}
         <View style={styles.summaryContainer}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tạm tính:</Text>
@@ -195,7 +213,6 @@ const ReviewBookingScreen = () => {
           </View>
         </View>
 
-        {/* Additional Information */}
         <View style={styles.infoContainer}>
           <Text style={styles.infoLabel}>Địa điểm:</Text>
           <Text style={styles.infoValue}>
@@ -203,7 +220,6 @@ const ReviewBookingScreen = () => {
           </Text>
         </View>
 
-        {/* Spacer to ensure content scrolls past the fixed button */}
         <View style={styles.spacer} />
       </ScrollView>
       <View style={styles.buttonArea}>
@@ -214,6 +230,7 @@ const ReviewBookingScreen = () => {
           <Text style={styles.confirmButtonText}>Xác nhận đặt chỗ</Text>
         </TouchableOpacity>
       </View>
+      <Toast />
     </SafeAreaView>
   );
 };

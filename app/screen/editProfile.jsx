@@ -7,12 +7,12 @@ import {
   Image,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
 import * as ImagePicker from "expo-image-picker";
-import AXIOS_API from "../../config/AXIOS_API";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -55,7 +55,7 @@ const EditProfile = () => {
 
   const [username, setUserName] = useState(profileData.username || "");
   const [name, setName] = useState(profileData.fullName || "");
-  const [email, setEmail] = useState(profileData.email || "");
+  const [email] = useState(profileData.email || "");
   const [phone, setPhone] = useState(profileData.phone || "");
   const [dob, setDob] = useState(profileData.dob || "");
   const [gender, setGender] = useState(
@@ -69,7 +69,11 @@ const EditProfile = () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("Cần cấp quyền truy cập thư viện ảnh!");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Cần cấp quyền truy cập thư viện ảnh!",
+      });
       return;
     }
 
@@ -77,7 +81,7 @@ const EditProfile = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.5, // Compress image
     });
 
     if (!result.canceled) {
@@ -86,6 +90,16 @@ const EditProfile = () => {
   };
 
   const handleUpdateProfile = async () => {
+    if (!name || !phone || !dob) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng điền đầy đủ thông tin bắt buộc!",
+      });
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append("fullName", name);
@@ -112,13 +126,18 @@ const EditProfile = () => {
         await AsyncStorage.setItem("@phone", phone);
         await AsyncStorage.setItem("@dob", dob);
         await AsyncStorage.setItem("@gender", mapGenderToApi(gender));
-        await AsyncStorage.setItem("@avatar", avatar);
+        if (avatar && avatar !== profileData.avatarUrl) {
+          await AsyncStorage.setItem("@avatar", avatar);
+        }
 
-        alert("Cập nhật hồ sơ thành công!");
-        console.log("Ok", response.data);
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Cập nhật hồ sơ thành công!",
+        });
         setTimeout(() => {
           router.back();
-        }, 1000);
+        }, 1500); // Increased delay to ensure toast is visible
       }
     } catch (error) {
       console.error("Lỗi cập nhật hồ sơ:", error.response?.data || error);
@@ -349,45 +368,61 @@ const EditProfile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
+  scrollContent: {
+    padding: 15,
+    paddingBottom: 100,
+  },
+  avatarContainer: {
+    alignItems: "center",
+    marginBottom: 20,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
+    backgroundColor: "#EEE",
   },
   changeImageText: {
     color: "#A9411D",
-    marginTop: 15,
+    fontSize: 16,
+    marginTop: 10,
+  },
+  disabledText: {
+    color: "#AAA",
   },
   label: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 10,
+    borderColor: "#DDD",
+    borderRadius: 10,
+    padding: 12,
     fontSize: 16,
     marginBottom: 16,
+    backgroundColor: "#FFF",
+  },
+  disabledInput: {
+    backgroundColor: "#F5F5F5",
+    color: "#666",
   },
   genderContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   genderButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: "#DDD",
+    borderRadius: 10,
     alignItems: "center",
     marginHorizontal: 5,
+    backgroundColor: "#FFF",
   },
   genderSelected: {
     backgroundColor: "#A9411D",
@@ -395,28 +430,32 @@ const styles = StyleSheet.create({
   },
   genderText: {
     fontSize: 16,
-    color: "black",
+    color: "#333",
   },
   genderTextSelected: {
     fontSize: 16,
-    color: "white",
+    color: "#FFF",
+    fontWeight: "600",
   },
   fixedButtonContainer: {
     position: "absolute",
     bottom: 20,
-    left: 10,
-    right: 10,
+    left: 15,
+    right: 15,
   },
   saveButton: {
     backgroundColor: "#A9411D",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: "center",
   },
+  saveButtonDisabled: {
+    backgroundColor: "#AAA",
+  },
   saveButtonText: {
-    color: "white",
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
 });
 

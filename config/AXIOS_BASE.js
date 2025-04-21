@@ -1,13 +1,46 @@
+// import axios from 'axios';
+
+// const config = {
+//     baseURL: "http://35.240.147.10/no-auth", //Crema
+//     headers: {
+//         "Content-Type": "application/json",
+//     }
+// }
+
+// const AXIOS_BASE = axios.create(config);
+// export default AXIOS_BASE;
+
+
 import axios from 'axios';
+import { useContext } from 'react';
+import { NetworkContext } from '../hooks/networkProvider';
+import { useGlobalModal } from '../context/modalContext';
 
 const config = {
-    // baseURL: "http://192.168.7.48:8080/no-auth", //Tro
-    // baseURL: "http://10.87.24.103:8080/no-auth", //NVH
-    baseURL: "http://35.240.147.10/no-auth", //Crema
+    baseURL: "http://35.240.147.10/no-auth", // Crema
     headers: {
         "Content-Type": "application/json",
     }
 }
 
 const AXIOS_BASE = axios.create(config);
-export default AXIOS_BASE;
+
+const useAxiosBase = () => {
+    const { isConnected } = useContext(NetworkContext);  
+    const { showModal } = useGlobalModal();  
+
+    AXIOS_BASE.interceptors.request.use(
+        async (config) => {
+            if (!isConnected) {
+                showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại kết nối và khởi động lại ứng dụng.");
+                throw new axios.Cancel("Không có mạng");
+            }
+            return config;
+        },
+        (error) => Promise.reject(error)
+    );
+
+    return AXIOS_BASE;
+};
+
+export default useAxiosBase;

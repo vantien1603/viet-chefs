@@ -6,6 +6,7 @@ import { PasswordInput } from '../../components/PasswordInput/passwordInput';
 import { commonStyles } from '../../style';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AXIOS_BASE from '../../config/AXIOS_BASE';
+import useActionCheckNetwork from '../../hooks/useAction';
 
 const SetPassword = () => {
     const { username, fullName, phone, mail, mode } = useLocalSearchParams();
@@ -29,7 +30,7 @@ const SetPassword = () => {
         }
 
         const setPasswordPayload = {
-            email:mail,
+            email: mail,
             newPassword: password,
         };
 
@@ -54,7 +55,7 @@ const SetPassword = () => {
         }
     }
     return (
-        <SafeAreaView style={commonStyles.containerContent}>
+        <SafeAreaView style={commonStyles.container}>
             <Header title={"Set password"} />
             <View>
                 <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 20 }}>
@@ -71,7 +72,7 @@ const SetPassword = () => {
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
 
-                <TouchableOpacity onPress={handleSetPassword} style={{
+                <TouchableOpacity onPress={() => handleSetPassword} style={{
                     padding: 13,
                     marginTop: 10,
                     borderWidth: 1,

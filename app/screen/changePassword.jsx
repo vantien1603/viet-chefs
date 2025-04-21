@@ -7,12 +7,14 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert
 } from "react-native";
 import Header from "../../components/header";
 import { useRouter } from "expo-router";
 import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const ChangePasswordScreen = () => {
   const router = useRouter();
@@ -26,8 +28,8 @@ const ChangePasswordScreen = () => {
 
   useEffect(() => {
     const backAction = () => {
-      router.push("/(tabs)/profile"); 
-      return true; 
+      router.push("/(tabs)/profile");
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -41,7 +43,9 @@ const ChangePasswordScreen = () => {
   // Validate new password against current password
   const validateNewPassword = (newPass, currentPass = currentPassword) => {
     if (newPass && currentPass && newPass === currentPass) {
-      setNewPasswordError("Mật khẩu mới không được trùng với mật khẩu hiện tại!");
+      setNewPasswordError(
+        "Mật khẩu mới không được trùng với mật khẩu hiện tại!"
+      );
       return false;
     }
     setNewPasswordError("");
@@ -49,7 +53,10 @@ const ChangePasswordScreen = () => {
   };
 
   // Validate confirm password against new password
-  const validateConfirmPassword = (newPass = newPassword, confirmPass = confirmPassword) => {
+  const validateConfirmPassword = (
+    newPass = newPassword,
+    confirmPass = confirmPassword
+  ) => {
     if (newPass && confirmPass && newPass !== confirmPass) {
       setConfirmPasswordError("Xác nhận mật khẩu không khớp với mật khẩu mới!");
       return false;
@@ -74,37 +81,38 @@ const ChangePasswordScreen = () => {
         confirmPassword: confirmPassword,
       };
 
-      const response = await axiosInstance.put("/users/change-password", passwordData);
+      const response = await axiosInstance.put(
+        "/users/change-password",
+        passwordData
+      );
 
       if (response.status === 200 || response.status === 201) {
-        alert("Đổi mật khẩu thành công!");
+        Alert.alert("Đổi mật khẩu thành công!");
         router.back();
       }
     } catch (error) {
       console.error("Error changing password:", error);
-      setConfirmPasswordError(
-        error.response?.data?.message || "Có lỗi khi đổi mật khẩu. Vui lòng thử lại."
-      );
+      setConfirmPasswordError("Có lỗi khi đổi mật khẩu. Vui lòng thử lại.");
     }
   };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Đổi mật khẩu" />
-      <ScrollView contentContainerStyle={styles.container}>
+      <Header title={t("changePassword")} />
+      <ScrollView contentContainerStyle={commonStyles.containerContent}>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Mật khẩu hiện tại</Text>
+          <Text style={styles.label}>{t("currentPass")}</Text>
           <TextInput
-            style={styles.input}
+            style={commonStyles.input}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
-            placeholder="Nhập mật khẩu hiện tại"
+            placeholder={t("enterCurrentPass")}
           />
 
-          <Text style={styles.label}>Mật khẩu mới</Text>
+          <Text style={styles.label}>{t("newPass")}</Text>
           <TextInput
-            style={styles.input}
+            style={commonStyles.input}
             value={newPassword}
             onChangeText={(text) => {
               setNewPassword(text);
@@ -116,13 +124,15 @@ const ChangePasswordScreen = () => {
               }
             }}
             secureTextEntry
-            placeholder="Nhập mật khẩu mới"
+            placeholder={t("enterNewPass")}
           />
-          {newPasswordError ? <Text style={styles.errorText}>{newPasswordError}</Text> : null}
+          {newPasswordError ? (
+            <Text style={styles.errorText}>{newPasswordError}</Text>
+          ) : null}
 
-          <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
+          <Text style={styles.label}>{t("confirmNewPass")}</Text>
           <TextInput
-            style={styles.input}
+            style={commonStyles.input}
             value={confirmPassword}
             onChangeText={(text) => {
               setConfirmPassword(text);
@@ -131,15 +141,18 @@ const ChangePasswordScreen = () => {
               }
             }}
             secureTextEntry
-            placeholder="Xác nhận mật khẩu mới"
+            placeholder={t("confirmNewPass")}
           />
           {confirmPasswordError ? (
             <Text style={styles.errorText}>{confirmPasswordError}</Text>
           ) : null}
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleChangePassword}>
-          <Text style={styles.saveButtonText}>Lưu</Text>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleChangePassword}
+        >
+          <Text style={styles.saveButtonText}>{t("save")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

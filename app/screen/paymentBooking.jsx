@@ -12,6 +12,10 @@ import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { useConfirmModal } from "../../context/commonConfirm";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const PaymentBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -20,15 +24,25 @@ const PaymentBookingScreen = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const axiosInstance = useAxios();
-
+  const [isPaySuccess, setIsPaySuccess] = useState(false);
+  const requireAuthAndNetwork = useRequireAuthAndNetwork();
+  const { showConfirm } = useConfirmModal();
   const totalPrice = bookingData?.totalPrice || 0;
   console.log("Booking Data:", bookingData);
-
+  const { showModal } = useCommonNoification();
   const handleCompletePayment = async () => {
+    console.log("press nef")
     setLoading(true);
     try {
-      const response = await axiosInstance.post(`/bookings/${bookingId}/payment`, {});
+      const response = await axiosInstance.post(
+        `/bookings/${bookingId}/payment`,
+        {}
+      );
       console.log("Payment Response:", response.data);
+      if (response.status === 200) {
+        showModal("Success", "Payment successfully", "Success");
+        setIsPaySuccess(true);
+      }
 
       Toast.show({
         type: "success",
@@ -36,17 +50,12 @@ const PaymentBookingScreen = () => {
         text2: "Payment completed successfully!",
       });
 
-      router.push("(tabs)/home"); // Quay về màn hình chính sau khi thanh toán
+      // router.push("(tabs)/home");
     } catch (error) {
-      console.error("Error completing payment:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2:
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to complete payment. Please try again.",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình thanh toán", "Failed");
     } finally {
       setLoading(false);
     }
@@ -67,11 +76,11 @@ const PaymentBookingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Payment" />
+      <Header title={t("confirmAndPayment")} />
       <View style={styles.content}>
-        <Text style={styles.title}>Thanh toán đặt chỗ</Text>
+        <Text style={styles.title}>{t("bookingPayment")}</Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Tổng số tiền:</Text>
+          <Text style={styles.priceLabel}>{t("totalAmount")}:</Text>
           <Text style={styles.priceValue}>
             {totalPrice.toLocaleString("en-US", {
               style: "currency",
@@ -82,21 +91,23 @@ const PaymentBookingScreen = () => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.backButton]}
+            style={[styles.button, isPaySuccess ? styles.paymentButton : styles.backButton]}
             onPress={handleBackHome}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>Back Home</Text>
+            <Text style={styles.buttonText}>{t("backHome")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.button, styles.paymentButton]}
-            onPress={handleConfirmPayment}
-            disabled={loading}
+            style={[styles.button, isPaySuccess ? styles.backButton : styles.paymentButton]}
+            onPress={() =>
+              showConfirm("Complete payment", "Are you sure you want to pay this booking?", () => requireAuthAndNetwork(handleCompletePayment))
+            }
+            disabled={loading || isPaySuccess}
           >
             {loading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={styles.buttonText}>Hoàn tất thanh toán</Text>
+              <Text style={styles.buttonText}>{t(`completePayment`)}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -111,27 +122,27 @@ const PaymentBookingScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Xác nhận thanh toán</Text>
+            <Text style={styles.modalTitle}>{t("confirmPayment")}</Text>
             <Text style={styles.modalText}>
-              Bạn có chắc chắn muốn thanh toán{" "}
-              {totalPrice.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}{" "}
-              cho đặt chỗ này không?
+              {t("confirmPaymentWithAmount", {
+                amount: totalPrice.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }),
+              })}
             </Text>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalButtonText}>Hủy</Text>
+                <Text style={styles.modalButtonText}>{t("cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmPayment}
               >
-                <Text style={styles.modalButtonText}>Xác nhận</Text>
+                <Text style={styles.modalButtonText}>{t("confirm")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -197,6 +208,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
+    textAlign: 'center'
   },
   modalOverlay: {
     flex: 1,

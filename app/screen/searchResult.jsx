@@ -10,9 +10,9 @@ import {
   Dimensions,
   Keyboard,
   ActivityIndicator,
-  BackHandler, // Added
+  BackHandler,
 } from "react-native";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { commonStyles } from "../../style";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -24,12 +24,13 @@ import { Dropdown } from "react-native-element-dropdown";
 import Toast from "react-native-toast-message";
 import axios from "axios";
 import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
 // import { API_GEO_KEY } from '@env';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const SearchResultScreen = () => {
-  const { query } = useLocalSearchParams();
+  const { query, selectedAddress: selectedAddressParam } = useLocalSearchParams();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState(query || "");
   const [isSelected, setIsSelected] = useState(0);
@@ -44,7 +45,15 @@ const SearchResultScreen = () => {
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null);
+  const { isGuest } = useContext(AuthContext);
+  const [selectedAddress, setSelectedAddress] = useState(() => {
+    try {
+      return selectedAddressParam ? JSON.parse(selectedAddressParam) : null;
+    } catch (error) {
+      console.error("Error parsing selectedAddress:", error);
+      return null;
+    }
+  });
   const axiosInstance = useAxios();
 
   const distanceOptions = [
@@ -70,8 +79,19 @@ const SearchResultScreen = () => {
     return () => backHandler.remove();
   }, [router]);
 
+  useEffect(() => {
+    // Cập nhật location nếu selectedAddress có tọa độ
+    if (selectedAddress?.latitude && selectedAddress?.longitude) {
+      setLocation({
+        latitude: selectedAddress.latitude,
+        longitude: selectedAddress.longitude,
+      });
+    }
+  }, [selectedAddress]);
+
   const fetchAddresses = async () => {
     try {
+      if (isGuest) return;
       const response = await axiosInstance.get("/address/my-addresses");
       const fetchedAddresses = response.data;
 
@@ -83,7 +103,7 @@ const SearchResultScreen = () => {
               {
                 params: {
                   address: addr.address,
-                  key: "AIzaSyCpXebXEl9bbmFcVhitw4_pglFasa86OIk",
+                  key: process.env.API_GEO_KEY,
                   language: "vi",
                 },
               }
@@ -133,9 +153,8 @@ const SearchResultScreen = () => {
 
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
-          addr.city || ""
-        }, ${addr.region || ""}, ${addr.country || ""}`;
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
+          }, ${addr.region || ""}, ${addr.country || ""}`;
 
         const newAddress = {
           id: Date.now().toString(),
@@ -175,7 +194,8 @@ const SearchResultScreen = () => {
             params: { keyword: "" },
           });
           setDishes(dishesResponse.data.content);
-        } else {
+        } else if (!location) {
+          // Chỉ lấy vị trí nếu chưa có từ selectedAddress
           let userLocation = await Location.getCurrentPositionAsync({});
           setLocation({
             latitude: userLocation.coords.latitude,
@@ -186,6 +206,9 @@ const SearchResultScreen = () => {
             userLocation.coords.latitude,
             userLocation.coords.longitude
           );
+        } else {
+          // Sử dụng location từ selectedAddress
+          await fetchInitialData(location.latitude, location.longitude);
         }
       } catch (error) {
         console.log("Error getting location or fetching data:", error);
@@ -210,7 +233,7 @@ const SearchResultScreen = () => {
     };
 
     getLocationAndFetchData();
-  }, []);
+  }, [location]);
 
   const fetchInitialData = async (lat, lng) => {
     try {
@@ -414,7 +437,7 @@ const SearchResultScreen = () => {
           style={styles.locationIcon}
         />
         <Text style={styles.locationText}>
-          {selectedAddress ? selectedAddress.address : "Current Location"}
+          {selectedAddress?.address || "Current Location"}
         </Text>
       </TouchableOpacity>
 
@@ -454,8 +477,6 @@ const SearchResultScreen = () => {
   };
 
   const renderItem = ({ item }) => {
-    console.log("Item:", item);
-    console.log("chefid:", item.id);
     switch (isSelected) {
       case 1: // Chefs
         return (
@@ -657,7 +678,6 @@ const SearchResultScreen = () => {
         data={getData()}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
-        // ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyMessage}
         contentContainerStyle={styles.flatListContainer}
         numColumns={2}
@@ -724,7 +744,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 14,
     color: "#333",
-    flexShrink: 1,
+    flex: 1, // Thay flexShrink để hiển thị đầy đủ địa chỉ
     flexWrap: "wrap",
   },
   card: {

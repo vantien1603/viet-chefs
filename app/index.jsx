@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import * as WebBrowser from 'expo-web-browser'
 import { Redirect, router } from 'expo-router'
@@ -9,6 +9,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location'; // Import Expo Location
+import * as SecureStore from "expo-secure-store";
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
@@ -60,7 +61,8 @@ export default function WelcomeScreen() {
     // Lấy token
     const token = (await Notifications.getExpoPushTokenAsync()).data;
     console.log('Expo Push Token:', token);
-    await AsyncStorage.setItem('expoPushToken', token);
+    // await AsyncStorage.setItem('expoPushToken', token);
+    await SecureStore.setItemAsync("expoPushToken", token);
 
     // Cấu hình xử lý thông báo khi app đang chạy
     Notifications.setNotificationHandler({
@@ -73,10 +75,10 @@ export default function WelcomeScreen() {
 
     // Lắng nghe thông báo khi app ở foreground
     const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-      Alert.alert(
-        'Thông báo nhận được!',
-        notification.request.content.body || 'Có thông báo mới'
-      );
+      // Alert.alert(
+      //   'Thông báo nhận được!',
+      //   notification.request.content.body || 'Có thông báo mới'
+      // );
     });
 
     // Lắng nghe khi người dùng tương tác với thông báo
@@ -126,9 +128,12 @@ export default function WelcomeScreen() {
   const { user, loading } = useContext(AuthContext);
   // console.log('userr truoc ne', user);
 
-
   useFocusEffect(
     useCallback(() => {
+      setupNotifications();
+
+      // Step 3: Setup Location Permissions after Notifications
+      setupLocationPermissions();
       setIsCheckingUser(true);
       const timeout = setTimeout(() => {
         if (user) {

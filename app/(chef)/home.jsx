@@ -1,15 +1,62 @@
-import React, { useContext } from 'react';
-import { SafeAreaView, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { SafeAreaView, Image, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { AuthContext } from '../../config/AuthContext';
 import { commonStyles } from '../../style';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Shadow } from 'react-native-shadow-2';
+import useAxios from '../../config/AXIOS_API';
+import { useFocusEffect } from '@react-navigation/native';
 
 const Home = () => {
     const { user } = useContext(AuthContext);
     const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [schedules, setSchedules] = useState([]);
+    const [pendings, setPendings] = useState([]);
+    const axiosInstance = useAxios();
+
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchScheduleAndPending();
+        }, [])
+    );
+
+    const fetchScheduleAndPending = async () => {
+        setLoading(true);
+        try {
+            const [scheduleRes, pendingRes] = await Promise.all([
+                axiosInstance.get('/bookings/booking-details/chefs'),
+                axiosInstance.get("/bookings/chefs/my-bookings")
+            ]);
+
+
+            const filteredPendings = pendingRes.data?.content?.filter(
+                booking =>
+                    booking.status === "PAID" ||
+                    booking.status === "DEPOSITED" ||
+                    booking.status === "PAID_FIRST_CYCLE"
+            );
+
+
+            const filterSchedule = scheduleRes.data?.content?.filter(
+                schedule =>
+                    schedule.status === 'SCHEDULED_COMPLETE'
+            );
+
+            setPendings(filteredPendings.length);
+            setSchedules(filterSchedule.length);
+        } catch (error) {
+            if (axios.isCancel(error)) {
+                return;
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return (
         <SafeAreaView style={commonStyles.container}>
@@ -26,7 +73,7 @@ const Home = () => {
                             <Text style={styles.userName}>{user?.fullName}</Text>
                         </View>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => console.log("Notification pressed")}>
+                    <TouchableOpacity onPress={() => router.push("/screen/notificationChef")}>
                         <Ionicons name="notifications-outline" size={28} color="#FF5733" />
                     </TouchableOpacity>
                 </View>
@@ -37,7 +84,11 @@ const Home = () => {
                             colors={['#FF5733', '#FF8D1A']}
                             style={styles.orderBox}
                         >
-                            <Text style={styles.orderNumber}>20</Text>
+                            {loading ? (
+                                <ActivityIndicator size={'large'} color={'white'} />
+                            ) : (
+                                <Text style={styles.orderNumber}>{schedules} </Text>
+                            )}
                             <Text style={styles.orderLabel}>RUNNING ORDERS</Text>
                         </LinearGradient>
                     </Shadow>
@@ -46,7 +97,11 @@ const Home = () => {
                             colors={['#FF5733', '#FF8D1A']}
                             style={styles.orderBox}
                         >
-                            <Text style={styles.orderNumber}>05</Text>
+                            {loading ? (
+                                <ActivityIndicator size={'large'} color={'white'} />
+                            ) : (
+                                <Text style={styles.orderNumber}>{pendings}</Text>
+                            )}
                             <Text style={styles.orderLabel}>ORDER REQUEST</Text>
                         </LinearGradient>
                     </Shadow>

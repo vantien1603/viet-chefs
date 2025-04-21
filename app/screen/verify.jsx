@@ -12,6 +12,7 @@ import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import Header from "../../components/header";
+import useActionCheckNetwork from "../../hooks/useAction";
 
 const VerifyScreen = () => {
   const router = useRouter();
@@ -121,7 +122,7 @@ const VerifyScreen = () => {
         </TouchableOpacity>
         <View style={commonStyles.mainButtonContainer}>
           <TouchableOpacity
-            onPress={handleVerify}
+            onPress={() => handleVerify}
             style={commonStyles.mainButton}
           >
             <Text style={commonStyles.textMainButton}>VERIFY</Text>

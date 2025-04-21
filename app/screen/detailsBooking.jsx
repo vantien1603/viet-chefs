@@ -347,7 +347,7 @@ const DetailsBooking = () => {
 const styles = StyleSheet.create({
     itemContainer: {
         gap: 5,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#F9F5F0",
         borderColor: '#333',
         borderWidth: 0.5,
         borderRadius: 6,

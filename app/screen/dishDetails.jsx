@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import useAxios from "../../config/AXIOS_API";
 import { router, useLocalSearchParams } from "expo-router";
+import { t } from "i18next";
 import { AuthContext } from "../../config/AuthContext";
 import { Dropdown } from "react-native-element-dropdown";
 import * as ImagePicker from "expo-image-picker";
@@ -23,6 +24,7 @@ import { useCommonNoification } from "../../context/commonNoti";
 import { Platform } from "react-native";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useConfirmModal } from "../../context/commonConfirm";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
 const DishDetails = () => {
   const navigation = useNavigation();
@@ -40,7 +42,9 @@ const DishDetails = () => {
   const [foodType, setFoodType] = useState([]);
   const [image, setImage] = useState(null);
   const { showModal } = useCommonNoification();
+  const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
+  const axiosInstanceForm = useAxiosFormData();
 
   useEffect(() => {
     setLoading(true);
@@ -53,7 +57,12 @@ const DishDetails = () => {
         }));
         setFoodType(formattedFoodTypes);
       } catch (error) {
-        console.error('Error fetching bookings:', error.response ? error.response.data : error.message);
+        if (axios.isCancel(error)) {
+          console.log("Yêu cầu đã bị huỷ do không có mạng.");
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình tải loại món ăn", "Failed");
+
       } finally {
         setLoading(false);
       }
@@ -80,7 +89,11 @@ const DishDetails = () => {
           ]);
         }
       } catch (error) {
-        console.error('Error fetching bookings:', error.response ? error.response.data : error.message);
+        if (axios.isCancel(error)) {
+          console.log("Yêu cầu đã bị huỷ do không có mạng.");
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình tải món ăn", "Failed");
       } finally {
         setLoading(false);
       }
@@ -196,14 +209,15 @@ const DishDetails = () => {
           type,
         });
       }
-      const response = await useAxiosFormData.put(`/dishes/${dish.id}`, formData);
+      const response = await axiosInstanceForm.put(`/dishes/${dish.id}`, formData);
       if (response.status === 200) {
         showModal("Success", "Update dishes successfully");
       }
 
-      console.log(data);
     } catch (error) {
-      console.error('Lỗi khi gửi formData: ', error);
+      if (axios.isCancel(error)) {
+        return;
+      }
     } finally {
       setIsEditing(false);
       setLoading(false);
@@ -394,16 +408,16 @@ const DishDetails = () => {
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="restaurant-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>Cuisine: {dish.cuisineType}</Text>
+            <Text style={styles.detailText}>{t("cuisine")}: {dish.cuisineType}</Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="home-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>Type: {dish.serviceType}</Text>
+            <Text style={styles.detailText}>{t("type")}: {dish.serviceType}</Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="time-outline" size={20} color="#555" />
             <Text style={styles.detailText}>
-              Cook Time: {dish.cookTime} mins
+              {t("cookTime")}: {dish.cookTime} {t("minutes")}
             </Text>
           </View>
         </View> */}
@@ -412,7 +426,7 @@ const DishDetails = () => {
 
           chef && (
             <View style={styles.chefContainer}>
-              <Text style={styles.sectionTitle}>Đầu bếp</Text>
+              <Text style={styles.sectionTitle}>{t("chef")}</Text>
               <View style={styles.chefInfo}>
                 <Image
                   source={{
@@ -426,10 +440,10 @@ const DishDetails = () => {
                 />
                 <View style={styles.chefText}>
                   <Text style={styles.chefName}>
-                    {chef.user?.fullName || "Đầu bếp"}
+                    {chef.user?.fullName || t("chef")}
                   </Text>
                   <Text style={styles.chefBio} numberOfLines={2}>
-                    {chef.bio || "Không có thông tin"}
+                    {chef.bio || t("noInformation")}
                   </Text>
                 </View>
 
@@ -444,7 +458,8 @@ const DishDetails = () => {
           < View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.updateButton}
-              onPress={() => handleSave()}
+              onPress={() => requireAuthAndNetWork(() => handleSave())}
+              disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -474,9 +489,11 @@ const DishDetails = () => {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.deleteButton} onPress={() =>
-              showConfirm("Delete Dish", "Are you sure you want to delete this dish?", handleDelete)
-            } >
+            <TouchableOpacity style={styles.deleteButton}
+              disabled={loading}
+              onPress={() =>
+                showConfirm("Delete Dish", "Are you sure you want to delete this dish?", () => requireAuthAndNetWork(handleDelete))
+              } >
               {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (

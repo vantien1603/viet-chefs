@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, Image, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, Image, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { collection, query, onSnapshot, orderBy, doc, getDoc } from "firebase/firestore";
 import { database } from "../../config/firebase";
@@ -152,12 +152,12 @@ const styles = StyleSheet.create({
   },
   messageContent: {
     flex: 1,
-    justifyContent:'center'
+    justifyContent: 'center'
   },
   name: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom:5
+    marginBottom: 5
   },
   message: {
     fontSize: 16,

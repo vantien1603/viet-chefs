@@ -3,6 +3,7 @@ import {
     Text,
     Image,
     FlatList,
+    Alert,
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
@@ -15,6 +16,8 @@ import { AuthContext } from "../../config/AuthContext";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import { useCommonNoification } from "../../context/commonNoti";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { useConfirmModal } from "../../context/commonConfirm";
 
 const ChefDishes = () => {
     const [dishes, setDishes] = useState([]);
@@ -25,10 +28,9 @@ const ChefDishes = () => {
     const router = useRouter();
     const axiosInstance = useAxios();
     const { user } = useContext(AuthContext);
-    const [menus, setMenus] = useState([]);
-    const [loadingAction, setLoadingAction] = useState(false);
     const { showModal } = useCommonNoification();
-
+    const requireAuthAndNetWork = useRequireAuthAndNetwork();
+    const { showConfirm } = useConfirmModal();
     useEffect(() => {
         fetchDishes();
     }, []);
@@ -40,24 +42,6 @@ const ChefDishes = () => {
                 params: { chefId: user.chefId }
             });
             setDishes(response.data.content);
-        } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
-            } else {
-                console.error(error.message);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchMenu = async () => {
-        setLoading(true);
-        try {
-            const response = await axiosInstance.get("/menus", {
-                params: { chefId: 1 },
-            });
-            setMenus(response.data.content);
         } catch (error) {
             if (error.response) {
                 console.error(`Lỗi ${error.response.status}:`, error.response.data);
@@ -95,37 +79,40 @@ const ChefDishes = () => {
 
     const handleDelete = async () => {
         if (selectedDishes.length === 0) return;
-        let successCount = 0;
-        let errorCount = 0;
-        setLoading(true);
-        try {
-            const promises = selectedDishes.map((item) => axiosInstance.delete(`/dishes/${item}`));
-            const results = await Promise.allSettled(promises);
+        showConfirm("Delele confirm", `Are you sure want to delete ${selectedDishes.length} dishes?`, () => requireAuthAndNetWork(async () => {
+            let successCount = 0;
+            let errorCount = 0;
+            setLoading(true);
+            try {
+                const promises = selectedDishes.map((item) => axiosInstance.delete(`/dishes/${item}`));
+                const results = await Promise.allSettled(promises);
 
-            fetchDishes();
-            setSelectedDishes([]);
-            console.log(results);
-            console.log("statusss", results.length);
-            results.forEach((result) => {
-                if (result.status === "fulfilled") {
-                    successCount++;
+                fetchDishes();
+                setSelectedDishes([]);
+                console.log(results);
+                console.log("statusss", results.length);
+                results.forEach((result) => {
+                    if (result.status === "fulfilled") {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                });
+                if (successCount === results.length) {
+                    showModal("Success", "All dishes delete successfully.");
+                } else if (errorCount === results.length) {
+                    showModal("Error", "All dishes delete failed.");
                 } else {
-                    errorCount++;
+                    showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`);
                 }
-            });
-            if (successCount === results.length) {
-                showModal("Success", "All dishes delete successfully.");
-            } else if (errorCount === results.length) {
-                showModal("Error", "All dishes delete failed.");
-            } else {
-                showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`);
+            } catch (error) {
+                console.error("Lỗi khi xóa:", error.response?.data || error.message);
+                Alert.alert("Có lỗi xảy ra khi xóa món ăn.");
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Lỗi khi xóa:", error.response?.data || error.message);
-            alert("Có lỗi xảy ra khi xóa món ăn.");
-        } finally {
-            setLoading(false);
-        }
+        }))
+
     }
 
 
@@ -185,7 +172,7 @@ const ChefDishes = () => {
                             } else {
                                 router.push({
                                     pathname: "/screen/dishDetails",
-                                    params: { dishId: dish.id},
+                                    params: { dishId: dish.id },
                                 })
                             }
                         }}

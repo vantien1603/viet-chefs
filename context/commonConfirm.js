@@ -9,7 +9,7 @@ export const ConfirmModalProvider = ({ children }) => {
   const [modalContent, setModalContent] = useState({
     title: '',
     message: '',
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
 
   const showConfirm = (title, message, onConfirm) => {
@@ -18,6 +18,7 @@ export const ConfirmModalProvider = ({ children }) => {
   };
 
   const handleConfirm = () => {
+    console.log("bam confirm ne");
     modalRef.current?.close();
     modalContent.onConfirm && modalContent.onConfirm();
   };

@@ -25,7 +25,6 @@ const Chat = () => {
     const userDoc = await getDoc(userDocRef);
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      console.log('User Data:', userData);
       return userData;
     } else {
       console.log('No such document!');
@@ -46,7 +45,6 @@ const Chat = () => {
           const data = doc.data();
           if (data.sender === user.userId || data.receiver === user.userId) {
             const key = data.sender === user.userId ? data.receiver : data.sender;
-            console.log("key", key);
             userPromises.push(getUserById(key).then(userInfo => {
               if (userInfo) {
                 const currentTime = new Date(data.createdAt.seconds * 1000);
@@ -56,7 +54,7 @@ const Chat = () => {
                     name: userInfo.name,
                     message: data.text,
                     time: currentTime.toLocaleTimeString(),
-                    avatar: "https://esx.bigo.sg/eu_live/2u6/2ZuCJH.jpg",
+                    avatar: userInfo.avatar,
                     read: false,
                   };
                 }
@@ -152,12 +150,12 @@ const styles = StyleSheet.create({
   },
   messageContent: {
     flex: 1,
-    justifyContent:'center'
+    justifyContent: 'center'
   },
   name: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom:5
+    marginBottom: 5
   },
   message: {
     fontSize: 16,

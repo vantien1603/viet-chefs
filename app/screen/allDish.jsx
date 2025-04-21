@@ -14,6 +14,8 @@ import Header from "../../components/header";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import useAxios from "../../config/AXIOS_API";
 import { router } from "expo-router";
+import { commonStyles } from "../../style";
+import { t } from "i18next";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
@@ -64,9 +66,9 @@ const AllDishScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={commonStyles.container}>
       <Header
-        title={isSearching ? "" : "All dishes"}
+        title={t("allDishes")}
         rightIcon={"search"}
         onRightPress={toggleSearch}
       />
@@ -87,39 +89,37 @@ const AllDishScreen = () => {
       )}
 
       <FlatList
-        data={groupedDishes}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            {item.map((dish) => (
-              <View key={dish.id} style={styles.cardContainer}>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: "/screen/dishDetails",
-                      params: { dishId: dish.id },
-                    })
-                  }
-                >
-                  <View style={styles.card}>
-                    <View style={styles.imageContainer}>
-                      <Image
-                        source={{ uri: dish.imageUrl }}
-                        style={styles.image}
-                        defaultSource={require("../../assets/images/1.jpg")}
-                        resizeMode="cover"
-                      />
-                    </View>
-                    <Text style={styles.title}>{dish.name}</Text>
-                    <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
-                    <Text style={{ color: "#FFF" }}>
-                      ~ {dish.cookTime} minutes
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+        data={dishes}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 15 }}
+        contentContainerStyle={{ padding: 10, gap: 20, paddingVertical: 30 }}
+
+        renderItem={({ item: dish }) => (
+          <TouchableOpacity
+            style={[
+              styles.cardContainer,
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/dishDetails",
+                params: { dishId: dish.id },
+              })
+            }
+          >
+            <View style={styles.card}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: dish.imageUrl }}
+                  style={styles.image}
+                  defaultSource={require("../../assets/images/1.jpg")}
+                />
               </View>
-            ))}
-          </View>
+              <Text style={styles.title}>{dish.name}</Text>
+              <Text style={styles.description}>{dish.description}</Text>
+              <Text style={styles.cookTime}>~ {dish.cookTime} minutes</Text>
+            </View>
+          </TouchableOpacity>
         )}
       />
     </SafeAreaView>
@@ -152,12 +152,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    marginTop: 20,
+    paddingHorizontal: 16,
+    marginBottom: 24,
   },
   cardContainer: {
-    width: "48%", // 2 món trên 1 hàng
+    width: "48%",
     alignItems: "center",
   },
   card: {
@@ -166,34 +165,52 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 50,
     alignItems: "center",
-    width: "100%", // Đảm bảo card chiếm toàn bộ chiều rộng của cardContainer
+    width: "100%",
+    //   height:'100%',
+    height: 220,
     position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    //   elevation: 5,
   },
   imageContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: "#FFF",
     overflow: "hidden",
-    marginBottom: 8,
     position: "absolute",
-    top: -20,
+    top: -30,
     justifyContent: "center",
     alignItems: "center",
   },
   image: {
     width: "100%",
     height: "100%",
-    // resizeMode: "cover",
+    resizeMode: "cover",
   },
   title: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFF",
-    marginTop: 70,
+    marginTop: 60,
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: 13,
+    color: "#F8BF40",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  cookTime: {
+    fontSize: 13,
+    color: "#FFFFFFAA",
+    textAlign: "center",
   },
 });
+
 
 export default AllDishScreen;
