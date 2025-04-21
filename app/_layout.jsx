@@ -157,8 +157,8 @@ export default function RootLayout() {
                     headerShown: false,
                   }}
                 />
-                <Stack.Screen
-                  name="screen/Cart/cart"
+                <Stack.Screen 
+                  name="screen/search"
                   options={{
                     headerShown: false,
                   }}
@@ -183,6 +183,12 @@ export default function RootLayout() {
                 />
                 <Stack.Screen
                   name="screen/editAddress"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen 
+                  name="screen/chooseAddress"
                   options={{
                     headerShown: false,
                   }}

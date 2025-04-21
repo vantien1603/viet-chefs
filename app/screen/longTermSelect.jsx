@@ -110,10 +110,11 @@ const LongTermSelectBooking = () => {
   const todayString = moment().format("YYYY-MM-DD");
 
   const toggleDishActive = (date, dishId) => {
-    setActiveDish((prev) =>
-      prev?.date === date && prev?.dishId === dishId
-        ? null // Ẩn nút X nếu nhấn lại
-        : { date, dishId } // Hiển thị nút X cho món được nhấn
+    setActiveDish(
+      (prev) =>
+        prev?.date === date && prev?.dishId === dishId
+          ? null // Ẩn nút X nếu nhấn lại
+          : { date, dishId } // Hiển thị nút X cho món được nhấn
     );
   };
 
@@ -354,17 +355,14 @@ const LongTermSelectBooking = () => {
   };
 
   useEffect(() => {
-    let isMounted = true;
-
     const fetchUnavailableDates = async () => {
       try {
         const response = await axiosInstance.get(
           `/bookings/unavailable-dates?chefId=${chefId}`
         );
-        if (isMounted) {
-          setUnavailableDates(response.data);
-          console.log("Unavailable dates:", response.data);
-        }
+
+        setUnavailableDates(response.data);
+        console.log("Unavailable dates:", response.data);
       } catch (error) {
         console.error(
           "Error fetching unavailable dates:",
@@ -379,10 +377,6 @@ const LongTermSelectBooking = () => {
     };
 
     fetchUnavailableDates();
-
-    return () => {
-      isMounted = false;
-    };
   }, [chefId]);
 
   const fetchAvailability = async () => {
@@ -754,7 +748,6 @@ const LongTermSelectBooking = () => {
         "/bookings/calculate-long-term-booking",
         payload
       );
-      console.log("cal", response.data);
       router.push({
         pathname: "/screen/reviewBooking",
         params: {
@@ -1126,7 +1119,8 @@ const LongTermSelectBooking = () => {
                                           {t("note")}
                                         </Text>
                                         {activeDish?.date === date &&
-                                          activeDish?.dishId === item.dishId && (
+                                          activeDish?.dishId ===
+                                            item.dishId && (
                                             <TouchableOpacity
                                               style={styles.removeItemButton}
                                               onPress={() => removeMenu(date)}
@@ -1155,6 +1149,7 @@ const LongTermSelectBooking = () => {
                                     const dish = dishes.find(
                                       (d) => d.id === dishId
                                     );
+                                    // console.log("dishdad", dish);
                                     const imageUrl =
                                       dish?.imageUrl ||
                                       "https://via.placeholder.com/40";
@@ -1176,12 +1171,6 @@ const LongTermSelectBooking = () => {
                                           source={{ uri: imageUrl }}
                                           style={styles.dishImage}
                                           resizeMode="cover"
-                                          onError={(error) =>
-                                            console.log(
-                                              `Error loading image for dish ${dishId}:`,
-                                              error
-                                            )
-                                          }
                                         />
                                         <Text style={styles.dishText}>
                                           {dish?.name || "Unknown Dish"}{" "}

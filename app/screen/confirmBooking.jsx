@@ -311,7 +311,7 @@ const ConfirmBookingScreen = () => {
               <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredientPreparation")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
               <Text style={styles.details}>
                 {chefBringIngredients === "true" ? t("chefWillPrepareIngredients") : t("IWillPrepareIngredients")}
               </Text>

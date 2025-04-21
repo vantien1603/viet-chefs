@@ -57,8 +57,12 @@ const BookingScreen = () => {
   const parsedParams = useMemo(
     () => ({
       chefId: params.chefId,
-      selectedMenu: params.selectedMenu ? JSON.parse(params.selectedMenu) : null,
-      selectedDishes: params.selectedDishes ? JSON.parse(params.selectedDishes) : [],
+      selectedMenu: params.selectedMenu
+        ? JSON.parse(params.selectedMenu)
+        : null,
+      selectedDishes: params.selectedDishes
+        ? JSON.parse(params.selectedDishes)
+        : [],
       dishNotes: params.dishNotes ? JSON.parse(params.dishNotes) : {},
       updatedDishId: params.updatedDishId,
       updatedNote: params.updatedNote,
@@ -85,7 +89,7 @@ const BookingScreen = () => {
       params.numPeople,
       params.requestDetails,
       params.menuId,
-      params.dishIds
+      params.dishIds,
     ]
   );
 
@@ -126,7 +130,7 @@ const BookingScreen = () => {
   const [addresses, setAddresses] = useState([]);
   const [isFetchingAvailability, setIsFetchingAvailability] = useState(false);
   const [ingredientPrep, setIngredientPrep] = useState("customer");
-  const [unavailableDates, setUnavailableDates] = useState([]); // Thêm state cho ngày không khả dụng
+  const [unavailableDates, setUnavailableDates] = useState([]);
 
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
@@ -146,18 +150,27 @@ const BookingScreen = () => {
     }
   }, [paramStartTime]);
 
+  // Update address if passed back from ChooseAddressScreen
+  useEffect(() => {
+    if (params.selectedAddress) {
+      const parsedSelectedAddress = JSON.parse(params.selectedAddress);
+      setAddress(parsedSelectedAddress.address);
+      AsyncStorage.setItem(
+        "selectedAddress",
+        JSON.stringify(parsedSelectedAddress)
+      );
+    }
+  }, [params.selectedAddress]);
+
   // Fetch unavailable dates
   useEffect(() => {
-    let isMounted = true;
-
     const fetchUnavailableDates = async () => {
       try {
-        const response = await axiosInstance.get(`/bookings/unavailable-dates?chefId=${chefId}`);
-        if (isMounted) {
-          setUnavailableDates(response.data);
-        }
+        const response = await axiosInstance.get(
+          `/bookings/unavailable-dates?chefId=${chefId}`
+        );
+        setUnavailableDates(response.data);
       } catch (error) {
-        console.error("Error fetching unavailable dates:", error?.response?.data || error);
         Toast.show({
           type: "error",
           text1: "Error",
@@ -167,10 +180,6 @@ const BookingScreen = () => {
     };
 
     fetchUnavailableDates();
-
-    return () => {
-      isMounted = false;
-    };
   }, [chefId]);
 
   useEffect(() => {
@@ -179,8 +188,13 @@ const BookingScreen = () => {
         pathname: "/screen/selectFood",
         params: {
           chefId,
-          selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
-          selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
+          selectedMenu: parsedSelectedMenu
+            ? JSON.stringify(parsedSelectedMenu)
+            : null,
+          selectedDishes:
+            parsedSelectedDishes.length > 0
+              ? JSON.stringify(parsedSelectedDishes)
+              : null,
           dishNotes: JSON.stringify(dishNotes),
         },
       });
@@ -196,12 +210,10 @@ const BookingScreen = () => {
   }, [chefId, parsedSelectedMenu, parsedSelectedDishes, dishNotes]);
 
   useEffect(() => {
-    let isMounted = true;
-
     const loadSelectedAddress = async () => {
       try {
         const savedAddress = await AsyncStorage.getItem("selectedAddress");
-        if (savedAddress && isMounted && !paramAddress) {
+        if (savedAddress && !paramAddress) {
           const parsedAddress = JSON.parse(savedAddress);
           setAddress(parsedAddress.address);
           console.log("Loaded selected address:", parsedAddress.address);
@@ -211,10 +223,6 @@ const BookingScreen = () => {
       }
     };
     loadSelectedAddress();
-
-    return () => {
-      isMounted = false;
-    };
   }, [paramAddress]);
 
   useEffect(() => {
@@ -227,7 +235,9 @@ const BookingScreen = () => {
   }, [updatedDishId, updatedNote]);
 
   useEffect(() => {
-    const menuDishIds = parsedSelectedMenu?.menuItems?.map((item) => item.dishId || item.id) || [];
+    const menuDishIds =
+      parsedSelectedMenu?.menuItems?.map((item) => item.dishId || item.id) ||
+      [];
     const extraDishIds = parsedSelectedDishes.map((dish) => dish.id);
     const allDishIds = [...new Set([...menuDishIds, ...extraDishIds])];
     setDishIds(allDishIds);
@@ -238,8 +248,6 @@ const BookingScreen = () => {
   }, [parsedSelectedMenu, parsedSelectedDishes, latestDishId]);
 
   useEffect(() => {
-    let isMounted = true;
-
     const fetchAvailability = async () => {
       if (!selectedDay || !address) {
         return;
@@ -249,14 +257,6 @@ const BookingScreen = () => {
       try {
         const date = selectedDay.format("YYYY-MM-DD");
         const menuIdParam = parsedSelectedMenu ? parsedSelectedMenu.id : null;
-        // console.log("Fetching availability with params:", {
-        //   chefId,
-        //   date,
-        //   customerLocation: address,
-        //   guestCount: numPeople,
-        //   menuId: menuIdParam,
-        //   dishIds,
-        // });
         const response = await axiosInstance.get(
           `/availability/chef/${chefId}/single-date`,
           {
@@ -281,31 +281,19 @@ const BookingScreen = () => {
             },
           }
         );
-        if (isMounted) {
-          setAvailability(response.data);
-        }
+
+        setAvailability(response.data);
       } catch (error) {
-        console.error("Error fetching availability:", error.response?.data || error);
-        if (isMounted) {
-          Toast.show({
-            type: "error",
-            text1: "Error",
-            text2: error.response?.data?.message || "Unable to fetch chef availability.",
-          });
-          setAvailability([]);
-        }
+        console.error(
+          "Error fetching availability:",
+          error.response?.data || error
+        );
       } finally {
-        if (isMounted) {
-          setIsFetchingAvailability(false);
-        }
+        setIsFetchingAvailability(false);
       }
     };
 
     fetchAvailability();
-
-    return () => {
-      isMounted = false;
-    };
   }, [chefId, selectedDay, address, numPeople, dishIds]);
 
   const getAvailableTimeSlots = () => {
@@ -318,32 +306,37 @@ const BookingScreen = () => {
     if (!dayAvailabilities.length) return [];
 
     const availableSlots = new Set();
-    dayAvailabilities.forEach(({ startTime: availStart, endTime: availEnd }) => {
-      const [startHour, startMinute] = availStart.split(":").map(Number);
-      const [endHour, endMinute] = availEnd.split(":").map(Number);
-      const startTimeInMinutes = startHour * 60 + startMinute;
-      const endTimeInMinutes = endHour * 60 + endMinute;
+    dayAvailabilities.forEach(
+      ({ startTime: availStart, endTime: availEnd }) => {
+        const [startHour, startMinute] = availStart.split(":").map(Number);
+        const [endHour, endMinute] = availEnd.split(":").map(Number);
+        const startTimeInMinutes = startHour * 60 + startMinute;
+        const endTimeInMinutes = endHour * 60 + endMinute;
 
-      timeSlots.forEach((slot) => {
-        const [slotHour, slotMinute] = slot.split(":").map(Number);
-        const slotTimeInMinutes = slotHour * 60 + slotMinute;
+        timeSlots.forEach((slot) => {
+          const [slotHour, slotMinute] = slot.split(":").map(Number);
+          const slotTimeInMinutes = slotHour * 60 + slotMinute;
 
-        const isToday = selectedDay.isSame(moment(), "day");
-        if (isToday) {
-          const now = moment();
-          const currentHour = now.hour();
-          const currentMinute = now.minute();
-          const currentTimeInMinutes = currentHour * 60 + currentMinute;
-          if (slotTimeInMinutes <= currentTimeInMinutes) {
-            return;
+          const isToday = selectedDay.isSame(moment(), "day");
+          if (isToday) {
+            const now = moment();
+            const currentHour = now.hour();
+            const currentMinute = now.minute();
+            const currentTimeInMinutes = currentHour * 60 + currentMinute;
+            if (slotTimeInMinutes <= currentTimeInMinutes) {
+              return;
+            }
           }
-        }
 
-        if (slotTimeInMinutes >= startTimeInMinutes && slotTimeInMinutes <= endTimeInMinutes) {
-          availableSlots.add(slot);
-        }
-      });
-    });
+          if (
+            slotTimeInMinutes >= startTimeInMinutes &&
+            slotTimeInMinutes <= endTimeInMinutes
+          ) {
+            availableSlots.add(slot);
+          }
+        });
+      }
+    );
 
     return Array.from(availableSlots).sort();
   };
@@ -356,8 +349,10 @@ const BookingScreen = () => {
 
   const isTodayOrBefore = (date) => date.isSameOrBefore(today, "day");
 
-  const incrementPeople = () => setNumPeople((prev) => (prev < 10 ? prev + 1 : prev));
-  const decrementPeople = () => setNumPeople((prev) => (prev > 1 ? prev - 1 : 1));
+  const incrementPeople = () =>
+    setNumPeople((prev) => (prev < 10 ? prev + 1 : prev));
+  const decrementPeople = () =>
+    setNumPeople((prev) => (prev > 1 ? prev - 1 : 1));
 
   const fetchAddresses = async () => {
     try {
@@ -375,14 +370,36 @@ const BookingScreen = () => {
   };
 
   const openAddressModal = () => {
-    fetchAddresses();
-    addressModalizeRef.current?.open();
+    router.push({
+      pathname: "/screen/chooseAddress",
+      params: {
+        chefId,
+        selectedMenu: parsedSelectedMenu
+          ? JSON.stringify(parsedSelectedMenu)
+          : null,
+        selectedDishes:
+          parsedSelectedDishes.length > 0
+            ? JSON.stringify(parsedSelectedDishes)
+            : null,
+        dishNotes: JSON.stringify(dishNotes),
+        sessionDate: selectedDay ? selectedDay.format("YYYY-MM-DD") : null,
+        startTime,
+        address,
+        numPeople: numPeople.toString(),
+        requestDetails: specialRequest,
+        menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
+        chefBringIngredients: ingredientPrep === "chef",
+      },
+    });
   };
 
   const selectAddress = async (selectedAddress) => {
     setAddress(selectedAddress.address);
     try {
-      await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
+      await AsyncStorage.setItem(
+        "selectedAddress",
+        JSON.stringify(selectedAddress)
+      );
       console.log("Saved selected address:", selectedAddress.address);
     } catch (error) {
       console.error("Error saving selected address:", error);
@@ -395,8 +412,13 @@ const BookingScreen = () => {
       pathname: "/screen/selectFood",
       params: {
         chefId,
-        selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
-        selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
+        selectedMenu: parsedSelectedMenu
+          ? JSON.stringify(parsedSelectedMenu)
+          : null,
+        selectedDishes:
+          parsedSelectedDishes.length > 0
+            ? JSON.stringify(parsedSelectedDishes)
+            : null,
         dishNotes: JSON.stringify(dishNotes),
       },
     });
@@ -407,8 +429,13 @@ const BookingScreen = () => {
       pathname: "/screen/selectFood",
       params: {
         chefId,
-        selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
-        selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
+        selectedMenu: parsedSelectedMenu
+          ? JSON.stringify(parsedSelectedMenu)
+          : null,
+        selectedDishes:
+          parsedSelectedDishes.length > 0
+            ? JSON.stringify(parsedSelectedDishes)
+            : null,
         dishNotes: JSON.stringify(dishNotes),
       },
     });
@@ -416,15 +443,27 @@ const BookingScreen = () => {
 
   const handleConfirmBooking = async () => {
     if (!selectedDay) {
-      Toast.show({ type: "error", text1: "Error", text2: "Please select a date." });
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please select a date.",
+      });
       return;
     }
     if (!startTime) {
-      Toast.show({ type: "error", text1: "Error", text2: "Please select a start time." });
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please select a start time.",
+      });
       return;
     }
     if (!address) {
-      Toast.show({ type: "error", text1: "Error", text2: "Please select an address." });
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please select an address.",
+      });
       return;
     }
 
@@ -437,7 +476,10 @@ const BookingScreen = () => {
         startTime: `${startTime}:00`,
         location: address,
         menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
-        extraDishIds: parsedSelectedDishes.length > 0 ? parsedSelectedDishes.map((dish) => dish.id) : null,
+        extraDishIds:
+          parsedSelectedDishes.length > 0
+            ? parsedSelectedDishes.map((dish) => dish.id)
+            : null,
         dishes: dishIds.map((dishId) => ({
           dishId,
           notes: dishNotes[dishId] || "",
@@ -457,8 +499,13 @@ const BookingScreen = () => {
         params: {
           bookingData: JSON.stringify(response.data),
           chefId,
-          selectedMenu: parsedSelectedMenu ? JSON.stringify(parsedSelectedMenu) : null,
-          selectedDishes: parsedSelectedDishes.length > 0 ? JSON.stringify(parsedSelectedDishes) : null,
+          selectedMenu: parsedSelectedMenu
+            ? JSON.stringify(parsedSelectedMenu)
+            : null,
+          selectedDishes:
+            parsedSelectedDishes.length > 0
+              ? JSON.stringify(parsedSelectedDishes)
+              : null,
           address,
           sessionDate: selectedDay.format("YYYY-MM-DD"),
           startTime,
@@ -466,12 +513,14 @@ const BookingScreen = () => {
           dishNotes: JSON.stringify(dishNotes),
           numPeople: numPeople.toString(),
           menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
-          chefBringIngredients: ingredientPrep === "chef"
+          chefBringIngredients: ingredientPrep === "chef",
         },
       });
-      // console.log("Booking response:", JSON.stringify(response.data));
     } catch (error) {
-      console.error("Error calling calculate-single-booking:", error.response?.data);
+      console.error(
+        "Error calling calculate-single-booking:",
+        error.response?.data
+      );
       Toast.show({
         type: "error",
         text1: "Error",
@@ -499,7 +548,7 @@ const BookingScreen = () => {
     ...(parsedSelectedMenu?.menuItems || []).map((item) => ({
       id: item.dishId,
       name: item.dishName,
-      image: item.dishImageUrl
+      image: item.dishImageUrl,
     })),
     ...parsedSelectedDishes.map((dish) => ({
       id: dish.id,
@@ -518,9 +567,7 @@ const BookingScreen = () => {
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Select Address</Text>
         {addresses.length === 0 ? (
-          <Text style={styles.noAddressesText}>
-            {t("noAddresses")}
-          </Text>
+          <Text style={styles.noAddressesText}>{t("noAddresses")}</Text>
         ) : (
           addresses.map((item) => (
             <TouchableOpacity
@@ -559,7 +606,10 @@ const BookingScreen = () => {
           <Text style={styles.sectionTitle}>{t("numberOfPeople")}</Text>
           <View style={styles.numberPicker}>
             <TouchableOpacity
-              style={[styles.numberButton, numPeople <= 1 && styles.disabledButton]}
+              style={[
+                styles.numberButton,
+                numPeople <= 1 && styles.disabledButton,
+              ]}
               onPress={decrementPeople}
               disabled={numPeople <= 1}
             >
@@ -569,7 +619,10 @@ const BookingScreen = () => {
               <Text style={styles.numberText}>{numPeople}</Text>
             </View>
             <TouchableOpacity
-              style={[styles.numberButton, numPeople >= 10 && styles.disabledButton]}
+              style={[
+                styles.numberButton,
+                numPeople >= 10 && styles.disabledButton,
+              ]}
               onPress={incrementPeople}
               disabled={numPeople >= 10}
             >
@@ -580,8 +633,16 @@ const BookingScreen = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("address")}</Text>
-          <TouchableOpacity onPress={openAddressModal} style={styles.locationContainer}>
-            <MaterialIcons name="location-on" size={20} color="#A64B2A" style={styles.locationIcon} />
+          <TouchableOpacity
+            onPress={openAddressModal}
+            style={styles.locationContainer}
+          >
+            <MaterialIcons
+              name="location-on"
+              size={20}
+              color="#A64B2A"
+              style={styles.locationIcon}
+            />
             <Text style={styles.locationText}>
               {address || "Select an address"}
             </Text>
@@ -596,7 +657,11 @@ const BookingScreen = () => {
             horizontal
             initialScrollIndex={safeInitialIndex}
             showsHorizontalScrollIndicator={false}
-            getItemLayout={(data, index) => ({ length: 80, offset: 80 * index, index })}
+            getItemLayout={(data, index) => ({
+              length: 80,
+              offset: 80 * index,
+              index,
+            })}
             renderItem={({ item }) => {
               const isUnavailable = unavailableDates.includes(
                 item.date.format("YYYY-MM-DD")
@@ -615,7 +680,7 @@ const BookingScreen = () => {
                     if (!isUnavailable && !isTodayOrPast) {
                       setSelectedDay(item.date);
                       setStartTime(null);
-                    } else if(isUnavailable){
+                    } else if (isUnavailable) {
                       Toast.show({
                         type: "error",
                         text1: "Unavailable",
@@ -634,7 +699,8 @@ const BookingScreen = () => {
                     style={[
                       styles.dayOfWeek,
                       isSelectedDay(item.date) && styles.selectedText,
-                      (isUnavailable || isTodayOrPast) && styles.unavailableText,
+                      (isUnavailable || isTodayOrPast) &&
+                        styles.unavailableText,
                     ]}
                   >
                     {item.dayOfWeek}
@@ -643,7 +709,8 @@ const BookingScreen = () => {
                     style={[
                       styles.day,
                       isSelectedDay(item.date) && styles.selectedText,
-                      (isUnavailable || isTodayOrPast) && styles.unavailableText,
+                      (isUnavailable || isTodayOrPast) &&
+                        styles.unavailableText,
                     ]}
                   >
                     {item.day}
@@ -660,18 +727,23 @@ const BookingScreen = () => {
             {isFetchingAvailability ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#A64B2A" />
-                <Text style={styles.loadingText}>Fetching available time slots...</Text>
               </View>
             ) : availableTimeSlots.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {availableTimeSlots.map((time) => (
                   <TouchableOpacity
                     key={time}
-                    style={[styles.timeButton, startTime === time && styles.timeButtonSelected]}
+                    style={[
+                      styles.timeButton,
+                      startTime === time && styles.timeButtonSelected,
+                    ]}
                     onPress={() => setStartTime(time)}
                   >
                     <Text
-                      style={[styles.timeButtonText, startTime === time && styles.timeButtonTextSelected]}
+                      style={[
+                        styles.timeButtonText,
+                        startTime === time && styles.timeButtonTextSelected,
+                      ]}
                     >
                       {time}
                     </Text>
@@ -694,7 +766,9 @@ const BookingScreen = () => {
                 {parsedSelectedMenu ? parsedSelectedMenu.name : t("order")}
               </Text>
               <MaterialIcons
-                name={isMenuExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                name={
+                  isMenuExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"
+                }
                 size={24}
                 color="#A64B2A"
               />
@@ -706,50 +780,51 @@ const BookingScreen = () => {
 
           {isMenuExpanded && (
             <View style={styles.menuContent}>
-              {parsedSelectedMenu && (parsedSelectedMenu.menuItems || []).length > 0 ? (
-                parsedSelectedMenu.menuItems.map((item, idx) => (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.dishRow,
-                      latestDishId && (item.dishId) === parseInt(latestDishId),
-                    ]}
-                  >
-                    <View style={styles.dishInfo}>
-                      <Image
-                        source={
-                          item.dishImageUrl
-                            ? { uri: item.dishImageUrl }
-                            : require("../../assets/images/1.jpg")
-                        }
-                        style={styles.dishImage}
-                        resizeMode="cover"
-                      />
-                      <View style={styles.dishText}>
-                        <Text style={styles.dishName}>
-                          {item.dishName}
-                        </Text>
-                        {dishNotes[item.dishId || item.id] && (
-                          <Text style={styles.noteText}>
-                            {t("note")}: {dishNotes[item.dishId]}
-                          </Text>
-                        )}
+              {parsedSelectedMenu &&
+              (parsedSelectedMenu.menuItems || []).length > 0
+                ? parsedSelectedMenu.menuItems.map((item, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.dishRow,
+                        latestDishId && item.dishId === parseInt(latestDishId),
+                      ]}
+                    >
+                      <View style={styles.dishInfo}>
+                        <Image
+                          source={
+                            item.dishImageUrl
+                              ? { uri: item.dishImageUrl }
+                              : require("../../assets/images/1.jpg")
+                          }
+                          style={styles.dishImage}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.dishText}>
+                          <Text style={styles.dishName}>{item.dishName}</Text>
+                          {dishNotes[item.dishId || item.id] && (
+                            <Text style={styles.noteText}>
+                              {t("note")}: {dishNotes[item.dishId]}
+                            </Text>
+                          )}
+                        </View>
                       </View>
+                      <TouchableOpacity onPress={openModal}>
+                        <Text style={styles.editText}>{t("editNotes")}</Text>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity onPress={openModal}>
-                      <Text style={styles.editText}>{t("editNotes")}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              ) : null}
+                  ))
+                : null}
 
-              {parsedSelectedDishes.length > 0 && (
+              {parsedSelectedDishes.length > 0 &&
                 parsedSelectedDishes.map((dish, idx) => (
                   <View
                     key={idx}
                     style={[
                       styles.dishRow,
-                      latestDishId && dish.id === parseInt(latestDishId) && styles.latestDish,
+                      latestDishId &&
+                        dish.id === parseInt(latestDishId) &&
+                        styles.latestDish,
                     ]}
                   >
                     <View style={styles.dishInfo}>
@@ -763,21 +838,21 @@ const BookingScreen = () => {
                         resizeMode="cover"
                       />
                       <View style={styles.dishText}>
-                        <Text style={styles.dishName}>{dish.name || "Unnamed Dish"}</Text>
+                        <Text style={styles.dishName}>
+                          {dish.name || "Unnamed Dish"}
+                        </Text>
                         {dishNotes[dish.id] && (
-                          <Text style={styles.noteText}>{t("note")}: {dishNotes[dish.id]}</Text>
+                          <Text style={styles.noteText}>
+                            {t("note")}: {dishNotes[dish.id]}
+                          </Text>
                         )}
-                        {/* {latestDishId && dish.id === parseInt(latestDishId) && (
-                          <Text style={styles.latestTag}>Mới thêm</Text>
-                        )} */}
                       </View>
                     </View>
                     <TouchableOpacity onPress={openModal}>
                       <Text style={styles.editText}>{t("editNotes")}</Text>
                     </TouchableOpacity>
                   </View>
-                ))
-              )}
+                ))}
 
               {!parsedSelectedMenu && parsedSelectedDishes.length === 0 && (
                 <Text style={styles.noItemsText}>{t("noMenus")}</Text>
@@ -805,29 +880,45 @@ const BookingScreen = () => {
               onPress={() => setIngredientPrep("customer")}
             >
               <MaterialIcons
-                name={ingredientPrep === "customer" ? "check-box" : "check-box-outline-blank"}
+                name={
+                  ingredientPrep === "customer"
+                    ? "check-box"
+                    : "check-box-outline-blank"
+                }
                 size={24}
                 color={ingredientPrep === "customer" ? "#A64B2A" : "#333"}
               />
-              <Text style={styles.checkboxText}>{t("IWillPrepareIngredients")}</Text>
+              <Text style={styles.checkboxText}>
+                {t("IWillPrepareIngredients")}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.checkboxContainer}
               onPress={() => setIngredientPrep("chef")}
             >
               <MaterialIcons
-                name={ingredientPrep === "chef" ? "check-box" : "check-box-outline-blank"}
+                name={
+                  ingredientPrep === "chef"
+                    ? "check-box"
+                    : "check-box-outline-blank"
+                }
                 size={24}
                 color={ingredientPrep === "chef" ? "#A64B2A" : "#333"}
               />
-              <Text style={styles.checkboxText}>{t("chefWillPrepareIngredients")}</Text>
+              <Text style={styles.checkboxText}>
+                {t("chefWillPrepareIngredients")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmBooking} disabled={loading}>
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirmBooking}
+          disabled={loading}
+        >
           {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
@@ -858,13 +949,12 @@ const BookingScreen = () => {
                   }
                   multiline
                 />
-                {/* {dish.isLatest && (
-                  <Text style={styles.latestTag}>Mới thêm</Text>
-                )} */}
               </View>
             ))
           ) : (
-            <Text style={styles.noDishesText}>{t("noDishesToAddNotesFor")}</Text>
+            <Text style={styles.noDishesText}>
+              {t("noDishesToAddNotesFor")}
+            </Text>
           )}
           <View style={styles.modalButtons}>
             <TouchableOpacity style={styles.cancelButton} onPress={cancelNotes}>

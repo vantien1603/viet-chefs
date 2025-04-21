@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { doc, setDoc } from "firebase/firestore";
 import { database } from "../config/firebase";
 import { useRouter } from "expo-router";
+
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
   useEffect(() => {
     const bootstrapAsync = async () => {
       const refresh_token = await SecureStore.getItemAsync("refreshToken");
@@ -63,7 +65,6 @@ export const AuthProvider = ({ children }) => {
         password: password,
         expoToken: expoToken,
       };
-      // const response = await axios.post('http://35.240.147.10/no-auth/login', loginPayload);
       const response = await axios.post(
         "http://35.240.147.10/no-auth/login",
         loginPayload
@@ -92,89 +93,8 @@ export const AuthProvider = ({ children }) => {
         }
         return true;
       }
-      // const response = await axios.post('http://192.168.1.52:8080/no-auth/login', loginPayload);
     } catch (error) {
-      // if (error.response) {
-      //   console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      // }
-      // else {
-      //   console.error(error.message);
-      // }
       return false;
-    }
-  };
-
-  const loginWithGoogle = async () => {
-    try {
-      // Gọi API /oauth-url để lấy URL OAuth
-      const response = await axios.get("http://vietchef.ddns.net/no-auth/oauth-url", {
-        params: { provider: "google" },
-      });
-
-      const oauthUrl = response.data.url;
-      if (!oauthUrl) {
-        throw new Error("Failed to get OAuth URL");
-      }
-
-      return { oauthUrl }; // Trả về URL để LoginScreen hiển thị WebView
-    } catch (error) {
-      console.error("Error fetching Google OAuth URL:", error?.response?.data || error.message);
-      throw error; // Ném lỗi để LoginScreen xử lý
-    }
-  };
-
-  const handleGoogleRedirect = async (url) => {
-    try {
-      if (!url.startsWith("http://vietchef.ddns.net/no-auth/oauth-redirect")) {
-        return { success: false };
-      }
-
-      const params = new URLSearchParams(url.split("?")[1]);
-      const access_token = params.get("access_token");
-      const refresh_token = params.get("refresh_token");
-      const fullName = params.get("full_name");
-
-      console.log("Access Token:", access_token);
-      console.log("Refresh Token:", refresh_token);
-      console.log("Full Name:", fullName);
-
-      if (!access_token || !refresh_token) {
-        throw new Error("Missing access_token or refresh_token");
-      }
-
-      // Lưu token vào AsyncStorage và SecureStore
-      // await AsyncStorage.setItem("access_token", access_token);
-      // await AsyncStorage.setItem("refresh_token", refresh_token);
-      // await AsyncStorage.setItem("fullName", fullName || "");
-      setUser({
-        fullName,
-        token: access_token,
-      });
-      await SecureStore.setItemAsync("refreshToken", refresh_token);
-
-      // Cập nhật user state
-      const decoded = jwtDecode(access_token);
-      setUser({
-        fullName: fullName || "",
-        token: access_token,
-        ...decoded,
-      });
-      setIsGuest(false);
-
-      // Lưu thông tin user vào Firestore
-      if (decoded) {
-        const userDocRef = doc(database, "users", decoded.userId);
-        await setDoc(userDocRef, {
-          _id: decoded.userId,
-          name: fullName || "",
-          avatar: "https://i.pravatar.cc/300",
-        });
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error("Error handling Google redirect:", error?.response?.data || error.message);
-      throw error;
     }
   };
 
@@ -190,7 +110,9 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isGuest, login, loginWithGoogle, handleGoogleRedirect, logout }}>
+    <AuthContext.Provider
+      value={{ user, isGuest, login, setUser, setIsGuest, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

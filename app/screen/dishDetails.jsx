@@ -24,54 +24,48 @@ const DishDetails = () => {
   const [dishNotes, setDishNotes] = useState({});
 
   useEffect(() => {
-    let isMounted = true;
     const fetchDishDetails = async () => {
       try {
         const response = await axiosInstance.get(`/dishes/${dishId}`);
-        if (isMounted) {
-          setDish(response.data);
-          // Auto-add dish only if from MenuDetails (menuId present)
-          if (menuId && response.data.id && !selectedDishes.some((item) => item.id === response.data.id)) {
-            setSelectedDishes([
-              {
-                id: response.data.id,
-                name: response.data.name || dishName,
-                imageUrl: response.data.imageUrl,
-              },
-            ]);
-          }
-          console.log("dish details", response.data);
+
+        setDish(response.data);
+        // Auto-add dish only if from MenuDetails (menuId present)
+        if (
+          menuId &&
+          response.data.id &&
+          !selectedDishes.some((item) => item.id === response.data.id)
+        ) {
+          setSelectedDishes([
+            {
+              id: response.data.id,
+              name: response.data.name || dishName,
+              imageUrl: response.data.imageUrl,
+            },
+          ]);
         }
+        console.log("dish details", response.data);
       } catch (error) {
         console.error("Error fetching dish details:", error);
       }
     };
     fetchDishDetails();
-    return () => {
-      isMounted = false;
-    };
   }, [dishId, dishName, menuId]);
 
   useEffect(() => {
-    let isMounted = true;
     const fetchChefDetails = async () => {
       const chefIdToFetch = dish.chefId || chefId;
       if (chefIdToFetch) {
         try {
           const response = await axiosInstance.get(`/chefs/${chefIdToFetch}`);
-          if (isMounted) {
-            setChef(response.data);
-            console.log("chef details", response.data);
-          }
+
+          setChef(response.data);
+          console.log("chef details", response.data);
         } catch (error) {
           console.error("Error fetching chef details:", error);
         }
       }
     };
     fetchChefDetails();
-    return () => {
-      isMounted = false;
-    };
   }, [dish.chefId, chefId]);
 
   const handleAddItem = () => {
@@ -125,10 +119,7 @@ const DishDetails = () => {
             style={styles.dishImage}
             resizeMode="cover"
           />
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleBack}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -142,11 +133,15 @@ const DishDetails = () => {
         <View style={styles.detailsContainer}>
           <View style={styles.detailItem}>
             <Ionicons name="restaurant-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>{t("cuisine")}: {dish.cuisineType}</Text>
+            <Text style={styles.detailText}>
+              {t("cuisine")}: {dish.cuisineType}
+            </Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="home-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>{t("type")}: {dish.serviceType}</Text>
+            <Text style={styles.detailText}>
+              {t("type")}: {dish.serviceType}
+            </Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="time-outline" size={20} color="#555" />
@@ -191,7 +186,9 @@ const DishDetails = () => {
           >
             <Text style={styles.actionButtonText}>
               {selectedDishes.length > 0
-                ? `Booking - ${selectedDishes.length} item${selectedDishes.length > 1 ? "s" : ""}`
+                ? `Booking - ${selectedDishes.length} item${
+                    selectedDishes.length > 1 ? "s" : ""
+                  }`
                 : t("addItem")}
             </Text>
           </TouchableOpacity>

@@ -18,7 +18,7 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { t } from "i18next";
 
-const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
+const DishCard = ({ item, isSelected, onToggle }) => (
   <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
     <View style={styles.checkbox(isSelected)}>
       {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
@@ -31,7 +31,7 @@ const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
       <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
-      {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
+      {/* {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null} */}
     </View>
   </TouchableOpacity>
 );
@@ -259,17 +259,7 @@ const SelectFood = () => {
           item={item}
           isSelected={isSelected}
           onToggle={() => toggleDish(item.id)}
-          note={dishNotes[item.id]}
-          onNoteChange={(text) => handleAddNote(item.id, text)}
         />
-        {isSelected && (
-          <TextInput
-            style={styles.input}
-            placeholder={t("dishNotePlaceholder")}
-            value={dishNotes[item.id] || ""}
-            onChangeText={(text) => handleAddNote(item.id, text)}
-          />
-        )}
       </View>
     );
   };

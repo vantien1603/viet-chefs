@@ -42,20 +42,45 @@ const NotificationScreen = () => {
     );
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.map((notification) => ({ ...notification, read: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      await axiosInstance.put("/notifications/my/all");
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+    } catch (error) {
+      console.log("err", error);
+    }
+  };
+
+  const markOneAsRead = async (notificationId) => {
+    try {
+      await axiosInstance.put(`/notifications/my?ids=${notificationId}`);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.log("err", error);
+    }
   };
 
   useEffect(() => {
     fetchNotification();
   }, []);
 
-  const handleNotificationPress = (item) => {
-    const { title, bookingId, bookingDetailId } = item;
+  const handleNotificationPress = async (item) => {
+    const { id, title, bookingId, bookingDetailId } = item;
     const params = { bookingId };
     if (bookingDetailId) params.bookingDetailId = bookingDetailId;
+
+    await markOneAsRead(id);
 
     switch (title) {
       case "Booking Confirmed":

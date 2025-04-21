@@ -73,10 +73,6 @@ const LongTermBookingScreen = () => {
     try {
       const response = await axiosInstance.get(`/packages/chefs/${chefId}`);
       const fetchedPackages = response.data.content || response.data || [];
-      if (!Array.isArray(fetchedPackages)) {
-        throw new Error("Dữ liệu gói không phải là mảng.");
-      }
-
       setPackages(fetchedPackages);
       if (fetchedPackages.length > 0) {
         setSelectedPackage(fetchedPackages[0]);

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useRef, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -13,6 +13,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import Toast from "react-native-toast-message";
+import { Ionicons } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Modalize } from "react-native-modalize";
 
 const ReviewBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -24,20 +27,26 @@ const ReviewBookingScreen = () => {
   const selectedDates = JSON.parse(params.selectedDates || "{}");
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
+  const [isPlatformFeeModalVisible, setIsPlatformFeeModalVisible] =
+    useState(false);
+  // Add ref for Modalize
+  const platformFeeModalRef = useRef(null);
 
-  const calculateSubtotal = () => {
-    return (
-      bookingData.bookingDetails?.reduce(
-        (sum, detail) => sum + detail.totalPrice,
-        0
-      ) || 0
-    );
+  // Function to open the modal
+  const openPlatformFeeModal = () => {
+    setIsPlatformFeeModalVisible(true);
+    platformFeeModalRef.current?.open();
+  };
+
+  // Function to close the modal
+  const closePlatformFeeModal = () => {
+    setIsPlatformFeeModalVisible(false);
+    platformFeeModalRef.current?.close();
   };
 
   const handleConfirmBooking = async () => {
     try {
       if (!user) {
-        console.log("user before book", user);
         throw new Error(
           "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
         );
@@ -95,15 +104,15 @@ const ReviewBookingScreen = () => {
         },
       });
     } catch (error) {
-      console.error("Error confirming booking:", error?.response?.data);
       const errorMessage =
-        error.response?.data?.message ||
+        error?.response?.data?.message ||
         "Có lỗi khi xác nhận đặt chỗ. Vui lòng thử lại.";
       Toast.show({
         type: "error",
         text1: "Lỗi",
         text2: errorMessage,
       });
+      console.log("ee", error?.response?.data?.message)
     }
   };
 
@@ -127,111 +136,149 @@ const ReviewBookingScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Header title="Confirm Booking" onLeftPress={handleBackPress} />
-      <ScrollView style={styles.container}>
-        <Text style={styles.title}>Chi tiết đặt chỗ dài hạn</Text>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.safeArea}>
+        <Header title="Confirm Booking" onLeftPress={handleBackPress} />
+        <ScrollView style={styles.container}>
+          <Text style={styles.title}>Chi tiết đặt chỗ dài hạn</Text>
 
-        {bookingData.bookingDetails?.map((detail, index) => (
-          <View key={index} style={styles.dateContainer}>
-            <Text style={styles.dateTitle}>{detail.sessionDate}</Text>
-            <View style={styles.detailCard}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Thời gian:</Text>
-                <Text style={styles.detailValue}>
-                  {detail.startTime.slice(0, 5)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí di chuyển:</Text>
-                <Text style={styles.detailValue}>
-                  ${(detail.arrivalFee || 0).toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí nấu ăn:</Text>
-                <Text style={styles.detailValue}>
-                  ${(detail.chefCookingFee || 0).toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phí món ăn:</Text>
-                <Text style={styles.detailValue}>
-                  ${(detail.priceOfDishes || 0).toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Discount:</Text>
-                <Text style={styles.detailValue}>
-                  -${(detail.discountAmout || 0).toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Total cook time:</Text>
-                <Text style={styles.detailValue}>{detail.totalCookTime}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Nguyên liệu:</Text>
-                <Text style={styles.detailValue}>
-                  {selectedDates[detail.sessionDate]?.chefBringIngredients
-                    ? "Đầu bếp chuẩn bị"
-                    : "Khách hàng chuẩn bị"}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, styles.totalLabel]}>
-                  Tổng cộng ngày:
-                </Text>
-                <Text style={[styles.detailValue, styles.totalValue]}>
-                  ${(detail.totalPrice || 0).toFixed(2)}
-                </Text>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoLabel}>Địa điểm:</Text>
+            <Text style={styles.infoValue}>
+              {bookingData.bookingDetails?.[0]?.location || "N/A"}
+            </Text>
+          </View>
+
+          {bookingData.bookingDetails?.map((detail, index) => (
+            <View key={index} style={styles.dateContainer}>
+              <Text style={styles.dateTitle}>{detail.sessionDate}</Text>
+              <View style={styles.detailCard}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Thời gian:</Text>
+                  <Text style={styles.detailValue}>
+                    {detail.startTime.slice(0, 5)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phí di chuyển:</Text>
+                  <Text style={styles.detailValue}>
+                    ${(detail.arrivalFee || 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phí nấu ăn:</Text>
+                  <Text style={styles.detailValue}>
+                    ${(detail.chefCookingFee || 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phí món ăn:</Text>
+                  <Text style={styles.detailValue}>
+                    ${(detail.priceOfDishes || 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Discount:</Text>
+                  <Text style={styles.detailValue}>
+                    -${(detail.discountAmout || 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total cook time:</Text>
+                  <Text style={styles.detailValue}>
+                    {detail.totalCookTime} minutes
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Nguyên liệu:</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedDates[detail.sessionDate]?.chefBringIngredients
+                      ? "Đầu bếp chuẩn bị"
+                      : "Khách hàng chuẩn bị"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <View style={styles.labelWithIcon}>
+                    <Text style={styles.detailLabel}>Phí áp dụng:</Text>
+                    <TouchableOpacity onPress={openPlatformFeeModal}>
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={16}
+                        color="#A64B2A"
+                        style={styles.labelIcon}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.valueWithIcon}>
+                    <Text style={styles.detailValue}>
+                      ${(detail.platformFee || 0).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, styles.totalLabel]}>
+                    Tổng cộng ngày:
+                  </Text>
+                  <Text style={[styles.detailValue, styles.totalValue]}>
+                    ${(detail.totalPrice || 0).toFixed(2)}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tạm tính:</Text>
-            <Text style={styles.summaryValue}>
-              ${calculateSubtotal().toFixed(2)}
-            </Text>
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Giảm giá:</Text>
+              <Text style={[styles.summaryValue, styles.discount]}>
+                -${(bookingData.discountAmount || 0).toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, styles.totalLabel]}>
+                Tổng cộng:
+              </Text>
+              <Text style={[styles.summaryValue, styles.totalValue]}>
+                ${(bookingData.totalPrice || 0).toFixed(2)}
+              </Text>
+            </View>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Giảm giá:</Text>
-            <Text style={[styles.summaryValue, styles.discount]}>
-              -${(bookingData.discountAmount || 0).toFixed(2)}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, styles.totalLabel]}>
-              Tổng cộng:
-            </Text>
-            <Text style={[styles.summaryValue, styles.totalValue]}>
-              ${(bookingData.totalPrice || 0).toFixed(2)}
-            </Text>
-          </View>
+
+          <View style={styles.spacer} />
+        </ScrollView>
+        <View style={styles.buttonArea}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirmBooking}
+          >
+            <Text style={styles.confirmButtonText}>Xác nhận đặt chỗ</Text>
+          </TouchableOpacity>
         </View>
-
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoLabel}>Địa điểm:</Text>
-          <Text style={styles.infoValue}>
-            {bookingData.bookingDetails?.[0]?.location || "N/A"}
-          </Text>
-        </View>
-
-        <View style={styles.spacer} />
-      </ScrollView>
-      <View style={styles.buttonArea}>
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirmBooking}
+        <Modalize
+          ref={platformFeeModalRef}
+          adjustToContentHeight={true}
+          handlePosition="outside"
+          modalStyle={styles.modalStyle}
+          // onClose={closePlatformFeeModal}
         >
-          <Text style={styles.confirmButtonText}>Xác nhận đặt chỗ</Text>
-        </TouchableOpacity>
-      </View>
-      <Toast />
-    </SafeAreaView>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Phí áp dụng là gì?</Text>
+            <Text style={styles.modalText}>
+              Phí áp dụng là khoản phí nhỏ được thu để hỗ trợ cải thiện và duy
+              trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.
+              Chúng tôi sử dụng phí này để nâng cấp tính năng, bảo trì hệ thống
+              và mang đến nhiều dịch vụ chất lượng hơn cho bạn.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={closePlatformFeeModal}
+            >
+              <Text style={styles.modalButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </Modalize>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
@@ -268,6 +315,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 10,
+    alignItems: "center",
+  },
+  labelWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  valueWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   detailLabel: {
     fontSize: 14,
@@ -350,6 +406,46 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 100,
+  },
+  infoIcon: {
+    marginLeft: 5, // Spacing after the value
+  },
+  labelIcon: {
+    marginLeft: 5, // Spacing after the label
+  },
+  modalStyle: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalContent: {
+    padding: 20,
+    paddingBottom: 30,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButton: {
+    backgroundColor: "#A64B2A",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaView, StyleSheet, View, Text } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../components/header";
@@ -11,17 +11,18 @@ import BookingList from "../../components/bookingRouter";
 
 const OrderHistories = () => {
   const { user } = useContext(AuthContext);
-  const axiosInstance = useAxios(); // Use hook to get Axios instance
+  const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const params = useLocalSearchParams();
+  const { tab } = params;
 
-  const initialIndex = tab ? routes.findIndex((route) => route.key === tab) : 0;
-  const [index, setIndex] = useState(initialIndex !== -1 ? initialIndex : 0);
+  const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: "pending", title: "Pending" },
     { key: "paidDeposit", title: "Paid/Deposit" },
     { key: "completed", title: "Completed" },
     { key: "confirm", title: "Confirmed" },
-    { key: "cancel", title: "Cancelled" },
+    { key: "cancel", title: "Canceled" },
   ]);
   const [bookings, setBookings] = useState([]);
   const [pageNo, setPageNo] = useState(0);
@@ -30,9 +31,23 @@ const OrderHistories = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const PAGE_SIZE = 10;
-  const params = useLocalSearchParams();
-  const { tab } = params;
 
+  // Map each tab to a single primary status
+  const statusMap = {
+    pending: "PENDING",
+    paidDeposit: "PAID",
+    completed: "COMPLETED",
+    confirm: "CONFIRMED",
+    cancel: "CANCELED",
+  };
+
+  const filterStatusMap = {
+    pending: ["PENDING", "PENDING_FIRST_CYCLE"],
+    paidDeposit: ["PAID", "DEPOSITED", "PAID_FIRST_CYCLE"],
+    completed: ["COMPLETED"],
+    confirm: ["CONFIRMED", "CONFIRMED_PARTIALLY_PAID", "CONFIRMED_PAID"],
+    cancel: ["CANCELED", "OVERDUE"],
+  };
 
   useEffect(() => {
     if (tab) {
@@ -41,14 +56,16 @@ const OrderHistories = () => {
         setIndex(tabIndex);
       }
     }
-  }, [tab, index]);
+  }, [tab]);
 
-  const fetchRequestBooking = async (page, isRefresh = false) => {
+  const fetchRequestBooking = async (page, status, isRefresh = false) => {
     if (isLoading && !isRefresh) return;
     setIsLoading(true);
     try {
+      console.log("Fetching chef bookings with status:", status, "page:", page);
       const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
         params: {
+          status,
           pageNo: page,
           pageSize: PAGE_SIZE,
           sortBy: "id",
@@ -56,6 +73,7 @@ const OrderHistories = () => {
         },
       });
 
+      console.log("Chef bookings response:", response.data);
       const bookingData = response.data.content || response.data || [];
       setBookings((prev) => {
         const newData = isRefresh ? bookingData : [...prev, ...bookingData];
@@ -72,19 +90,23 @@ const OrderHistories = () => {
       );
       setPageNo(page);
     } catch (error) {
-      console.log("Error fetching booking details:", error.message);
+      showModal(
+        "Error",
+        "Failed to fetch chef bookings: " + (error.message || "Unknown error")
+      );
     } finally {
       setIsLoading(false);
       if (isRefresh) setRefreshing(false);
     }
   };
 
-  const fetchBookingDetails = async (page, isRefresh = false) => {
+  const fetchBookingDetails = async (page, status, isRefresh = false) => {
     if (isLoading && !isRefresh) return;
     setIsLoading(true);
     try {
       const response = await axiosInstance.get("/bookings/my-bookings", {
         params: {
+          status,
           pageNo: page,
           pageSize: PAGE_SIZE,
           sortBy: "id",
@@ -92,12 +114,14 @@ const OrderHistories = () => {
         },
       });
 
+      // console.log("Bookings response:", response.data);
       const bookingData = response.data.content || response.data || [];
       setBookings((prev) => {
         const newData = isRefresh ? bookingData : [...prev, ...bookingData];
         const uniqueData = Array.from(
           new Map(newData.map((item) => [item.id, item])).values()
         );
+        // console.log("Updated bookings:", uniqueData);
         return uniqueData;
       });
       setTotalPages(
@@ -108,7 +132,15 @@ const OrderHistories = () => {
       );
       setPageNo(page);
     } catch (error) {
-      console.log("Error fetching booking details:", error.message);
+      console.error(
+        "Error fetching bookings:",
+        error.message,
+        error.response?.data
+      );
+      showModal(
+        "Error",
+        "Failed to fetch bookings: " + (error.message || "Unknown error")
+      );
     } finally {
       setIsLoading(false);
       if (isRefresh) setRefreshing(false);
@@ -119,10 +151,13 @@ const OrderHistories = () => {
     try {
       setLoading(true);
       await axiosInstance.put(`/bookings/${id}/reject`);
-      fetchRequestBooking(0, true);
-      showModal("Success", "Reject successfully");
+      showModal("Success", "Rejected successfully");
+      fetchRequestBooking(0, statusMap[routes[index].key], true);
     } catch (error) {
-      showModal("Error", "Failed to reject booking");
+      showModal(
+        "Error",
+        "Failed to reject booking: " + (error.message || "Unknown error")
+      );
     } finally {
       setLoading(false);
     }
@@ -133,9 +168,12 @@ const OrderHistories = () => {
       setLoading(true);
       await axiosInstance.put(`/bookings/${id}/confirm`);
       showModal("Success", "Confirmed successfully");
-      fetchRequestBooking(0, true);
+      fetchRequestBooking(0, statusMap[routes[index].key], true);
     } catch (error) {
-      showModal("Error", "Failed to confirm booking");
+      showModal(
+        "Error",
+        "Failed to confirm booking: " + (error.message || "Unknown error")
+      );
     } finally {
       setLoading(false);
     }
@@ -146,128 +184,128 @@ const OrderHistories = () => {
       setLoading(true);
       const response = await axiosInstance.post(`/bookings/${id}/payment`);
       if (response.status === 200) {
-        showModal("Success", "Payment successfully");
-        fetchBookingDetails(0, true);
+        showModal("Success", "Payment successful");
+        fetchBookingDetails(0, statusMap[routes[index].key], true);
       }
     } catch (error) {
-      showModal("Error", "Failed to process payment");
+      showModal(
+        "Error",
+        "Failed to process payment: " + (error.message || "Unknown error")
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    user?.roleName === "ROLE_CHEF"
-      ? fetchRequestBooking(0)
-      : fetchBookingDetails(0);
-  }, [user?.roleName]);
+    if (!user?.roleName) {
+      console.warn("User or roleName is missing:", user);
+      showModal("Error", "Please log in to view bookings");
+      return;
+    }
+    // console.log("Fetching for role:", user.roleName, "tab:", routes[index].key);
+    const currentStatus = statusMap[routes[index].key];
+    setBookings([]);
+    setPageNo(0);
+    if (user.roleName === "ROLE_CHEF") {
+      fetchRequestBooking(0, currentStatus);
+    } else {
+      fetchBookingDetails(0, currentStatus);
+    }
+  }, [user?.roleName, index]);
 
   const handleLoadMore = () => {
     if (pageNo < totalPages - 1 && !isLoading) {
-      user?.roleName === "ROLE_CHEF"
-        ? fetchRequestBooking(pageNo + 1)
-        : fetchBookingDetails(pageNo + 1);
+      const currentStatus = statusMap[routes[index].key];
+      if (user?.roleName === "ROLE_CHEF") {
+        fetchRequestBooking(pageNo + 1, currentStatus);
+      } else {
+        fetchBookingDetails(pageNo + 1, currentStatus);
+      }
     }
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setBookings([]);
-    user?.roleName === "ROLE_CHEF"
-      ? fetchRequestBooking(0, true)
-      : fetchBookingDetails(0, true);
-  }, [user?.roleName]);
-
-  const pendingBookings = bookings.filter(
-    (booking) =>
-      booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE"
-  );
-  const paidDepositBookings = bookings.filter(
-    (booking) =>
-      booking.status === "PAID" ||
-      booking.status === "DEPOSITED" ||
-      booking.status === "PAID_FIRST_CYCLE"
-  );
-  const completedBookings = bookings.filter(
-    (booking) => booking.status === "COMPLETED"
-  );
-  const confirmedBookings = bookings.filter(
-    (booking) =>
-      booking.status === "CONFIRMED" ||
-      booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-      booking.status === "CONFIRMED_PAID"
-  );
-  const cancelledBookings = bookings.filter(
-    (booking) => booking.status === "CANCELED" || booking.status === "OVERDUE"
-  );
+    const currentStatus = statusMap[routes[index].key];
+    console.log("Refreshing with status:", currentStatus);
+    if (user?.roleName === "ROLE_CHEF") {
+      fetchRequestBooking(0, currentStatus, true);
+    } else {
+      fetchBookingDetails(0, currentStatus, true);
+    }
+  }, [user?.roleName, index]);
 
   const renderScene = SceneMap({
     pending: () => (
       <BookingList
-        bookings={pendingBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.pending.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onPayment={handlePayment}
-        // axiosInstance={axiosInstance}
       />
     ),
     paidDeposit: () => (
       <BookingList
-        bookings={paidDepositBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.paidDeposit.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onPayment={handlePayment}
-        // axiosInstance={axiosInstance}
       />
     ),
     confirm: () => (
       <BookingList
-        bookings={confirmedBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.confirm.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onPayment={handlePayment}
-        // axiosInstance={axiosInstance}
       />
     ),
     completed: () => (
       <BookingList
-        bookings={completedBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.completed.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onPayment={handlePayment}
-        // axiosInstance={axiosInstance}
       />
     ),
     cancel: () => (
       <BookingList
-        bookings={cancelledBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.cancel.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onPayment={handlePayment}
-        // axiosInstance={axiosInstance}
+        // role={user?.roleName}
+        // onAccept={handleAccept}
+        // onReject={handleReject}
+        // onPayment={handlePayment}
       />
     ),
   });
+
+  if (!user?.roleName) {
+    return (
+      <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
+        <Header title="Order History" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            Please log in to view your order history
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
@@ -300,22 +338,18 @@ const OrderHistories = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#EBE5DD",
+    flex: 1,
   },
-  tabBar: {
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    elevation: 0,
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
   },
-  tabIndicator: {
-    backgroundColor: "#2dd4bf",
-    height: 3,
-    borderRadius: 2,
-  },
-  tabLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "none",
+  errorText: {
+    fontSize: 16,
+    color: "#991b1b",
+    textAlign: "center",
   },
 });
 

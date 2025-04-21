@@ -37,9 +37,7 @@ export default function Home() {
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
-      () => {
-        return true;
-      }
+      () => true
     );
     return () => backHandler.remove();
   }, []);
@@ -57,6 +55,7 @@ export default function Home() {
       console.log("Error fetching unread count", error?.response?.data);
     }
   };
+
   useEffect(() => {
     fetchUnreadCount();
   }, []);
@@ -71,7 +70,6 @@ export default function Home() {
         );
         return null;
       }
-
       let currentLocation = await Location.getCurrentPositionAsync({});
       return {
         latitude: currentLocation.coords.latitude,
@@ -84,21 +82,40 @@ export default function Home() {
     }
   };
 
+  const reverseGeocode = async (coords) => {
+    try {
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      if (reverseGeocode.length > 0) {
+        let addr = reverseGeocode[0];
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
+          addr.city || ""
+        }, ${addr.region || ""}, ${addr.country || ""}`
+          .replace(/,,/g, ",")
+          .trim();
+        return {
+          id: "current-location",
+          title: "Vị trí hiện tại",
+          address: fullAddress,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Lỗi khi reverse geocoding:", error);
+      return null;
+    }
+  };
+
   const loadData = async () => {
-    let mounted = true;
     try {
       const savedAddress = await AsyncStorage.getItem("selectedAddress");
-
-      if (!mounted) {
-        console.log("Component unmounted, aborting loadData state update.");
-        return;
-      }
-
       if (savedAddress) {
         const parsedAddress = JSON.parse(savedAddress);
-        // console.log("Địa chỉ đã lưu:", parsedAddress);
         setSelectedAddress(parsedAddress);
-
         if (parsedAddress.latitude && parsedAddress.longitude) {
           setLocation({
             latitude: parsedAddress.latitude,
@@ -106,31 +123,30 @@ export default function Home() {
           });
         } else {
           const currentCoords = await getCurrentLocation();
-          if (currentCoords) {
-            setLocation(currentCoords);
-          }
+          if (currentCoords) setLocation(currentCoords);
         }
       } else {
         const currentCoords = await getCurrentLocation();
         if (currentCoords) {
-          setLocation(currentCoords);
+          const fetchedAddress = await reverseGeocode(currentCoords);
+          if (fetchedAddress) {
+            await AsyncStorage.setItem(
+              "selectedAddress",
+              JSON.stringify(fetchedAddress)
+            );
+            setSelectedAddress(fetchedAddress);
+            setLocation(currentCoords);
+          }
         }
       }
     } catch (error) {
       console.error("Error loading data:", error);
     }
-    return () => {
-      mounted = false;
-    };
   };
 
   const fetchChef = async () => {
-    let mounted = true;
     try {
-      if (!location) {
-        console.log("Chưa có vị trí, bỏ qua fetchChef.");
-        return;
-      }
+      if (!location) return;
       const response = await axiosInstance.get("/chefs/nearby", {
         params: {
           customerLat: location.latitude,
@@ -142,30 +158,18 @@ export default function Home() {
           sortDir: "asc",
         },
       });
-      if (!mounted) {
-        console.log("Component unmounted, aborting chef state update.");
-        return;
-      }
       setChef(response.data.content.slice(0, 7));
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      } else {
-        console.error(error.message);
-      }
+      console.log(
+        "Error fetching chefs:",
+        error?.response?.data || error.message
+      );
     }
-    return () => {
-      mounted = false;
-    };
   };
 
   const fetchDishes = async () => {
-    let mounted = true;
     try {
-      if (!location) {
-        console.log("Chưa có vị trí, bỏ qua fetchDishes.");
-        return;
-      }
+      if (!location) return;
       const response = await axiosInstance.get("/dishes/nearby", {
         params: {
           customerLat: location.latitude,
@@ -177,21 +181,13 @@ export default function Home() {
           sortDir: "asc",
         },
       });
-      if (!mounted) {
-        console.log("Component unmounted, aborting dishes state update.");
-        return;
-      }
       setDishes(response.data.content.slice(0, 7));
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      } else {
-        console.error(error.message);
-      }
+      console.log(
+        "Error fetching dishes:",
+        error?.response?.data || error.message
+      );
     }
-    return () => {
-      mounted = false;
-    };
   };
 
   useEffect(() => {
@@ -210,6 +206,18 @@ export default function Home() {
       loadData();
     }, [])
   );
+
+  // Chuyển hướng sang SearchScreen
+  const handleSearchIconPress = () => {
+    router.push({
+      pathname: "/screen/search",
+      params: {
+        selectedAddress: selectedAddress
+          ? JSON.stringify(selectedAddress)
+          : null,
+      },
+    });
+  };
 
   const renderDishItem = ({ item }) => (
     <TouchableOpacity
@@ -277,12 +285,17 @@ export default function Home() {
                 Hello, {user?.fullName || "Guest"}
               </Text>
               <Text
-                style={{ fontSize: 12, color: "#968B7B" }}
+                style={{
+                  fontSize: 12,
+                  color: selectedAddress ? "#968B7B" : "#A9411D",
+                  fontStyle: selectedAddress ? "normal" : "italic",
+                  fontWeight: selectedAddress ? "normal" : "bold",
+                }}
                 numberOfLines={2}
               >
                 {selectedAddress
                   ? selectedAddress.address
-                  : "Please select an address"}
+                  : t("pleaseSelectAddress")}
               </Text>
             </View>
           </View>
@@ -303,7 +316,6 @@ export default function Home() {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        // keyboardVerticalOffset={80}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -328,7 +340,7 @@ export default function Home() {
               onSubmitEditing={() => {
                 const searchQuery = String(query || "").trim();
                 router.push({
-                  pathname: "/screen/searchResult",
+                  pathname: "/screen/search",
                   params: {
                     query: searchQuery,
                     selectedAddress: selectedAddress
@@ -337,14 +349,25 @@ export default function Home() {
                   },
                 });
               }}
+              onFocus={() => {
+                router.push({
+                  pathname: "/screen/search",
+                  params: {
+                    query: String(query || "").trim(),
+                    selectedAddress: selectedAddress
+                      ? JSON.stringify(selectedAddress)
+                      : null,
+                  },
+                });
+              }}
               returnKeyType="search"
             />
-            <Icon
-              name="search"
-              size={24}
-              color="#4EA0B7"
+            <TouchableOpacity
+              onPress={handleSearchIconPress}
               style={styles.searchIcon}
-            />
+            >
+              <Icon name="search" size={24} color="#4EA0B7" />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.sectionHeader}>
@@ -485,22 +508,22 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   notificationIconContainer: {
-    position: 'relative',
+    position: "relative",
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     right: -8,
     top: -8,
-    backgroundColor: '#A9411D',
+    backgroundColor: "#A9411D",
     borderRadius: 10,
     minWidth: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   badgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

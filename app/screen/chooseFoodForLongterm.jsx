@@ -18,7 +18,7 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { t } from "i18next";
 
-const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
+const DishCard = ({ item, isSelected, onToggle }) => (
   <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
     <View style={styles.checkbox(isSelected)}>
       {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
@@ -31,7 +31,7 @@ const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
       <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
-      {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
+      {/* {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null} */}
     </View>
   </TouchableOpacity>
 );
@@ -57,7 +57,8 @@ const ChooseFoodForLongterm = () => {
       : null
   );
   const [selectedDishes, setSelectedDishes] = useState(() => {
-    if (selectedDishesParam && selectedDishesParam !== "") {
+    // Only populate selectedDishes if no menu is selected
+    if (!selectedMenu && selectedDishesParam && selectedDishesParam !== "") {
       const dishes = JSON.parse(selectedDishesParam);
       return dishes.reduce((acc, dish) => {
         acc[dish.id] = true;
@@ -66,7 +67,17 @@ const ChooseFoodForLongterm = () => {
     }
     return {};
   });
-  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState({});
+  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState(() => {
+    // Populate selectedExtraDishIds if a menu is selected
+    if (selectedMenu && selectedDishesParam && selectedDishesParam !== "") {
+      const dishes = JSON.parse(selectedDishesParam);
+      return dishes.reduce((acc, dish) => {
+        acc[dish.id] = true;
+        return acc;
+      }, {});
+    }
+    return {};
+  });
   const [dishNotes, setDishNotes] = useState(
     dishNotesParam && dishNotesParam !== "" ? JSON.parse(dishNotesParam) : {}
   );
@@ -119,7 +130,7 @@ const ChooseFoodForLongterm = () => {
       }
     };
     fetchDishes();
-  }, [selectedMenu]);
+  }, [selectedMenu, chefId]);
 
   // Handle physical back button
   useEffect(() => {
@@ -181,7 +192,8 @@ const ChooseFoodForLongterm = () => {
 
   const handleSelectMenu = (menuId) => {
     const selectedDishesCount =
-      Object.values(selectedDishes).filter(Boolean).length;
+      Object.values(selectedDishes).filter(Boolean).length +
+      Object.values(selectedExtraDishIds).filter(Boolean).length;
     if (selectedDishesCount > 0) {
       Toast.show({
         type: "error",
@@ -227,6 +239,8 @@ const ChooseFoodForLongterm = () => {
         dishNotes: JSON.stringify(dishNotes),
         numPeople: numPeople || "",
         address: address || "",
+        isRepeatEnabled: params.isRepeatEnabled || "",
+        selectedWeekdays: params.selectedWeekdays || "",
       },
     });
   };
@@ -263,6 +277,8 @@ const ChooseFoodForLongterm = () => {
         dishNotes: JSON.stringify(dishNotes),
         numPeople: numPeople || "",
         address: address || "",
+        isRepeatEnabled: params.isRepeatEnabled || "",
+        selectedWeekdays: params.selectedWeekdays || "",
       },
     });
   };
@@ -277,17 +293,7 @@ const ChooseFoodForLongterm = () => {
           item={item}
           isSelected={isSelected}
           onToggle={() => toggleDish(item.id)}
-          note={dishNotes[item.id]}
-          onNoteChange={(text) => handleAddNote(item.id, text)}
         />
-        {isSelected && (
-          <TextInput
-            style={styles.input}
-            placeholder={t("dishNotePlaceholder")}
-            value={dishNotes[item.id] || ""}
-            onChangeText={(text) => handleAddNote(item.id, text)}
-          />
-        )}
       </View>
     );
   };

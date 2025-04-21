@@ -40,7 +40,6 @@ const CustomerSchedule = () => {
           }
         );
         setBookingDetails(response.data.content);
-        // console.log("cc", response.data.content);
       } catch (error) {
         console.log("err", error);
       }
@@ -57,7 +56,6 @@ const CustomerSchedule = () => {
     });
   };
 
-  // Lọc dữ liệu theo tab
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -105,9 +103,9 @@ const CustomerSchedule = () => {
                       ? "green"
                       : detail.status === "SCHEDULED"
                       ? "orange"
-                      : detail.status === "LOCKED"
+                      : (detail.status === "LOCKED" || detail.status === "CANCELED")
                       ? "red"
-                      : "black", // fallback color
+                      : "black",
                 },
               ]}
             >

@@ -19,7 +19,12 @@ import { Ionicons } from "@expo/vector-icons";
 import useActionCheckNetwork from "../../hooks/useAction";
 import { t } from "i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { WebView } from "react-native-webview";
+import axios from "axios";
+// import { parseString } from "react-native-xml2js";
+import { jwtDecode } from "jwt-decode";
+import * as SecureStore from "expo-secure-store";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,10 +33,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [oauthUrl, setOauthUrl] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [oauthUrl, setOauthUrl] = useState(null); // State để lưu URL OAuth
+  const [errorMessage, setErrorMessage] = useState(null); // State để hiển thị lỗi
   const navigation = useNavigation();
-  const { user, login, loginWithGoogle, handleGoogleRedirect } = useContext(AuthContext);
+  const { user, login, setUser, setIsGuest } = useContext(AuthContext);
   const requireNetwork = useActionCheckNetwork();
   const [expoToken, setExpoToken] = useState(null);
   const webViewRef = useRef(null);
@@ -40,7 +45,7 @@ export default function LoginScreen() {
   useEffect(() => {
     const getToken = async () => {
       const token = await AsyncStorage.getItem("expoPushToken");
-      console.log("✅ Token lấy từ AsyncStorage:", token);
+      // console.log("✅ Token lấy từ AsyncStorage:", token);
       setExpoToken(token);
     };
     getToken();
@@ -49,7 +54,7 @@ export default function LoginScreen() {
   // Chuyển hướng nếu đã đăng nhập
   useEffect(() => {
     if (user?.token) {
-      console.log("Đã đăng nhập:", user);
+      // console.log("Đã đăng nhập:", user);
       navigation.navigate("(tabs)", { screen: "home" });
     }
   }, [user]);
@@ -74,11 +79,23 @@ export default function LoginScreen() {
   const signinWithGoogle = async () => {
     try {
       setGoogleLoading(true);
-      const { oauthUrl } = await loginWithGoogle();
-      setOauthUrl(oauthUrl);
-      setErrorMessage(null);
+      // Gọi API /oauth-url với params provider=google
+      const response = await axios.get(
+        "http://vietchef.ddns.net/no-auth/oauth-url",
+        {
+          params: { provider: "google" },
+        }
+      );
+
+      const url = response.data.url; // Giả sử API trả về URL trong response.data.url
+      if (url) {
+        setOauthUrl(url); // Lưu URL để hiển thị trong WebView
+        setErrorMessage(null); // Xóa thông báo lỗi nếu có
+      } else {
+        setErrorMessage(t("failedToGetGoogleUrl"));
+      }
     } catch (error) {
-      console.error("Google sign-in error:", error);
+      console.error("Lỗi khi gọi API OAuth:", error?.response);
       setErrorMessage(t("googleSignInFailed"));
     } finally {
       setGoogleLoading(false);
@@ -88,22 +105,61 @@ export default function LoginScreen() {
   // Hàm đóng WebView
   const closeWebView = () => {
     setOauthUrl(null);
-    setErrorMessage(null);
+    setErrorMessage(null); // Xóa thông báo lỗi khi đóng WebView
   };
 
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
-    try {
-      const result = await handleGoogleRedirect(url);
-      if (result.success) {
+
+    if (url.startsWith("http://vietchef.ddns.net/no-auth/oauth-redirect")) {
+      const params = new URLSearchParams(url.split("?")[1]);
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      const fullName = params.get("full_name");
+
+      if (access_token && refresh_token) {
+        SecureStore.setItemAsync("refreshToken", refresh_token);
+
+        const decoded = jwtDecode(access_token);
+
+        const decodedFullName = fullName
+          ? decodeURIComponent(fullName)
+          : "Unknown";
+
+        // Cập nhật user state
+        setUser({
+          fullName: decodedFullName,
+          token: access_token,
+          ...decoded,
+        });
+
+        const encodedToken = encodeURIComponent(expoToken);
+        try {
+          const sub = decoded?.sub;
+          if (sub && encodedToken) {
+            await axios.put(
+              "http://35.240.147.10/no-auth/save-device-token",
+              null,
+              {
+                params: {
+                  email: decoded?.sub,
+                  token: encodedToken,
+                },
+              }
+            );
+            console.log("Device token saved successfully");
+          }
+        } catch (error) {
+          console.error("Error saving device token:", error);
+        }
+
         setOauthUrl(null);
+        setIsGuest(false);
         navigation.navigate("(tabs)", { screen: "home" });
       }
-    } catch (error) {
-      setErrorMessage(t("googleSignInFailed"));
-      setOauthUrl(null);
+
+      webViewRef.current?.stopLoading();
     }
-    webViewRef.current?.stopLoading();
   };
 
   return (
