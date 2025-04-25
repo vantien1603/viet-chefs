@@ -28,10 +28,8 @@ const WalletScreen = () => {
   const axiosInstance = useAxios();
 
   const fetchWalletData = async () => {
-    let mounted = true;
     try {
       const response = await axiosInstance.get("/users/profile/my-wallet");
-      if (!mounted) return;
 
       const walletData = response.data.wallet;
       const customerTransactions =
@@ -47,11 +45,12 @@ const WalletScreen = () => {
       const txList =
         walletData.walletType === "CUSTOMER"
           ? customerTransactions
-          : chefTransactions;
-
+          : walletData.walletType === "CHEF"
+            ? chefTransactions
+            : [];
       formattedTransactions = txList.map((tx) => ({
         id: tx.id.toString(),
-        type: tx.transactionType === "deposit" ? "deposit" : "withdrawal",
+        transactionType: tx.transactionType,
         amount: tx.amount ?? 0,
         description: tx.description || "No description",
         date: tx.createdAt
@@ -59,23 +58,18 @@ const WalletScreen = () => {
           : "Unknown date",
         createdAt: tx.createdAt || new Date().toISOString(),
       }));
-
       setTransactions(formattedTransactions);
 
-      const filtered = formattedTransactions.filter((tx) => {
-        const date = moment(tx.createdAt);
-        return date.month() === 3 && date.year() === 2025;
-      });
-      setFilteredTransactions(filtered);
+      setFilteredTransactions(formattedTransactions);
     } catch (error) {
-      console.error("Error fetching wallet data:", error);
-      if (mounted) {
-        Alert.alert("Error", "Unable to load wallet data.");
+      if (error.response?.status === 401) {
+        return;
       }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     }
-    return () => {
-      mounted = false;
-    };
   };
 
   useEffect(() => {
@@ -125,45 +119,44 @@ const WalletScreen = () => {
     setShowBalance(!showBalance);
   };
 
-  const renderTransaction = ({ item, index }) => (
-    <View
-      style={[
-        styles.transactionItem,
-        {
-          backgroundColor:
-            index % 2 === 0 ? "rgba(0,0,0,0.05)" : "rgba(0,0,255,0.05)",
-        },
-      ]}
-    >
-      <View style={styles.transactionIcon}>
-        <Ionicons
-          name={
-            item.type === "deposit" ? "arrow-down-circle" : "arrow-up-circle"
-          }
-          size={24}
-          color={item.type === "deposit" ? "red" : "green"}
-        />
-      </View>
-      <View style={styles.transactionDetails}>
-        <Text style={styles.transactionDescription}>{item.description}</Text>
-        <View style={styles.transactionBottomRow}>
-          <Text style={styles.transactionDate}>{item.date}</Text>
-          <Text
-            style={[
-              styles.transactionAmount,
-              { color: item.type === "deposit" ? "red" : "green" },
-            ]}
-          >
-            {(item.amount ?? 0) > 0 ? "+" : ""}
-            {(item.amount ?? 0).toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            })}
-          </Text>
+  const renderTransaction = ({ item, index }) => {
+    const isPositive = ["DEPOSIT", "REFUND"].includes(item.transactionType);
+    const color = isPositive ? "green" : "red";
+    const sign = isPositive ? "+" : "-";
+
+    return (
+      <View
+        style={[
+          styles.transactionItem,
+          {
+            backgroundColor:
+              index % 2 === 0 ? "rgba(0,0,0,0.05)" : "rgba(0,0,255,0.05)",
+          },
+        ]}
+      >
+        <View style={styles.transactionIcon}>
+          <Ionicons
+            name={isPositive ? "arrow-down-circle" : "arrow-up-circle"}
+            size={24}
+            color={color}
+          />
+        </View>
+        <View style={styles.transactionDetails}>
+          <Text style={styles.transactionDescription}>{item.description}</Text>
+          <View style={styles.transactionBottomRow}>
+            <Text style={styles.transactionDate}>{item.date}</Text>
+            <Text style={[styles.transactionAmount, { color }]}>
+              {sign}
+              {(item.amount ?? 0).toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
@@ -188,9 +181,9 @@ const WalletScreen = () => {
               <Text style={styles.balanceText}>
                 {showBalance
                   ? (balance ?? 0).toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })
+                    style: "currency",
+                    currency: "USD",
+                  })
                   : "********"}
               </Text>
             </View>
@@ -207,7 +200,7 @@ const WalletScreen = () => {
         {transactions.length > 0 ? (
           <View style={styles.transactionHistory}>
             <View style={styles.headerRow}>
-              <Text style={styles.monthYear}>Apr 2025</Text>
+              <Text style={styles.monthYear}>All Transactions</Text>
               <TouchableOpacity
                 onPress={handleStatistic}
                 style={styles.statisticButton}
@@ -225,7 +218,7 @@ const WalletScreen = () => {
               />
             ) : (
               <Text style={styles.noTransactions}>
-                No transactions in April 2025.
+                No transactions available.
               </Text>
             )}
           </View>
@@ -366,7 +359,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 4,
   },
-
   noTransactions: {
     textAlign: "center",
     marginTop: 20,

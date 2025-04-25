@@ -21,6 +21,7 @@ import { AuthContext } from "../../config/AuthContext";
 import { ScrollView } from "react-native";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import axios from "axios";
 
 
 
@@ -60,11 +61,13 @@ const MenuDetails = () => {
             setSelectedDishes(selectedDishes);
             setEditedMenu(response.data);
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
-            } else {
-                console.error(error.message);
+            if (error.response?.status === 401) {
+                return;
             }
+            if (axios.isCancel(error)) {
+                return;
+            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -79,11 +82,13 @@ const MenuDetails = () => {
             setDishes(response.data.content);
 
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
-            } else {
-                console.error(error.message);
+            if (error.response?.status === 401) {
+                return;
             }
+            if (axios.isCancel(error)) {
+                return;
+            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -105,14 +110,19 @@ const MenuDetails = () => {
             console.log("payload", payload);
             const response = await axiosInstance.put(`/menus/${id}`, payload);
             if (response.status === 200) {
-                console.log("Thanh cong")
+                showModal("Success", "Cập nhật menu hành công", "Success");
             }
 
             await fetchMenuDetails();
             setIsEditing(false);
         } catch (error) {
-            console.error("Update failed:", error.response?.data || error.message);
-            alert("Lỗi khi cập nhật menu!");
+            if (error.response?.status === 401) {
+                return;
+            }
+            if (axios.isCancel(error)) {
+                return;
+            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật.", "Failed");
         } finally {
             setLoadingAction(false);
         }
@@ -143,17 +153,17 @@ const MenuDetails = () => {
         try {
             const response = await axiosInstance.delete(`/menus/${id}`);
             if (response.status === 204) {
-                showModal("Success", "Delete menu successfully");
+                showModal("Success", "Delete menu successfully", "Success");
                 router.replace("screen/menu")
             }
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            if (error.response?.status === 401) {
+                return;
             }
-            else {
-                console.error(error.message);
-                showModal("Failed", "An error occurs while deleting menu");
+            if (axios.isCancel(error)) {
+                return;
             }
+            showModal("Error", "Có lỗi xảy ra trong quá trình xóa menu.", "Failed");
         } finally {
             setLoadingAction(false);
         }
@@ -295,7 +305,7 @@ const MenuDetails = () => {
                                     alignItems: "center",
                                     elevation: 5,
                                 }}
-                                onPress={()=>handleUpdate()}
+                                onPress={() => handleUpdate()}
                             >
                                 {loading ? (
                                     <ActivityIndicator size="small" color="white" />

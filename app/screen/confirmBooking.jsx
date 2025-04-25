@@ -19,13 +19,14 @@ import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { t } from "i18next";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const ConfirmBookingScreen = () => {
   const axiosInstance = useAxios();
   const [loading, setLoading] = useState(false);
   const params = useLocalSearchParams();
 
-  // Parse bookingData and other params
   const bookingData = JSON.parse(params.bookingData || "{}");
   const selectedMenu = JSON.parse(params.selectedMenu || "null");
   const selectedDishes = JSON.parse(params.selectedDishes || "[]");
@@ -40,9 +41,10 @@ const ConfirmBookingScreen = () => {
   const chefBringIngredients = params.chefBringIngredients;
   const { user } = useContext(AuthContext);
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
+  const { showModal } = useCommonNoification();
+
   console.log("in", chefBringIngredients);
 
-  // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
   const menuDishes =
     selectedMenu?.menuItems?.map((item) => ({
       id: item.dishId || item.id,
@@ -54,11 +56,9 @@ const ConfirmBookingScreen = () => {
     name: dish.name || "Unnamed Dish",
   }));
 
-  // Combine all dishes for the total count
   const allDishes = [...menuDishes, ...extraDishes];
   const numberOfDishes = allDishes.length;
 
-  // Format the dish list: "Menu Name: Dish 1, Dish 2, ..." + extra dishes
   const menuDishList =
     menuDishes.length > 0
       ? `${selectedMenu?.name || "Menu"}: ${menuDishes
@@ -185,11 +185,7 @@ const ConfirmBookingScreen = () => {
       const response = await axiosInstance.post("/bookings", payload);
       console.log("API Response:", response.data);
 
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Booking confirmed successfully!",
-      });
+      showModal("Success", "Booking confirmed successfully!", "Success");
 
       router.push({
         pathname: "/screen/paymentBooking",
@@ -309,7 +305,7 @@ const ConfirmBookingScreen = () => {
               <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredientPreparation")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
               <Text style={styles.details}>
                 {chefBringIngredients === "true" ? t("chefWillPrepareIngredients") : t("IWillPrepareIngredients")}
               </Text>

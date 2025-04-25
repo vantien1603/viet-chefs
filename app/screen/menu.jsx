@@ -42,11 +42,13 @@ const ChefMenu = () => {
       });
       setMenus(response.data.content);
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-      } else {
-        console.error(error.message);
+      if (error.response?.status === 401) {
+        return;
       }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách menu.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -108,7 +110,6 @@ const ChefMenu = () => {
         }
       } catch (error) {
         console.error("Lỗi khi xóa:", error.response?.data || error.message);
-        alert("Có lỗi xảy ra khi xóa món ăn.");
       } finally {
         setLoading(false);
       }

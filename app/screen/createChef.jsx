@@ -12,7 +12,6 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router"; // Import router for navigation
 import Toast from "react-native-toast-message"; // Import Toast for notifications
 import Header from "../../components/header";
@@ -21,6 +20,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import { t } from "i18next";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const CreateChefScreen = () => {
   const [bio, setBio] = useState("");
@@ -40,7 +41,7 @@ const CreateChefScreen = () => {
 
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
-
+  const { showModal } = useCommonNoification();
   const dismissKeyboard = () => {
     Keyboard.dismiss();
   };
@@ -67,7 +68,6 @@ const CreateChefScreen = () => {
   };
 
   const handleSubmit = async () => {
-    // Construct the specialization string from selected specialties
     const selectedSpecialties = [];
     if (specialties.north)
       selectedSpecialties.push("Northern Vietnamese Cuisine");
@@ -78,7 +78,6 @@ const CreateChefScreen = () => {
     const specialization =
       selectedSpecialties.join(", ") || "General Vietnamese Cuisine";
 
-    // Prepare the POST body
     const payload = {
       bio,
       description,
@@ -96,43 +95,28 @@ const CreateChefScreen = () => {
         `/chefs/register/${user.userId}`,
         payload
       );
-      console.log("Chef registered successfully:", response.data);
-
-      // Show success toast
-      Toast.show({
-        type: "success",
-        text1: "🎉 You’ve Successfully Registered!",
-        text2:
-          "Thanks for registering. Your profile is under review — we’ll notify you soon.",
-        position: "top",
-      });
+      if (response.status === 200 || response.status === 201) {
+        showModal("Success", "Thanks for registering. Your profile is under review — we’ll notify you soon.", "Success");
+      }
 
       setTimeout(() => {
         router.push("/screen/login");
       }, 1500);
     } catch (error) {
-      let errorMessage = "Failed to register chef";
-      if (error.response) {
-        console.log(`Error ${error.response.status}:`, error.response.data);
-        errorMessage = error.response.data.message || errorMessage;
-      } else {
-        console.log("Error:", error.message);
+      if (error.response?.status === 401) {
+        return;
       }
-
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: errorMessage,
-        position: "top",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình đăng ký.", "Failed");
     }
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"} // Adjust behavior for iOS and Android
-    // keyboardVerticalOffset={-80} // Adjust offset to prevent overlap
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <SafeAreaView style={commonStyles.container}>
         <Header title="Register Chef" />
@@ -196,7 +180,7 @@ const CreateChefScreen = () => {
                   ]}
                   onPress={() => toggleSpecialty("north")}
                 >
-                  <Text style={[styles.buttonText, {color: specialties.north && 'white'  }]}>{t("northern")}</Text>
+                  <Text style={[styles.buttonText, { color: specialties.north && 'white' }]}>{t("northern")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -205,7 +189,7 @@ const CreateChefScreen = () => {
                   ]}
                   onPress={() => toggleSpecialty("center")}
                 >
-                  <Text style={[styles.buttonText, {color: specialties.center && 'white'  }]}>{t("central")}</Text>
+                  <Text style={[styles.buttonText, { color: specialties.center && 'white' }]}>{t("central")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -214,7 +198,7 @@ const CreateChefScreen = () => {
                   ]}
                   onPress={() => toggleSpecialty("south")}
                 >
-                  <Text style={[styles.buttonText, {color: specialties.south && 'white'  }]}>{t("southern")}</Text>
+                  <Text style={[styles.buttonText, { color: specialties.south && 'white' }]}>{t("southern")}</Text>
                 </TouchableOpacity>
               </View>
             </View>

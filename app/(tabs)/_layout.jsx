@@ -14,7 +14,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
 
     if (isGuest && restrictedScreens.includes(currentScreen)) {
       showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
-      // navigation.navigate("home"); 
     }
   }, [state.index, isGuest]);
   return (

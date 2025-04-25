@@ -14,6 +14,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
+import axios from "axios";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
@@ -25,11 +26,12 @@ const ReviewScreen = () => {
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
+  const { showModal } = useCommonNoification();
 
   useEffect(() => {
     const backAction = () => {
-      router.push("/(tabs)/history"); 
-      return true; 
+      router.push("/(tabs)/history");
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -37,7 +39,7 @@ const ReviewScreen = () => {
       backAction
     );
 
-    return () => backHandler.remove(); 
+    return () => backHandler.remove();
   }, []);
 
   const fetchCriteria = async () => {
@@ -56,12 +58,13 @@ const ReviewScreen = () => {
       setCriteriaRatings(initialRatings);
       setCriteriaComments(initialComments);
     } catch (error) {
-      console.error("Error fetching review criteria:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load review criteria.",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     }
   };
 
@@ -72,7 +75,7 @@ const ReviewScreen = () => {
   const handleRating = (criteriaId, rating) => {
     setCriteriaRatings((prev) => ({
       ...prev,
-      [criteriaId]: prev[criteriaId] === rating ? 0 : rating, // Cho phép bỏ chọn sao
+      [criteriaId]: prev[criteriaId] === rating ? 0 : rating,
     }));
   };
 
@@ -86,11 +89,7 @@ const ReviewScreen = () => {
     );
 
     if (!hasAnyRating) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please rate at least one criterion.",
-      });
+      showModal("Error", "Please rate at least one criterion.", "Failed");
       return;
     }
 
@@ -109,27 +108,23 @@ const ReviewScreen = () => {
       console.log("Review Payload:", payload);
       const response = await axiosInstance.post("/reviews", payload);
       console.log("Review Response:", response.data);
+      showModal("Success", "Review submitted successfully!", "Success");
 
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Review submitted successfully!",
-      });
 
       router.push("(tabs)/history");
     } catch (error) {
-      console.error("Error submitting review:", error?.response?.data);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to submit review.",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Component hiển thị sao cho từng tiêu chí
   const StarRating = ({ criteriaId, rating }) => {
     return (
       <View style={styles.starContainer}>

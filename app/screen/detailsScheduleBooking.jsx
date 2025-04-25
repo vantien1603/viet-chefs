@@ -10,6 +10,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from "expo-image-picker";
 import useAxiosFormData from '../../config/AXIOS_API_FORM'
 import { useCommonNoification } from '../../context/commonNoti'
+import axios from 'axios'
 
 
 const DetailsBooking = () => {
@@ -39,16 +40,13 @@ const DetailsBooking = () => {
 
 
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
-                showModal("Error", error.response.data)
-
+            if (error.response?.status === 401) {
+                return;
             }
-            else {
-                console.error(error.message);
-                showModal("Error", error.message)
-
+            if (axios.isCancel(error)) {
+                return;
             }
+            showModal("Error", "Có lỗi xảy ra khi tải dữ liệu.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -56,7 +54,8 @@ const DetailsBooking = () => {
 
     const pickImage = async () => {
         if (images.length >= 2) {
-            alert("Chỉ được chọn tối đa 2 ảnh.");
+            // alert("Chỉ được chọn tối đa 2 ảnh.");
+            showModal("Warning", "Chỉ được chọn tối đa 2 ảnh.", "Warning");
             return;
         }
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -77,7 +76,8 @@ const DetailsBooking = () => {
             setImages((prev) => {
                 const remainingSlots = 2 - prev.length;
                 if (remainingSlots <= 0) {
-                    alert("Chỉ được chọn tối đa 2 ảnh.");
+                    // alert("Chỉ được chọn tối đa 2 ảnh.");
+                    showModal("Warning", "Chỉ được chọn tối đa 2 ảnh.", "Warning");
                     return prev;
                 }
 
@@ -91,12 +91,14 @@ const DetailsBooking = () => {
     const takePhoto = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
         if (permissionResult.granted === false) {
-            alert("Permission to access camera is required!");
+            // alert("Permission to access camera is required!");
+            showModal("Warning", "Permission to access camera is required!", "Warning");
             return;
         }
 
         if (images.length >= 2) {
-            alert("Chỉ được chọn tối đa 2 ảnh.");
+            // alert("Chỉ được chọn tối đa 2 ảnh.");
+            showModal("Warning", "Chỉ được chọn tối đa 2 ảnh.", "Warning");
             return;
         }
 
@@ -140,13 +142,13 @@ const DetailsBooking = () => {
                 fetchBooking();
             }
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            if (error.response?.status === 401) {
+                return;
             }
-            else {
-                console.error(error.message);
-                showModal("Faild", "Checkout failed");
+            if (axios.isCancel(error)) {
+                return;
             }
+            showModal("Error", "Có lỗi xảy ra trong quá trình checkout.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -241,7 +243,7 @@ const DetailsBooking = () => {
                         ))}
                     </View>
                 </View>
-                {(detail.status === "in_PROGRESS" || detail.status === "WAITING_FOR_CONFIRMATION" || detail.status === "COMPLETED") && (
+                {(detail.status === "IN_PROGRESS" || detail.status === "WAITING_FOR_CONFIRMATION" || detail.status === "COMPLETED") && (
                     <View style={styles.itemContainer}>
                         <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>
                             Upload checkout receipts
@@ -280,7 +282,7 @@ const DetailsBooking = () => {
                                 ))
                             }
                         </ScrollView>
-                        {(detail.status === "in_PROGRESS") && (
+                        {(detail.status === "IN_PROGRESS") && (
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 }}>
                                 <TouchableOpacity
                                     onPress={pickImage}
@@ -319,7 +321,7 @@ const DetailsBooking = () => {
                         )}
 
                         {/* </View> */}
-                        {detail.status === "in_PROGRESS" && (
+                        {detail.status === "IN_PROGRESS" && (
                             <View>
                                 <TouchableOpacity
                                     style={{

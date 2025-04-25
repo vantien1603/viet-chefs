@@ -16,21 +16,23 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Dropdown } from "react-native-element-dropdown";
 import useAxios from "../../config/AXIOS_API";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 const UpdateBookingDetailScreen = () => {
   const { bookingDetailId, chefId } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
   const [menus, setMenus] = useState([]);
-  const [selectedMenu, setSelectedMenu] = useState(null); // Menu được chọn
-  const [menuDishes, setMenuDishes] = useState([]); // Danh sách món ăn của menu
-  const [extraDishes, setExtraDishes] = useState([]); // Danh sách extra dishes
-  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState([]); // Extra dishes được chọn
-  const [allDishes, setAllDishes] = useState([]); // Danh sách tất cả dishes
-  const [selectedDishes, setSelectedDishes] = useState([]); // Dishes được chọn (bao gồm notes)
+  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [menuDishes, setMenuDishes] = useState([]);
+  const [extraDishes, setExtraDishes] = useState([]);
+  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState([]);
+  const [allDishes, setAllDishes] = useState([]);
+  const [selectedDishes, setSelectedDishes] = useState([]);
   const axiosInstance = useAxios();
+  const { showModal } = useCommonNoification();
 
-console.log("cc", chefId);
-  // Fetch danh sách menu
+  console.log("cc", chefId);
   useEffect(() => {
     const fetchMenus = async () => {
       try {
@@ -41,18 +43,18 @@ console.log("cc", chefId);
         );
         setMenus(menuResponse.data.content || []);
       } catch (error) {
-        console.log("Error fetching menus:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to fetch menus.",
-        });
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách menu.", "Failed");
       }
     };
     fetchMenus();
   }, [chefId]);
 
-  // Cập nhật danh sách món ăn của menu khi chọn menu
   useEffect(() => {
     if (selectedMenu) {
       console.log("Selected menu:", selectedMenu);
@@ -67,7 +69,6 @@ console.log("cc", chefId);
     }
   }, [selectedMenu, menus]);
 
-  // Fetch danh sách extra dishes khi chọn menu
   useEffect(() => {
     const fetchExtraDishes = async () => {
       if (selectedMenu) {
@@ -77,12 +78,13 @@ console.log("cc", chefId);
           );
           setExtraDishes(dishesResponse.data.content || []);
         } catch (error) {
-          console.log("Error fetching extra dishes:", error);
-          Toast.show({
-            type: "error",
-            text1: "Error",
-            text2: "Failed to fetch extra dishes.",
-          });
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            return;
+          }
+          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
           setExtraDishes([]);
         }
       } else {
@@ -93,7 +95,6 @@ console.log("cc", chefId);
     fetchExtraDishes();
   }, [selectedMenu]);
 
-  // Fetch danh sách tất cả dishes nếu không chọn menu
   useEffect(() => {
     const fetchDishes = async () => {
       if (!selectedMenu) {
@@ -101,12 +102,13 @@ console.log("cc", chefId);
           const dishesResponse = await axiosInstance.get(`/dishes`);
           setAllDishes(dishesResponse.data.content || []);
         } catch (error) {
-          console.log("Error fetching dishes:", error);
-          Toast.show({
-            type: "error",
-            text1: "Error",
-            text2: "Failed to fetch dishes.",
-          });
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            return;
+          }
+          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
           setAllDishes([]);
         }
       } else {
@@ -117,7 +119,6 @@ console.log("cc", chefId);
     fetchDishes();
   }, [selectedMenu]);
 
-  // Xử lý chọn extra dish
   const toggleExtraDish = (dishId) => {
     if (selectedExtraDishIds.includes(dishId)) {
       setSelectedExtraDishIds(
@@ -128,7 +129,6 @@ console.log("cc", chefId);
     }
   };
 
-  // Xử lý chọn dish và thêm notes
   const toggleDish = (dishId) => {
     if (selectedDishes.some((dish) => dish.dishId === dishId)) {
       setSelectedDishes(
@@ -151,7 +151,7 @@ console.log("cc", chefId);
     setLoading(true);
     try {
       const calculateData = {
-        menuId: selectedMenu ? parseInt(selectedMenu) : null, // Cho phép menuId là null
+        menuId: selectedMenu ? parseInt(selectedMenu) : null,
         extraDishIds: selectedExtraDishIds,
         dishes: selectedDishes,
       };
@@ -163,13 +163,7 @@ console.log("cc", chefId);
         calculateData
       );
 
-      console.log("Calculate response:", JSON.stringify(response.data, null, 2));
-
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Calculation completed",
-      });
+      // showModal("Success", "Calculation completed.", "Success");
 
       const updateData = {
         dishes: selectedDishes,
@@ -192,7 +186,7 @@ console.log("cc", chefId);
           second: 0,
           nano: 0,
         },
-        menuId: selectedMenu ? parseInt(selectedMenu) : null, // Cho phép menuId là null
+        menuId: selectedMenu ? parseInt(selectedMenu) : null,
       };
 
       console.log("Update data:", JSON.stringify(updateData, null, 2));
@@ -202,13 +196,13 @@ console.log("cc", chefId);
         params: { bookingDetailId, updateData: JSON.stringify(updateData) },
       });
     } catch (error) {
-      console.error("Error calculating booking detail:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2:
-          error.response?.data?.message || "Failed to calculate booking detail",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xử lí.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -216,7 +210,7 @@ console.log("cc", chefId);
 
   const clearMenuSelection = () => {
     setSelectedMenu(null);
-    setSelectedExtraDishIds([]); // Xóa danh sách extra dishes khi bỏ chọn menu
+    setSelectedExtraDishIds([]); 
   };
 
   const renderMenuDishItem = ({ item }) => (

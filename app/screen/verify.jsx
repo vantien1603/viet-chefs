@@ -59,12 +59,10 @@ const VerifyScreen = () => {
         // }
       }
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (axios.isCancel(error)) {
+        return;
       }
-      else {
-        console.error(error.message);
-      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xác mình.", "Failed");
     }
   };
 
@@ -74,7 +72,8 @@ const VerifyScreen = () => {
         `/resend-code?email=${encodeURIComponent(mail)}`
       );
       if (response.status === 200) {
-        Alert.alert("Success", "Resend code. Please check your email");
+        showModal("Success", "Resend code. Please check your email.", "Success");
+
       }
     } catch (error) {
       const message = error.response.data.message;

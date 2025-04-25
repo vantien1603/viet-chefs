@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router'
 import { commonStyles } from '../../style'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCommonNoification } from '../../context/commonNoti'
+import axios from 'axios'
 const DetailsBooking = () => {
     const [loading, setLoading] = useState(false);
     const axiosInstance = useAxios();
@@ -33,16 +34,13 @@ const DetailsBooking = () => {
             }
 
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
-                showModal("Error", error.response.data)
-
+            if (error.response?.status === 401) {
+                return;
             }
-            else {
-                console.error(error.message);
-                showModal("Error", error.message)
-
+            if (axios.isCancel(error)) {
+                return;
             }
+            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -97,16 +95,19 @@ const DetailsBooking = () => {
         try {
             setLoading(true);
             const response = axiosInstance.put(`/bookings/${id}/reject`);
+            if (response.status === 200) {
+                showModal("Success", "Reject successfully");
+            }
             fetchBooking()
-            showModal("Success", "Reject successfully");
 
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            if (error.response?.status === 401) {
+                return;
             }
-            else {
-                console.error(error.message);
+            if (axios.isCancel(error)) {
+                return;
             }
+            showModal("Error", "Có lỗi xảy ra trong quá trình từ chối.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -121,14 +122,15 @@ const DetailsBooking = () => {
                 showModal("Success", "Confirmed successfully");
 
             }
-            fetchBooking()
+            fetchBooking();
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            if (error.response?.status === 401) {
+                return;
             }
-            else {
-                console.error(error.message);
+            if (axios.isCancel(error)) {
+                return;
             }
+            showModal("Error", "Có lỗi xảy ra trong quá trình chấp nhận.", "Failed");
         } finally {
             setLoading(false);
         }

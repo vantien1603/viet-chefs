@@ -1,25 +1,25 @@
 import axios from "axios";
 import { useContext } from "react";
 import { AuthContext } from "./AuthContext";
+import { NetworkContext } from "../hooks/networkProvider";
+import { useModalLogin } from "../context/modalLoginContext";
 
-// Hook to create and configure Axios instance
 const useAxiosFormData = () => {
-  const { user } = useContext(AuthContext);
+  const { user, logoutNoDirect } = useContext(AuthContext);
+  const { isConnected } = useContext(NetworkContext);
+  const { showModalLogin } = useModalLogin();
 
-  // Base configuration
   const config = {
-    baseURL: "http://35.240.147.10/api/v1",
+    baseURL: "https://vietchef.ddns.net/api/v1",
     headers: {
       "Content-Type": "application/json",
       ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
     },
-    timeout: 10000, // 10-second timeout
+    timeout: 10000,
   };
 
-  // Create Axios instance
   const axiosInstance = axios.create(config);
 
-  // Retry logic for network errors
   const retryRequest = async (config, maxRetries = 2) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -28,13 +28,11 @@ const useAxiosFormData = () => {
         if (attempt === maxRetries || !error.code || error.code !== "ECONNABORTED") {
           throw error;
         }
-        // Exponential backoff
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }
     }
   };
 
-  // Request interceptor to handle FormData
   axiosInstance.interceptors.request.use(
     async (config) => {
       if (config.data instanceof FormData) {
@@ -47,13 +45,11 @@ const useAxiosFormData = () => {
 
   axiosInstance.interceptors.request.use(
     async (config) => {
-      // Check if network is connected
       if (!isConnected) {
         showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại kết nối và khởi động lại ứng dụng.");
         throw new axios.Cancel("Không có mạng");
       }
 
-      // Handle FormData
       if (config.data instanceof FormData) {
         config.headers["Content-Type"] = "multipart/form-data";
       }
@@ -63,7 +59,6 @@ const useAxiosFormData = () => {
     (error) => Promise.reject(error)
   );
 
-  // Response interceptor for retries
   axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -74,6 +69,20 @@ const useAxiosFormData = () => {
       return Promise.reject(error);
     }
   );
+
+
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        showModalLogin("Phiên đăng nhập đã hết hạn", "Vui lòng đăng nhập lại để tiếp tục.", true);
+        logoutNoDirect?.();
+      }
+      return Promise.reject(error);
+    }
+  );
+
+
 
   return axiosInstance;
 };

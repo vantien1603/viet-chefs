@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import useAxios from "../config/AXIOS_API"; // Import useAxios
-import useActionCheckNetwork from "../hooks/useAction";
 
 // Custom hook for cancellation logic
 const useBookingCancellation = () => {
@@ -128,8 +127,6 @@ const useBookingCancellation = () => {
 const BookingCard = ({
   booking,
   onCancel,
-  onAccept,
-  onReject,
   onRebook,
   onReview,
   onViewReview,
@@ -140,6 +137,40 @@ const BookingCard = ({
   const isSingleBooking = booking.bookingType === "SINGLE";
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState(null);
+
+
+  useEffect(() => {
+    if (
+      !["PENDING", "PENDING_FIRST_CYCLE"].includes(status) ||
+      !booking.createdAt
+    ) {
+      return;
+    }
+
+    const calculateTimeRemaining = () => {
+      const createdAt = new Date(booking.createdAt).getTime();
+      const expirationTime = createdAt + 60 * 60 * 1000;
+      const currentTime = new Date().getTime();
+      const timeDiff = expirationTime - currentTime;
+
+      if (timeDiff <= 0) {
+        setTimeRemaining("Expired");
+      } else {
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+        setTimeRemaining(`${minutes}m ${seconds}s`);
+      }
+    };
+
+    calculateTimeRemaining();
+
+    const timer = setInterval(() => {
+      calculateTimeRemaining();
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [booking.createdAt, status]);
 
   const handlePress = () => {
     router.push({
@@ -289,21 +320,24 @@ const BookingCard = ({
             <Text style={styles.packageName} numberOfLines={1}>
               {booking.bookingPackage?.name || "One day"}
             </Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusStyle(status).backgroundColor },
-              ]}
-            >
-              <Text
+            {(status === "OVERDUE" || status === "CANCELED") && (
+              <View
                 style={[
-                  styles.statusText,
-                  { color: getStatusStyle(status).textColor },
+                  styles.statusBadge,
+                  { backgroundColor: getStatusStyle(status).backgroundColor },
                 ]}
               >
-                {status}
-              </Text>
-            </View>
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: getStatusStyle(status).textColor },
+                  ]}
+                >
+                  {status}
+                </Text>
+              </View>
+            )}
+
           </View>
           <Text style={styles.detailText}>
             <Ionicons name="person-outline" size={14} color="#64748b" /> Chef:{" "}
@@ -322,6 +356,19 @@ const BookingCard = ({
               <Ionicons name="calendar-outline" size={14} color="#64748b" />{" "}
               {booking.bookingDetails[0].sessionDate} at{" "}
               {booking.bookingDetails[0].startTime}
+            </Text>
+          )}
+          {["PENDING", "PENDING_FIRST_CYCLE"].includes(status) && timeRemaining && (
+            <Text
+              style={[
+                styles.detailText,
+                timeRemaining === "Expired" && styles.expiredText,
+              ]}
+            >
+              <Ionicons name="time-outline" size={14} color="#64748b" />{" "}
+              {timeRemaining === "Expired"
+                ? "Payment Deadline Expired"
+                : `Time to Pay: ${timeRemaining}`}
             </Text>
           )}
           <Text style={styles.price}>${booking.totalPrice}</Text>
@@ -439,8 +486,6 @@ const BookingList = ({
               onCancel={(bookingId) =>
                 handleCancelBooking(bookingId, item.bookingType, onRefresh)
               }
-              onAccept={onAccept}
-              onReject={onReject}
               onRebook={handleRebook}
               onReview={handleReview}
               onViewReview={handleViewReview}
@@ -475,7 +520,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -546,13 +591,13 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   primaryButton: {
-    backgroundColor: "#2dd4bf",
+    backgroundColor: "orange",
   },
   secondaryButton: {
-    backgroundColor: "#6366f1",
+    backgroundColor: "#666",
   },
   cancelButton: {
-    backgroundColor: "#fb7185",
+    backgroundColor: "red",
   },
   emptyContainer: {
     alignItems: "center",
@@ -562,6 +607,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#64748b",
     marginTop: 12,
+  },
+  expiredText: {
+    color: "#991b1b",
+    fontWeight: "600",
   },
 });
 

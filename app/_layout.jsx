@@ -65,11 +65,9 @@ export default function RootLayout() {
     <GestureHandlerRootView>
       <NetworkProvider>
         <ModalProvider>
-
           <AuthProvider>
-
-            <NetworkAlert />
             <ModalLoginProvider>
+              <NetworkAlert />
               <ModalNotiProvider>
                 <ConfirmModalProvider>
 
@@ -448,14 +446,20 @@ export default function RootLayout() {
                         headerShown: false,
                       }}
                     />
+                    <Stack.Screen
+                      name="screen/chooseAddress"
+                      options={{
+                        headerShown: false,
+                      }}
+                    />
                   </Stack>
                 </ConfirmModalProvider>
               </ModalNotiProvider>
+              <Toast config={toastConfig} />
             </ModalLoginProvider>
-            <Toast config={toastConfig} />
           </AuthProvider>
         </ModalProvider>
       </NetworkProvider>
-    </GestureHandlerRootView>
+    </GestureHandlerRootView >
   );
 }

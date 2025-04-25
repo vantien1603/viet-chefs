@@ -12,6 +12,8 @@ import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import Toast from "react-native-toast-message";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 const PaymentLongterm = () => {
   const params = useLocalSearchParams();
@@ -23,39 +25,29 @@ const PaymentLongterm = () => {
   const bookingData = JSON.parse(params.bookingData || "{}");
   const totalPrice = bookingData.totalPrice || 0;
   const depositAmount = totalPrice * 0.05;
-
+  const { showModal } = useCommonNoification();
   const handleConfirmDeposit = async () => {
     try {
-      if (!user) {
-        throw new Error("Vui lòng đăng nhập để tiếp tục.");
-      }
       if (!bookingId) {
         throw new Error("Không tìm thấy ID đặt chỗ.");
       }
 
-      // Gọi API đặt cọc
       const response = await axiosInstance.post(
         `/bookings/${bookingId}/deposit`
       );
 
       if (response.status === 200 || response.status === 201) {
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Đặt cọc đã được xác nhận!",
-        });
+        showModal("Success", "Đặt cọc đã được xác nhận!", "Success");
         router.push("(tabs)/home");
       }
     } catch (error) {
-      console.error("Error confirming deposit:", error?.response?.data);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Có lỗi khi xác nhận đặt cọc. Vui lòng thử lại.";
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: errorMessage,
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình đặt cọc.", "Failed");
     }
   };
 

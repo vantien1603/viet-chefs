@@ -13,25 +13,32 @@ import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { router } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const axiosInstance = useAxios();
   const { isGuest } = useContext(AuthContext);
-
+  const {showModal} = useCommonNoification();
   const fetchNotification = async () => {
     try {
       if (isGuest) return;
       const response = await axiosInstance.get("/notifications/my");
       if (response.status === 200) {
-        // Sort notifications by createdAt descending
         const sortedNotifications = response.data.content.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
         setNotifications(sortedNotifications);
       }
     } catch (error) {
-      console.log("Error", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông báo.", "Failed");
     }
   };
 
@@ -45,20 +52,57 @@ const NotificationScreen = () => {
     );
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.map((notification) => ({ ...notification, read: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      await axiosInstance.put("/notifications/my/all");
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông báo.", "Failed");
+    }
+  };
+
+  const markOneAsRead = async (notificationId) => {
+    try {
+      await axiosInstance.put(`/notifications/my?ids=${notificationId}`);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông báo.", "Failed");
+    }
   };
 
   useEffect(() => {
     fetchNotification();
   }, []);
 
-  const handleNotificationPress = (item) => {
-    const { title, bookingId, bookingDetailId } = item;
+  const handleNotificationPress = async (item) => {
+    const { id, title, bookingId, bookingDetailId } = item;
     const params = { bookingId };
     if (bookingDetailId) params.bookingDetailId = bookingDetailId;
+
+    await markOneAsRead(id);
 
     switch (title) {
       case "Booking Confirmed":

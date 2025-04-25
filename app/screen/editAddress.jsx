@@ -8,7 +8,7 @@ import {
   TextInput,
   Modal,
   StyleSheet,
-  Alert, // Thêm Alert để hiển thị confirm
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,7 +22,9 @@ import axios from "axios";
 import { t } from "i18next";
 import { AuthContext } from "../../config/AuthContext";
 import { useModalLogin } from "../../context/modalLoginContext";
-// import ENV from '@env';
+import { useConfirmModal } from "../../context/commonConfirm";
+import { useCommonNoification } from "../../context/commonNoti";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -36,6 +38,9 @@ const EditAddress = () => {
   const [suggestions, setSuggestions] = useState([]);
   const { isGuest } = useContext(AuthContext);
   const { showModalLogin } = useModalLogin();
+  const { showConfirm } = useConfirmModal();
+  const { showModal } = useCommonNoification();
+  const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -127,12 +132,10 @@ const EditAddress = () => {
       const response = await axiosInstance.get("/address/my-addresses");
       setAddresses(response.data);
     } catch (error) {
-      console.error("Error fetching addresses:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tải danh sách địa chỉ",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách địa chỉ.", "Failed");
     }
   };
 
@@ -141,11 +144,7 @@ const EditAddress = () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Toast.show({
-          type: "error",
-          text1: "Quyền bị từ chối",
-          text2: "Bạn cần bật dịch vụ định vị.",
-        });
+        showModal("Quyền bị từ chối", "Bạn cần cho phép ứng dụng sử dụng định vị của bạn.", "Failed");
         return;
       }
 
@@ -169,25 +168,15 @@ const EditAddress = () => {
         setSelectedId(null);
       }
     } catch (error) {
-      console.error(error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể lấy vị trí",
-      });
+      showModal("Error", "Có lỗi xảy ra trong quá trình xác định vị trí.", "Failed");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateAddress = async (addressData) => {
-    // Kiểm tra giới hạn 5 địa chỉ
     if (addresses.length >= 5) {
-      Toast.show({
-        type: "error",
-        text1: "Giới hạn",
-        text2: "Bạn chỉ được tạo tối đa 5 địa chỉ",
-      });
+      showModal("Giới hạn", "Bạn chỉ được tạo tối đa 5 địa chỉ.", "Warning");
       setModalVisible(false);
       return;
     }
@@ -198,29 +187,21 @@ const EditAddress = () => {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
         setNewAddress({ title: "", address: "" });
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Địa chỉ đã được tạo",
-        });
+        showModal("Success", "Lưu địa chỉ thành công.", "Success");
+
       }
     } catch (error) {
-      console.error("Error creating address:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tạo địa chỉ",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình lưu địa chỉ.", "Failed");
     }
   };
 
   const handleUpdateAddress = async () => {
     if (!editingAddress.title || !editingAddress.address) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng điền đầy đủ thông tin",
-      });
+      showModal("Error", "Vui lòng điền đầy đủ thông tin.", "Failed");
+
       return;
     }
     try {
@@ -233,63 +214,43 @@ const EditAddress = () => {
         );
         setModalVisible(false);
         setEditingAddress(null);
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Địa chỉ đã được cập nhật",
-        });
+        showModal("Success", "Cập nhật địa chỉ thành công.", "Success");
+
       }
     } catch (error) {
-      console.error("Error updating address:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể cập nhật địa chỉ",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật địa chỉ.", "Failed");
     }
   };
 
-  const handleDeleteAddress = (id) => {
-    // Hiển thị confirm trước khi xóa
-    Alert.alert(
-      "Xác nhận",
-      "Bạn có chắc chắn muốn xóa địa chỉ này?",
-      [
-        {
-          text: "Hủy",
-          style: "cancel",
-        },
-        {
-          text: "Xóa",
-          onPress: async () => {
-            try {
-              const response = await axiosInstance.delete(`/address/${id}`);
-              if (response.status === 200) {
-                setAddresses(addresses.filter((addr) => addr.id !== id));
-                if (selectedId === id) {
-                  setSelectedId(null);
-                  await AsyncStorage.removeItem("selectedAddress");
-                }
-                Toast.show({
-                  type: "success",
-                  text1: "Thành công",
-                  text2: "Địa chỉ đã được xóa",
-                });
-              }
-            } catch (error) {
-              console.error("Error deleting address:", error);
-              Toast.show({
-                type: "error",
-                text1: "Lỗi",
-                text2: "Không thể xóa địa chỉ",
-              });
-            }
-          },
-          style: "destructive",
-        },
-      ],
-      { cancelable: true }
-    );
+  const handleDeleteAddress = async (id) => {
+    showConfirm("Delele confirm", `Are you sure want to delete this address?`, () => requireAuthAndNetWork(async () => {
+      try {
+        const response = await axiosInstance.delete(`/address/${id}`);
+        if (response.status === 200) {
+          setAddresses(addresses.filter((addr) => addr.id !== id));
+          if (selectedId === id) {
+            setSelectedId(null);
+            await AsyncStorage.removeItem("selectedAddress");
+          }
+          showModal("Success", "Xóa địa chỉ thành công.", "Success");
+
+        }
+      } catch (error) {
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình xóa địa chỉ.", "Failed");
+      }
+    }))
   };
 
   const renderAddressItem = (item) => (

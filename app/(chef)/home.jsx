@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Shadow } from 'react-native-shadow-2';
 import useAxios from '../../config/AXIOS_API';
 import { useFocusEffect } from '@react-navigation/native';
+import axios from 'axios';
 
 const Home = () => {
     const { user } = useContext(AuthContext);
@@ -20,38 +21,47 @@ const Home = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchScheduleAndPending();
+            fetchPending();
+            fetchDetails();
         }, [])
     );
 
-    const fetchScheduleAndPending = async () => {
+    const fetchDetails = async () => {
         setLoading(true);
         try {
-            const [scheduleRes, pendingRes] = await Promise.all([
-                axiosInstance.get('/bookings/booking-details/chefs'),
-                axiosInstance.get("/bookings/chefs/my-bookings")
-            ]);
-
-
-            const filteredPendings = pendingRes.data?.content?.filter(
-                booking =>
-                    booking.status === "PAID" ||
-                    booking.status === "DEPOSITED" ||
-                    booking.status === "PAID_FIRST_CYCLE"
-            );
-
-
-            const filterSchedule = scheduleRes.data?.content?.filter(
-                schedule =>
-                    schedule.status === 'SCHEDULED_COMPLETE'
-            );
-
-            setPendings(filteredPendings.length);
-            setSchedules(filterSchedule.length);
+            const response = await axiosInstance.get('/bookings/booking-details/chefs', {
+                params: {
+                    status: 'SCHEDULED_COMPLETE',
+                },
+            })
+            if (response.status === 200) setSchedules(response.data.content.length);
         } catch (error) {
             if (axios.isCancel(error)) {
                 return;
             }
+            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+
+
+    const fetchPending = async () => {
+        setLoading(true);
+        try {
+            const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
+                params: {
+                    status: 'PAID',
+                },
+            })
+            if (response.status === 200)
+                setPendings(response.data.content.length);
+        } catch (error) {
+            if (axios.isCancel(error)) {
+                return;
+            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
         } finally {
             setLoading(false);
         }
@@ -70,7 +80,7 @@ const Home = () => {
                         />
                         <View style={styles.greetingContainer}>
                             <Text style={styles.greetingText}>Welcome back,</Text>
-                            <Text style={styles.userName}>{user?.fullName}</Text>
+                            <Text style={styles.userName}>{user?.fullName || 'Chef'} </Text>
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push("/screen/notificationChef")}>
@@ -87,7 +97,7 @@ const Home = () => {
                             {loading ? (
                                 <ActivityIndicator size={'large'} color={'white'} />
                             ) : (
-                                <Text style={styles.orderNumber}>{schedules} </Text>
+                                <Text style={styles.orderNumber}>{schedules || 0} </Text>
                             )}
                             <Text style={styles.orderLabel}>RUNNING ORDERS</Text>
                         </LinearGradient>
@@ -100,7 +110,7 @@ const Home = () => {
                             {loading ? (
                                 <ActivityIndicator size={'large'} color={'white'} />
                             ) : (
-                                <Text style={styles.orderNumber}>{pendings}</Text>
+                                <Text style={styles.orderNumber}>{pendings || 0}</Text>
                             )}
                             <Text style={styles.orderLabel}>ORDER REQUEST</Text>
                         </LinearGradient>

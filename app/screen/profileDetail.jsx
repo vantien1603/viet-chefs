@@ -19,6 +19,7 @@ import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
 import * as ImagePicker from "expo-image-picker";
 import { SceneMap, TabBar, TabView } from "react-native-tab-view";
+import axios from "axios";
 
 const ProfileDetail = () => {
   const [loading, setLoading] = useState();
@@ -41,6 +42,7 @@ const ProfileDetail = () => {
 
 
 
+
   const handleProfile = async () => {
     setLoading(true);
     try {
@@ -50,7 +52,13 @@ const ProfileDetail = () => {
         setUpdateData(response.data);
       }
     } catch (error) {
-      console.error("Error fetching profile data:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin cá nhân.", "Failed");
     } finally {
       setLoading(false)
     }
@@ -66,7 +74,13 @@ const ProfileDetail = () => {
         setUpdateDataChef(response.data);
       }
     } catch (error) {
-      console.error("Error fetching chef data:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp.", "Failed");
     } finally {
       setLoading(false)
     }
@@ -79,29 +93,12 @@ const ProfileDetail = () => {
     }, [])
   );
 
-  const handleEditProfile = () => {
-    router.push({
-      pathname: "/screen/editProfile",
-      params: {
-        profileData: JSON.stringify({
-          fullName,
-          email,
-          phone,
-          dob,
-          gender,
-          username,
-          avatarUrl,
-        }),
-      },
-    });
-  };
-
 
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("Cần cấp quyền truy cập thư viện ảnh!");
+      showModal("Warning", "Bạn cần cho phép ứng dụng sử dụng quyền truy cập hình ảnh.", "Warning")
       return;
     }
 
@@ -164,16 +161,16 @@ const ProfileDetail = () => {
           fullName: response.data.fullName,
           avatarUrl: response.data.avatarUrl,
         }));
-        showModal("Success", "Update profile successfully")
+        showModal("Success", "Update profile successfully", "Success")
       }
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
-        showModal("Faild", "Checkout failed");
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông tin cá nhân.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -199,13 +196,13 @@ const ProfileDetail = () => {
         setIsEditing(false);
       }
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
-        showModal("Faild", "Checkout failed");
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông tin đầu bếp.", "Failed");
     } finally {
       setLoading(false);
     }

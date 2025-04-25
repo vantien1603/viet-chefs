@@ -7,6 +7,8 @@ import { commonStyles } from '../../style';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AXIOS_BASE from '../../config/AXIOS_BASE';
 import useActionCheckNetwork from '../../hooks/useAction';
+import { useCommonNoification } from '../../context/commonNoti';
+import axios from 'axios';
 
 const SetPassword = () => {
     const { username, fullName, phone, mail, mode } = useLocalSearchParams();
@@ -14,6 +16,7 @@ const SetPassword = () => {
     const [rePassword, setRePassword] = useState('');
     const [password, setPassword] = useState('');
     const randomUsername = `user_${Date.now()}`;
+    const { showModal } = useCommonNoification();
 
     const router = useRouter();
     const handlePasswordChange = (value) => {
@@ -25,7 +28,7 @@ const SetPassword = () => {
 
     const handleSetPassword = async () => {
         if (password !== rePassword) {
-            Alert.alert('Error', 'Passwords do not match');
+            showModal("Error", "Passwords do not match!", "Failed")
             return;
         }
 
@@ -38,20 +41,17 @@ const SetPassword = () => {
             console.log('data', setPasswordPayload);
             const response = await AXIOS_BASE.post('/set-password', setPasswordPayload);
             if (response.status === 200) {
-                Alert.alert('Register success', 'Please login again');
+                showModal("Success", "Quá trình đăng kí hoàn tất. Vui lòng đăng nhập lại.", "Success");
                 console.log('Register success');
                 router.push('/screen/login')
             } else {
-                Alert.alert('Register failed', 'Please try again');
-                console.log('Register failed');
+                showModal("Error", "Có lỗi xảy ra trong quá trình đặt mật khẩu.", "Failed");
             }
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            if (axios.isCancel(error)) {
+                return;
             }
-            else {
-                console.error(error.message);
-            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình đặt mật khẩu.", "Failed");
         }
     }
     return (

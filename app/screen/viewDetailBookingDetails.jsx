@@ -10,11 +10,13 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../../style";
 import Toast from "react-native-toast-message";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import axios from "axios";
 
 const ViewDetailBookingDetails = () => {
   const { bookingDetailsId } = useLocalSearchParams();
@@ -108,39 +110,43 @@ const ViewDetailBookingDetails = () => {
           setBookingDetails(updatedResponse.data);
           setIsReported(updatedResponse.data.reported || true);
         } catch (fetchError) {
-          console.log("Error fetching updated booking details:", fetchError);
           setBookingDetails({ ...bookingDetails, status: "REPORTED" });
           setIsReported(true);
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(fetchError)) {
+            return;
+          }
+          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
         }
 
         closeReportModal();
         router.replace("(tabs)/schedule");
       }
     } catch (error) {
-      console.log("Error submitting report:", error?.response?.data?.message);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error?.response?.data?.message || "Failed to submit report",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Failed to submit report", "Failed");
     }
   };
 
   if (!bookingDetails) {
     return (
-      <SafeAreaView style={commonStyles.containerContent}>
-        <Header />
+      <SafeAreaView style={commonStyles.container}>
+        <Header title={"Booking detail"} />
         <View style={styles.container}>
-          <Text style={styles.noData}>Đang tải...</Text>
+          <ActivityIndicator size={'large'} color={'white'} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header />
-      <View style={styles.mainContainer}>
+    <GestureHandlerRootView style={commonStyles.container}>
+      <Header title={"Booking detail"} />
+      <View style={commonStyles.containerContent}>
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
@@ -304,8 +310,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   scrollContent: {
-    padding: 15,
-    paddingBottom: 20,
+    // padding: 15,
+    paddingBottom: 80,
   },
   section: {
     marginBottom: 20,

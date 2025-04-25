@@ -1,16 +1,19 @@
-import { View, Text, TextInput, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { commonStyles } from '../../style';
 import Header from '../../components/header';
 import axios from 'axios';
 import useActionCheckNetwork from '../../hooks/useAction';
+import { useCommonNoification } from '../../context/commonNoti';
 export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
     const [mail, setMail] = useState('');
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const router = useRouter();
+    const { showModal } = useCommonNoification();
+    const [agreeTerms, setAgreeTerms] = useState(false);
 
     const handleSignUp = async () => {
         try {
@@ -24,7 +27,7 @@ export default function SignUpScreen() {
             };
             console.log(signUpPayload);
 
-            const response = await axios.post('http://35.240.147.10/no-auth/register', signUpPayload,
+            const response = await axios.post('https://vietchef.ddns.net/no-auth/register', signUpPayload,
                 {
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -37,12 +40,10 @@ export default function SignUpScreen() {
             }
 
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
+            if (axios.isCancel(error)) {
+                return;
             }
-            else {
-                console.error(error.message);
-            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình đăng ký.", "Failed");
         }
     };
 
@@ -86,6 +87,38 @@ export default function SignUpScreen() {
                     value={mail}
                     onChangeText={setMail}
                 />
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+                    <TouchableOpacity onPress={() => setAgreeTerms(!agreeTerms)} style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 4,
+                        borderWidth: 1,
+                        borderColor: '#333',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 10,
+                    }}>
+                        {agreeTerms && (
+                            <View style={{
+                                width: 12,
+                                height: 12,
+                                backgroundColor: '#333',
+                                borderRadius: 2,
+                            }} />
+                        )}
+                    </TouchableOpacity>
+                    <Text style={{ flex: 1 }}>
+                        Tôi đồng ý với{' '}
+                        <Text
+                            style={{ color: '#007AFF', textDecorationLine: 'underline' }}
+                            onPress={() => {
+                                Linking.openURL('https://www.termsfeed.com/live/34c3495d-1cd2-4b4c-95f2-cf216da991ed');
+                            }}
+                        >
+                            các điều khoản và điều kiện
+                        </Text>
+                    </Text>
+                </View>
 
                 <View style={{ flex: 1, alignItems: 'center' }}>
 

@@ -43,11 +43,13 @@ const ChefDishes = () => {
             });
             setDishes(response.data.content);
         } catch (error) {
-            if (error.response) {
-                console.error(`Lỗi ${error.response.status}:`, error.response.data);
-            } else {
-                console.error(error.message);
+            if (error.response?.status === 401) {
+                return;
             }
+            if (axios.isCancel(error)) {
+                return;
+            }
+            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu món ăn.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -99,15 +101,20 @@ const ChefDishes = () => {
                     }
                 });
                 if (successCount === results.length) {
-                    showModal("Success", "All dishes delete successfully.");
+                    showModal("Success", "All dishes delete successfully.", "Success");
                 } else if (errorCount === results.length) {
-                    showModal("Error", "All dishes delete failed.");
+                    showModal("Error", "All dishes delete failed.", "Failed");
                 } else {
-                    showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`);
+                    showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`, "Warning");
                 }
             } catch (error) {
-                console.error("Lỗi khi xóa:", error.response?.data || error.message);
-                Alert.alert("Có lỗi xảy ra khi xóa món ăn.");
+                if (error.response?.status === 401) {
+                    return;
+                }
+                if (axios.isCancel(error)) {
+                    return;
+                }
+                showModal("Error", "Có lỗi xảy ra trong quá trình xoá món ăn.", "Failed");
             } finally {
                 setLoading(false);
             }

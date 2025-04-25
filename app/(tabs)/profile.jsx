@@ -6,14 +6,11 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  FlatList,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
-import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 
 

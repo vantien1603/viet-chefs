@@ -14,8 +14,7 @@ import { commonStyles } from "../../style";
 
 const menuItems = [
   { id: "1", icon: "wallet-outline", title: "Ví của tôi" },
-  { id: "2", icon: "restaurant-outline", title: "Xem trang cá nhân đầu bếp" },
-  { id: "3", icon: "settings-outline", title: "Cài đặt" },
+  { id: "2", icon: "settings-outline", title: "Cài đặt" },
 ];
 
 const Profile = () => {
@@ -28,9 +27,6 @@ const Profile = () => {
         router.push("/screen/wallet");
         break;
       case "2":
-        router.push("/screen/createChef");
-        break;
-      case "3":
         router.push("/screen/setting");
         break;
       default:

@@ -115,7 +115,13 @@ const Packages = () => {
         setUnSubsribes(unsubscribed);
       }
     } catch (error) {
-      console.error(error.response ? error.response.data : error.message);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -170,8 +176,13 @@ const Packages = () => {
           setSelectedPackages([]);
         }
       } catch (error) {
-        showModal("Error", `${type} ${selectedPackages.length} packages failed`);
-        console.error(error.response ? error.response.data : error.message);
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", `Có lỗi xảy ra trong quá trình ${type} ${selectedPackages.length} packages.`, "Failed");
       } finally {
         setLoading(false);
         fetchPackagesAndUnsubscribes();

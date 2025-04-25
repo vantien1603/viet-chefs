@@ -16,7 +16,7 @@ import Header from '../../components/header';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { commonStyles } from '../../style';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import useActionCheckNetwork from '../../hooks/useAction';
+import axios from 'axios';
 
 const dayInWeek = [
   { id: 0, label: 'Mon', full: 'Monday' },
@@ -29,27 +29,13 @@ const dayInWeek = [
 ];
 
 const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail, loading }) => {
-  // const currentDate = new Date();
-
   const renderItem = ({ item }) => {
-    // const sessionDate = new Date(item.sessionDate);
-    // const isSameDay =
-    //   sessionDate.getDate() === currentDate.getDate() &&
-    //   sessionDate.getMonth() === currentDate.getMonth() &&
-    //   sessionDate.getFullYear() === currentDate.getFullYear();
-
-    // const isFutureTime = sessionDate.getTime() <= currentDate.getTime();
-    // const today = new Date(currentDate.setHours(0, 0, 0, 0));
-
-    // const bookingDate = new Date(item.sessionDate);
-    // bookingDate.setHours(0, 0, 0, 0);
-
-    // const isTodayAndUpcoming = isSameDay && isFutureTime;
     return (
-      <TouchableOpacity key={item.id} style={[styles.section, item.status === "in_PROGRESS" && styles.highlighted]} onPress={() => onViewDetail(item.id)}>
+      <TouchableOpacity key={item.id} style={[styles.section, item.status === "IN_PROGRESS" && styles.highlighted]} onPress={() => onViewDetail(item.id)}>
         <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
           <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
+          {/* <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.status}</Text> */}
         </View>
         <Text numberOfLines={1} ellipsizeMode="tail">
           <Text style={styles.itemContentLabel}>Address: </Text>
@@ -94,7 +80,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
         onEndReachedThreshold={0.5}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>No pending orders</Text>}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, marginTop: 20 }}>No orders</Text>}
         ListFooterComponent={(loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
       />
     </View>
@@ -125,64 +111,85 @@ const Schedule = () => {
     const day = new Date(date).getDay();
     return day === 0 ? 6 : day - 1;
   };
+  const statuses = ['SCHEDULED_COMPLETE', 'in_PROGRESS'];
 
   const fetchBookingDetails = async (pageNum, isRefresh = false) => {
     if (loading && !isRefresh) return;
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/bookings/booking-details/chefs'
-        , {
+      // const response = await axiosInstance.get('/bookings/booking-details/chefs'
+      //   , {
+      //     params: {
+      //       pageNo: pageNum,
+      //       pageSize: PAGE_SIZE,
+      //       sortBy: 'id',
+      //       sortDir: 'asc',
+      //     },
+      //   }
+      // );
+
+      const requests = statuses.map(status =>
+        axiosInstance.get('/bookings/booking-details/chefs', {
           params: {
-            pageNo: pageNum,
+            status,
+            pageNo: page,
             pageSize: PAGE_SIZE,
             sortBy: 'id',
             sortDir: 'asc',
           },
-        }
+        })
       );
 
-      if (response.status === 200) {
-        const data = response.data.content || [];
-        setTotalPages(response.data.totalPages);
-        setHasMore(data.length > 0);
+      const response = await Promise.all(requests);
+      const mergedData = response.flatMap(res => res.data?.content || []);
+      console.log('dq')
 
-        const categorizedSchedules = isRefresh
-          ? dayInWeek.reduce((acc, day) => {
-            acc[day.full] = [];
-            return acc;
-          }, {})
-          : { ...schedules };
+      // if (response.status === 200) {
+      // const data = response.data.content || [];
+      // setTotalPages(response.data.totalPages);
+      const totalPages = Math.max(...response.map(res => res.data?.totalPages || 0));
+      setTotalPages(totalPages);
+      console.log('d1')
 
-        // setSchedules(data);
-        data.forEach((booking) => {
-          const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
-          const dayName = dayInWeek[dayOfWeekId].full;
-          categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
-        });
+      const categorizedSchedules = isRefresh
+        ? dayInWeek.reduce((acc, day) => {
+          acc[day.full] = [];
+          return acc;
+        }, {})
+        : { ...schedules };
 
-        data.forEach((booking) => {
-          const bookingDate = new Date(booking.sessionDate);
-          const currentDate = new Date();
-          if (booking.status === 'SCHEDULED_COMPLETE' || booking.status === 'in_PROGRESS') {
-            const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
-            const dayName = dayInWeek[dayOfWeekId].full;
-            categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
-          }
-        });
+      // setSchedules(data);
+      mergedData.forEach((booking) => {
+        const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
+        const dayName = dayInWeek[dayOfWeekId].full;
+        categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
+      });
+      console.log('11')
 
-        setSchedules(categorizedSchedules);
-      }
+      // mergedData.forEach((booking) => {
+      //   const bookingDate = new Date(booking.sessionDate);
+      //   const currentDate = new Date();
+      //   // if (booking.status === 'SCHEDULED_COMPLETE' || booking.status === 'in_PROGRESS') {
+      //   const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
+      //   const dayName = dayInWeek[dayOfWeekId].full;
+      //   categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
+      //   // }
+      // });
+      console.log('dq')
+
+      setSchedules(categorizedSchedules);
+      // }
     } catch (error) {
-      console.error('Error fetching bookings:', error.response ? error.response.data : error.message);
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);
     }
   };
 
-  // useEffect(() => {
-  //   fetchBookingDetails(0, true);
-  // }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -219,7 +226,7 @@ const Schedule = () => {
 
     return (
       <ScheduleRender
-        bookings={schedules}
+        bookings={sortedBookings}
         onLoadMore={loadMoreData}
         refreshing={refresh}
         onRefresh={handleRefresh}
@@ -239,8 +246,7 @@ const Schedule = () => {
   return (
     <SafeAreaView style={commonStyles.container}>
       <Header title={'Schedule'}
-        rightIcon={'checkmark-done-circle-outline'} onRightPress={() => handleViewDone()}
-      />
+        rightIcon={'checkmark-done-circle-outline'} onRightPress={() => handleViewDone()} />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
@@ -258,7 +264,7 @@ const Schedule = () => {
             tabStyle={{ paddingVertical: 0, width: 130 }}
           />
         )}
-      /> *
+      />
 
 
       {/* <ScrollView>

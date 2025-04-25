@@ -16,6 +16,7 @@ import { t } from "i18next";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useConfirmModal } from "../../context/commonConfirm";
 import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 const PaymentBookingScreen = () => {
   const params = useLocalSearchParams();
@@ -44,14 +45,11 @@ const PaymentBookingScreen = () => {
         setIsPaySuccess(true);
       }
 
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Payment completed successfully!",
-      });
-
       // router.push("(tabs)/home");
     } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
       if (axios.isCancel(error)) {
         return;
       }
@@ -62,16 +60,16 @@ const PaymentBookingScreen = () => {
   };
 
   const handleConfirmPayment = () => {
-    setModalVisible(true); // Mở modal xác nhận
+    setModalVisible(true);
   };
 
   const handleBackHome = () => {
-    router.push("(tabs)/home"); // Quay về màn hình chính mà không thanh toán
+    router.push("(tabs)/home");
   };
 
   const confirmPayment = () => {
-    setModalVisible(false); // Đóng modal
-    handleCompletePayment(); // Thực hiện thanh toán
+    setModalVisible(false);
+    handleCompletePayment();
   };
 
   return (

@@ -17,6 +17,7 @@ import { commonStyles } from "../../style";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Header from "../../components/header";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const ScheduleBlocked = () => {
     const [schedule, setSchedule] = useState({});
@@ -28,6 +29,7 @@ const ScheduleBlocked = () => {
     const [currentField, setCurrentField] = useState({ date: "", index: 0, field: "" });
     const requireAuthAndNetWork = useRequireAuthAndNetwork();
     const [existingDates, setExistingDates] = useState({});
+    const { showModal } = useCommonNoification();
 
     const handleTimeChange = (event, selectedDate) => {
         setShowPicker(false);

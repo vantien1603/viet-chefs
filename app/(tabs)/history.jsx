@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaView, StyleSheet, View, Text } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../components/header";
@@ -8,31 +8,45 @@ import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import BookingList from "../../components/bookingRouter";
+import axios from "axios";
 
 const OrderHistories = () => {
-  const { user } = useContext(AuthContext);
-  const axiosInstance = useAxios(); 
+  const { user, isGuest } = useContext(AuthContext);
+  const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const params = useLocalSearchParams();
+  const { tab } = params;
 
-  const initialIndex = tab ? routes.findIndex((route) => route.key === tab) : 0;
-  const [index, setIndex] = useState(initialIndex !== -1 ? initialIndex : 0);
+  const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: "pending", title: "Pending" },
     { key: "paidDeposit", title: "Paid/Deposit" },
     { key: "completed", title: "Completed" },
     { key: "confirm", title: "Confirmed" },
-    { key: "cancel", title: "Cancelled" },
+    { key: "cancel", title: "Canceled" },
   ]);
   const [bookings, setBookings] = useState([]);
   const [pageNo, setPageNo] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const PAGE_SIZE = 10;
-  const params = useLocalSearchParams();
-  const { tab } = params;
 
+  const statusMap = {
+    pending: "PENDING",
+    paidDeposit: "PAID",
+    completed: "COMPLETED",
+    confirm: "CONFIRMED",
+    cancel: "CANCELED",
+  };
+
+  const filterStatusMap = {
+    pending: ["PENDING", "PENDING_FIRST_CYCLE"],
+    paidDeposit: ["PAID", "DEPOSITED", "PAID_FIRST_CYCLE"],
+    completed: ["COMPLETED"],
+    confirm: ["CONFIRMED", "CONFIRMED_PARTIALLY_PAID", "CONFIRMED_PAID"],
+    cancel: ["CANCELED", "OVERDUE"],
+  };
 
   useEffect(() => {
     if (tab) {
@@ -41,16 +55,16 @@ const OrderHistories = () => {
         setIndex(tabIndex);
       }
     }
-  }, [tab, index]);
+  }, [tab]);
 
-
-  const fetchBookingDetails = async (page, isRefresh = false) => {
+  const fetchBookingDetails = async (page, status, isRefresh = false) => {
     if (isGuest) return;
-    if (isLoading && !isRefresh) return;
-    setIsLoading(true);
+    if (loading && !isRefresh) return;
+    setLoading(true);
     try {
       const response = await axiosInstance.get("/bookings/my-bookings", {
         params: {
+          status,
           pageNo: page,
           pageSize: PAGE_SIZE,
           sortBy: "id",
@@ -74,114 +88,92 @@ const OrderHistories = () => {
       );
       setPageNo(page);
     } catch (error) {
-      console.log("Error fetching booking details:", error.message);
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Error occurs while fetching booking list", "Failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
       if (isRefresh) setRefreshing(false);
     }
   };
 
- 
 
-  const handlePayment = async (id) => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.post(`/bookings/${id}/payment`);
-      if (response.status === 200) {
-        showModal("Success", "Payment successfully");
-        fetchBookingDetails(0, true);
-      }
-    } catch (error) {
-      showModal("Error", "Failed to process payment");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchBookingDetails(0, true);
-  }, []);
+    const currentStatus = statusMap[routes[index].key];
+    setBookings([]);
+    setPageNo(0);
+    fetchBookingDetails(0, currentStatus, true);
+  }, [index]);
+
 
   const handleLoadMore = () => {
-    if (pageNo < totalPages - 1 && !isLoading) {
-      fetchBookingDetails(pageNo + 1);
+    if (pageNo < totalPages - 1 && !loading) {
+      const currentStatus = statusMap[routes[index].key];
+
+      fetchBookingDetails(pageNo + 1, currentStatus);
     }
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setBookings([]);
-    fetchBookingDetails(0, true);
+    const currentStatus = statusMap[routes[index].key];
+
+    fetchBookingDetails(0, currentStatus, true);
   }, []);
 
-  const pendingBookings = bookings.filter(
-    (booking) =>
-      booking.status === "PENDING" || booking.status === "PENDING_FIRST_CYCLE"
-  );
-  const paidDepositBookings = bookings.filter(
-    (booking) =>
-      booking.status === "PAID" ||
-      booking.status === "DEPOSITED" ||
-      booking.status === "PAID_FIRST_CYCLE"
-  );
-  const completedBookings = bookings.filter(
-    (booking) => booking.status === "COMPLETED"
-  );
-  const confirmedBookings = bookings.filter(
-    (booking) =>
-      booking.status === "CONFIRMED" ||
-      booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-      booking.status === "CONFIRMED_PAID"
-  );
-  const cancelledBookings = bookings.filter(
-    (booking) => booking.status === "CANCELED" || booking.status === "OVERDUE"
-  );
 
   const renderScene = SceneMap({
     pending: () => (
       <BookingList
-        bookings={pendingBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.pending.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        onPayment={handlePayment}
       />
     ),
     paidDeposit: () => (
       <BookingList
-        bookings={paidDepositBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.paidDeposit.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        onPayment={handlePayment}
       />
     ),
     confirm: () => (
       <BookingList
-        bookings={confirmedBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.confirm.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        role={user?.roleName}
-        onPayment={handlePayment}
       />
     ),
     completed: () => (
       <BookingList
-        bookings={completedBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.completed.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        onPayment={handlePayment}
       />
     ),
     cancel: () => (
       <BookingList
-        bookings={cancelledBookings}
+        bookings={bookings.filter((booking) =>
+          filterStatusMap.cancel.includes(booking.status)
+        )}
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        onPayment={handlePayment}
       />
     ),
   });
@@ -217,22 +209,18 @@ const OrderHistories = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#EBE5DD",
+    flex: 1,
   },
-  tabBar: {
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    elevation: 0,
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
   },
-  tabIndicator: {
-    backgroundColor: "#2dd4bf",
-    height: 3,
-    borderRadius: 2,
-  },
-  tabLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "none",
+  errorText: {
+    fontSize: 16,
+    color: "#991b1b",
+    textAlign: "center",
   },
 });
 

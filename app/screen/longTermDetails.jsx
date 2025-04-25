@@ -14,9 +14,10 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
-import { MaterialIcons } from "@expo/vector-icons"; // Chỉ giữ icon cho nút thanh toán và no-data
+import { MaterialIcons } from "@expo/vector-icons";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
-// Hàm chuyển đổi status có dấu "_" thành dạng dễ đọc
 const formatStatus = (status) => {
   if (!status) return "";
   return status
@@ -30,7 +31,7 @@ const LongTermDetailsScreen = () => {
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
-
+  const { showModal } = useCommonNoification();
   const fetchLongTermDetails = async () => {
     setLoading(true);
     try {
@@ -40,12 +41,13 @@ const LongTermDetailsScreen = () => {
       console.log("Payment cycles:", JSON.stringify(response.data, null, 2));
       setLongTermDetails(response.data || []);
     } catch (error) {
-      console.error("Error fetching payment cycles:", error);
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("failedToLoadPaymentCycles"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -63,26 +65,21 @@ const LongTermDetailsScreen = () => {
         response.status === 200 || response.data?.status === "PAID";
 
       if (paymentSuccessful) {
-        Toast.show({
-          type: "success",
-          text1: t("success"),
-          text2: t("paymentSuccessful"),
-        });
+        showModal("Success", "Thanh toán thành công", "Success");
         await fetchLongTermDetails();
         router.push("/(tabs)/history");
       } else {
-        Toast.show({
-          type: "error",
-          text1: t("error"),
-          text2: t("paymentFailed"),
-        });
+        showModal("Error", "Thanh toán thất bại", "Failed");
+
       }
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: error.response?.data?.message || t("failedToProcessPayment"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xử lí thanh toán.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -108,8 +105,8 @@ const LongTermDetailsScreen = () => {
                 cycle.status === "PAID"
                   ? "#2ECC71"
                   : cycle.status === "PENDING"
-                  ? "#A64B2A"
-                  : "#E74C3C",
+                    ? "#A64B2A"
+                    : "#E74C3C",
             },
           ]}
         >
@@ -151,8 +148,8 @@ const LongTermDetailsScreen = () => {
                       detail.status === "CONFIRMED"
                         ? "#2ECC71"
                         : detail.status === "PENDING"
-                        ? "#A64B2A"
-                        : "#E74C3C",
+                          ? "#A64B2A"
+                          : "#E74C3C",
                   },
                 ]}
               >

@@ -1,7 +1,7 @@
 // import axios from 'axios';
 
 // const config = {
-//     baseURL: "http://35.240.147.10/no-auth", //Crema
+//     baseURL: "https://vietchef.ddns.net/no-auth", //Crema
 //     headers: {
 //         "Content-Type": "application/json",
 //     }
@@ -17,7 +17,7 @@ import { NetworkContext } from '../hooks/networkProvider';
 import { useGlobalModal } from '../context/modalContext';
 
 const config = {
-    baseURL: "http://35.240.147.10/no-auth", // Crema
+    baseURL: "https://vietchef.ddns.net/no-auth", // Crema
     headers: {
         "Content-Type": "application/json",
     }

@@ -23,6 +23,8 @@ import moment from "moment";
 import { commonStyles } from "../../style";
 import { MaterialIcons } from "@expo/vector-icons";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 // Utility Functions
 const generateTimeSlots = () => {
@@ -106,14 +108,15 @@ const LongTermSelectBooking = () => {
   const lastProcessedParams = useRef(null);
   const [unavailableDates, setUnavailableDates] = useState([]);
   const [activeDish, setActiveDish] = useState(null);
-
+  const { showModal } = useCommonNoification();
   const todayString = moment().format("YYYY-MM-DD");
 
   const toggleDishActive = (date, dishId) => {
-    setActiveDish((prev) =>
-      prev?.date === date && prev?.dishId === dishId
-        ? null // Ẩn nút X nếu nhấn lại
-        : { date, dishId } // Hiển thị nút X cho món được nhấn
+    setActiveDish(
+      (prev) =>
+        prev?.date === date && prev?.dishId === dishId
+          ? null
+          : { date, dishId }
     );
   };
 
@@ -155,24 +158,23 @@ const LongTermSelectBooking = () => {
       const date = params.date;
       const selectedMenuData =
         typeof params.selectedMenu === "string" &&
-        params.selectedMenu !== "null" &&
-        params.selectedMenu !== ""
+          params.selectedMenu !== "null" &&
+          params.selectedMenu !== ""
           ? JSON.parse(params.selectedMenu)
           : null;
       const selectedDishesData =
         typeof params.selectedDishes === "string" &&
-        params.selectedDishes !== "null" &&
-        params.selectedDishes !== ""
+          params.selectedDishes !== "null" &&
+          params.selectedDishes !== ""
           ? JSON.parse(params.selectedDishes)
           : [];
       const newDishNotes =
         typeof params.dishNotes === "string" &&
-        params.dishNotes !== "null" &&
-        params.dishNotes !== ""
+          params.dishNotes !== "null" &&
+          params.dishNotes !== ""
           ? JSON.parse(params.dishNotes)
           : {};
 
-      // Khôi phục trạng thái lặp lại
       if (params.isRepeatEnabled) {
         setIsRepeatEnabled(JSON.parse(params.isRepeatEnabled));
       }
@@ -202,22 +204,22 @@ const LongTermSelectBooking = () => {
             extraDishIds: selectedDishesData.map((dish) => dish.id),
             menuDishNotes: selectedMenuData
               ? Object.fromEntries(
-                  Object.entries(newDishNotes).filter(([dishId]) =>
-                    selectedMenuData?.menuItems?.some(
-                      (item) => item.dishId === parseInt(dishId)
-                    )
+                Object.entries(newDishNotes).filter(([dishId]) =>
+                  selectedMenuData?.menuItems?.some(
+                    (item) => item.dishId === parseInt(dishId)
                   )
                 )
+              )
               : {},
             extraDishNotes:
               selectedDishesData.length > 0
                 ? Object.fromEntries(
-                    Object.entries(newDishNotes).filter(([dishId]) =>
-                      selectedDishesData.some(
-                        (dish) => dish.id === parseInt(dishId)
-                      )
+                  Object.entries(newDishNotes).filter(([dishId]) =>
+                    selectedDishesData.some(
+                      (dish) => dish.id === parseInt(dishId)
                     )
                   )
+                )
                 : {},
             chefBringIngredients: existingDate.chefBringIngredients ?? false,
           },
@@ -230,11 +232,7 @@ const LongTermSelectBooking = () => {
 
   const handleRepeatSelection = () => {
     if (!isRepeatEnabled || selectedWeekdays.length === 0) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng chọn ít nhất một ngày trong tuần.",
-      });
+      showModal("Error", "Vui lòng chọn ít nhất một ngày trong tuần", "Error");
       return;
     }
 
@@ -243,12 +241,8 @@ const LongTermSelectBooking = () => {
         date.menuId || (date.extraDishIds && date.extraDishIds.length > 0)
     );
     if (hasSelectedFood) {
-      Toast.show({
-        type: "info",
-        text1: "Thông báo",
-        text2:
-          "Bạn đã chọn món ăn. Vui lòng xóa các ngày hiện tại trước khi áp dụng lịch mới.",
-      });
+      showModal("Warning", "Bạn đã chọn món ăn. Vui lòng xóa các ngày hiện tại trước khi áp dụng lịch mới.", "Warning");
+
       return;
     }
 
@@ -280,21 +274,15 @@ const LongTermSelectBooking = () => {
       currentDate.add(1, "day");
 
       if (currentDate.isAfter(moment(todayString).add(1, "year"))) {
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: "Không thể chọn đủ ngày với các ngày trong tuần đã chọn.",
-        });
+        showModal("Error", "Không thể chọn đủ ngày với các ngày trong tuần đã chọn.", "Error");
+
         return;
       }
     }
 
     setSelectedDates(newDates);
-    Toast.show({
-      type: "success",
-      text1: "Đã chọn ngày",
-      text2: `Đã chọn ${selectedCount} ngày theo lịch lặp lại. Bạn có thể chỉnh sửa thủ công trên lịch.`,
-    });
+    showModal("Success", `Đã chọn ${selectedCount} ngày theo lịch lặp lại. Bạn có thể chỉnh sửa thủ công trên lịch.`, "Success");
+
   };
 
   const toggleWeekday = (day) => {
@@ -349,40 +337,37 @@ const LongTermSelectBooking = () => {
       const response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
       setDishes(response.data.content || []);
     } catch (error) {
-      console.log("Error fetching dishes:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn.", "Failed");
     }
   };
 
   useEffect(() => {
-    let isMounted = true;
-
     const fetchUnavailableDates = async () => {
       try {
         const response = await axiosInstance.get(
           `/bookings/unavailable-dates?chefId=${chefId}`
         );
-        if (isMounted) {
-          setUnavailableDates(response.data);
-          console.log("Unavailable dates:", response.data);
-        }
+
+        setUnavailableDates(response.data);
+        console.log("Unavailable dates:", response.data);
       } catch (error) {
-        console.error(
-          "Error fetching unavailable dates:",
-          error?.response?.data || error
-        );
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Unable to fetch unavailable dates.",
-        });
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
       }
     };
 
     fetchUnavailableDates();
-
-    return () => {
-      isMounted = false;
-    };
   }, [chefId]);
 
   const fetchAvailability = async () => {
@@ -703,22 +688,22 @@ const LongTermSelectBooking = () => {
       const menu = menuItems.find((m) => m.id === menuId);
       const menuDishes = menu
         ? menu.menuItems.map((item) => ({
-            dishId: item.dishId,
-            name: item.dishName,
-            notes: selectedDates[date].menuDishNotes[item.dishId] || "",
-          }))
+          dishId: item.dishId,
+          name: item.dishName,
+          notes: selectedDates[date].menuDishNotes[item.dishId] || "",
+        }))
         : [];
 
       // Lấy danh sách món ăn bổ sung từ extraDishIds
       const extraDishes = selectedDates[date].extraDishIds
         ? selectedDates[date].extraDishIds.map((dishId) => {
-            const dish = dishes.find((d) => d.id === dishId);
-            return {
-              dishId,
-              name: dish ? dish.name : "Unknown Dish",
-              notes: selectedDates[date].extraDishNotes[dishId] || "",
-            };
-          })
+          const dish = dishes.find((d) => d.id === dishId);
+          return {
+            dishId,
+            name: dish ? dish.name : "Unknown Dish",
+            notes: selectedDates[date].extraDishNotes[dishId] || "",
+          };
+        })
         : [];
 
       // Kết hợp tất cả món ăn (menu + extra)
@@ -732,7 +717,7 @@ const LongTermSelectBooking = () => {
           : null,
         extraDishIds:
           selectedDates[date].showMenu &&
-          selectedDates[date].extraDishIds?.length > 0
+            selectedDates[date].extraDishIds?.length > 0
             ? selectedDates[date].extraDishIds
             : null,
         isDishSelected: selectedDates[date].showMenu,
@@ -754,7 +739,6 @@ const LongTermSelectBooking = () => {
         "/bookings/calculate-long-term-booking",
         payload
       );
-      console.log("cal", response.data);
       router.push({
         pathname: "/screen/reviewBooking",
         params: {
@@ -816,14 +800,14 @@ const LongTermSelectBooking = () => {
         selectedDates: JSON.stringify(selectedDates),
         selectedMenu: selectedDates[date].menuId
           ? JSON.stringify(
-              menuItems.find((item) => item.id === selectedDates[date].menuId)
-            )
+            menuItems.find((item) => item.id === selectedDates[date].menuId)
+          )
           : "",
         selectedDishes:
           selectedDates[date].extraDishIds?.length > 0
             ? JSON.stringify(
-                selectedDates[date].extraDishIds.map((id) => ({ id }))
-              )
+              selectedDates[date].extraDishIds.map((id) => ({ id }))
+            )
             : "",
         dishNotes: JSON.stringify({
           ...selectedDates[date].menuDishNotes,
@@ -888,7 +872,7 @@ const LongTermSelectBooking = () => {
                           style={[
                             styles.weekdayButton,
                             selectedWeekdays.includes(index) &&
-                              styles.weekdayButtonSelected,
+                            styles.weekdayButtonSelected,
                           ]}
                           onPress={() => toggleWeekday(index)}
                         >
@@ -896,7 +880,7 @@ const LongTermSelectBooking = () => {
                             style={[
                               styles.weekdayText,
                               selectedWeekdays.includes(index) &&
-                                styles.weekdayTextSelected,
+                              styles.weekdayTextSelected,
                             ]}
                           >
                             {day}
@@ -994,7 +978,7 @@ const LongTermSelectBooking = () => {
                         style={[
                           styles.dateCard,
                           !selectedDates[date].startTime &&
-                            styles.incompleteCard,
+                          styles.incompleteCard,
                           needsMenuSelection && styles.warningCard,
                         ]}
                       >
@@ -1041,7 +1025,7 @@ const LongTermSelectBooking = () => {
                             >
                               <Text style={styles.addItemsText}>
                                 {selectedDates[date].menuId ||
-                                selectedDates[date].extraDishIds?.length > 0
+                                  selectedDates[date].extraDishIds?.length > 0
                                   ? t("addItems")
                                   : t("addMenuOrFood")}
                               </Text>
@@ -1083,8 +1067,8 @@ const LongTermSelectBooking = () => {
                                       style={[
                                         styles.dishItem,
                                         activeDish?.date === date &&
-                                          activeDish?.dishId === item.dishId &&
-                                          styles.dishItemActive,
+                                        activeDish?.dishId === item.dishId &&
+                                        styles.dishItemActive,
                                       ]}
                                       onPress={() =>
                                         toggleDishActive(date, item.dishId)
@@ -1106,10 +1090,9 @@ const LongTermSelectBooking = () => {
                                         {selectedDates[date].menuDishNotes[
                                           item.dishId
                                         ] &&
-                                          `(${t("note")}: ${
-                                            selectedDates[date].menuDishNotes[
-                                              item.dishId
-                                            ]
+                                          `(${t("note")}: ${selectedDates[date].menuDishNotes[
+                                          item.dishId
+                                          ]
                                           })`}
                                       </Text>
                                       <View style={styles.dishActions}>
@@ -1126,7 +1109,8 @@ const LongTermSelectBooking = () => {
                                           {t("note")}
                                         </Text>
                                         {activeDish?.date === date &&
-                                          activeDish?.dishId === item.dishId && (
+                                          activeDish?.dishId ===
+                                          item.dishId && (
                                             <TouchableOpacity
                                               style={styles.removeItemButton}
                                               onPress={() => removeMenu(date)}
@@ -1155,6 +1139,7 @@ const LongTermSelectBooking = () => {
                                     const dish = dishes.find(
                                       (d) => d.id === dishId
                                     );
+                                    // console.log("dishdad", dish);
                                     const imageUrl =
                                       dish?.imageUrl ||
                                       "https://via.placeholder.com/40";
@@ -1165,8 +1150,8 @@ const LongTermSelectBooking = () => {
                                         style={[
                                           styles.dishItem,
                                           activeDish?.date === date &&
-                                            activeDish?.dishId === dishId &&
-                                            styles.dishItemActive,
+                                          activeDish?.dishId === dishId &&
+                                          styles.dishItemActive,
                                         ]}
                                         onPress={() =>
                                           toggleDishActive(date, dishId)
@@ -1176,12 +1161,6 @@ const LongTermSelectBooking = () => {
                                           source={{ uri: imageUrl }}
                                           style={styles.dishImage}
                                           resizeMode="cover"
-                                          onError={(error) =>
-                                            console.log(
-                                              `Error loading image for dish ${dishId}:`,
-                                              error
-                                            )
-                                          }
                                         />
                                         <Text style={styles.dishText}>
                                           {dish?.name || "Unknown Dish"}{" "}
@@ -1266,7 +1245,7 @@ const LongTermSelectBooking = () => {
                                 style={[
                                   styles.timeButton,
                                   selectedDates[date].startTime === time &&
-                                    styles.timeButtonSelected,
+                                  styles.timeButtonSelected,
                                 ]}
                                 onPress={() =>
                                   updateBookingDetail(date, "startTime", time)
@@ -1303,7 +1282,7 @@ const LongTermSelectBooking = () => {
             style={[
               styles.fixedButton,
               Object.keys(selectedDates).length !==
-                selectedPackage?.durationDays && styles.disabledButton,
+              selectedPackage?.durationDays && styles.disabledButton,
             ]}
             onPress={handleConfirm}
             disabled={

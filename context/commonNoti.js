@@ -1,58 +1,91 @@
-import React, { createContext, useContext, useRef, useState } from 'react';
-import { Modalize } from 'react-native-modalize';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Modal from 'react-native-modal';
 
 const NotiContext = createContext();
 
 export const ModalNotiProvider = ({ children }) => {
-  const modalizeRef = useRef(null);
-  const [modalContent, setModalContent] = useState({ title: '', message: '', status: '' });
+  const [isVisible, setIsVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({
+    title: '',
+    message: '',
+    status: 'Success',
+    onPress: null
+  });
 
-  const showModal = (title, message, status = 'Success') => {
-    setModalContent({ title, message, status });
-    modalizeRef.current?.open();
-  };
+  const showModal = useCallback((title, message, status = 'Success', onPress) => {
+    setModalContent({
+      title: title || '',
+      message: message || '',
+      status: status || 'Success',
+      onPress: typeof onPress === 'function' ? onPress : null
+    });
+
+    setIsVisible(true);
+  }, []);
 
   const getStatusStyle = (status) => {
     switch (status) {
       case 'Success':
-        return {
-          icon: 'check-circle',
-          color: '#4CAF50',
-        };
+        return { icon: 'check-circle', color: '#4CAF50' };
       case 'Failed':
-        return {
-          icon: 'error',
-          color: '#F44336',
-        };
+        return { icon: 'error', color: '#F44336' };
       case 'Warning':
-        return {
-          icon: 'warning',
-          color: '#FF9800',
-        };
+        return { icon: 'warning', color: '#FF9800' };
       default:
-        return {
-          icon: 'info',
-          color: '#2196F3',
-        };
+        return { icon: 'info', color: '#2196F3' };
     }
   };
 
   const { icon, color } = getStatusStyle(modalContent.status);
 
+  const handleButtonPress = useCallback(() => {
+    const callback = modalContent.onPress;
+
+    setIsVisible(false);
+
+    setTimeout(() => {
+      if (callback && typeof callback === 'function') {
+        callback();
+      }
+    }, 300);
+  }, [modalContent.onPress]);
+
   return (
     <NotiContext.Provider value={{ showModal }}>
       {children}
-      <Modalize ref={modalizeRef} adjustToContentHeight>
-        <View style={[styles.container]}>
+      <Modal
+        isVisible={isVisible}
+        onBackdropPress={() => setIsVisible(false)}
+        onBackButtonPress={() => setIsVisible(false)}
+        swipeDirection="down"
+        onSwipeComplete={() => setIsVisible(false)}
+        style={styles.modal}
+        backdropOpacity={0.5}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        useNativeDriver={true}
+        statusBarTranslucent
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.indicator} />
           <View style={styles.iconContainer}>
             <MaterialIcons name={icon} size={48} color={color} />
           </View>
           <Text style={[styles.title, { color }]}>{modalContent.title}</Text>
           <Text style={styles.message}>{modalContent.message}</Text>
+          {modalContent.onPress && (
+            <TouchableOpacity
+              style={styles.button}
+              activeOpacity={0.7}
+              onPress={handleButtonPress}
+            >
+              <Text style={styles.buttonText}>Retry</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </Modalize>
+      </Modal>
     </NotiContext.Provider>
   );
 };
@@ -60,9 +93,24 @@ export const ModalNotiProvider = ({ children }) => {
 export const useCommonNoification = () => useContext(NotiContext);
 
 const styles = StyleSheet.create({
-  container: {
+  modal: {
+    justifyContent: 'flex-end',
+    margin: 0,
+  },
+  modalContent: {
+    backgroundColor: 'white',
     padding: 24,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
     alignItems: 'center',
+  },
+  indicator: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#DDDDDD',
+    borderRadius: 5,
+    marginBottom: 16,
+    alignSelf: 'center',
   },
   iconContainer: {
     marginBottom: 5,
@@ -77,5 +125,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     color: '#444',
+    marginBottom: 16,
   },
+  button: {
+    padding: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    backgroundColor: "#383737",
+    borderColor: "#383737",
+    borderRadius: 50,
+    width: 200,
+  },
+  buttonText: {
+    textAlign: "center",
+    fontSize: 18,
+    color: "#fff",
+    fontFamily: "nunito-bold"
+  }
 });

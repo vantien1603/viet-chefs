@@ -16,6 +16,7 @@ import useAxios from "../../config/AXIOS_API";
 import { router } from "expo-router";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
@@ -23,6 +24,7 @@ const AllDishScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const axiosInstance = useAxios();
+  const { showModal } = useCommonNoification();
 
   useEffect(() => {
     const fetchDishes = async () => {
@@ -31,17 +33,23 @@ const AllDishScreen = () => {
         setDishes(response.data.content);
         setFilteredDishes(response.data.content);
       } catch (error) {
-        console.log("Error dishes:", error);
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          console.log('Request was cancelled');
+          return;
+        }
+        showModal("Error", "Có lỗi khi tải danh sách món ăn", "Failed", fetchDishes());
       }
     };
     fetchDishes();
   }, []);
 
-  // Hàm xử lý tìm kiếm
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setFilteredDishes(dishes); // Nếu không có từ khóa, hiển thị tất cả món
+      setFilteredDishes(dishes);
     } else {
       const filtered = dishes.filter((item) =>
         item.name.toLowerCase().includes(query.toLowerCase())
@@ -50,16 +58,14 @@ const AllDishScreen = () => {
     }
   };
 
-  // Hàm xử lý khi nhấn icon search
   const toggleSearch = () => {
     setIsSearching(!isSearching);
     if (isSearching) {
-      setSearchQuery(""); // Xóa từ khóa khi đóng tìm kiếm
-      setFilteredDishes(dishes); // Hiển thị lại tất cả món
+      setSearchQuery("");
+      setFilteredDishes(dishes);
     }
   };
 
-  // Chia danh sách món ăn thành nhóm 2 món mỗi hàng
   const groupedDishes = [];
   for (let i = 0; i < filteredDishes.length; i += 2) {
     groupedDishes.push(filteredDishes.slice(i, i + 2));

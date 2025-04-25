@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
@@ -14,11 +15,15 @@ import useAxios from "../../config/AXIOS_API";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { AuthContext } from "../../config/AuthContext";
 
 const CustomerSchedule = () => {
   const axiosInstance = useAxios();
   const [bookingDetails, setBookingDetails] = useState([]);
   const [index, setIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const { user, isGuest } = useContext(AuthContext);
   const [routes] = useState([
     { key: "today", title: "Today" },
     { key: "upcoming", title: "Upcoming" },
@@ -27,6 +32,8 @@ const CustomerSchedule = () => {
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
+      setLoading(true);
+      if (isGuest) return;
       try {
         const response = await axiosInstance.get(
           "/bookings/booking-details/user",
@@ -40,9 +47,14 @@ const CustomerSchedule = () => {
           }
         );
         setBookingDetails(response.data.content);
-        // console.log("cc", response.data.content);
       } catch (error) {
-        console.log("err", error);
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      }
+      finally {
+        setLoading(false);
       }
     };
     fetchBookingDetails();
@@ -57,7 +69,6 @@ const CustomerSchedule = () => {
     });
   };
 
-  // Lọc dữ liệu theo tab
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -72,10 +83,11 @@ const CustomerSchedule = () => {
     (detail) => new Date(detail.sessionDate) < today
   );
 
-  // Component render danh sách đặt chỗ
   const renderBookingList = (details) => (
     <ScrollView style={styles.container}>
-      {details.length > 0 ? (
+      {loading ? (
+        <ActivityIndicator size={'large'} color={'white'} />
+      ) : details.length > 0 ? (
         details.map((detail) => (
           <TouchableOpacity
             key={detail.id}
@@ -104,10 +116,10 @@ const CustomerSchedule = () => {
                     detail.status === "COMPLETED"
                       ? "green"
                       : detail.status === "SCHEDULED"
-                      ? "orange"
-                      : detail.status === "LOCKED"
-                      ? "red"
-                      : "black", // fallback color
+                        ? "orange"
+                        : detail.status === "LOCKED" || detail.status === "CANCELED"
+                          ? "red"
+                          : "black",
                 },
               ]}
             >
@@ -122,14 +134,13 @@ const CustomerSchedule = () => {
         <Text style={styles.noData}>Không có đặt chỗ nào.</Text>
       )}
     </ScrollView>
+
   );
 
-  // Định nghĩa các tab
   const TodayRoute = () => renderBookingList(todayDetails);
   const UpcomingRoute = () => renderBookingList(upcomingDetails);
   const PastRoute = () => renderBookingList(pastDetails);
 
-  // Cấu hình SceneMap
   const renderScene = SceneMap({
     today: TodayRoute,
     upcoming: UpcomingRoute,
@@ -138,7 +149,7 @@ const CustomerSchedule = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Schedule"/>
+      <Header title="Schedule" />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
@@ -172,7 +183,7 @@ const styles = StyleSheet.create({
   bookingItem: {
     borderWidth: 1,
     borderColor: "#CCCCCC",
-    backgroundColor: "#fff",
+    backgroundColor: "#F9F5F0",
     borderRadius: 10,
     padding: 20,
     marginBottom: 10,

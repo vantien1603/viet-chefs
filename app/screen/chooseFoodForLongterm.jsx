@@ -17,8 +17,10 @@ import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
-const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
+const DishCard = ({ item, isSelected, onToggle }) => (
   <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
     <View style={styles.checkbox(isSelected)}>
       {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
@@ -31,7 +33,7 @@ const DishCard = ({ item, isSelected, onToggle, note, onNoteChange }) => (
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
       <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
-      {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
+      {/* {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null} */}
     </View>
   </TouchableOpacity>
 );
@@ -51,13 +53,14 @@ const ChooseFoodForLongterm = () => {
     address,
   } = params;
 
+
   const [selectedMenu, setSelectedMenu] = useState(
     selectedMenuParam && selectedMenuParam !== ""
       ? JSON.parse(selectedMenuParam)?.id
       : null
   );
   const [selectedDishes, setSelectedDishes] = useState(() => {
-    if (selectedDishesParam && selectedDishesParam !== "") {
+    if (!selectedMenu && selectedDishesParam && selectedDishesParam !== "") {
       const dishes = JSON.parse(selectedDishesParam);
       return dishes.reduce((acc, dish) => {
         acc[dish.id] = true;
@@ -66,36 +69,44 @@ const ChooseFoodForLongterm = () => {
     }
     return {};
   });
-  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState({});
+  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState(() => {
+    if (selectedMenu && selectedDishesParam && selectedDishesParam !== "") {
+      const dishes = JSON.parse(selectedDishesParam);
+      return dishes.reduce((acc, dish) => {
+        acc[dish.id] = true;
+        return acc;
+      }, {});
+    }
+    return {};
+  });
   const [dishNotes, setDishNotes] = useState(
     dishNotesParam && dishNotesParam !== "" ? JSON.parse(dishNotesParam) : {}
   );
   const [menus, setMenus] = useState([]);
   const [dishes, setDishes] = useState([]);
   const axiosInstance = useAxios();
-
+  const { showModal } = useCommonNoification();
   const menuFlatListRef = useRef(null);
   const dishesFlatListRef = useRef(null);
 
-  // Fetch menus
   useEffect(() => {
     const fetchMenus = async () => {
       try {
         const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
         setMenus(menuResponse.data.content || []);
       } catch (error) {
-        console.error("Error fetching menus:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to fetch menus.",
-        });
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra khi tải danh sách menu.", "Failed");
       }
     };
     fetchMenus();
   }, [chefId]);
 
-  // Fetch dishes
   useEffect(() => {
     const fetchDishes = async () => {
       try {
@@ -109,19 +120,19 @@ const ChooseFoodForLongterm = () => {
         }
         setDishes(dishesResponse.data.content || []);
       } catch (error) {
-        console.error("Error fetching dishes:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to fetch dishes.",
-        });
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra khi tải danh sách món ăn.", "Failed");
         setDishes([]);
       }
     };
     fetchDishes();
-  }, [selectedMenu]);
+  }, [selectedMenu, chefId]);
 
-  // Handle physical back button
   useEffect(() => {
     const backAction = () => {
       handleBack();
@@ -153,7 +164,6 @@ const ChooseFoodForLongterm = () => {
     if (selectedMenu) {
       setSelectedExtraDishIds((prev) => {
         const newState = { ...prev, [id]: !prev[id] };
-        // If dish is unchecked, remove its note
         if (!newState[id]) {
           setDishNotes((prevNotes) => {
             const updatedNotes = { ...prevNotes };
@@ -166,7 +176,6 @@ const ChooseFoodForLongterm = () => {
     } else {
       setSelectedDishes((prev) => {
         const newState = { ...prev, [id]: !prev[id] };
-        // If dish is unchecked, remove its note
         if (!newState[id]) {
           setDishNotes((prevNotes) => {
             const updatedNotes = { ...prevNotes };
@@ -181,7 +190,8 @@ const ChooseFoodForLongterm = () => {
 
   const handleSelectMenu = (menuId) => {
     const selectedDishesCount =
-      Object.values(selectedDishes).filter(Boolean).length;
+      Object.values(selectedDishes).filter(Boolean).length +
+      Object.values(selectedExtraDishIds).filter(Boolean).length;
     if (selectedDishesCount > 0) {
       Toast.show({
         type: "error",
@@ -193,7 +203,6 @@ const ChooseFoodForLongterm = () => {
     setSelectedMenu((prev) => (prev === menuId ? null : menuId));
     setSelectedDishes({});
     setSelectedExtraDishIds({});
-    // Clear all dish notes when switching to a menu
     setDishNotes({});
   };
 
@@ -227,6 +236,8 @@ const ChooseFoodForLongterm = () => {
         dishNotes: JSON.stringify(dishNotes),
         numPeople: numPeople || "",
         address: address || "",
+        isRepeatEnabled: params.isRepeatEnabled || "",
+        selectedWeekdays: params.selectedWeekdays || "",
       },
     });
   };
@@ -240,11 +251,7 @@ const ChooseFoodForLongterm = () => {
       : dishes.filter((dish) => selectedDishes[dish.id]);
 
     if (!selectedMenuData && selectedDishesData.length === 0) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Vui lòng chọn ít nhất một menu hoặc món ăn.",
-      });
+      showModal("Error", "Vui lòng chọn ít nhất một menu hoặc món ăn.", "Failed")
       return;
     }
 
@@ -263,6 +270,8 @@ const ChooseFoodForLongterm = () => {
         dishNotes: JSON.stringify(dishNotes),
         numPeople: numPeople || "",
         address: address || "",
+        isRepeatEnabled: params.isRepeatEnabled || "",
+        selectedWeekdays: params.selectedWeekdays || "",
       },
     });
   };
@@ -277,17 +286,7 @@ const ChooseFoodForLongterm = () => {
           item={item}
           isSelected={isSelected}
           onToggle={() => toggleDish(item.id)}
-          note={dishNotes[item.id]}
-          onNoteChange={(text) => handleAddNote(item.id, text)}
         />
-        {isSelected && (
-          <TextInput
-            style={styles.input}
-            placeholder={t("dishNotePlaceholder")}
-            value={dishNotes[item.id] || ""}
-            onChangeText={(text) => handleAddNote(item.id, text)}
-          />
-        )}
       </View>
     );
   };
@@ -354,10 +353,10 @@ const ChooseFoodForLongterm = () => {
       {(selectedMenu ||
         Object.values(selectedDishes).some((val) => val) ||
         Object.values(selectedExtraDishIds).some((val) => val)) && (
-        <TouchableOpacity style={styles.button} onPress={handleConfirm}>
-          <Text style={styles.buttonText}>{t("confirmDishSelection")}</Text>
-        </TouchableOpacity>
-      )}
+          <TouchableOpacity style={styles.button} onPress={handleConfirm}>
+            <Text style={styles.buttonText}>{t("confirmDishSelection")}</Text>
+          </TouchableOpacity>
+        )}
     </SafeAreaView>
   );
 };

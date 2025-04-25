@@ -15,6 +15,7 @@ import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const ChangePasswordScreen = () => {
   const router = useRouter();
@@ -25,7 +26,8 @@ const ChangePasswordScreen = () => {
   const [newPasswordError, setNewPasswordError] = useState(""); // Error for new password
   const [confirmPasswordError, setConfirmPasswordError] = useState(""); // Error for confirm password
   const axiosInstance = useAxios();
-
+  const [loading, setLoading] = useState(false);
+  const { showModal } = useCommonNoification();
   useEffect(() => {
     const backAction = () => {
       router.push("/(tabs)/profile");
@@ -37,10 +39,9 @@ const ChangePasswordScreen = () => {
       backAction
     );
 
-    return () => backHandler.remove(); // Dọn dẹp listener khi component unmount
+    return () => backHandler.remove();
   }, []);
 
-  // Validate new password against current password
   const validateNewPassword = (newPass, currentPass = currentPassword) => {
     if (newPass && currentPass && newPass === currentPass) {
       setNewPasswordError(
@@ -52,7 +53,6 @@ const ChangePasswordScreen = () => {
     return true;
   };
 
-  // Validate confirm password against new password
   const validateConfirmPassword = (
     newPass = newPassword,
     confirmPass = confirmPassword
@@ -65,7 +65,6 @@ const ChangePasswordScreen = () => {
     return true;
   };
 
-  // Handle password change API call
   const handleChangePassword = async () => {
     const isNewPasswordValid = validateNewPassword(newPassword);
     const isConfirmPasswordValid = validateConfirmPassword();
@@ -73,7 +72,7 @@ const ChangePasswordScreen = () => {
     if (!isNewPasswordValid || !isConfirmPasswordValid) {
       return;
     }
-
+    setLoading(true);
     try {
       const passwordData = {
         currentPassword: currentPassword,
@@ -87,12 +86,19 @@ const ChangePasswordScreen = () => {
       );
 
       if (response.status === 200 || response.status === 201) {
-        Alert.alert("Đổi mật khẩu thành công!");
+        showModal("Success", "Đổi mật khẩu thành công.", "Success");
         router.back();
       }
     } catch (error) {
-      console.error("Error changing password:", error);
-      setConfirmPasswordError("Có lỗi khi đổi mật khẩu. Vui lòng thử lại.");
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra khi thay đổi mật khẩu.", "Failed");
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -151,6 +157,7 @@ const ChangePasswordScreen = () => {
         <TouchableOpacity
           style={styles.saveButton}
           onPress={handleChangePassword}
+          disabled={loading}
         >
           <Text style={styles.saveButtonText}>{t("save")}</Text>
         </TouchableOpacity>

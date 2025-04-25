@@ -89,80 +89,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-
-  const loginWithGoogle = async () => {
-    try {
-      // Gọi API /oauth-url để lấy URL OAuth
-      const response = await axios.get("http://vietchef.ddns.net/no-auth/oauth-url", {
-        params: { provider: "google" },
-      });
-
-      const oauthUrl = response.data.url;
-      if (!oauthUrl) {
-        throw new Error("Failed to get OAuth URL");
-      }
-
-      return { oauthUrl }; // Trả về URL để LoginScreen hiển thị WebView
-    } catch (error) {
-      console.error("Error fetching Google OAuth URL:", error?.response?.data || error.message);
-      throw error; // Ném lỗi để LoginScreen xử lý
-    }
-  };
-
-  const handleGoogleRedirect = async (url) => {
-    try {
-      if (!url.startsWith("http://vietchef.ddns.net/no-auth/oauth-redirect")) {
-        return { success: false };
-      }
-
-      const params = new URLSearchParams(url.split("?")[1]);
-      const access_token = params.get("access_token");
-      const refresh_token = params.get("refresh_token");
-      const fullName = params.get("full_name");
-
-      console.log("Access Token:", access_token);
-      console.log("Refresh Token:", refresh_token);
-      console.log("Full Name:", fullName);
-
-      if (!access_token || !refresh_token) {
-        throw new Error("Missing access_token or refresh_token");
-      }
-
-      // Lưu token vào AsyncStorage và SecureStore
-      // await AsyncStorage.setItem("access_token", access_token);
-      // await AsyncStorage.setItem("refresh_token", refresh_token);
-      // await AsyncStorage.setItem("fullName", fullName || "");
-      setUser({
-        fullName,
-        token: access_token,
-      });
-      await SecureStore.setItemAsync("refreshToken", refresh_token);
-
-      // Cập nhật user state
-      const decoded = jwtDecode(access_token);
-      setUser({
-        fullName: fullName || "",
-        token: access_token,
-        ...decoded,
-      });
-      setIsGuest(false);
-
-      if (decoded) {
-        const userDocRef = doc(database, "users", decoded.userId);
-        await setDoc(userDocRef, {
-          _id: decoded.userId,
-          name: fullName || "",
-          avatar: decoded.avatarUrl,
-        });
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error("Error handling Google redirect:", error?.response?.data || error.message);
-      throw error;
-    }
-  };
-
   const logout = async () => {
     await SecureStore.deleteItemAsync("refreshToken");
     await AsyncStorage.clear();
@@ -171,12 +97,20 @@ export const AuthProvider = ({ children }) => {
     router.push("/");
   };
 
+  const logoutNoDirect = async () => {
+    await SecureStore.deleteItemAsync("refreshToken");
+    await AsyncStorage.clear();
+    setUser(null);
+    setIsGuest(true);
+    // router.push("/");
+  };
+
   if (loading) {
     return null;
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isGuest, login, loginWithGoogle, handleGoogleRedirect, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, isGuest, setIsGuest, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,7 +8,7 @@ import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location'; // Import Expo Location
+import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 
 export default function WelcomeScreen() {
@@ -17,20 +17,16 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     const setupPermissions = async () => {
-      // Step 1: Check if permissions have already been requested
       const hasRequestedPermissions = await AsyncStorage.getItem('hasRequestedPermissions');
       if (hasRequestedPermissions === 'true') {
         console.log('Permissions already requested, skipping prompts.');
         return;
       }
 
-      // Step 2: Setup Notifications
       await setupNotifications();
 
-      // Step 3: Setup Location Permissions after Notifications
       await setupLocationPermissions();
 
-      // Step 4: Set flag to avoid future prompts
       await AsyncStorage.setItem('hasRequestedPermissions', 'true');
     };
 
@@ -38,13 +34,6 @@ export default function WelcomeScreen() {
   }, []);
 
   const setupNotifications = async () => {
-    // Kiểm tra xem có phải thiết bị thật không
-    if (!Device.isDevice) {
-      console.log('Must use physical device for Push Notifications');
-      return;
-    }
-
-    // Yêu cầu quyền thông báo
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -58,13 +47,10 @@ export default function WelcomeScreen() {
       return;
     }
 
-    // Lấy token
     const token = (await Notifications.getExpoPushTokenAsync()).data;
     console.log('Expo Push Token:', token);
-    // await AsyncStorage.setItem('expoPushToken', token);
     await SecureStore.setItemAsync("expoPushToken", token);
 
-    // Cấu hình xử lý thông báo khi app đang chạy
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -73,28 +59,26 @@ export default function WelcomeScreen() {
       }),
     });
 
-    // Lắng nghe thông báo khi app ở foreground
     const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-      // Alert.alert(
-      //   'Thông báo nhận được!',
-      //   notification.request.content.body || 'Có thông báo mới'
-      // );
     });
 
-    // Lắng nghe khi người dùng tương tác với thông báo
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('Notification clicked:', response);
     });
 
-    // Cleanup
     return () => {
       foregroundSubscription.remove();
       responseSubscription.remove();
     };
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      setupNotifications();
+    }, [user])
+  );
+
   const setupLocationPermissions = async () => {
-    // Yêu cầu quyền truy cập vị trí
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
     if (foregroundStatus !== 'granted') {
       Alert.alert(
@@ -104,20 +88,7 @@ export default function WelcomeScreen() {
       return;
     }
 
-    // Optionally, request background location permissions if needed
-    // const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-    // if (backgroundStatus !== 'granted') {
-    //   Alert.alert(
-    //     'Quyền truy cập vị trí nền bị từ chối',
-    //     'Ứng dụng có thể cần quyền truy cập vị trí nền để cung cấp các tính năng tốt hơn.'
-    //   );
-    //   return;
-    // }
-
     console.log('Location permissions granted');
-    // Optionally, you can get the current location here if needed
-    // const location = await Location.getCurrentPositionAsync({});
-    // console.log('Current location:', location);
   };
 
   const handleLogin = () => {
@@ -126,19 +97,16 @@ export default function WelcomeScreen() {
   const [hasNavigated, setHasNavigated] = useState(false);
 
   const { user, loading } = useContext(AuthContext);
-  // console.log('userr truoc ne', user);
 
   useFocusEffect(
     useCallback(() => {
       setupNotifications();
-
-      // Step 3: Setup Location Permissions after Notifications
       setupLocationPermissions();
       setIsCheckingUser(true);
       const timeout = setTimeout(() => {
         if (user) {
           if (user.roleName === "ROLE_CHEF") {
-            navigation.navigate("(chef)", { screen: "dashboard" });
+            navigation.navigate("(chef)", { screen: "home" });
           } else if (user.roleName === "ROLE_CUSTOMER") {
             navigation.navigate("(tabs)", { screen: "home" });
           }
@@ -154,22 +122,6 @@ export default function WelcomeScreen() {
     }, [user])
   );
 
-
-
-  // // useEffect(() => {
-  //   if (user) {
-  //     // if (user && !hasNavigated && !loading) {
-  //     console.log("login roiiiii", user);
-  //     if (user?.roleName === "ROLE_CHEF") {
-  //       navigation.navigate("(chef)", { screen: "dashboard" })
-  //     }
-  //   } else if (user?.roleName === "ROLE_CUSTOMER") {
-  //     navigation.navigate("(tabs)", { screen: "home" });
-  //   }
-  //   // setHasNavigated(true);
-
-  //   // navigation.navigate("(tabs)", { screen: "home" });
-  // // }, [user])
 
   return (
     <SafeAreaView

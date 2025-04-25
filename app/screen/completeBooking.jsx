@@ -15,6 +15,7 @@ import Header from '../../components/header';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { commonStyles } from '../../style';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 
 const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail, loading }) => {
     const renderItem = ({ item }) => {
@@ -80,7 +81,7 @@ const Schedule = () => {
     const [refresh, setRefresh] = useState(false);
     const navigation = useNavigation();
     const [totalPages, setTotalPages] = useState(0);
-
+    const {showModal} = useCommonNoification();
     const PAGE_SIZE = 20;
 
     const fetchBookingDetails = async (pageNum, isRefresh = false) => {
@@ -103,7 +104,13 @@ const Schedule = () => {
                 setSchedules(isRefresh ? filterData : (prev) => [...prev, ...filterData]);
             }
         } catch (error) {
-            console.error('Error fetching bookings:', error.response ? error.response.data : error.message);
+            if (error.response?.status === 401) {
+                return;
+            }
+            if (axios.isCancel(error)) {
+                return;
+            }
+            showModal("Error", "Có lỗi xảy ra khi tải dữ liệu.", "Failed");
         } finally {
             setLoading(false);
             setRefresh(false);

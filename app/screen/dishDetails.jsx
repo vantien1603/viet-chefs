@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  KeyboardAvoidingView,
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,10 +20,10 @@ import { Dropdown } from "react-native-element-dropdown";
 import * as ImagePicker from "expo-image-picker";
 import { commonStyles } from "../../style";
 import { useCommonNoification } from "../../context/commonNoti";
-import { Platform } from "react-native";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useConfirmModal } from "../../context/commonConfirm";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import axios from "axios";
 
 const DishDetails = () => {
   const navigation = useNavigation();
@@ -57,6 +56,9 @@ const DishDetails = () => {
         }));
         setFoodType(formattedFoodTypes);
       } catch (error) {
+        if (error.response?.status === 401) {
+          return;
+        }
         if (axios.isCancel(error)) {
           console.log("Yêu cầu đã bị huỷ do không có mạng.");
           return;
@@ -89,6 +91,9 @@ const DishDetails = () => {
           ]);
         }
       } catch (error) {
+        if (error.response?.status === 401) {
+          return;
+        }
         if (axios.isCancel(error)) {
           console.log("Yêu cầu đã bị huỷ do không có mạng.");
           return;
@@ -108,9 +113,15 @@ const DishDetails = () => {
         try {
           const response = await axiosInstance.get(`/chefs/${chefIdToFetch}`);
           setChef(response.data);
-          // console.log("chef details", response.data);
         } catch (error) {
-          console.error("Error fetching chef details:", error);
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            console.log("Yêu cầu đã bị huỷ do không có mạng.");
+            return;
+          }
+          showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
         }
       }
     };
@@ -215,9 +226,13 @@ const DishDetails = () => {
       }
 
     } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
       if (axios.isCancel(error)) {
         return;
       }
+      showModal("Error", "Update dishes failed", 'Failed');
     } finally {
       setIsEditing(false);
       setLoading(false);
@@ -233,8 +248,14 @@ const DishDetails = () => {
         showModal("Success", "Delete dish delete successfully.");
       }
     } catch (error) {
-      console.error("Lỗi khi xóa:", error.response?.data || error.message);
-      showModal("Error", "Dish delete failed.");
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        console.log("Yêu cầu đã bị huỷ do không có mạng.");
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xóa món ăn", "Failed");
     } finally {
       setLoading(false);
     }
@@ -252,10 +273,7 @@ const DishDetails = () => {
             style={styles.dishImage}
             resizeMode="cover"
           />
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleBack}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
         </View> */}
@@ -295,7 +313,6 @@ const DishDetails = () => {
           </TouchableOpacity>
         </View>
 
-        {/* <View style={styles.header}> */}
         {isEditing ? (
           <TextInput
             style={styles.inputEditing}
@@ -306,7 +323,6 @@ const DishDetails = () => {
         ) : (
           <Text style={styles.dishName}>{dish.name || dishName}</Text>
         )}
-        {/* </View> */}
 
 
         {isEditing ? (
@@ -408,11 +424,15 @@ const DishDetails = () => {
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="restaurant-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>{t("cuisine")}: {dish.cuisineType}</Text>
+            <Text style={styles.detailText}>
+              {t("cuisine")}: {dish.cuisineType}
+            </Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="home-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>{t("type")}: {dish.serviceType}</Text>
+            <Text style={styles.detailText}>
+              {t("type")}: {dish.serviceType}
+            </Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="time-outline" size={20} color="#555" />

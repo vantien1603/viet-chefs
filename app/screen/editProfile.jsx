@@ -18,7 +18,7 @@ import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { SceneMap, TabBar, TabView } from "react-native-tab-view";
-
+import { useCommonNoification } from "../../context/commonNoti";
 
 
 
@@ -28,6 +28,8 @@ const EditProfile = () => {
   const { user } = useContext(AuthContext);
   const params = useLocalSearchParams();
   const [index, setIndex] = useState(0);
+  const { showModal } = useCommonNoification();
+  const [loading, setLoading] = useState(false);
   const [routes] = useState(
     user?.roleName === "ROLE_CHEF"
       ? [
@@ -64,16 +66,11 @@ const EditProfile = () => {
   const [avatar, setAvatar] = useState(profileData.avatarUrl || null);
   const axiosInstanceForm = useAxiosFormData();
 
-
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Cần cấp quyền truy cập thư viện ảnh!",
-      });
+      showModal("Warning", "Cần cấp quyền truy cập thư viện ảnh!", "Warning")
       return;
     }
 
@@ -81,7 +78,7 @@ const EditProfile = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5, // Compress image
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -91,15 +88,12 @@ const EditProfile = () => {
 
   const handleUpdateProfile = async () => {
     if (!name || !phone || !dob) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng điền đầy đủ thông tin bắt buộc!",
-      });
+      showModal("Error", "Vui lòng điền đầy đủ thông tin bắt buộc!", "Failed")
+
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("fullName", name);
@@ -130,14 +124,11 @@ const EditProfile = () => {
           await AsyncStorage.setItem("@avatar", avatar);
         }
 
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Cập nhật hồ sơ thành công!",
-        });
+        showModal("Success", "Cập nhật hồ sơ thành công!", "Success")
+
         setTimeout(() => {
           router.back();
-        }, 1500); // Increased delay to ensure toast is visible
+        }, 1500);
       }
     } catch (error) {
       console.error("Lỗi cập nhật hồ sơ:", error.response?.data || error);

@@ -23,7 +23,7 @@ const DishNoteScreen = () => {
     selectedMenu,
     selectedDishes,
     dishNotes,
-    imageUrl, // Add imageUrl to params if available
+    imageUrl,
   } = params;
   const [currentNote, setCurrentNote] = useState(initialNote || "");
 
@@ -32,7 +32,6 @@ const DishNoteScreen = () => {
   };
 
   const handleSave = () => {
-    // Update the note in the dishNotes object
     const updatedDishNotes = JSON.parse(dishNotes || "{}");
     updatedDishNotes[dishId] = currentNote;
 
@@ -62,7 +61,7 @@ const DishNoteScreen = () => {
           source={
             imageUrl
               ? { uri: imageUrl }
-              : require("../../assets/images/1.jpg") // Use a placeholder if imageUrl is unavailable
+              : require("../../assets/images/1.jpg") 
           }
           style={styles.image}
         />

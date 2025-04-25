@@ -10,11 +10,13 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { Ionicons } from '@expo/vector-icons';
 import useActionCheckNetwork from "../../hooks/useAction";
+import { t } from "i18next";
+import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { WebView } from "react-native-webview";
 import { Modal } from "react-native";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
-
-
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -22,7 +24,7 @@ export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-  const { user, login, loading, loginWithGoogle, handleGoogleRedirect } = useContext(AuthContext);
+  const { user, login, loading, setUser, setIsGuest } = useContext(AuthContext);
   const modalRef = useRef(null);
   const [loadingA, setLoadingA] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
@@ -43,47 +45,30 @@ export default function LoginScreen() {
 
   }, [user, hasNavigated, loading])
 
-  const [expoToken, setExpoToken] = useState('');
 
-  useEffect(() => {
-    const getToken = async () => {
-      const token = await AsyncStorage.getItem("expoPushToken");
-      setExpoToken(token);
-    };
-    getToken();
-  }, []);
   const handleLogin = async () => {
-    // if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
-    //   modalRef.current.open();
-    //   return;
-    // }
-    console.log('cc');
+    if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
+      modalRef.current.open();
+      return;
+    }
     setLoadingA(true);
-    console.log("toi day ne")
     const token = await SecureStore.getItemAsync('expoPushToken');
-
     const result = await login(usernameOrEmail, password, token);
     if (result) {
-      console.log("login roiiiii", result);
       if (result?.roleName === "ROLE_CHEF") {
-        console.log("????")
         navigation.navigate("(chef)", { screen: "home" })
       }
     } else if (result?.roleName === "ROLE_CUSTOMER") {
-      console.log("gi vay troi")
       navigation.navigate("(tabs)", { screen: "home" });
     }
-    // }
     else {
       console.log("result", result)
       if (axios.isCancel(error)) {
-        console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
       if (modalRef.current) {
         modalRef.current.open();
       }
-      // console.log('Login Failed', 'Invalid username or password');
     }
     setLoadingA(false);
   };
@@ -91,36 +76,85 @@ export default function LoginScreen() {
   const signinWithGoogle = async () => {
     try {
       setGoogleLoading(true);
-      const { oauthUrl } = await loginWithGoogle();
-      setOauthUrl(oauthUrl);
-      // setErrorMessage(null);
+      const response = await axios.get(
+        "https://vietchef.ddns.net/no-auth/oauth-url",
+        {
+          params: { provider: "google" },
+        }
+      );
+
+      const url = response.data.url;
+      if (url) {
+        setOauthUrl(url);
+      }
     } catch (error) {
-      console.error("Google sign-in error:", error);
-      // setErrorMessage(t("googleSignInFailed"));
+      console.error("Lỗi khi gọi API OAuth:", error?.response);
+      showModal("Error", "Login google failed", "Failed");
     } finally {
       setGoogleLoading(false);
     }
   };
 
-  // Hàm đóng WebView
   const closeWebView = () => {
     setOauthUrl(null);
-    // setErrorMessage(null);
   };
 
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
-    try {
-      const result = await handleGoogleRedirect(url);
-      if (result.success) {
+
+    if (url.startsWith("https://vietchef.ddns.net/no-auth/oauth-redirect")) {
+      const params = new URLSearchParams(url.split("?")[1]);
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      const fullName = params.get("full_name");
+      console.log('1');
+      if (access_token && refresh_token) {
+        console.log('2');
+        SecureStore.setItemAsync("refreshToken", refresh_token);
+        console.log('3');
+        const decoded = jwtDecode(access_token);
+        console.log('4');
+        const decodedFullName = fullName
+          ? decodeURIComponent(fullName)
+          : "Unknown";
+        console.log('5');
+
+        setUser({
+          fullName: decodedFullName,
+          token: access_token,
+          ...decoded,
+        });
+        console.log('6');
+        const token = await SecureStore.getItemAsync('expoPushToken');
+
+        const encodedToken = encodeURIComponent(token);
+
+        try {
+          const sub = decoded?.sub;
+          if (sub && encodedToken) {
+            await axios.put(
+              "https://vietchef.ddns.net/no-auth/save-device-token",
+              null,
+              {
+                params: {
+                  email: decoded?.sub,
+                  token: encodedToken,
+                },
+              }
+            );
+            console.log("Device token saved successfully");
+          }
+        } catch (error) {
+          console.error("Error saving device token:", error);
+        }
+        console.log('qqqq');
         setOauthUrl(null);
+        setIsGuest(false);
         navigation.navigate("(tabs)", { screen: "home" });
       }
-    } catch (error) {
-      // setErrorMessage(t("googleSignInFailed"));
-      setOauthUrl(null);
+
+      webViewRef.current?.stopLoading();
     }
-    webViewRef.current?.stopLoading();
   };
 
   return (
@@ -280,7 +314,6 @@ export default function LoginScreen() {
             onError={(syntheticEvent) => {
               const { nativeEvent } = syntheticEvent;
               console.warn("WebView error: ", nativeEvent);
-              // setErrorMessage(t("webviewError"));
               setOauthUrl(null);
             }}
           />

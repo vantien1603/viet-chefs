@@ -21,6 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import { AuthContext } from "../../config/AuthContext";
+import axios from "axios";
 
 const AddNewFoodScreen = () => {
   const [foodName, setFoodName] = useState("");
@@ -34,7 +35,6 @@ const AddNewFoodScreen = () => {
   const [errors, setErrors] = useState({});
   const [dishes, setDishes] = useState([]);
   const [foodTypes, setFoodTypes] = useState([]);
-  const [chefId, setChefId] = useState(null);
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
@@ -102,39 +102,19 @@ const AddNewFoodScreen = () => {
         }));
         setFoodTypes(formattedFoodTypes);
       } catch (error) {
-        console.error("Error fetching food types:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load food types.",
-          position: "top",
-        });
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu loại món ăn.", "Failed");
       }
     };
     fetchFoodTypes();
   }, []);
 
   const handleSave = async () => {
-    if (loading) {
-      Toast.show({
-        type: "info",
-        text1: "Please wait",
-        text2: "Fetching chef ID...",
-        position: "top",
-      });
-      return;
-    }
-
-    if (!user?.userId) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Chef ID not available.",
-        position: "top",
-      });
-      return;
-    }
-
     let newError = {};
     if (!foodName.trim()) newError.foodName = "Food Name is required";
     if (!cookTime.trim()) newError.cookTime = "Cook Time is required";
@@ -146,12 +126,8 @@ const AddNewFoodScreen = () => {
 
     if (Object.keys(newError).length > 0) {
       setErrors(newError);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please fill in all the required fields",
-        position: "top",
-      });
+      showModal("Error", `Please fill in all the required fields`, "Failed");
+
       return;
     }
 
@@ -164,7 +140,7 @@ const AddNewFoodScreen = () => {
     formData.append("cuisineType", cuisineType);
     formData.append("serviceType", "Home Cooking");
     formData.append("basePrice", basePrice);
-    formData.append("chefId", chefId);
+    formData.append("chefId", user?.chefId);
 
     if (image) {
       const filename = image.split("/").pop();
@@ -182,12 +158,7 @@ const AddNewFoodScreen = () => {
       const response = await axiosInstance.post("/dishes", formData);
 
       if (response.status === 201) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Food added successfully",
-          position: "top",
-        });
+        showModal("Success", "Added chef successfully", "Success");
 
         setTimeout(() => {
           router.back();
@@ -205,12 +176,13 @@ const AddNewFoodScreen = () => {
         setDishes((prev) => [...prev, response.data]);
       }
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to add food. Please try again.",
-        position: "top",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Failed to add food. Please try again.", "Failed");
     }
   };
 

@@ -18,6 +18,8 @@ import Toast from "react-native-toast-message";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 const DepositScreen = () => {
   const [amount, setAmount] = useState("");
@@ -28,14 +30,10 @@ const DepositScreen = () => {
   const walletId = params.id;
   const balance = params.balance;
   const axiosInstance = useAxios();
-
+  const { showModal } = useCommonNoification();
   const handleDeposit = async () => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng nhập số tiền hợp lệ!",
-      });
+      showModal("Error", "Vui lòng nhập số tiền hợp lệ!", "Failed")
       return;
     }
 
@@ -49,15 +47,17 @@ const DepositScreen = () => {
         setPaymentUrl(response.data);
         setShowWebView(true);
       } else {
-        throw new Error("Không nhận được URL thanh toán từ server");
+        showModal("Error", "Không nhận được URL thanh toán từ server", "Failed")
+        return;
       }
     } catch (error) {
-      console.error("Error creating PayPal deposit:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: error.response?.data?.message || "Không thể tạo giao dịch PayPal",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Không thể tạo giao dịch PayPal", "Failed");
     } finally {
       setLoading(false);
     }
@@ -66,25 +66,18 @@ const DepositScreen = () => {
   const onNavigationStateChange = (navState) => {
     const { url } = navState;
     if (url.includes("success")) {
-      Toast.show({
-        type: "success",
-        text1: "Thành công",
-        text2: "Nạp tiền thành công!",
-      });
+      showModal("Success", "Nạp tiền thành công!", "Success");
       setShowWebView(false);
       router.push({
         pathname: "/screen/wallet",
-        params: { 
+        params: {
           depositAmount: amount,
           refresh: "true"
         },
       });
     } else if (url.includes("cancel")) {
-      Toast.show({
-        type: "info",
-        text1: "Đã hủy",
-        text2: "Giao dịch đã bị hủy.",
-      });
+      showModal("Error", "Giao dịch đã bị hủy.", "Failed");
+
       setShowWebView(false);
     }
   };

@@ -9,6 +9,8 @@ import { AuthContext } from "../../config/AuthContext";
 import { commonStyles } from "../../style";
 import { AntDesign } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
 
 const ReviewsChefScreen = () => {
@@ -33,7 +35,7 @@ const ReviewsChefScreen = () => {
   const chefIdToCall = user?.roleName === "ROLE_CHEF" ? user.chefId : chefId;
   const [replyTexts, setReplyTexts] = useState({});
   const navigation = useNavigation();
-
+  const { showModal } = useCommonNoification();
   useEffect(() => {
     fetchReviewChef(0, true);
   }, [chefIdToCall]);
@@ -66,7 +68,13 @@ const ReviewsChefScreen = () => {
       setRatingDistribution(data.ratingDistribution || {});
       setPageNo(page);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);

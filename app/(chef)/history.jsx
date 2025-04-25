@@ -9,6 +9,7 @@ import { AuthContext } from '../../config/AuthContext'
 import { useNavigation } from '@react-navigation/native'
 import { useCommonNoification } from '../../context/commonNoti'
 import useActionCheckNetwork from '../../hooks/useAction'
+import axios from 'axios'
 
 
 const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject, onCancel, onViewDetail }) => {
@@ -129,15 +130,28 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
 const Histories = () => {
   const { user } = useContext(AuthContext);
   const axiosInstance = useAxios();
-  const [bookings, setBookings] = useState([]);
+  // const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState({
+    PAID: [],
+    CONFIRMED: [],
+    CANCELED: []
+  });
   const [loading, setLoading] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const [newBooking, setNewBooking] = useState([]);
   const [confirmBooking, setConfirmBooking] = useState([]);
   const [cancelBooking, setCancelBooking] = useState([]);
   const PAGE_SIZE = 10;
-  const [totalPages, setTotalPages] = useState(0);
-  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState({
+    PAID: 0,
+    CONFIRMED: 0,
+    CANCELED: 0
+  });
+  const [page, setPage] = useState({
+    PAID: 0,
+    CONFIRMED: 0,
+    CANCELED: 0
+  });
   const [index, setIndex] = React.useState(0);
   const navigation = useNavigation();
   const [routes] = React.useState([
@@ -149,11 +163,12 @@ const Histories = () => {
   const { showModal } = useCommonNoification();
 
   useEffect(() => {
-    fetchRequestBooking(0, true);
+    fetchRequestBooking(0, 'PAID', true);
+    fetchRequestBooking(0, 'CONFIRMED', true);
+    fetchRequestBooking(0, 'CANCELED', true);
   }, []);
-  let d = 0
 
-  const fetchRequestBooking = async (page, isRefresh = false) => {
+  const fetchRequestBooking = async (page, status, isRefresh = false) => {
 
     if (loading && !isRefresh) return;
     setLoading(true);
@@ -165,6 +180,7 @@ const Histories = () => {
     try {
       const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
         params: {
+          status: status,
           pageNo: page,
           pageSize: PAGE_SIZE,
           sortBy: "id",
@@ -174,7 +190,11 @@ const Histories = () => {
 
       if (response.status === 200) {
         const bookingData = response.data.content || response.data || [];
-        setTotalPages(response.data.totalPages);
+        // setTotalPages(response.data.totalPages);
+        setTotalPages(prev => ({
+          ...prev,
+          [status]: response.data.totalPages
+        }));
 
         // setBookings(prev => {
         //   const newData = isRefresh ? bookingData : [...prev, ...bookingData];
@@ -190,54 +210,64 @@ const Histories = () => {
         //   return isRefresh ? bookingData : [...prevList, ...bookingData];
         // });
 
-        setBookings(isRefresh ? bookingData : (pre) => [...pre, ...bookingData]);
+        // setBookings(isRefresh ? bookingData : (pre) => [...pre, ...bookingData]);
+        setBookings(prev => ({
+          ...prev,
+          [status]: isRefresh ? bookingData : [...prev[status], ...bookingData]
+        }));
 
-        if (isRefresh) {
-          setNewBooking(bookingData.filter((booking) =>
-            booking.status === "PAID" ||
-            booking.status === "DEPOSITED" ||
-            booking.status === "PAID_FIRST_CYCLE"
-          ));
-          setConfirmBooking(bookingData.filter((booking) =>
-            booking.status === "CONFIRMED" ||
-            booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-            booking.status === "CONFIRMED_PAID"
-          ));
-          setCancelBooking(bookingData.filter((booking) =>
-            booking.status === "CANCELLED" ||
-            booking.status === "OVERDUE"
-          ));
-        } else {
-          setNewBooking((pre) => [
-            ...pre,
-            ...bookingData.filter((booking) =>
-              booking.status === "PAID" ||
-              booking.status === "DEPOSITED" ||
-              booking.status === "PAID_FIRST_CYCLE"
-            ),
-          ]);
+        //   // if (isRefresh) {
+        //   //   setNewBooking(bookingData.filter((booking) =>
+        //   //     booking.status === "PAID" ||
+        //   //     booking.status === "DEPOSITED" ||
+        //   //     booking.status === "PAID_FIRST_CYCLE"
+        //   //   ));
+        //   //   setConfirmBooking(bookingData.filter((booking) =>
+        //   //     booking.status === "CONFIRMED" ||
+        //   //     booking.status === "CONFIRMED_PARTIALLY_PAID" ||
+        //   //     booking.status === "CONFIRMED_PAID"
+        //   //   ));
+        //   //   setCancelBooking(bookingData.filter((booking) =>
+        //   //     booking.status === "CANCELLED" ||
+        //   //     booking.status === "OVERDUE"
+        //   //   ));
+        //   // } else {
+        //   //   setNewBooking((pre) => [
+        //   //     ...pre,
+        //   //     ...bookingData.filter((booking) =>
+        //   //       booking.status === "PAID" ||
+        //   //       booking.status === "DEPOSITED" ||
+        //   //       booking.status === "PAID_FIRST_CYCLE"
+        //   //     ),
+        //   //   ]);
 
-          setConfirmBooking((pre) => [
-            ...pre,
-            ...bookingData.filter((booking) =>
-              booking.status === "CONFIRMED" ||
-              booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-              booking.status === "CONFIRMED_PAID"
-            ),
-          ]);
+        //   //   setConfirmBooking((pre) => [
+        //   //     ...pre,
+        //   //     ...bookingData.filter((booking) =>
+        //   //       booking.status === "CONFIRMED" ||
+        //   //       booking.status === "CONFIRMED_PARTIALLY_PAID" ||
+        //   //       booking.status === "CONFIRMED_PAID"
+        //   //     ),
+        //   //   ]);
 
-          setCancelBooking((pre) => [
-            ...pre,
-            ...bookingData.filter((booking) =>
-              booking.status === "CANCELED" ||
-              booking.status === "OVERDUE"
-            ),
-          ]);
-        }
+        //   //   setCancelBooking((pre) => [
+        //   //     ...pre,
+        //   //     ...bookingData.filter((booking) =>
+        //   //       booking.status === "CANCELED" ||
+        //   //       booking.status === "OVERDUE"
+        //   //     ),
+        //   //   ]);
+        // }
 
       }
     } catch (error) {
-      console.error("Error fetching booking details:", error.message);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -248,22 +278,69 @@ const Histories = () => {
 
   const loadMoreData = async () => {
     console.log('cc');
-    if (!loading && page + 1 <= totalPages - 1) {
-      let c = 1
-      console.log("goi load more lan", c++)
-      const nextPage = page + 1;
-      setPage(nextPage);
-      await fetchRequestBooking(nextPage);
+    // if (!loading && page + 1 <= totalPages - 1) {
+    //   let c = 1
+    //   console.log("goi load more lan", c++)
+    //   const nextPage = page + 1;
+    //   setPage(nextPage);
+    //   await fetchRequestBooking(nextPage);
+    // }
+    if (!loading) {
+      if (index === 0 && page.PAID + 1 < totalPages.PAID - 1) {
+        const nextPage = page.PAID + 1;
+        setPage(prev => ({
+          ...prev,
+          PAID: prev.PAID + 1
+        }));
+
+        await fetchRequestBooking(nextPage, 'PAID');
+      } else if (index === 1 && page.CONFIRMED + 1 < totalPages.CONFIRMED - 1) {
+        const nextPage = page.CONFIRMED + 1;
+        setPage(prev => ({
+          ...prev,
+          CONFIRMED: prev.CONFIRMED + 1
+        }));
+        await fetchRequestBooking(nextPage, 'CONFIRMED');
+      } else if (index === 2 && page.CANCELED + 1 < totalPages.CANCELED - 1) {
+        console.log("asd", index);
+        const nextPage = page.CANCELED + 1;
+        setPage(prev => ({
+          ...prev,
+          CANCELED: prev.CANCELED + 1
+        }));
+
+        await fetchRequestBooking(nextPage, 'CANCELED');
+      }
     }
   };
   const handleRefresh = async () => {
     setRefresh(true);
-    setPage(0);
-    setNewBooking([]);
-    setConfirmBooking([]);
-    setCancelBooking([]);
-    await fetchRequestBooking(0, true);
+    if (index === 0) {
+      setPage(prev => ({
+        ...prev,
+        PAID: 0
+      }));
+      await fetchRequestBooking(0, 'PAID', true);
+    } else if (index === 1) {
+      setPage(prev => ({
+        ...prev,
+        CONFIRMED: 0
+      }));
+      await fetchRequestBooking(0, 'CONFIRMED', true);
+    } else if (index === 2) {
+      setPage(prev => ({
+        ...prev,
+        CANCELED: 0
+      }));
+      await fetchRequestBooking(0, 'CANCELED', true);
+    }
     setRefresh(false);
+
+    // setPage(0);
+    // setNewBooking([]);
+    // setConfirmBooking([]);
+    // setCancelBooking([]);
+    // await fetchRequestBooking(0, true);
   };
 
 
@@ -273,20 +350,21 @@ const Histories = () => {
       setLoading(true);
       const response = await axiosInstance.put(`/bookings/${id}/reject`);
       if (response.status === 200) {
-        setNewBooking(prev => prev.filter(item => item.id !== id));
+        // setNewBooking(prev => prev.filter(item => item.id !== id));
+        setBookings(prev => ({ ...prev, PAID: prev.PAID.filter(item => item.id !== id) }));
         showModal("Success", "Reject successfully");
         // fetchRequestBooking(0, true)
       }
 
     } catch (error) {
-      if (error.response) {
-        const mes = error.response.data.message;
-        console.log(mes);
-        showModal("Error", mes, "Failed");
+      const mes = error.response.data?.message;
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", mes, "Failed");
     } finally {
       setLoading(false);
     }
@@ -298,19 +376,20 @@ const Histories = () => {
       setLoading(true);
       const response = await axiosInstance.put(`/bookings/${id}/confirm`);
       if (response.status === 200) {
-        setNewBooking(prev => prev.filter(item => item.id !== id));
+        // setNewBooking(prev => prev.filter(item => item.id !== id));
+        setBookings(prev => ({ ...prev, PAID: prev.PAID.filter(item => item.id !== id) }));
         showModal("Success", "Confirmed successfully");
         // fetchRequestBooking(0, true)
       }
     } catch (error) {
-      if (error.response) {
-        const mes = error.response.data.message;
-        console.log(mes);
-        showModal("Error", mes, "Failed");
+      const mes = error.response.data?.message;
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", mes, "Failed");
     } finally {
       setLoading(false);
     }
@@ -387,7 +466,7 @@ const Histories = () => {
       case 'new':
         return (
           <BookingHistories
-            bookings={newBooking}
+            bookings={bookings.PAID}
             onLoadMore={loadMoreData}
             refreshing={refresh}
             onRefresh={handleRefresh}
@@ -399,7 +478,7 @@ const Histories = () => {
       case 'confirmed':
         return (
           <BookingHistories
-            bookings={confirmBooking}
+            bookings={bookings.CONFIRMED}
             onLoadMore={loadMoreData}
             refreshing={refresh}
             onRefresh={handleRefresh}
@@ -410,7 +489,7 @@ const Histories = () => {
       case 'canceled':
         return (
           <BookingHistories
-            bookings={cancelBooking}
+            bookings={bookings.CANCELED}
             onLoadMore={loadMoreData}
             refreshing={refresh}
             onRefresh={handleRefresh}

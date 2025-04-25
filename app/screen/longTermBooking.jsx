@@ -20,6 +20,8 @@ import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
 const LongTermBookingScreen = () => {
   const router = useRouter();
@@ -33,7 +35,8 @@ const LongTermBookingScreen = () => {
   const axiosInstance = useAxios();
   const [addresses, setAddresses] = useState([]);
   const addressModalizeRef = useRef(null);
-
+  const { showModal } = useCommonNoification();
+  const requireAuthAndNetwork = useRequireAuthAndNetwork();
   useEffect(() => {
     const backAction = () => {
       router.push({ pathname: "/screen/chefDetail", params: { chefId } });
@@ -55,7 +58,6 @@ const LongTermBookingScreen = () => {
         if (savedAddress) {
           const parsedAddress = JSON.parse(savedAddress);
           setAddress(parsedAddress.address);
-          console.log("Loaded selected address:", parsedAddress.address);
         }
       } catch (error) {
         console.error("Error loading selected address:", error);
@@ -73,17 +75,18 @@ const LongTermBookingScreen = () => {
     try {
       const response = await axiosInstance.get(`/packages/chefs/${chefId}`);
       const fetchedPackages = response.data.content || response.data || [];
-      if (!Array.isArray(fetchedPackages)) {
-        throw new Error("Dữ liệu gói không phải là mảng.");
-      }
-
       setPackages(fetchedPackages);
       if (fetchedPackages.length > 0) {
         setSelectedPackage(fetchedPackages[0]);
       }
     } catch (error) {
-      console.log("Error fetching packages for chef:", error);
-      setError("Không thể tải danh sách gói dịch vụ.");
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách gói dịch vụ.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -99,12 +102,13 @@ const LongTermBookingScreen = () => {
       setAddresses(response.data);
       console.log("Fetched addresses:", response.data);
     } catch (error) {
-      console.error("Error fetching addresses:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tải danh sách địa chỉ",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách địa chỉ.", "Failed");
     }
   };
 
@@ -268,14 +272,12 @@ const LongTermBookingScreen = () => {
     });
   };
 
-  // Limit to maximum 5 packages
   const displayedPackages = packages.slice(0, 5);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={commonStyles.containerContent}>
         <Header title={t("longTermBooking")} onLeftPress={handleBack} />
-        {/* <ProgressBar title="Chọn gói" currentStep={2} totalSteps={4} /> */}
         <ScrollView style={{ padding: 20, backgroundColor: "#EBE5DD" }}>
           <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
             {t("selectServicePackage")}:
@@ -334,12 +336,11 @@ const LongTermBookingScreen = () => {
             keyboardType="numeric"
             value={numPeople}
             onChangeText={(text) => {
-              // Only allow positive numbers up to maxGuestCountPerMeal
               if (
                 text === "" ||
                 (/^\d+$/.test(text) &&
                   parseInt(text) <=
-                    (selectedPackage?.maxGuestCountPerMeal || 999))
+                  (selectedPackage?.maxGuestCountPerMeal || 999))
               ) {
                 setNumPeople(text);
               }
@@ -390,7 +391,7 @@ const LongTermBookingScreen = () => {
               marginBottom: 20,
               marginHorizontal: 20,
             }}
-            onPress={() => {
+            onPress={() => requireAuthAndNetwork(() => {
               if (!selectedPackage) {
                 alert("Vui lòng chọn một gói dịch vụ!");
                 return;
@@ -414,7 +415,8 @@ const LongTermBookingScreen = () => {
                   chefId,
                 },
               });
-            }}
+            })
+            }
           >
             <Text
               style={{

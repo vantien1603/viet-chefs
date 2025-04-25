@@ -15,33 +15,41 @@ import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const axiosInstance = useAxios();
-
-  // Fetch chefs from API
-  const fetchChefs = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get("/chefs");
-      setChefs(response.data.content);
-      setLoading(false);
-      console.log("chefs", response.data.content);
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        "Không thể tải danh sách đầu bếp. Vui lòng thử lại.";
-      setError(errorMessage);
-      setLoading(false);
-    }
-  };
+  const { showModal } = useCommonNoification();
 
   useEffect(() => {
     fetchChefs();
   }, []);
+
+  const fetchChefs = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/chefs");
+      setChefs(response.data.content);
+      console.log(response.data.content)
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        console.log('Request was cancelled');
+        return;
+      }
+      showModal("Error", "Có lỗi khi tải danh sách đầu bếp", "Failed");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
+
 
   const renderChefItem = ({ item }) => (
     <TouchableOpacity
@@ -53,20 +61,24 @@ const AllChefs = () => {
         })
       }
     >
-      <Image
-        source={{
-          uri:
-            item.user.avatarUrl === "default"
-              ? "https://via.placeholder.com/80"
-              : item.user.avatarUrl,
-        }}
-        style={styles.chefAvatar}
-      />
+      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Image
+          source={{
+            uri:
+              item.user.avatarUrl === "default"
+                ? "https://via.placeholder.com/80"
+                : item.user.avatarUrl,
+          }}
+          style={styles.chefAvatar}
+        />
+        <Text>{item.averageRating}</Text>
+
+      </View>
+
       <View style={styles.chefInfo}>
         <Text style={styles.chefName}>{item.user.fullName}</Text>
         <Text style={styles.chefSpecialization}>
           {item.specialization || "Đầu bếp"}{" "}
-          {/* Fallback if specialization is null */}
         </Text>
         <Text style={styles.chefBio} numberOfLines={2}>
           {item.bio}
@@ -87,41 +99,26 @@ const AllChefs = () => {
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#e74c3c" />
-          <Text style={styles.loadingText}>Đang tải danh sách đầu bếp...</Text> 
-          {/* hiệu ứng loading */}
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchChefs}>
-            <Text style={styles.retryButtonText}>Thử lại</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
+    <SafeAreaView style={commonStyles.container}>
       <Header title={t("allChefs")} />
-      <FlatList
-        data={chefs}
-        renderItem={renderChefItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#A64B2A" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={chefs}
+          renderItem={renderChefItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            !loading ? (
+              <Text style={{ textAlign: 'center', marginTop: 20 }}>No data available</Text>
+            ) : null
+          }
+        />
+      )}
+
     </SafeAreaView>
   );
 };
@@ -147,7 +144,7 @@ const styles = StyleSheet.create({
   },
   chefCard: {
     flexDirection: "row",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,

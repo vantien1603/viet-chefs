@@ -15,7 +15,6 @@ const FirstRoute = () => (
           <Text style={{ color: 'white', fontSize: 12 }}>Noodle with Pork</Text>
         </View>
       </View>
-      {/* <View style={{ height: 1, backgroundColor: 'white', marginVertical: 10 }} /> */}
       <Text style={{ color: 'white', fontStyle: 'italic' }}>Anh Khoa</Text>
       <Text style={{ color: 'white' }}>8502 Preston Rd. Inglewood</Text>
       <Text style={{ color: 'white' }}>0123232133</Text>

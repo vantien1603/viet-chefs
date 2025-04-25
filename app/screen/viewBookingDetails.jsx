@@ -14,8 +14,8 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { MaterialIcons } from "@expo/vector-icons";
+import axios from "axios";
 
-// Hàm chuyển đổi thời gian từ object thành chuỗi
 const formatTime = (timeObj) => {
   if (!timeObj || typeof timeObj !== "object") return timeObj || "N/A";
   const { hour, minute, second } = timeObj;
@@ -38,12 +38,7 @@ const ViewBookingDetailsScreen = () => {
       console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
-      console.error("Error fetching booking details:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load booking details",
-      });
+      showModal("Error", "Failed to load booking details", "Failed");
     } finally {
       setLoading(false);
     }
@@ -58,37 +53,27 @@ const ViewBookingDetailsScreen = () => {
       const depositSuccessful = response.status === 200 || response.data?.status === "DEPOSITED";
 
       if (depositSuccessful) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Deposit successful",
-        });
+        showModal("Success", "Deposit successful", "Success");
         await fetchBookingDetails();
 
         const updatedDetails = bookingDetails.some((detail) => detail.status === "DEPOSITED");
         if (updatedDetails || depositSuccessful) {
           router.push("/(tabs)/home");
         } else {
-          Toast.show({
-            type: "info",
-            text1: "Info",
-            text2: "Deposit processed but status not updated yet. Please wait.",
-          });
+          showModal("Error", "Deposit processed but status not updated yet. Please wait...", "Failed");
+
         }
       } else {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Deposit failed. Please try again.",
-        });
+        showModal("Error", "Deposit failed. Please try again.", "Failed");
       }
     } catch (error) {
-      console.error("Error making deposit:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to process deposit",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Failed to process deposit", "Failed");
     } finally {
       setDepositLoading(false);
     }
@@ -102,10 +87,10 @@ const ViewBookingDetailsScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}>
+      <SafeAreaView style={[commonStyles.container]}>
         <Header title="Booking Details" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#A64B2A" />
+          <ActivityIndicator size="large" color="white" />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
@@ -114,7 +99,7 @@ const ViewBookingDetailsScreen = () => {
 
   if (!bookingDetails || bookingDetails.length === 0) {
     return (
-      <SafeAreaView style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}>
+      <SafeAreaView style={[commonStyles.container]}>
         <Header title="Booking Details" />
         <View style={styles.noDataContainer}>
           <MaterialIcons name="error-outline" size={40} color="#A64B2A" />
@@ -125,9 +110,9 @@ const ViewBookingDetailsScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}>
+    <SafeAreaView style={[commonStyles.containerContent]}>
       <Header title="Booking Details" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContent}>
         {bookingDetails.map((detail, index) => (
           <React.Fragment key={detail.id || index}>
             {/* Booking Information */}
@@ -159,8 +144,8 @@ const ViewBookingDetailsScreen = () => {
                         detail.status === "CONFIRMED" || detail.status === "DEPOSITED"
                           ? "#2ECC71"
                           : detail.status === "PENDING"
-                          ? "#A64B2A"
-                          : "#E74C3C",
+                            ? "#A64B2A"
+                            : "#E74C3C",
                     },
                   ]}
                 >
@@ -275,11 +260,11 @@ const ViewBookingDetailsScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: 16,
+    // padding: 16,
     paddingBottom: 100, // Đảm bảo nút Deposit không che nội dung
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
