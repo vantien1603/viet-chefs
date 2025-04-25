@@ -81,6 +81,8 @@ const EditProfile = () => {
 
   // Update profile
   const handleUpdateProfile = async () => {
+    if (isLoading) return; // Ngăn spam nút Lưu
+
     if (!name || !phone || !dob) {
       Toast.show({
         type: "error",
@@ -129,7 +131,7 @@ const EditProfile = () => {
         });
         setTimeout(() => {
           router.back();
-        }, 1500); // Increased delay to ensure toast is visible
+        }, 1500); // Delay để hiển thị toast
       }
     } catch (error) {
       console.error("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
@@ -159,7 +161,9 @@ const EditProfile = () => {
             style={styles.avatar}
           />
           <TouchableOpacity onPress={pickImage} disabled={isLoading}>
-            <Text style={[styles.changeImageText, isLoading && styles.disabledText]}>
+            <Text
+              style={[styles.changeImageText, isLoading && styles.disabledText]}
+            >
               Thay đổi ảnh
             </Text>
           </TouchableOpacity>
@@ -343,9 +347,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
+    flexDirection: "row", // Để căn giữa ActivityIndicator và text
+    justifyContent: "center",
   },
   saveButtonDisabled: {
     backgroundColor: "#AAA",
+    opacity: 0.7, // Làm mờ nút khi disabled
   },
   saveButtonText: {
     color: "#FFF",

@@ -261,12 +261,6 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
-                  name="screen/reviewFeedback"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
                   name="screen/reviewsChef"
                   options={{
                     headerShown: false,
@@ -395,6 +389,12 @@ export default function RootLayout() {
                 />
                 <Stack.Screen
                   name="screen/notification"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen 
+                  name="screen/statistic"
                   options={{
                     headerShown: false,
                   }}

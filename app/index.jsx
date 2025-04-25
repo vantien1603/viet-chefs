@@ -1,48 +1,16 @@
-import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
-import React, { useCallback, useContext, useEffect } from 'react';
-import { Redirect, router, useFocusEffect } from 'expo-router';
+import { View, Text, Image, TouchableOpacity, Alert, Platform } from 'react-native';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location'; // Import Expo Location
+import * as Location from 'expo-location';
 
-export default function WelcomeScreen() {
-  const navigation = useNavigation();
-  const { user } = useContext(AuthContext);
-
-  useEffect(() => {
-    const setupPermissions = async () => {
-      // Step 1: Check if permissions have already been requested
-      const hasRequestedPermissions = await AsyncStorage.getItem('hasRequestedPermissions');
-      if (hasRequestedPermissions === 'true') {
-        console.log('Permissions already requested, skipping prompts.');
-        return;
-      }
-
-      // Step 2: Setup Notifications
-      await setupNotifications();
-
-      // Step 3: Setup Location Permissions after Notifications
-      await setupLocationPermissions();
-
-      // Step 4: Set flag to avoid future prompts
-      await AsyncStorage.setItem('hasRequestedPermissions', 'true');
-    };
-
-    setupPermissions();
-  }, []);
-
-  const setupNotifications = async () => {
-    // Kiểm tra xem có phải thiết bị thật không
-    // if (!Device.isDevice) {
-    //   console.log('Must use physical device for Push Notifications');
-    //   return;
-    // }
-
-    // Yêu cầu quyền thông báo
+// Hàm đăng ký thông báo đẩy
+async function registerForPushNotificationsAsync() {
+  try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -53,85 +21,128 @@ export default function WelcomeScreen() {
 
     if (finalStatus !== 'granted') {
       Alert.alert('Failed to get push token for push notification!');
-      return;
+      return null;
     }
 
-    // Lấy token
     const token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('Expo Push Token:', token);
-    await AsyncStorage.setItem('expoPushToken', token);
+    return token;
+  } catch (error) {
+    console.error('Error registering for push notifications:', error);
+    return null;
+  }
+}
 
-    // Cấu hình xử lý thông báo khi app đang chạy
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
+export default function WelcomeScreen() {
+  const navigation = useNavigation();
+  const { user } = useContext(AuthContext);
 
-    // Lắng nghe thông báo khi app ở foreground
-    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-      Alert.alert(
-        'Thông báo nhận được!',
-        notification.request.content.body || 'Có thông báo mới'
-      );
-    });
+  // State và ref cho thông báo
+  const [expoPushToken, setExpoPushToken] = useState('');
+  const [channels, setChannels] = useState([]);
+  const [notification, setNotification] = useState();
+  const notificationListener = useRef();
+  const responseListener = useRef();
 
-    // Lắng nghe khi người dùng tương tác với thông báo
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification clicked:', response);
-    });
+  // Hàm thiết lập thông báo
+  const setupNotifications = async () => {
+    try {
+      // Đăng ký và lấy token
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        setExpoPushToken(token);
+        await AsyncStorage.setItem('expoPushToken', token);
+        console.log('Expo Push Token:', token);
+      }
 
-    // Cleanup
-    return () => {
-      foregroundSubscription.remove();
-      responseSubscription.remove();
-    };
+      // Lấy kênh thông báo cho Android
+      if (Platform.OS === 'android') {
+        const value = await Notifications.getNotificationChannelsAsync();
+        setChannels(value ?? []);
+      }
+
+      // Cấu hình xử lý thông báo
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+
+      // Làm sạch các subscription cũ
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+
+      // Lắng nghe thông báo khi app ở foreground
+      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        setNotification(notification);
+        Alert.alert(
+          'Thông báo nhận được!',
+          notification.request.content.body || 'Có thông báo mới'
+        );
+      });
+
+      // Lắng nghe khi người dùng tương tác với thông báo
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('Notification clicked:', response);
+      });
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      setupNotifications();
-    }, [user])
-  );
-
+  // Hàm thiết lập quyền vị trí
   const setupLocationPermissions = async () => {
-    // Yêu cầu quyền truy cập vị trí
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
     if (foregroundStatus !== 'granted') {
       Alert.alert(
         'Quyền truy cập vị trí bị từ chối',
-        'Ứng dụng cần quyền truy cập vị trí để hoạt động chính xác. Vui lòng cấp quyền trong cài đặt.'
+        'Ứng dụng cần quyền truy cập vị trí để hoạt động chính xác.'
       );
       return;
     }
-
-    // Optionally, request background location permissions if needed
-    // const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-    // if (backgroundStatus !== 'granted') {
-    //   Alert.alert(
-    //     'Quyền truy cập vị trí nền bị từ chối',
-    //     'Ứng dụng có thể cần quyền truy cập vị trí nền để cung cấp các tính năng tốt hơn.'
-    //   );
-    //   return;
-    // }
-
     console.log('Location permissions granted');
-    // Optionally, you can get the current location here if needed
-    // const location = await Location.getCurrentPositionAsync({});
-    // console.log('Current location:', location);
   };
+
+  // Thiết lập permissions khi ứng dụng khởi động
+  useEffect(() => {
+    const setupPermissions = async () => {
+      const hasRequestedPermissions = await AsyncStorage.getItem('hasRequestedPermissions');
+      if (hasRequestedPermissions !== 'true') {
+        await setupNotifications();
+        await setupLocationPermissions();
+        await AsyncStorage.setItem('hasRequestedPermissions', 'true');
+      }
+    };
+
+    setupPermissions();
+
+    // Cleanup khi component unmount
+    return () => {
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+    };
+  }, []);
+
+  // Làm mới thông báo khi user thay đổi
+  useEffect(() => {
+    if (user) {
+      setupNotifications(); // Làm mới token và subscription
+      navigation.navigate('(tabs)', { screen: 'home' });
+    }
+  }, [user]);
 
   const handleLogin = () => {
     router.push('screen/login');
   };
-
-  useEffect(() => {
-    if (user) {
-      navigation.navigate('(tabs)', { screen: 'home' });
-    }
-  }, [user]);
 
   return (
     <SafeAreaView

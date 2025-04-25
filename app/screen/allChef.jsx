@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,21 +16,37 @@ import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [favorites, setFavorites] = useState([]);
   const axiosInstance = useAxios();
 
-  // Fetch chefs from API
+  // Lấy danh sách yêu thích từ AsyncStorage khi khởi động
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const storedFavorites = await AsyncStorage.getItem("favorites");
+        if (storedFavorites) {
+          setFavorites(JSON.parse(storedFavorites));
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách yêu thích:", err);
+      }
+    };
+    loadFavorites();
+  }, []);
+
+  // Lấy danh sách đầu bếp từ API
   const fetchChefs = async () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get("/chefs");
       setChefs(response.data.content);
       setLoading(false);
-      console.log("chefs", response.data.content);
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -42,6 +59,24 @@ const AllChefs = () => {
   useEffect(() => {
     fetchChefs();
   }, []);
+
+  // Hàm xử lý thêm/xóa khỏi danh sách yêu thích
+  const toggleFavorite = async (chefId) => {
+    let updatedFavorites;
+    if (favorites.includes(chefId)) {
+      updatedFavorites = favorites.filter((id) => id !== chefId);
+      Alert.alert("Thông báo", "Đã xóa đầu bếp khỏi danh sách yêu thích!");
+    } else {
+      updatedFavorites = [...favorites, chefId];
+      Alert.alert("Thông báo", "Đã thêm đầu bếp vào danh sách yêu thích!");
+    }
+    setFavorites(updatedFavorites);
+    try {
+      await AsyncStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    } catch (err) {
+      console.error("Lỗi khi lưu danh sách yêu thích:", err);
+    }
+  };
 
   const renderChefItem = ({ item }) => (
     <TouchableOpacity
@@ -65,16 +100,15 @@ const AllChefs = () => {
       <View style={styles.chefInfo}>
         <Text style={styles.chefName}>{item.user.fullName}</Text>
         <Text style={styles.chefSpecialization}>
-          {item.specialization || "Đầu bếp"}{" "}
-          {/* Fallback if specialization is null */}
+          {item?.specialization}
         </Text>
         <Text style={styles.chefBio} numberOfLines={2}>
-          {item.bio}
+          {item?.bio}
         </Text>
         <View style={styles.chefMeta}>
           <Ionicons name="location-outline" size={16} color="#888" />
           <Text style={styles.chefAddress} numberOfLines={1}>
-            {item.address}
+            {item?.address}
           </Text>
         </View>
         <View style={styles.chefMeta}>
@@ -84,6 +118,17 @@ const AllChefs = () => {
           </Text>
         </View>
       </View>
+      {/* Biểu tượng yêu thích ở góc dưới bên trái */}
+      <TouchableOpacity
+        style={styles.favoriteIcon}
+        onPress={() => toggleFavorite(item.id)}
+      >
+        <Ionicons
+          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+          size={24}
+          color={favorites.includes(item.id) ? "#e74c3c" : "#888"}
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -92,8 +137,7 @@ const AllChefs = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#e74c3c" />
-          <Text style={styles.loadingText}>Đang tải danh sách đầu bếp...</Text> 
-          {/* hiệu ứng loading */}
+          <Text style={styles.loadingText}>Đang tải danh sách đầu bếp...</Text>
         </View>
       </SafeAreaView>
     );
@@ -143,7 +187,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16, // Consistent bottom padding
+    paddingBottom: 16,
   },
   chefCard: {
     flexDirection: "row",
@@ -155,7 +199,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2, // Android shadow
+    elevation: 2,
+    position: "relative", // Để sử dụng position absolute cho biểu tượng
   },
   chefAvatar: {
     width: 80,
@@ -200,6 +245,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
     marginLeft: 6,
+  },
+  favoriteIcon: {
+    position: "absolute",
+    bottom: 16, // Khoảng cách từ dưới lên
+    left: 16, // Khoảng cách từ bên trái
+    padding: 4, // Khu vực nhấn lớn hơn
   },
   loadingContainer: {
     flex: 1,

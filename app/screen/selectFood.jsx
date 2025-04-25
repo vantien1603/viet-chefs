@@ -41,15 +41,14 @@ const MenuCard = ({ item, isSelected, onSelect }) => (
     style={[
       styles.menuCard,
       {
-        borderWidth: 2,
-        borderColor: isSelected ? "#F8BF40" : "transparent",
+        borderColor: isSelected ? "#F8BF40" : "transparent", // Chỉ thay đổi màu viền
       },
     ]}
     onPress={onSelect}
   >
     <Image
       source={{
-        uri: item.imageUrl || "https://via.placeholder.com/80",
+        uri: item?.imageUrl,
       }}
       style={styles.menuImage}
       resizeMode="cover"
@@ -204,13 +203,6 @@ const SelectFood = () => {
     setDishNotes({});
   };
 
-  const handleAddNote = (id, text) => {
-    setDishNotes((prev) => ({
-      ...prev,
-      [id]: text,
-    }));
-  };
-
   const handleBack = () => {
     router.push({
       pathname: "/screen/chefDetail",
@@ -254,13 +246,11 @@ const SelectFood = () => {
       ? extraDishIds[item.id]
       : selectedDishes[item.id];
     return (
-      <View style={{ marginBottom: 12 }}>
-        <DishCard
-          item={item}
-          isSelected={isSelected}
-          onToggle={() => toggleDish(item.id)}
-        />
-      </View>
+      <DishCard
+        item={item}
+        isSelected={isSelected}
+        onToggle={() => toggleDish(item.id)}
+      />
     );
   };
 
@@ -282,7 +272,6 @@ const SelectFood = () => {
         horizontal
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderMenu}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
         ListEmptyComponent={
           <Text style={styles.emptyText}>{t("noMenuAvailable")}</Text>
         }
@@ -338,14 +327,22 @@ const styles = StyleSheet.create({
   menuCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    elevation: 3,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 12,
     marginRight: 16,
-    marginBottom: 12,
+    marginBottom: 50,
     width: 340,
-    overflow: "hidden",
+    height: 100,
+    borderWidth: 2, // Đặt borderWidth cố định
+    borderColor: "transparent", // Mặc định là trong suốt
+  },
+  menuImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: "#f0f0f0", // fallback nếu image không load
   },
   dishCard: {
     flexDirection: "row",
@@ -370,12 +367,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
     marginTop: 6,
   }),
-  menuImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    marginRight: 16,
-  },
   image: {
     width: 80,
     height: 80,

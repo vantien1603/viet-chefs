@@ -30,17 +30,6 @@ const ChefDetail = () => {
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
 
-  // Xử lý nút back vật lý/emulator
-  useEffect(() => {
-    const backAction = () => {
-      router.push("/(tabs)/home");
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
-    return () => backHandler.remove();
-  }, []);
-
   // Gộp API calls
   useEffect(() => {
     const fetchData = async () => {
@@ -53,17 +42,7 @@ const ChefDetail = () => {
         setDishes(dishesResponse.data.content);
         setChefs(chefResponse.data);
       } catch (error) {
-        let message = "Không thể tải dữ liệu";
-        if (error.code === "ECONNABORTED") {
-          message = "Hết thời gian chờ, vui lòng thử lại";
-        } else if (error.response) {
-          message = `Lỗi server: ${error.response.status}`;
-        }
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: message,
-        });
+        console.log("e", error);
       } finally {
         setIsLoading(false);
       }
@@ -100,7 +79,7 @@ const ChefDetail = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={t("chefInfo")} onLeftPress={handleBack} />
+      <Header title={t("chefInfo")} />
       <FlatList
         ListHeaderComponent={
           <>
@@ -123,12 +102,21 @@ const ChefDetail = () => {
                     />
                     <View style={styles.textContainer}>
                       <Text style={styles.name}>{chefs?.user?.fullName}</Text>
-                      <Text style={styles.specialty}>{chefs?.specialization}</Text>
+                      <Text style={styles.specialty}>
+                        {chefs?.specialization}
+                      </Text>
                       <View style={styles.starContainer}>
-                        {Array(5)
-                          .fill()
-                          .map((_, i) => (
-                            <Icon key={i} name="star" size={20} color="#f5a623" />
+                        {Array(5).fill().map((_, i) => (
+                            <Icon
+                              key={i}
+                              name="star"
+                              size={20}
+                              color={
+                                i < Math.floor(chefs?.averageRating || 0)
+                                  ? "#f5a623"
+                                  : "#ccc"
+                              }
+                            />
                           ))}
                       </View>
                     </View>
@@ -136,7 +124,10 @@ const ChefDetail = () => {
 
                   <View style={styles.section}>
                     <Text style={styles.label}>{t("bio")}:</Text>
-                    <Text style={styles.value} numberOfLines={expandedBio ? undefined : 3}>
+                    <Text
+                      style={styles.value}
+                      numberOfLines={expandedBio ? undefined : 3}
+                    >
                       {chefs?.bio || t("noInformation")}
                     </Text>
                     {chefs?.bio && chefs.bio.length > 100 && (
@@ -150,7 +141,10 @@ const ChefDetail = () => {
 
                   <View style={styles.section}>
                     <Text style={styles.label}>{t("description")}:</Text>
-                    <Text style={styles.value} numberOfLines={expandedDesc ? undefined : 3}>
+                    <Text
+                      style={styles.value}
+                      numberOfLines={expandedDesc ? undefined : 3}
+                    >
                       {chefs?.description || t("noInformation")}
                     </Text>
                     {chefs?.description && chefs.description.length > 100 && (
@@ -189,7 +183,9 @@ const ChefDetail = () => {
                         <Text style={styles.value}>{chefs?.country}</Text>
                       </View>
                       <View style={styles.section}>
-                        <Text style={styles.label}>{t("experienceYears")}:</Text>
+                        <Text style={styles.label}>
+                          {t("experienceYears")}:
+                        </Text>
                         <Text style={styles.value}>
                           {chefs?.yearsOfExperience || t("noInformation")}
                         </Text>
@@ -214,7 +210,10 @@ const ChefDetail = () => {
                   </TouchableOpacity>
 
                   <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.button} onPress={onOpenModal}>
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={onOpenModal}
+                    >
                       <Text style={styles.buttonText}>{t("bookNow")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity

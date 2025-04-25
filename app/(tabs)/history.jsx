@@ -62,7 +62,7 @@ const OrderHistories = () => {
     if (isLoading && !isRefresh) return;
     setIsLoading(true);
     try {
-      console.log("Fetching chef bookings with status:", status, "page:", page);
+      // console.log("Fetching chef bookings with status:", status, "page:", page);
       const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
         params: {
           status,
@@ -73,7 +73,7 @@ const OrderHistories = () => {
         },
       });
 
-      console.log("Chef bookings response:", response.data);
+      // console.log("Chef bookings response:", response.data);
       const bookingData = response.data.content || response.data || [];
       setBookings((prev) => {
         const newData = isRefresh ? bookingData : [...prev, ...bookingData];
@@ -144,56 +144,6 @@ const OrderHistories = () => {
     } finally {
       setIsLoading(false);
       if (isRefresh) setRefreshing(false);
-    }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      setLoading(true);
-      await axiosInstance.put(`/bookings/${id}/reject`);
-      showModal("Success", "Rejected successfully");
-      fetchRequestBooking(0, statusMap[routes[index].key], true);
-    } catch (error) {
-      showModal(
-        "Error",
-        "Failed to reject booking: " + (error.message || "Unknown error")
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAccept = async (id) => {
-    try {
-      setLoading(true);
-      await axiosInstance.put(`/bookings/${id}/confirm`);
-      showModal("Success", "Confirmed successfully");
-      fetchRequestBooking(0, statusMap[routes[index].key], true);
-    } catch (error) {
-      showModal(
-        "Error",
-        "Failed to confirm booking: " + (error.message || "Unknown error")
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePayment = async (id) => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.post(`/bookings/${id}/payment`);
-      if (response.status === 200) {
-        showModal("Success", "Payment successful");
-        fetchBookingDetails(0, statusMap[routes[index].key], true);
-      }
-    } catch (error) {
-      showModal(
-        "Error",
-        "Failed to process payment: " + (error.message || "Unknown error")
-      );
-    } finally {
-      setLoading(false);
     }
   };
 

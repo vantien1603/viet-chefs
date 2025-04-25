@@ -6,12 +6,17 @@ import {
   StyleSheet,
   Image,
   BackHandler,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
+import { AntDesign } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -29,7 +34,8 @@ const ReviewsChefScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const axiosInstance = useAxios();
   const PAGE_SIZE = 10;
-  const [totalItems, setTotalItems] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [sort, setSort] = useState("newest");
 
   useEffect(() => {
     const backAction = () => {
@@ -45,7 +51,7 @@ const ReviewsChefScreen = () => {
     return () => backHandler.remove();
   }, []);
 
-  const fetchReviewChef = async (page = 0) => {
+  const fetchReviewChef = async (page = 0, sortOption = sort) => {
     if (isLoading) return;
     setIsLoading(true);
     try {
@@ -53,19 +59,33 @@ const ReviewsChefScreen = () => {
         params: {
           pageNo: page,
           pageSize: PAGE_SIZE,
+          sort: sortOption,
         },
       });
       const data = response.data;
-      // Kiểm tra trùng lặp ID
       const ids = data.reviews.map((r) => r.id);
       const uniqueIds = new Set(ids);
       if (ids.length !== uniqueIds.size) {
         console.warn("Duplicate review IDs detected:", ids);
       }
+      // Load reactions from AsyncStorage for each review
+      const reviewsWithReactions = await Promise.all(
+        data.reviews.map(async (review) => {
+          const storedReaction = await AsyncStorage.getItem(
+            `@reaction_${review.id}`
+          );
+          return {
+            ...review,
+            reactionType: storedReaction || "not_helpful",
+          };
+        })
+      );
       setReviews((prev) => {
         const existingIds = new Set(prev.map((r) => r.id));
-        const newReviews = data.reviews.filter((r) => !existingIds.has(r.id));
-        return page === 0 ? data.reviews : [...prev, ...newReviews];
+        const newReviews = reviewsWithReactions.filter(
+          (r) => !existingIds.has(r.id)
+        );
+        return page === 0 ? reviewsWithReactions : [...prev, ...newReviews];
       });
       const calculatedAvg =
         data.reviews.length > 0
@@ -76,9 +96,15 @@ const ReviewsChefScreen = () => {
       setRatingDistribution(data.ratingDistribution || {});
       setTotalPages(data.totalPages || 1);
       setPageNo(page);
-      setTotalItems(data.totalItems || 0);
+      setTotalReviews(data.totalReviews || 0);
     } catch (error) {
       console.error("Error fetching reviews:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to fetch reviews",
+        visibilityTime: 4000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +117,40 @@ const ReviewsChefScreen = () => {
   const handleLoadMore = () => {
     if (pageNo < totalPages - 1 && !isLoading) {
       fetchReviewChef(pageNo + 1);
+    }
+  };
+
+  const handleSortChange = (sortOption) => {
+    if (isLoading) return;
+    setSort(sortOption);
+    setReviews([]);
+    setPageNo(0);
+    fetchReviewChef(0, sortOption);
+  };
+
+  const handleReaction = async (reviewId, currentReaction, setReaction) => {
+    const newReaction =
+      currentReaction === "helpful" ? "not_helpful" : "helpful";
+    try {
+      setReaction(newReaction);
+      await AsyncStorage.setItem(`@reaction_${reviewId}`, newReaction);
+      const response = await axiosInstance.post(
+        `/reviews/${reviewId}/reaction`,
+        {
+          reactionType: newReaction,
+        }
+      );
+      if (response.status === 200 || response.status === 201) {
+        const reaction =
+          response.data.reaction?.reactionType || newReaction;
+        await AsyncStorage.setItem(`@reaction_${reviewId}`, reaction);
+        setReaction(reaction);
+      }
+    } catch (error) {
+      console.log("Error updating reaction:", error);
+      // Revert UI and AsyncStorage on error
+      setReaction(currentReaction);
+      await AsyncStorage.setItem(`@reaction_${reviewId}`, currentReaction);
     }
   };
 
@@ -120,15 +180,19 @@ const ReviewsChefScreen = () => {
         <View style={styles.barContainer}>
           <View style={[styles.bar, { width: `${barWidth}%` }]} />
         </View>
+        <Text style={styles.reviewCount}>{count}</Text>
       </View>
     );
   };
 
-  const ReviewCard = ({ review, index }) => {
+  const ReviewCard = ({ review }) => {
+    const [reaction, setReaction] = useState(
+      review.reactionType || "not_helpful"
+    );
+
     const timeAgo = (date) => {
       const now = new Date();
-      const diff = Math.floor((now - new Date(date)) / 1000); // Difference in seconds
-
+      const diff = Math.floor((now - new Date(date)) / 1000);
       if (diff < 60) return `${diff} seconds ago`;
       if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
       if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
@@ -139,7 +203,9 @@ const ReviewsChefScreen = () => {
       <View style={styles.reviewCard}>
         <View style={styles.reviewHeader}>
           <Image
-            source={{ uri: "https://via.placeholder.com/50" }}
+            source={{
+              uri: review.userAvatar || "https://via.placeholder.com/50",
+            }}
             style={styles.userAvatar}
           />
           <View style={styles.userInfo}>
@@ -148,10 +214,18 @@ const ReviewsChefScreen = () => {
             </Text>
             <RatingStars rating={review.rating} />
           </View>
+          <TouchableOpacity
+            onPress={() => handleReaction(review.id, reaction, setReaction)}
+            style={styles.likeButton}
+          >
+            <AntDesign
+              name={reaction === "helpful" ? "like1" : "like2"}
+              size={20}
+              color={reaction === "helpful" ? "#A64B2A" : "#333"}
+            />
+          </TouchableOpacity>
         </View>
-
         <Text style={styles.reviewText}>{review.description}</Text>
-
         <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
       </View>
     );
@@ -161,6 +235,12 @@ const ReviewsChefScreen = () => {
     ...Object.values(ratingDistribution).map((count) => count),
     1
   );
+  const sortOptions = [
+    { label: "Newest", value: "newest" },
+    { label: "Oldest", value: "oldest" },
+    { label: "Highest Rating", value: "highest-rating" },
+    { label: "Lowest Rating", value: "lowest-rating" },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -184,8 +264,7 @@ const ReviewsChefScreen = () => {
             <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
             <RatingStars rating={Math.round(averageRating)} />
           </View>
-          <Text style={styles.totalItems}>{totalItems} reviews</Text>
-
+          <Text style={styles.totalItems}>{totalReviews} reviews</Text>
           <View style={styles.ratingDistribution}>
             {[5, 4, 3, 2, 1].map((rating) => (
               <RatingDistributionBar
@@ -197,14 +276,47 @@ const ReviewsChefScreen = () => {
             ))}
           </View>
         </View>
-
-        {reviews.length > 0 ? (
-          reviews.map((review, index) => (
-            <ReviewCard
-              key={`${review.id}-${index}`}
-              review={review}
-              index={index}
-            />
+        <View style={styles.sortContainer}>
+          <Text style={styles.sortLabel}>Sort by:</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.sortButtons}
+          >
+            {sortOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.sortButton,
+                  sort === option.value && styles.sortButtonActive,
+                  isLoading && styles.sortButtonDisabled,
+                ]}
+                onPress={() => handleSortChange(option.value)}
+                disabled={isLoading}
+              >
+                {isLoading && sort === option.value ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      sort === option.value && styles.sortButtonTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+        {isLoading && reviews.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#A64B2A" />
+          </View>
+        ) : reviews.length > 0 ? (
+          reviews.map((review) => (
+            <ReviewCard key={review.id} review={review} />
           ))
         ) : (
           <Text style={styles.noReviews}>No reviews yet for this chef</Text>
@@ -221,6 +333,46 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
+  },
+  sortContainer: {
+    marginBottom: 20,
+  },
+  sortLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  sortButtons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  sortButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    minWidth: 100,
+    alignItems: "center",
+  },
+  sortButtonActive: {
+    backgroundColor: "#A64B2A",
+    borderColor: "#A64B2A",
+  },
+  sortButtonDisabled: {
+    opacity: 0.7,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  sortButtonTextActive: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   summaryContainer: {
     backgroundColor: "#fff",
@@ -269,6 +421,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#e0e0e0",
     borderRadius: 4,
     overflow: "hidden",
+  },
+  reviewCount: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 10,
+    width: 30,
+    textAlign: "right",
   },
   bar: {
     height: "100%",
@@ -330,6 +489,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     textAlign: "center",
+  },
+  likeButton: {
+    padding: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
   },
 });
 
