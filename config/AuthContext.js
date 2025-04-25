@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
           console.log("refresh token1", refresh_token);
 
           const response = await axios.post(
-            "http://35.240.147.10/no-auth/refresh-token",
+            "https://vietchef.ddns.net/no-auth/refresh-token",
             {},
             {
               headers: {
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         expoToken: expoToken,
       };
       const response = await axios.post(
-        "http://35.240.147.10/no-auth/login",
+        "https://vietchef.ddns.net/no-auth/login",
         loginPayload
       );
       console.log(response);

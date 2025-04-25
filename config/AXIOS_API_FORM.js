@@ -8,7 +8,7 @@ const useAxiosFormData = () => {
 
   // Base configuration
   const config = {
-    baseURL: "http://35.240.147.10/api/v1",
+    baseURL: "https://vietchef.ddns.net/api/v1",
     headers: {
       "Content-Type": "application/json",
       ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),

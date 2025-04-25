@@ -60,8 +60,7 @@ export default function SearchScreen() {
           id: dish.id,
           name: dish.name,
           imageUrl: dish.imageUrl,
-        }))
-        .slice(0, 5);
+        }));
 
       const chefSuggestions = chefsResponse.data.content
         .map((chef) => ({
@@ -69,8 +68,7 @@ export default function SearchScreen() {
           id: chef.id,
           name: chef.user.fullName || chef.user.username,
           imageUrl: chef.user.avatarUrl,
-        }))
-        .slice(0, 5);
+        }));
 
       const combinedSuggestions = [...dishSuggestions, ...chefSuggestions];
       setSuggestions(combinedSuggestions);
@@ -249,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#4EA0B7",
+    borderBottomColor: "#CCCCCC",
     borderRadius: 10,
     marginBottom: 5,
   },

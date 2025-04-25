@@ -11,16 +11,17 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 
 const menuItems = [
   { id: "1", icon: "wallet", title: "VietPay" },
-  { id: "2", icon: "briefcase", title: "Create chef account" },
-  { id: "3", icon: "lock-closed", title: "Change password" },
-  { id: "4", icon: "settings", title: "Setting" },
+  { id: "2", icon: "lock-closed", title: "Change password" },
+  { id: "3", icon: "heart", title: "Favorite chef" },
+  { id: "4", icon: "briefcase", title: "Create chef account" },
+  { id: "5", icon: "settings", title: "Setting" },
 ];
 
 const Profile = () => {
@@ -30,21 +31,23 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const axiosInstance = useAxios();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const response = await axiosInstance.get("/users/profile");
-        setAvatar(response.data.avatarUrl || "");
-      } catch (error) {
-        console.log("Error fetching avatar:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProfile = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/users/profile");
+      setAvatar(response.data.avatarUrl || "");
+    } catch (error) {
+      console.log("Error fetching avatar:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProfile();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
 
   useEffect(() => {
     // Redirect to login if user is null after loading
@@ -59,12 +62,15 @@ const Profile = () => {
         router.push("/screen/wallet");
         break;
       case "2":
-        router.push("/screen/createChef");
-        break;
-      case "3":
         router.push("/screen/changePassword");
         break;
+      case "3":
+        router.push("/screen/favorite");
+        break;
       case "4":
+        router.push("/screen/createChef");
+        break;
+      case "5":
         router.push("/screen/setting");
         break;
       default:

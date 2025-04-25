@@ -19,12 +19,11 @@ import { Ionicons } from "@expo/vector-icons";
 import useActionCheckNetwork from "../../hooks/useAction";
 import { t } from "i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AXIOS_BASE from "../../config/AXIOS_BASE";
-import { WebView } from "react-native-webview";
 import axios from "axios";
-// import { parseString } from "react-native-xml2js";
 import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications";
+import WebView from "react-native-webview";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -33,31 +32,72 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [oauthUrl, setOauthUrl] = useState(null); // State để lưu URL OAuth
-  const [errorMessage, setErrorMessage] = useState(null); // State để hiển thị lỗi
+  const [oauthUrl, setOauthUrl] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const navigation = useNavigation();
   const { user, login, setUser, setIsGuest } = useContext(AuthContext);
   const requireNetwork = useActionCheckNetwork();
   const [expoToken, setExpoToken] = useState(null);
   const webViewRef = useRef(null);
 
-  // Lấy token từ AsyncStorage
-  useEffect(() => {
-    const getToken = async () => {
-      const token = await AsyncStorage.getItem("expoPushToken");
-      // console.log("✅ Token lấy từ AsyncStorage:", token);
+  // Lấy và làm mới Expo Push Token
+  const refreshExpoToken = async () => {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        console.log("Notification permissions not granted");
+        return null;
+      }
+
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      await AsyncStorage.setItem("expoPushToken", token);
       setExpoToken(token);
-    };
-    getToken();
+      return token;
+    } catch (error) {
+      console.error("Error refreshing Expo Push Token:", error);
+      return null;
+    }
+  };
+
+  // Lấy token khi component mount
+  useEffect(() => {
+    refreshExpoToken();
   }, []);
 
   // Chuyển hướng nếu đã đăng nhập
   useEffect(() => {
     if (user?.token) {
-      // console.log("Đã đăng nhập:", user);
       navigation.navigate("(tabs)", { screen: "home" });
     }
   }, [user]);
+
+  // Hàm gửi token đến máy chủ
+  const saveDeviceToken = async (email, token) => {
+    if (!email || !token) return;
+    try {
+      const encodedToken = encodeURIComponent(token);
+      await axios.put(
+        "https://vietchef.ddns.net/no-auth/save-device-token",
+        null,
+        {
+          params: {
+            email,
+            token: encodedToken,
+          },
+        }
+      );
+      console.log("Device token saved successfully");
+    } catch (error) {
+      console.error("Error saving device token:", error?.response?.data);
+    }
+  };
 
   // Hàm đăng nhập thông thường
   const handleLogin = async () => {
@@ -68,6 +108,8 @@ export default function LoginScreen() {
     setLoading(true);
     const result = await login(usernameOrEmail, password, expoToken);
     if (result === true) {
+      // Gửi token đến máy chủ sau khi đăng nhập
+      await saveDeviceToken(usernameOrEmail, expoToken);
       navigation.navigate("(tabs)", { screen: "home" });
     } else {
       setErrorMessage(t("checkAccountOrPassword"));
@@ -79,18 +121,17 @@ export default function LoginScreen() {
   const signinWithGoogle = async () => {
     try {
       setGoogleLoading(true);
-      // Gọi API /oauth-url với params provider=google
       const response = await axios.get(
-        "http://vietchef.ddns.net/no-auth/oauth-url",
+        "https://vietchef.ddns.net/no-auth/oauth-url",
         {
           params: { provider: "google" },
         }
       );
 
-      const url = response.data.url; // Giả sử API trả về URL trong response.data.url
+      const url = response.data.url;
       if (url) {
-        setOauthUrl(url); // Lưu URL để hiển thị trong WebView
-        setErrorMessage(null); // Xóa thông báo lỗi nếu có
+        setOauthUrl(url);
+        setErrorMessage(null);
       } else {
         setErrorMessage(t("failedToGetGoogleUrl"));
       }
@@ -105,13 +146,14 @@ export default function LoginScreen() {
   // Hàm đóng WebView
   const closeWebView = () => {
     setOauthUrl(null);
-    setErrorMessage(null); // Xóa thông báo lỗi khi đóng WebView
+    setErrorMessage(null);
   };
 
+  // Xử lý redirect từ Google OAuth
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
 
-    if (url.startsWith("http://vietchef.ddns.net/no-auth/oauth-redirect")) {
+    if (url.startsWith("https://vietchef.ddns.net/no-auth/oauth-redirect")) {
       const params = new URLSearchParams(url.split("?")[1]);
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
@@ -121,7 +163,6 @@ export default function LoginScreen() {
         SecureStore.setItemAsync("refreshToken", refresh_token);
 
         const decoded = jwtDecode(access_token);
-
         const decodedFullName = fullName
           ? decodeURIComponent(fullName)
           : "Unknown";
@@ -133,24 +174,10 @@ export default function LoginScreen() {
           ...decoded,
         });
 
-        const encodedToken = encodeURIComponent(expoToken);
-        try {
-          const sub = decoded?.sub;
-          if (sub && encodedToken) {
-            await axios.put(
-              "http://35.240.147.10/no-auth/save-device-token",
-              null,
-              {
-                params: {
-                  email: decoded?.sub,
-                  token: encodedToken,
-                },
-              }
-            );
-            console.log("Device token saved successfully");
-          }
-        } catch (error) {
-          console.error("Error saving device token:", error);
+        // Làm mới và gửi token đến máy chủ
+        const newToken = await refreshExpoToken();
+        if (newToken) {
+          await saveDeviceToken(decoded?.sub, newToken);
         }
 
         setOauthUrl(null);

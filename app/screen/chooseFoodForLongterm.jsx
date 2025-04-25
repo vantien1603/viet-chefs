@@ -303,7 +303,6 @@ const ChooseFoodForLongterm = () => {
       style={[
         styles.menuCard,
         {
-          borderWidth: 2,
           borderColor: selectedMenu === item.id ? "#F8BF40" : "transparent",
         },
       ]}
@@ -391,14 +390,15 @@ const styles = StyleSheet.create({
   menuCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    elevation: 3,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 12,
     marginRight: 16,
-    marginBottom: 12,
-    width: 360,
-    overflow: "hidden",
+    marginBottom: 50,
+    width: 340,
+    height: 100,
+    borderWidth: 2, // Đặt borderWidth cố định
+    borderColor: "transparent", // Mặc định là trong suốt
   },
   dishCard: {
     flexDirection: "row",
@@ -424,10 +424,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
   }),
   menuImage: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: 12,
-    marginRight: 16,
+    marginRight: 12,
+    backgroundColor: "#f0f0f0", // fallback nếu image không load
   },
   image: {
     width: 80,
