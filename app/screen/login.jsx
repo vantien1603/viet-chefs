@@ -40,35 +40,38 @@ export default function LoginScreen() {
   const [expoToken, setExpoToken] = useState(null);
   const webViewRef = useRef(null);
 
-  // Lấy và làm mới Expo Push Token
-  const refreshExpoToken = async () => {
+  // Lấy Expo Push Token từ AsyncStorage hoặc làm mới nếu cần
+  const getExpoToken = async () => {
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+      let token = await AsyncStorage.getItem("expoPushToken");
+      if (!token) {
+        const { status: existingStatus } =
+          await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
 
-      if (existingStatus !== "granted") {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+        if (existingStatus !== "granted") {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+
+        if (finalStatus !== "granted") {
+          console.log("Notification permissions not granted");
+          return null;
+        }
+
+        token = (await Notifications.getExpoPushTokenAsync()).data;
+        await AsyncStorage.setItem("expoPushToken", token);
       }
-
-      if (finalStatus !== "granted") {
-        console.log("Notification permissions not granted");
-        return null;
-      }
-
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
-      await AsyncStorage.setItem("expoPushToken", token);
       setExpoToken(token);
       return token;
     } catch (error) {
-      console.error("Error refreshing Expo Push Token:", error);
+      console.error("Error getting Expo Push Token:", error);
       return null;
     }
   };
 
-  // Lấy token khi component mount
   useEffect(() => {
-    refreshExpoToken();
+    getExpoToken();
   }, []);
 
   // Chuyển hướng nếu đã đăng nhập
@@ -108,8 +111,6 @@ export default function LoginScreen() {
     setLoading(true);
     const result = await login(usernameOrEmail, password, expoToken);
     if (result === true) {
-      // Gửi token đến máy chủ sau khi đăng nhập
-      await saveDeviceToken(usernameOrEmail, expoToken);
       navigation.navigate("(tabs)", { screen: "home" });
     } else {
       setErrorMessage(t("checkAccountOrPassword"));
@@ -117,7 +118,6 @@ export default function LoginScreen() {
     setLoading(false);
   };
 
-  // Hàm đăng nhập bằng Google
   const signinWithGoogle = async () => {
     try {
       setGoogleLoading(true);
@@ -143,13 +143,11 @@ export default function LoginScreen() {
     }
   };
 
-  // Hàm đóng WebView
   const closeWebView = () => {
     setOauthUrl(null);
     setErrorMessage(null);
   };
 
-  // Xử lý redirect từ Google OAuth
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
 
@@ -174,8 +172,7 @@ export default function LoginScreen() {
           ...decoded,
         });
 
-        // Làm mới và gửi token đến máy chủ
-        const newToken = await refreshExpoToken();
+        const newToken = await getExpoToken();
         if (newToken) {
           await saveDeviceToken(decoded?.sub, newToken);
         }
@@ -193,11 +190,14 @@ export default function LoginScreen() {
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <SafeAreaView style={{ flex: 1 }}>
         <Text style={commonStyles.subTitleText}>{t("loginToUse")}</Text>
-        <Image
-          source={require("../../assets/images/logo.png")}
-          style={{ width: 400, height: 250 }}
-          resizeMode="cover"
-        />
+        <View style={{ alignItems: "center" }}>
+          <Image
+            source={require("../../assets/images/logo.png")}
+            style={{ width: 400, height: 250 }}
+            resizeMode="cover"
+          />
+        </View>
+
         <Text style={commonStyles.titleText}>VIET CHEFS</Text>
         <TextInput
           style={commonStyles.input}
