@@ -163,7 +163,7 @@ const ReviewsChefScreen = () => {
             key={i}
             name={i < Math.round(rating) ? "star" : "star-outline"}
             size={14}
-            color={i < Math.round(rating) ? "#f5a623" : "#ccc"}
+            color={i < Math.round(rating) ? "#f5a623" : "#CCCCCC"}
             style={styles.star}
           />
         ))}
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     minWidth: 100,
     alignItems: "center",
   },
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     backgroundColor: "#EBE5DD",
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: "#CCCCCC",
   },
   reviewHeader: {
     flexDirection: "row",
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
   },
   userInfo: {
     flex: 1,

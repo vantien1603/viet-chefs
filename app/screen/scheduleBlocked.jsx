@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     },
     input: {
         borderBottomWidth: 1,
-        borderBottomColor: "#ccc",
+        borderBottomColor: "#CCCCCC",
         paddingVertical: 8,
         marginBottom: 8,
     },

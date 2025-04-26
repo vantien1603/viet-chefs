@@ -228,7 +228,7 @@ const CreateChefScreen = () => {
                 <Switch
                   value={hasCertificate === true}
                   onValueChange={(value) => setHasCertificate(value)}
-                  trackColor={{ false: "#ccc", true: "#A9411D" }}
+                  trackColor={{ false: "#CCCCCC", true: "#A9411D" }}
                   thumbColor={hasCertificate ? "#fff" : "#fff"}
                 />
               </View>

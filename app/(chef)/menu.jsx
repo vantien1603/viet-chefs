@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 10,
-    backgroundColor: "#CCC",
+    backgroundColor: "#CCCCCC",
   },
   detailsContainer: {
     flex: 1,
