@@ -24,31 +24,34 @@ const AllChefs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [favorites, setFavorites] = useState([]);
-  const [favoriteLoading, setFavoriteLoading] = useState({}); // Per-chef loading state
+  const [favoriteLoading, setFavoriteLoading] = useState({}); 
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
 
-  // Fetch list of chefs from API
-  const fetchChefs = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get("/chefs");
-      setChefs(response.data.content);
-      setLoading(false);
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        "Không thể tải danh sách đầu bếp. Vui lòng thử lại.";
-      setError(errorMessage);
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchChefs();
+    const fetchChefsAndFavorites = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get("/chefs");
+        setChefs(response.data.content);
+
+        const storedFavorites = await AsyncStorage.getItem("favorites");
+        if (storedFavorites) {
+          setFavorites(JSON.parse(storedFavorites));
+        }
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.message ||
+          "Không thể tải danh sách đầu bếp. Vui lòng thử lại.";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChefsAndFavorites();
   }, []);
 
-  // Handle adding/removing chef from favorites
   const toggleFavorite = async (chefId) => {
     if (!user?.userId) {
       Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm vào danh sách yêu thích.");
@@ -62,10 +65,10 @@ const AllChefs = () => {
       const isFavoriteResponse = await axiosInstance.get(
         `/favorite-chefs/${user.userId}/chefs/${chefId}`
       );
-      const isFavorite = isFavoriteResponse.data; // Boolean: true/false
+      const isFavorite = isFavoriteResponse.data;
+      console.log("cac", isFavorite);
 
       if (isFavorite) {
-        // Remove from favorites (DELETE request)
         await axiosInstance.delete(
           `/favorite-chefs/${user.userId}/chefs/${chefId}`
         );
@@ -92,8 +95,9 @@ const AllChefs = () => {
     } catch (err) {
       let errorMessage =
         err.response?.data?.message ||
-        `Lỗi khi ${favorites.includes(chefId) ? "xóa" : "thêm"} đầu bếp vào danh sách yêu thích.`;
-      // Alert.alert("Lỗi", errorMessage);
+        `Lỗi khi ${
+          favorites.includes(chefId) ? "xóa" : "thêm"
+        } đầu bếp vào danh sách yêu thích.`;
       console.log("Error toggling favorite:", errorMessage);
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
@@ -112,10 +116,7 @@ const AllChefs = () => {
     >
       <Image
         source={{
-          uri:
-            item.user.avatarUrl === "default"
-              ? "https://via.placeholder.com/80"
-              : item.user.avatarUrl,
+          uri: item.user?.avatarUrl,
         }}
         style={styles.chefAvatar}
       />

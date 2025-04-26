@@ -6,39 +6,103 @@ import {
   Text,
   View,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../components/header"; // Assuming this is your custom header component
-import { commonStyles } from "../../style"; // Common styles for your app
+import { Ionicons } from "@expo/vector-icons";
+import Header from "../../components/header";
+import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { t } from "i18next";
 
 const FavoriteScreen = () => {
   const axiosInstance = useAxios();
   const [favorites, setFavorites] = useState([]);
+  const [favoriteLoading, setFavoriteLoading] = useState({});
   const { user } = useContext(AuthContext);
 
+  // Fetch favorite chefs
   const fetchFavorite = async () => {
     try {
+      if (!user?.userId) {
+        setFavorites([]);
+        await AsyncStorage.removeItem("favorites");
+        return;
+      }
+      console.log("Fetching favorites for userId:", user.userId);
       const response = await axiosInstance.get(
         `/favorite-chefs/${user.userId}`
       );
-      setFavorites(response.data.content);
-      console.log("c", response.data.content);
+      const favoriteChefs = response.data.content;
+      setFavorites(favoriteChefs);
+      const chefIds = favoriteChefs.map((chef) => chef.chefId.toString());
+      await AsyncStorage.setItem("favorites", JSON.stringify(chefIds));
     } catch (error) {
-      console.log("err", error);
+      console.log("Error fetching favorites:", error.response?.data || error);
     }
   };
+
+  const handleRemoveFavorite = async (chefId) => {
+    if (!user?.userId) {
+      return;
+    }
+
+    const updatedFavorites = favorites.filter((chef) => chef.chefId !== chefId);
+    setFavorites(updatedFavorites);
+
+    setFavoriteLoading((prev) => ({ ...prev, [chefId]: true }));
+
+    try {
+      await axiosInstance.delete(
+        `/favorite-chefs/${user.userId}/chefs/${chefId}`
+      );
+
+      const storedFavorites = await AsyncStorage.getItem("favorites");
+      let favoriteIds = storedFavorites ? JSON.parse(storedFavorites) : [];
+      favoriteIds = favoriteIds.filter((id) => id !== chefId.toString());
+      await AsyncStorage.setItem("favorites", JSON.stringify(favoriteIds));
+
+      Alert.alert(t("success"), t("removedFromFavorites"));
+    } catch (error) {
+      console.log(
+        "Error removing favorite:",
+        error.response?.data?.message || error
+      );
+
+      // 4. Nếu lỗi -> rollback UI (thêm chef vừa xóa lại vào favorites)
+      setFavorites((prevFavorites) =>
+        [...prevFavorites, favorites.find((c) => c.chefId === chefId)].filter(
+          Boolean
+        )
+      );
+
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
+    }
+  };
+
   useEffect(() => {
     fetchFavorite();
   }, []);
+
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Favorite List" />
-      <ScrollView>
+      <Header title={t("favoriteList")} />
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         {favorites.length > 0 ? (
           favorites.map((chef) => (
-            <TouchableOpacity key={chef.id} style={styles.card}>
+            <View key={chef.chefId} style={styles.card}>
+              <TouchableOpacity
+                style={styles.favoriteIcon}
+                onPress={() => handleRemoveFavorite(chef.chefId)}
+                disabled={favoriteLoading[chef.chefId]}
+              >
+                <Ionicons name="heart" size={24} color="#e74c3c" />
+              </TouchableOpacity>
+
               <View style={styles.row}>
                 <Image
                   source={{ uri: chef?.chefAvatar }}
@@ -52,14 +116,15 @@ const FavoriteScreen = () => {
                   </Text>
                   <Text style={styles.address}>{chef.chefAddress}</Text>
                   <Text style={styles.createdAt}>
-                    Added on: {new Date(chef.createdAt).toLocaleDateString()}
+                    {t("addedOn")}:{" "}
+                    {new Date(chef.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
               </View>
-            </TouchableOpacity>
+            </View>
           ))
         ) : (
-          <Text style={styles.emptyText}>No favorite chefs yet!</Text>
+          <Text style={styles.emptyText}>{t("noFavoriteChefs")}</Text>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -67,6 +132,10 @@ const FavoriteScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -74,6 +143,7 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
     padding: 16,
     marginBottom: 16,
+    position: "relative",
   },
   row: {
     flexDirection: "row",
@@ -115,6 +185,12 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginTop: 20,
+  },
+  favoriteIcon: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    padding: 4,
   },
 });
 
