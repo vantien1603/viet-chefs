@@ -220,7 +220,7 @@ const LongTermBookingScreen = () => {
 
   const inputStyle = {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,

@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     borderRadius: 8,
     padding: 10,
     fontSize: 16,

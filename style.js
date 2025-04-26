@@ -50,8 +50,6 @@ export const commonStyles = StyleSheet.create({
   },
   input: {
     height: 50,
-    borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 10,
     marginBottom: 15,
     marginTop:10,
@@ -105,7 +103,7 @@ export const commonStyles = StyleSheet.create({
   },
   orText: {
     textAlign: 'center',
-    color: '#ccc',
+    color: '#CCCCCC',
     marginVertical: 20,
   },
   googleButton: {

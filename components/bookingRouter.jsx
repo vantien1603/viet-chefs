@@ -68,61 +68,60 @@ const useBookingCancellation = () => {
     }
   };
 
-  const handleCancelBooking = (bookingId, bookingType, onRefresh) => {
-    return new Promise((resolve, reject) => {
-      if (
-        !bookingType ||
-        !["SINGLE", "LONG_TERM"].includes(bookingType.toUpperCase())
-      ) {
-        console.error(
-          "Invalid bookingType:",
-          bookingType,
-          "for bookingId:",
-          bookingId
-        );
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Invalid booking type",
-          visibilityTime: 4000,
-        });
-        return reject(new Error("Invalid booking type"));
-      }
-
-      Alert.alert(
-        "Cancel Booking",
-        "Are you sure you want to cancel this booking?",
-        [
-          { text: "No", style: "cancel", onPress: () => resolve(false) },
-          {
-            text: "Yes",
-            onPress: async () => {
-              try {
-                if (bookingType === "SINGLE") {
-                  await handleCancel(bookingId, onRefresh);
-                } else if (bookingType === "LONG_TERM") {
-                  await handleCancelBookingLongterm(bookingId, onRefresh);
-                }
-                resolve(true);
-              } catch (error) {
-                Toast.show({
-                  type: "error",
-                  text1: "Error",
-                  text2: error.message,
-                  visibilityTime: 4000,
-                });
-                reject(error);
-              }
-            },
-          },
-        ]
+  const handleCancelBooking = async (bookingId, bookingType, onRefresh) => {
+    if (
+      !bookingType ||
+      !["SINGLE", "LONG_TERM"].includes(bookingType.toUpperCase())
+    ) {
+      console.error(
+        "Invalid bookingType:",
+        bookingType,
+        "for bookingId:",
+        bookingId
       );
-    });
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Invalid booking type",
+        visibilityTime: 4000,
+      });
+      return false;
+    }
+
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes",
+          onPress: async () => {
+            try {
+              if (bookingType === "SINGLE") {
+                await handleCancel(bookingId, onRefresh);
+              } else if (bookingType === "LONG_TERM") {
+                await handleCancelBookingLongterm(bookingId, onRefresh);
+              }
+              return true;
+            } catch (error) {
+              Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: error.message,
+                visibilityTime: 4000,
+              });
+              return false;
+            }
+          },
+        },
+      ]
+    );
   };
 
   return { handleCancelBooking };
 };
 
+// Rest of the BookingCard and BookingList components remain unchanged
 const BookingCard = ({
   booking,
   onCancel,

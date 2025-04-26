@@ -114,7 +114,7 @@ const ChefDetail = () => {
                               color={
                                 i < Math.floor(chefs?.averageRating || 0)
                                   ? "#f5a623"
-                                  : "#ccc"
+                                  : "#CCCCCC"
                               }
                             />
                           ))}

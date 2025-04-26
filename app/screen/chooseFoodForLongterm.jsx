@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: selected ? "#F8BF40" : "#fff",
     borderWidth: 2,
-    borderColor: selected ? "#F8BF40" : "#ccc",
+    borderColor: selected ? "#F8BF40" : "#CCCCCC",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,

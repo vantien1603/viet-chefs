@@ -134,18 +134,7 @@ const EditProfile = () => {
         }, 1500); // Delay để hiển thị toast
       }
     } catch (error) {
-      console.error("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
-      let message = "Có lỗi khi cập nhật hồ sơ. Vui lòng thử lại.";
-      if (error.code === "ECONNABORTED") {
-        message = "Kết nối quá chậm. Vui lòng kiểm tra mạng và thử lại.";
-      } else if (error.message === "Network Error") {
-        message = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.";
-      }
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: message,
-      });
+      console.log("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +146,7 @@ const EditProfile = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarContainer}>
           <Image
-            source={{ uri: avatar || "https://via.placeholder.com/100" }}
+            source={{ uri: avatar }}
             style={styles.avatar}
           />
           <TouchableOpacity onPress={pickImage} disabled={isLoading}>

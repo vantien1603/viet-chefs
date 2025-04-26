@@ -278,12 +278,6 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
-                  name="screen/historyBooking"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
                   name="screen/search"
                   options={{
                     headerShown: false,
