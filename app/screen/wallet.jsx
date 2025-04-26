@@ -59,7 +59,6 @@ const WalletScreen = () => {
         createdAt: tx.createdAt || new Date().toISOString(),
       }));
       setTransactions(formattedTransactions);
-
       setFilteredTransactions(formattedTransactions);
     } catch (error) {
       if (error.response?.status === 401) {
@@ -111,8 +110,27 @@ const WalletScreen = () => {
     router.push("/(tabs)/profile");
   };
 
+  // Calculate Expense and Income
+  // const calculateTotals = () => {
+  //   let expense = 0;
+  //   let income = 0;
+
+  //   transactions.forEach((tx) => {
+  //     if (["DEPOSIT", "REFUND"].includes(tx.transactionType)) {
+  //       income += tx.amount;
+  //     } else {
+  //       expense += tx.amount;
+  //     }
+  //   });
+
+  //   return { expense, income };
+  // };
+
   const handleStatistic = () => {
-    router.push("/screen/statistic");
+    router.push({
+      pathname: "/screen/statistic",
+      params: { transactions: JSON.stringify(transactions) }, 
+    });
   };
 
   const toggleShowBalance = () => {
@@ -136,7 +154,7 @@ const WalletScreen = () => {
       >
         <View style={styles.transactionIcon}>
           <Ionicons
-            name={isPositive ? "arrow-down-circle" : "arrow-up-circle"}
+            name={isPositive ? "arrow-up-circle" : "arrow-down-circle"}
             size={24}
             color={color}
           />

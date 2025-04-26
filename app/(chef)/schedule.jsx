@@ -132,24 +132,22 @@ const Schedule = () => {
         axiosInstance.get('/bookings/booking-details/chefs', {
           params: {
             status,
-            pageNo: page,
+            pageNo: pageNum,
             pageSize: PAGE_SIZE,
-            sortBy: 'id',
-            sortDir: 'asc',
+            sortBy: 'sessionDate',
+            sortDir: 'desc',
           },
         })
       );
 
       const response = await Promise.all(requests);
       const mergedData = response.flatMap(res => res.data?.content || []);
-      console.log('dq')
 
       // if (response.status === 200) {
       // const data = response.data.content || [];
       // setTotalPages(response.data.totalPages);
       const totalPages = Math.max(...response.map(res => res.data?.totalPages || 0));
       setTotalPages(totalPages);
-      console.log('d1')
 
       const categorizedSchedules = isRefresh
         ? dayInWeek.reduce((acc, day) => {
@@ -164,7 +162,6 @@ const Schedule = () => {
         const dayName = dayInWeek[dayOfWeekId].full;
         categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
       });
-      console.log('11')
 
       // mergedData.forEach((booking) => {
       //   const bookingDate = new Date(booking.sessionDate);
@@ -175,7 +172,6 @@ const Schedule = () => {
       //   categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
       //   // }
       // });
-      console.log('dq')
 
       setSchedules(categorizedSchedules);
       // }
@@ -183,7 +179,8 @@ const Schedule = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      // showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -226,7 +223,7 @@ const Schedule = () => {
 
     return (
       <ScheduleRender
-        bookings={sortedBookings}
+        bookings={pastBookings}
         onLoadMore={loadMoreData}
         refreshing={refresh}
         onRefresh={handleRefresh}

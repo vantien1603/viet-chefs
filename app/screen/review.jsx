@@ -79,10 +79,6 @@ const ReviewScreen = () => {
     }));
   };
 
-  const handleCommentChange = (criteriaId, comment) => {
-    setCriteriaComments((prev) => ({ ...prev, [criteriaId]: comment }));
-  };
-
   const handleSubmitReview = async () => {
     const hasAnyRating = Object.values(criteriaRatings).some(
       (rating) => rating > 0
@@ -99,11 +95,9 @@ const ReviewScreen = () => {
         chefId: parseInt(chefId),
         bookingId: parseInt(bookingId),
         description: description.trim() || "",
-        // overallExperience: overallExperience.trim() || "",
         mainImage: null,
         additionalImages: [],
         criteriaRatings: { ...criteriaRatings },
-        // criteriaComments: { ...criteriaComments },
       };
       console.log("Review Payload:", payload);
       const response = await axiosInstance.post("/reviews", payload);
@@ -149,14 +143,6 @@ const ReviewScreen = () => {
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* <Text style={styles.label}>Overall Experience</Text>
-        <TextInput
-          style={styles.input}
-          value={overallExperience}
-          onChangeText={setOverallExperience}
-          placeholder="Enter your overall experience (optional)"
-        /> */}
-
         <Text style={styles.label}>Rating Criteria</Text>
         {criteria.map((criterion) => (
           <View key={criterion.criteriaId} style={styles.criterionContainer}>
@@ -167,16 +153,6 @@ const ReviewScreen = () => {
                 rating={criteriaRatings[criterion.criteriaId] || 0}
               />
             </View>
-            {/* {criteriaRatings[criterion.criteriaId] > 0 && (
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Comment (optional)"
-                value={criteriaComments[criterion.criteriaId] || ""}
-                onChangeText={(text) =>
-                  handleCommentChange(criterion.criteriaId, text)
-                }
-              />
-            )} */}
           </View>
         ))}
         <Text style={styles.label}>Description</Text>

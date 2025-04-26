@@ -15,13 +15,16 @@ import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Checkbox } from "react-native-paper";
 import { Switch } from "react-native";
 import { AuthContext } from "../../config/AuthContext";
 import { ScrollView } from "react-native";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import useAxiosFormData from "../../config/AXIOS_API_FORM";
+import * as ImageManipulator from 'expo-image-manipulator';
 
 
 
@@ -34,6 +37,7 @@ const MenuDetails = () => {
 
     console.log(id);
 
+    const axiosInstanceForm = useAxiosFormData();
     const axiosInstance = useAxios();
     const modalizeRef = useRef(null);
     const [menu, setMenu] = useState({});
@@ -46,7 +50,7 @@ const MenuDetails = () => {
     const [selectedDishes, setSelectedDishes] = useState([]);
     const { showModal } = useCommonNoification();
     const router = useRouter();
-
+    const [image, setImage] = useState(null);
     useEffect(() => {
         fetchMenuDetails();
         fetchDishes();
@@ -107,8 +111,32 @@ const MenuDetails = () => {
                 menuItems: selectedDishPayload
             };
 
-            console.log("payload", payload);
-            const response = await axiosInstance.put(`/menus/${id}`, payload);
+            const formData = new FormData();
+            formData.append('name', editedMenu.name || menu.name);
+            formData.append('description', editedMenu.description || '');
+            formData.append('hasDiscount', editedMenu.hasDiscount);
+            formData.append('discountPercentage', editedMenu.discountPercentage || 0);
+            formData.append('totalCookTime', (editedMenu.totalCookTime || 0) / 60);
+
+            selectedDishPayload.forEach((item, index) => {
+                formData.append(`menuItems[${index}].dishId`, item.dishId);
+            });
+
+            if (image) {
+                const filename = image.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename || '');
+                const ext = match?.[1] || 'jpg';
+                const mimeType = `image/${ext}`;
+
+                formData.append('file', {
+                    uri: image,
+                    name: filename,
+                    type: mimeType,
+                });
+            }
+
+            // console.log("payload", payload);
+            const response = await axiosInstanceForm.put(`/menus/${id}`, formData);
             if (response.status === 200) {
                 showModal("Success", "Cập nhật menu hành công", "Success");
             }
@@ -116,6 +144,7 @@ const MenuDetails = () => {
             await fetchMenuDetails();
             setIsEditing(false);
         } catch (error) {
+            console.log(error.response.data)
             if (error.response?.status === 401) {
                 return;
             }
@@ -169,26 +198,80 @@ const MenuDetails = () => {
         }
     }
 
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 4],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            const resized = await ImageManipulator.manipulateAsync(
+                result.assets[0].uri,
+                [{ resize: { width: 800 } }],
+                { compress: 0.7 }
+            );
+            setImage(resized.uri);
+        }
+    };
+
     return (
         <GestureHandlerRootView>
             <SafeAreaView style={commonStyles.container}>
-                <Header title={!isEditing ? menu.name : "Edit Menu"} />
+                {/* <Header title={!isEditing ? menu.name : "Edit Menu"} /> */}
                 {loading ? (
                     <ActivityIndicator size="large" color="white" />
                 ) : (
                     <View style={commonStyles.containerContent}>
-
+                        <View style={styles.imageMenuContainer}>
+                            {isEditing ? (
+                                <TouchableOpacity onPress={() => pickImage()}>
+                                    <Image
+                                        source={image ? { uri: image } : { uri: editedMenu?.imageUrl }}
+                                        style={styles.menuImage}
+                                        resizeMode="cover"
+                                    />
+                                    <Feather
+                                        name="camera"
+                                        size={32}
+                                        color="white"
+                                        style={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: [{ translateX: -16 }, { translateY: -16 }],
+                                            opacity: 0.8,
+                                        }}
+                                    />
+                                </TouchableOpacity>
+                            ) : (
+                                <Image
+                                    source={{ uri: editedMenu?.imageUrl }}
+                                    style={styles.menuImage}
+                                    resizeMode="cover"
+                                />
+                            )}
+                            <TouchableOpacity
+                                style={styles.backButton}
+                                onPress={() => router.back()}
+                            >
+                                <Ionicons name="arrow-back" size={24} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
                         <View style={{ marginTop: 20 }}>
-                            {isEditing && (
+                            {isEditing ? (
                                 <TextInput
-                                    placeholder="Discount %"
+                                    placeholder="Menu name"
                                     value={editedMenu.name || ''}
                                     onChangeText={(text) =>
                                         setEditedMenu({ ...editedMenu, name: text || '' })
                                     }
-                                    keyboardType="numeric"
                                     style={commonStyles.input}
                                 />
+                            ) : (
+                                <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>{menu.name}</Text>
                             )}
                             {/* {renderPriceSection()} */}
                             {!isEditing ? (
@@ -205,7 +288,7 @@ const MenuDetails = () => {
                                 </Text>
                             ) : (
                                 <View>
-                                    <View style={styles.checkboxRow}>
+                                    <View style={[styles.checkboxRow, { gap: 10, }]}>
                                         <Text style={styles.itemContentLabel}>Has Discount:</Text>
                                         <Switch
                                             value={editedMenu.hasDiscount}
@@ -213,18 +296,19 @@ const MenuDetails = () => {
                                             trackColor={{ false: "#ccc", true: "#4caf50" }}
                                             thumbColor={editedMenu.hasDiscount ? "#fff" : "#f4f3f4"}
                                         />
+                                        {editedMenu.hasDiscount && (
+                                            <TextInput
+                                                placeholder="Discount %"
+                                                value={editedMenu.discountPercentage?.toString() || ''}
+                                                onChangeText={(text) =>
+                                                    setEditedMenu({ ...editedMenu, discountPercentage: parseFloat(text) || 0 })
+                                                }
+                                                keyboardType="numeric"
+                                                style={[commonStyles.input, { width: '30%', textAlign: 'center' }]}
+                                            />
+                                        )}
                                     </View>
-                                    {editedMenu.hasDiscount && (
-                                        <TextInput
-                                            placeholder="Discount %"
-                                            value={editedMenu.discountPercentage?.toString() || ''}
-                                            onChangeText={(text) =>
-                                                setEditedMenu({ ...editedMenu, discountPercentage: parseFloat(text) || 0 })
-                                            }
-                                            keyboardType="numeric"
-                                            style={commonStyles.input}
-                                        />
-                                    )}
+
                                 </View>
                             )}
 
@@ -306,8 +390,9 @@ const MenuDetails = () => {
                                     elevation: 5,
                                 }}
                                 onPress={() => handleUpdate()}
+                                disabled={loadingAction}
                             >
-                                {loading ? (
+                                {loadingAction ? (
                                     <ActivityIndicator size="small" color="white" />
                                 ) : (
                                     <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
@@ -388,6 +473,26 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         overflow: 'hidden',
         marginRight: 15,
+    },
+
+    imageMenuContainer: {
+        position: "relative",
+        marginBottom: 10
+    },
+    menuImage: {
+        width: "100%",
+        height: 250,
+        borderRadius: 20,
+        // borderBottomLeftRadius: 20,
+        // borderBottomRightRadius: 20,
+    },
+    backButton: {
+        position: "absolute",
+        top: 16,
+        left: 16,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        borderRadius: 20,
+        padding: 8,
     },
     image: {
         width: '100%',

@@ -13,7 +13,6 @@ import axios from 'axios'
 
 
 const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject, onCancel, onViewDetail }) => {
-  // console.log("renderrr", bookings);
   const renderItem = ({ item }) => {
     let sessionDateDisplay = '';
 
@@ -138,9 +137,6 @@ const Histories = () => {
   });
   const [loading, setLoading] = useState(false);
   const [refresh, setRefresh] = useState(false);
-  const [newBooking, setNewBooking] = useState([]);
-  const [confirmBooking, setConfirmBooking] = useState([]);
-  const [cancelBooking, setCancelBooking] = useState([]);
   const PAGE_SIZE = 10;
   const [totalPages, setTotalPages] = useState({
     PAID: 0,
@@ -173,9 +169,6 @@ const Histories = () => {
     if (loading && !isRefresh) return;
     setLoading(true);
     if (isRefresh == true) {
-      setNewBooking([]);
-      setConfirmBooking([]);
-      setCancelBooking([]);
     }
     try {
       const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
@@ -190,6 +183,7 @@ const Histories = () => {
 
       if (response.status === 200) {
         const bookingData = response.data.content || response.data || [];
+        console.log(bookingData.length)
         // setTotalPages(response.data.totalPages);
         setTotalPages(prev => ({
           ...prev,

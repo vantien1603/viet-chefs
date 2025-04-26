@@ -31,34 +31,36 @@ const CustomerSchedule = () => {
   ]);
 
   useEffect(() => {
-    const fetchBookingDetails = async () => {
-      setLoading(true);
-      if (isGuest) return;
-      try {
-        const response = await axiosInstance.get(
-          "/bookings/booking-details/user",
-          {
-            params: {
-              pageNo: 0,
-              pageSize: 1000,
-              sortBy: "sessionDate",
-              sortDir: "desc",
-            },
-          }
-        );
-        setBookingDetails(response.data.content);
-      } catch (error) {
-        if (axios.isCancel(error)) {
-          return;
-        }
-        showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
-      }
-      finally {
-        setLoading(false);
-      }
-    };
     fetchBookingDetails();
   }, []);
+
+  const fetchBookingDetails = async () => {
+    setLoading(true);
+    if (isGuest) return;
+    try {
+      const response = await axiosInstance.get(
+        "/bookings/booking-details/user",
+        {
+          params: {
+            pageNo: 0,
+            pageSize: 1000,
+            sortBy: "sessionDate",
+            sortDir: "desc",
+          },
+        }
+      );
+      setBookingDetails(response.data.content);
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
 
   const handlePressDetail = (id) => {
     router.push({

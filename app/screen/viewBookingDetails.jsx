@@ -34,8 +34,10 @@ const ViewBookingDetailsScreen = () => {
   const fetchBookingDetails = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/bookings/${bookingId}/booking-details`);
-      console.log("Booking details:", JSON.stringify(response.data, null, 2));
+      const response = await axiosInstance.get(
+        `/bookings/${bookingId}/booking-details`
+      );
+      // console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
       showModal("Error", "Failed to load booking details", "Failed");
@@ -47,16 +49,21 @@ const ViewBookingDetailsScreen = () => {
   const handleDeposit = async () => {
     setDepositLoading(true);
     try {
-      const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
-      console.log("Deposit response:", JSON.stringify(response.data, null, 2));
+      const response = await axiosInstance.post(
+        `/bookings/${bookingId}/deposit`
+      );
+      // console.log("Deposit response:", JSON.stringify(response.data, null, 2));
 
-      const depositSuccessful = response.status === 200 || response.data?.status === "DEPOSITED";
+      const depositSuccessful =
+        response.status === 200 || response.data?.status === "DEPOSITED";
 
       if (depositSuccessful) {
         showModal("Success", "Deposit successful", "Success");
         await fetchBookingDetails();
 
-        const updatedDetails = bookingDetails.some((detail) => detail.status === "DEPOSITED");
+        const updatedDetails = bookingDetails.some(
+          (detail) => detail.status === "DEPOSITED"
+        );
         if (updatedDetails || depositSuccessful) {
           router.push("/(tabs)/home");
         } else {
@@ -119,19 +126,29 @@ const ViewBookingDetailsScreen = () => {
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Booking Information</Text>
               <View style={styles.detailRow}>
-                <MaterialIcons name="calendar-today" size={18} color="#A64B2A" />
+                <MaterialIcons
+                  name="calendar-today"
+                  size={18}
+                  color="#A64B2A"
+                />
                 <Text style={styles.detailLabel}>Session Date:</Text>
-                <Text style={styles.detailValue}>{detail.sessionDate || "N/A"}</Text>
+                <Text style={styles.detailValue}>
+                  {detail.sessionDate || "N/A"}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <MaterialIcons name="access-time" size={18} color="#A64B2A" />
                 <Text style={styles.detailLabel}>Start Time:</Text>
-                <Text style={styles.detailValue}>{formatTime(detail.startTime)}</Text>
+                <Text style={styles.detailValue}>
+                  {formatTime(detail.startTime)}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <MaterialIcons name="location-on" size={18} color="#A64B2A" />
                 <Text style={styles.detailLabel}>Location:</Text>
-                <Text style={styles.detailValue}>{detail.location || "N/A"}</Text>
+                <Text style={styles.detailValue}>
+                  {detail.location || "N/A"}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <MaterialIcons name="info" size={18} color="#A64B2A" />
@@ -141,7 +158,8 @@ const ViewBookingDetailsScreen = () => {
                     styles.detailValue,
                     {
                       color:
-                        detail.status === "CONFIRMED" || detail.status === "DEPOSITED"
+                        detail.status === "CONFIRMED" ||
+                        detail.status === "DEPOSITED"
                           ? "#2ECC71"
                           : detail.status === "PENDING"
                             ? "#A64B2A"
@@ -155,7 +173,9 @@ const ViewBookingDetailsScreen = () => {
               <View style={styles.detailRow}>
                 <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
                 <Text style={styles.detailLabel}>Total Price:</Text>
-                <Text style={styles.detailValue}>${detail.totalPrice || 0}</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.totalPrice || 0}
+                </Text>
               </View>
             </View>
 
@@ -164,33 +184,47 @@ const ViewBookingDetailsScreen = () => {
               <Text style={styles.sectionTitle}>Fee Details</Text>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>- Chef Cooking Fee:</Text>
-                <Text style={styles.detailValue}>${detail.chefCookingFee || 0}</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.chefCookingFee || 0}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>- Price of Dishes:</Text>
-                <Text style={styles.detailValue}>${detail.priceOfDishes || 0}</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.priceOfDishes || 0}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>- Arrival Fee:</Text>
-                <Text style={styles.detailValue}>${detail.arrivalFee || 0}</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.arrivalFee || 0}
+                </Text>
               </View>
               {detail.chefServingFee !== undefined && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>- Chef Serving Fee:</Text>
-                  <Text style={styles.detailValue}>${detail.chefServingFee || 0}</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.chefServingFee || 0}
+                  </Text>
                 </View>
               )}
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Platform Fee:</Text>
-                <Text style={styles.detailValue}>${detail.platformFee || 0}</Text>
+                <Text style={styles.detailLabel}>- Applicable Fee:</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.platformFee || 0}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>- Total Chef Fee:</Text>
-                <Text style={styles.detailValue}>${detail.totalChefFeePrice || 0}</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.totalChefFeePrice || 0}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>- Discount Amount:</Text>
-                <Text style={styles.detailValue}>${detail.discountAmout || 0}</Text>
+                <Text style={styles.detailValue}>
+                  ${detail.discountAmout || 0}
+                </Text>
               </View>
             </View>
 
@@ -199,11 +233,15 @@ const ViewBookingDetailsScreen = () => {
               <Text style={styles.sectionTitle}>Schedule</Text>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Time Begin Cook:</Text>
-                <Text style={styles.detailValue}>{formatTime(detail.timeBeginCook)}</Text>
+                <Text style={styles.detailValue}>
+                  {formatTime(detail.timeBeginCook)}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Time Begin Travel:</Text>
-                <Text style={styles.detailValue}>{formatTime(detail.timeBeginTravel)}</Text>
+                <Text style={styles.detailValue}>
+                  {formatTime(detail.timeBeginTravel)}
+                </Text>
               </View>
             </View>
 
@@ -212,25 +250,29 @@ const ViewBookingDetailsScreen = () => {
               <Text style={styles.sectionTitle}>Dishes</Text>
               {!detail.dishes || detail.dishes.length === 0 ? (
                 <View style={styles.noDataContainer}>
-                  <Text style={[styles.detailValue, { color: "#A64B2A" }]}>No dishes selected</Text>
+                  <Text style={[styles.detailValue, { color: "#A64B2A" }]}>
+                    No dishes selected
+                  </Text>
                 </View>
               ) : (
                 detail.dishes.map((dishItem, dishIndex) => (
                   <View key={dishItem.id || dishIndex} style={styles.dishItem}>
-                    <View style={styles.dishRow}>
-                      <Text style={styles.detailLabel}>Dish Name:</Text>
-                      <Text style={styles.detailValue}>{dishItem.dish?.name || "N/A"}</Text>
-                    </View>
-                    {dishItem.notes && (
-                      <View style={[styles.dishRow, { marginLeft: 20 }]}>
-                        <Text style={styles.detailLabel}>Notes:</Text>
-                        <Text style={styles.detailValue}>{dishItem.notes}</Text>
-                      </View>
-                    )}
+                    <Text style={styles.detailValue}>
+                      - {dishItem.dish?.name || "N/A"}
+                      {dishItem.notes ? ` (${dishItem.notes})` : ""}
+                    </Text>
                   </View>
                 ))
               )}
             </View>
+            <View
+              style={{
+                borderColor: "#CCCCCC",
+                marginBottom: 15,
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+            />
           </React.Fragment>
         ))}
       </ScrollView>
@@ -238,7 +280,10 @@ const ViewBookingDetailsScreen = () => {
       {/* Nút Make Deposit */}
       {bookingType === "LONG_TERM" && (
         <TouchableOpacity
-          style={[styles.depositButton, depositLoading && styles.disabledButton]}
+          style={[
+            styles.depositButton,
+            depositLoading && styles.disabledButton,
+          ]}
           onPress={handleDeposit}
           disabled={depositLoading}
         >
@@ -301,9 +346,6 @@ const styles = StyleSheet.create({
   },
   dishItem: {
     paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E5E5",
-    marginTop: 8,
   },
   dishRow: {
     flexDirection: "row",

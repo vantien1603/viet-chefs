@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useSegments } from "expo-router";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useAxios from "../../config/AXIOS_API";
@@ -21,6 +21,9 @@ import { Tooltip } from "react-native-elements";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useCommonNoification } from "../../context/commonNoti";
 import { commonStyles } from "../../style";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
 
 
 const ChefDetail = () => {
@@ -34,24 +37,48 @@ const ChefDetail = () => {
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const navigation = useNavigation();
 
   useEffect(() => {
-    if (chefId) fetchData();
-  }, [chefId]);
+    // fetchData();
+    fetchDishes();
+    fetchChefById();
+  }, []);
+  const segments = useSegments();
+  
+  console.log("Current Segments:", segments);
+  // const fetchData = async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     const [dishesResponse, chefResponse] = await Promise.all([
+  //       axiosInstance.get(`/dishes?chefId=${chefId}`, { timeout: 5000 }),
+  //       axiosInstance.get(`/chefs/${chefId}`, { timeout: 5000 }),
+  //     ]);
+  //     setDishes(dishesResponse.data.content);
+  //     setChefs(chefResponse.data);
+  //   } catch (error) {
+  //     if (error.response?.status === 401) {
+  //       return;
+  //     }
+  //     if (axios.isCancel(error)) {
+  //       console.log("Yêu cầu đã bị huỷ do không có mạng.");
+  //       return;
+  //     }
+  //     showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const fetchData = async () => {
+  const fetchChefById = async () => {
+    if (!chefId) return;
     setIsLoading(true);
     try {
-      const [dishesResponse, chefResponse] = await Promise.all([
-        axiosInstance.get(`/dishes?chefId=${chefId}`, { timeout: 5000 }),
-        axiosInstance.get(`/chefs/${chefId}`, { timeout: 5000 }),
-      ]);
-      setDishes(dishesResponse.data.content);
-      setChefs(chefResponse.data);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        return;
+      const response = await axiosInstance.get(`/chefs/${chefId}`);
+      if (response.status === 200) {
+        setChefs(response.data);
       }
+    } catch (error) {
       if (axios.isCancel(error)) {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
@@ -62,52 +89,29 @@ const ChefDetail = () => {
     }
   };
 
-  // const fetchChefById = async () => {
-  //   if (!chefId) return;
-  //   setLoadingChef(true);
-  //   try {
-  //     const response = await axiosInstance.get(`/chefs/${chefId}`);
-  //     if (response.status === 200) {
-  //       setChefs(response.data);
-  //     }
-  //   } catch (error) {
-  //     if (axios.isCancel(error)) {
-  //       console.log("Yêu cầu đã bị huỷ do không có mạng.");
-  //       return;
-  //     }
-  //     showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
-  //   } finally {
-  //     setLoadingChef(false);
-  //   }
-  // };
+  const fetchDishes = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
+      if (response.status === 200) {
+        setDishes(response.data.content);
+      }
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        console.log("Yêu cầu đã bị huỷ do không có mạng.");
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
 
-  // const fetchDishes = async () => {
-  //   setLoadingDishes(true);
-  //   try {
-  //     const response = await axiosInstance.get("/dishes");
-  //     if (response.status === 200) {
-  //       setDishes(response.data.content);
-  //     }
-  //   } catch (error) {
-  //     if (axios.isCancel(error)) {
-  //       console.log("Yêu cầu đã bị huỷ do không có mạng.");
-  //       return;
-  //     }
-  //     showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
-
-  //   } finally {
-  //     setLoadingDishes(false);
-  //   }
-  // };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
 
   const onOpenModal = () => {
     modalizeRef.current?.open();
-  };
-
-  const handleBack = () => {
-    router.push("/(tabs)/home");
   };
 
   const toggleBio = () => setExpandedBio(!expandedBio);
@@ -124,7 +128,7 @@ const ChefDetail = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
-      <Header title={t("chefInfo")} onLeftPress={handleBack} />
+      <Header title={t("chefInfo")} />
       <FlatList
         ListHeaderComponent={
           <>
@@ -146,21 +150,45 @@ const ChefDetail = () => {
                       style={styles.avatar}
                     />
                     <View style={styles.textContainer}>
-                      <Text style={styles.name}>{chefs?.user?.fullName}</Text>
-                      <Text style={styles.specialty}>{chefs?.specialization}</Text>
+                      <View style={{ flexDirection: 'row' }}>
+                        <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                        <TouchableOpacity style={{ position: 'absolute', right: 10 }} onPress={() => navigation.navigate("screen/message", {
+                          contact: {
+                            id: chefs?.user?.id,
+                            name: chefs?.user?.fullName,
+                            avatar: chefs?.user?.avatarUrl
+                          }
+                        })}>
+                          <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text style={styles.specialty}>
+                        {chefs?.specialization}
+                      </Text>
                       <View style={styles.starContainer}>
-                        {Array(5)
-                          .fill()
-                          .map((_, i) => (
-                            <Icon key={i} name="star" size={20} color="#f5a623" />
-                          ))}
+                        {Array(5).fill().map((_, i) => (
+                          <Icon
+                            key={i}
+                            name="star"
+                            size={20}
+                            color={
+                              i < Math.floor(chefs?.averageRating || 0)
+                                ? "#f5a623"
+                                : "#ccc"
+                            }
+                          />
+                        ))}
                       </View>
                     </View>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>{t("bio")}:</Text>
-                    <Text style={styles.value} numberOfLines={expandedBio ? undefined : 3}>
+                    {/* <Text style={styles.label}>{t("bio")}:</Text> */}
+                    <Text
+                      style={styles.value}
+                      numberOfLines={expandedBio ? undefined : 3}
+                    >
                       {chefs?.bio || t("noInformation")}
                     </Text>
                     {chefs?.bio && chefs.bio.length > 100 && (
@@ -173,8 +201,11 @@ const ChefDetail = () => {
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>{t("description")}:</Text>
-                    <Text style={styles.value} numberOfLines={expandedDesc ? undefined : 3}>
+                    {/* <Text style={styles.label}>{t("description")}:</Text> */}
+                    <Text
+                      style={styles.value}
+                      numberOfLines={expandedDesc ? undefined : 3}
+                    >
                       {chefs?.description || t("noInformation")}
                     </Text>
                     {chefs?.description && chefs.description.length > 100 && (
@@ -213,7 +244,9 @@ const ChefDetail = () => {
                         <Text style={styles.value}>{chefs?.country}</Text>
                       </View>
                       <View style={styles.section}>
-                        <Text style={styles.label}>{t("experienceYears")}:</Text>
+                        <Text style={styles.label}>
+                          {t("experienceYears")}:
+                        </Text>
                         <Text style={styles.value}>
                           {chefs?.yearsOfExperience || t("noInformation")}
                         </Text>
@@ -238,7 +271,10 @@ const ChefDetail = () => {
                   </TouchableOpacity>
 
                   <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.button} onPress={onOpenModal}>
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={onOpenModal}
+                    >
                       <Text style={styles.buttonText}>{t("bookNow")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -391,7 +427,7 @@ const ChefDetail = () => {
 const styles = StyleSheet.create({
   profileContainer: {
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#F9F5F0",
     borderRadius: 16,
     // margin: 16,
     elevation: 3,

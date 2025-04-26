@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -17,6 +17,7 @@ import { commonStyles } from "../../style";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useConfirmModal } from "../../context/commonConfirm";
+import { AuthContext } from "../../config/AuthContext";
 
 
 const ChefMenu = () => {
@@ -28,6 +29,7 @@ const ChefMenu = () => {
   const { showModal } = useCommonNoification();
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
+  const { user } = useContext(AuthContext);
 
 
   useEffect(() => {
@@ -38,9 +40,10 @@ const ChefMenu = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get("/menus", {
-        params: { chefId: 1 },
+        params: { chefId: user?.chefId },
       });
       setMenus(response.data.content);
+      console.log(response.data.content)
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -153,39 +156,48 @@ const ChefMenu = () => {
                 //     id: item.id
                 //   }
                 // })
-                router.replace({
+                router.push({
                   pathname: "/screen/menuDetails",
                   params: { id: item.id },
                 });
               }
             }}
-            key={item.id}
+            // key={item.id}
             style={[styles.section, selectedMenus.includes(item.id) && styles.selectedCard]}
           >
-            <Text numberOfLines={1} ellipsizeMode="tail">
-              <Text style={styles.itemContentLabel}>Menu name: </Text>
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
-            </Text>
-            <Text numberOfLines={1} ellipsizeMode="tail">
-              <Text style={styles.itemContentLabel}>Description: </Text>
-              <Text style={styles.itemContent}>{item.description}</Text>
-            </Text>
-            <Text numberOfLines={2} ellipsizeMode="tail">
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              <Image source={{ uri: item.imageUrl }} style={{ width: 60, height: 60, borderRadius: 10 }} />
+              <View>
+                <Text numberOfLines={1} ellipsizeMode="tail">
+                  {/* <Text style={styles.itemContentLabel}>Menu name: </Text> */}
+                  <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
+                </Text>
+                <Text numberOfLines={1} ellipsizeMode="tail">
+                  {/* <Text style={styles.itemContentLabel}>Description: </Text> */}
+                  <Text style={styles.itemContent}>{item.description}</Text>
+                </Text>
+                <Text numberOfLines={1} ellipsizeMode="tail">
+                  <Text style={styles.itemContentLabel}>Price: </Text>
+                  {item.hasDiscount ? (
+                    <Text>
+                      <Text style={{ textDecorationLine: 'line-through', fontSize: 15 }}>${item.beforePrice}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold' }}>  ${item.afterPrice}</Text>
+                    </Text>) : (
+                    <Text style={styles.itemContent}>${item.afterPrice}</Text>
+                  )}
+                </Text>
+              </View>
+
+            </View>
+
+
+            <Text numberOfLines={2} ellipsizeMode="tail" style={{ marginLeft: 10 }}>
               <Text style={styles.itemContentLabel}>Dishes: </Text>
               {item.menuItems && item.menuItems.map((dish) => (
-                <Text key={dish.dishId} style={styles.itemContent}>{dish.dishName}, </Text>
+                <Text key={`${dish.dishId}_${item.id}`} style={styles.itemContent}>{dish.dishName}, </Text>
               ))}
             </Text>
-            <Text numberOfLines={1} ellipsizeMode="tail">
-              <Text style={styles.itemContentLabel}>Price: </Text>
-              {item.hasDiscount ? (
-                <Text>
-                  <Text style={{ textDecorationLine: 'line-through', fontSize: 15 }}>${item.beforePrice}</Text>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold' }}>  ${item.afterPrice}</Text>
-                </Text>) : (
-                <Text style={styles.itemContent}>${item.afterPrice}</Text>
-              )}
-            </Text>
+
           </TouchableOpacity>
         )}
       />

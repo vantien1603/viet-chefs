@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import { t } from "i18next";
 
@@ -27,13 +27,16 @@ const Profile = () => {
       case "1":
         router.push("/screen/wallet");
         break;
+      case "4":
+        router.push("/screen/changePassword");
+        break;
+      case "3":
+        router.push("/screen/favorite");
+        break;
       case "2":
         router.push("/screen/createChef");
         break;
-      case "3":
-        router.push("/screen/changePassword");
-        break;
-      case "4":
+      case "5":
         router.push("/screen/setting");
         break;
       default:
@@ -47,8 +50,9 @@ const Profile = () => {
   ] : [
     { id: "1", icon: "wallet", title: "VietPay" },
     { id: "2", icon: "briefcase", title: "Create chef account" },
-    { id: "3", icon: "lock-closed", title: "Change password" },
-    { id: "4", icon: "settings", title: "Setting" },
+    { id: "3", icon: "heart", title: "Favorite chef" },
+    { id: "4", icon: "lock-closed", title: "Change password" },
+    { id: "5", icon: "settings", title: "Setting" },
   ];;
   return (
     <ScrollView style={[commonStyles.container,]}>

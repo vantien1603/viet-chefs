@@ -8,6 +8,7 @@ import {
   ScrollView,
   SafeAreaView,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../../style";
 import { useRouter, useFocusEffect } from "expo-router"; // Thêm useFocusEffect
@@ -18,12 +19,11 @@ import { Feather } from "@expo/vector-icons";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
 import * as ImagePicker from "expo-image-picker";
-import { SceneMap, TabBar, TabView } from "react-native-tab-view";
+import { TabBar, TabView } from "react-native-tab-view";
 import axios from "axios";
 
 const ProfileDetail = () => {
   const [loading, setLoading] = useState();
-  const router = useRouter();
   const { user, setUser } = useContext(AuthContext);
   const axiosInstance = useAxios();
   const [data, setData] = useState({});
@@ -133,6 +133,7 @@ const ProfileDetail = () => {
   };
 
   const handleSaveProfile = async () => {
+    console.log("preaasdasd");
     setLoading(true);
     try {
       const formData = new FormData();
@@ -170,7 +171,9 @@ const ProfileDetail = () => {
       if (axios.isCancel(error)) {
         return;
       }
+      console.log("err", error.response.data)
       showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông tin cá nhân.", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -585,7 +588,11 @@ const ProfileDetail = () => {
                   width: '30%'
                 }}
                   onPress={() => handleSaveProfile()}>
-                  <Text style={styles.editButtonText}>Save</Text>
+                  {loading ? (
+                    <ActivityIndicator size={'small'} color={'white'} />
+                  ) : (
+                    <Text style={styles.editButtonText}>Save</Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity style={{
                   backgroundColor: "red",

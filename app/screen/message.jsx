@@ -194,11 +194,8 @@ const Message = () => {
                 <TouchableOpacity style={styles.iconContainer} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <View style={[styles.textContainer]}>
+                <View style={[styles.textContainer, { flex: 1 }]}>
                     <Text style={styles.title}>{contact.name}</Text>
-                </View>
-                <View>
-                    <Feather name="info" size={28} color="black" />
                 </View>
             </View>
             <FlatList

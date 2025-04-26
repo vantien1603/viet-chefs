@@ -8,13 +8,13 @@ import {
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useConfirmModal } from "../../context/commonConfirm";
@@ -31,9 +31,12 @@ const ChefDishes = () => {
     const { showModal } = useCommonNoification();
     const requireAuthAndNetWork = useRequireAuthAndNetwork();
     const { showConfirm } = useConfirmModal();
-    useEffect(() => {
-        fetchDishes();
-    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchDishes();
+        }, [])
+    );
 
     const fetchDishes = async () => {
         setLoading(true);

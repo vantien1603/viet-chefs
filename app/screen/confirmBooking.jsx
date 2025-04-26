@@ -43,7 +43,6 @@ const ConfirmBookingScreen = () => {
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
   const { showModal } = useCommonNoification();
 
-  console.log("in", chefBringIngredients);
 
   const menuDishes =
     selectedMenu?.menuItems?.map((item) => ({
@@ -198,7 +197,7 @@ const ConfirmBookingScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xử lí.", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }

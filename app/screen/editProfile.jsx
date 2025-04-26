@@ -87,6 +87,8 @@ const EditProfile = () => {
   };
 
   const handleUpdateProfile = async () => {
+    if (isLoading) return; // Ngăn spam nút Lưu
+
     if (!name || !phone || !dob) {
       showModal("Error", "Vui lòng điền đầy đủ thông tin bắt buộc!", "Failed")
 
@@ -439,9 +441,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
+    flexDirection: "row", // Để căn giữa ActivityIndicator và text
+    justifyContent: "center",
   },
   saveButtonDisabled: {
     backgroundColor: "#AAA",
+    opacity: 0.7, // Làm mờ nút khi disabled
   },
   saveButtonText: {
     color: "#FFF",

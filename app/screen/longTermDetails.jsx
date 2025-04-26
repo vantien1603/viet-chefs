@@ -32,14 +32,18 @@ const LongTermDetailsScreen = () => {
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const [bookingStatus, setBookingStatus] = useState(null);
+
   const fetchLongTermDetails = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(
         `/bookings/${bookingId}/payment-cycles`
       );
-      console.log("Payment cycles:", JSON.stringify(response.data, null, 2));
       setLongTermDetails(response.data || []);
+
+      const bookingResponse = await axiosInstance.get(`/bookings/${bookingId}`);
+      setBookingStatus(bookingResponse.data.status);
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -59,7 +63,6 @@ const LongTermDetailsScreen = () => {
       const response = await axiosInstance.post(
         `/bookings/payment-cycles/${paymentCycleId}/pay`
       );
-      console.log("Payment response:", JSON.stringify(response.data, null, 2));
 
       const paymentSuccessful =
         response.status === 200 || response.data?.status === "PAID";
@@ -91,102 +94,107 @@ const LongTermDetailsScreen = () => {
     }
   }, [bookingId]);
 
-  const renderCycleItem = (cycle) => (
-    <View key={cycle.id} style={styles.cycleCard}>
-      <Text style={styles.cycleTitle}>
-        {t("cycle")} {cycle.cycleOrder}
-      </Text>
-      <View style={styles.cycleHeader}>
-        <Text
-          style={[
-            styles.statusText,
-            {
-              color:
-                cycle.status === "PAID"
-                  ? "#2ECC71"
-                  : cycle.status === "PENDING"
-                    ? "#A64B2A"
-                    : "#E74C3C",
-            },
-          ]}
-        >
-          {formatStatus(cycle.status)}
+  const renderCycleItem = (cycle) => {
+    console.log(`Cycle ${cycle.id} status: ${cycle.status}`);
+    return (
+      <View key={cycle.id} style={styles.cycleCard}>
+        <Text style={styles.cycleTitle}>
+          {t("cycle")} {cycle.cycleOrder}
         </Text>
-        <Text style={styles.dateRange}>
-          {cycle.startDate} ~ {cycle.endDate}
-        </Text>
-      </View>
-
-      <View style={styles.cycleInfo}>
-        <Text style={styles.cycleInfoText}>
-          {t("amountDue")}: <Text style={styles.amount}>${cycle.amountDue}</Text>
-        </Text>
-      </View>
-
-      <View style={styles.bookingDetailsContainer}>
-        <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
-        {cycle.bookingDetails.map((detail) => (
-          <TouchableOpacity
-            key={detail.id}
-            style={styles.detailItem}
-            onPress={() =>
-              router.push({
-                pathname: "/screen/bookingDetails",
-                params: { bookingDetailId: detail.id, chefId },
-              })
-            }
+        <View style={styles.cycleHeader}>
+          <Text
+            style={[
+              styles.statusText,
+              {
+                color:
+                  cycle.status === "PAID"
+                    ? "#2ECC71"
+                    : cycle.status === "CONFIRMED" ||
+                      cycle.status === "PENDING_FIRST_CYCLE"
+                      ? "#A64B2A"
+                      : "#E74C3C",
+              },
+            ]}
           >
-            <View style={styles.detailHeader}>
-              <Text style={styles.detailText}>
-                {t("sessionDate")}: {detail.sessionDate}
-              </Text>
-              <Text
-                style={[
-                  styles.detailStatus,
-                  {
-                    color:
-                      detail.status === "CONFIRMED"
-                        ? "#2ECC71"
-                        : detail.status === "PENDING"
-                          ? "#A64B2A"
-                          : "#E74C3C",
-                  },
-                ]}
-              >
-                {formatStatus(detail.status)}
-              </Text>
-            </View>
-            <Text style={styles.detailText}>
-              {t("startTime")}: {detail.startTime}
-            </Text>
-            <Text style={styles.detailText}>
-              {t("location")}: {detail.location}
-            </Text>
-            <Text style={styles.detailTotal}>
-              {t("totalPrice")}: ${detail.totalPrice}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            {formatStatus(cycle.status)}
+          </Text>
+          <Text style={styles.dateRange}>
+            {cycle.startDate} ~ {cycle.endDate}
+          </Text>
+        </View>
 
-      {cycle.status === "PENDING" && (
-        <TouchableOpacity
-          style={[styles.paymentButton, loading && styles.disabledButton]}
-          onPress={() => handlePayment(cycle.id)}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <View style={styles.paymentButtonContent}>
-              <MaterialIcons name="payment" size={16} color="#FFF" />
-              <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
-            </View>
+        <View style={styles.cycleInfo}>
+          <Text style={styles.cycleInfoText}>
+            {t("amountDue")}:{" "}
+            <Text style={styles.amount}>${cycle.amountDue}</Text>
+          </Text>
+        </View>
+
+        <View style={styles.bookingDetailsContainer}>
+          <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
+          {cycle.bookingDetails.map((detail) => (
+            <TouchableOpacity
+              key={detail.id}
+              style={styles.detailItem}
+              onPress={() =>
+                router.push({
+                  pathname: "/screen/bookingDetails",
+                  params: { bookingDetailId: detail.id, chefId },
+                })
+              }
+            >
+              <View style={styles.detailHeader}>
+                <Text style={styles.detailText}>
+                  {t("sessionDate")}: {detail.sessionDate}
+                </Text>
+                <Text
+                  style={[
+                    styles.detailStatus,
+                    {
+                      color:
+                        detail.status === "CONFIRMED"
+                          ? "#2ECC71"
+                          : detail.status === "PENDING"
+                            ? "#A64B2A"
+                            : "#E74C3C",
+                    },
+                  ]}
+                >
+                  {formatStatus(detail.status)}
+                </Text>
+              </View>
+              <Text style={styles.detailText}>
+                {t("startTime")}: {detail.startTime}
+              </Text>
+              <Text style={styles.detailText}>
+                {t("location")}: {detail.location}
+              </Text>
+              <Text style={styles.detailTotal}>
+                {t("totalPrice")}: ${detail.totalPrice}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {(bookingStatus === "PENDING_FIRST_CYCLE" ||
+          bookingStatus === "CONFIRMED") && (
+            <TouchableOpacity
+              style={[styles.paymentButton, loading && styles.disabledButton]}
+              onPress={() => handlePayment(cycle.id)}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <View style={styles.paymentButtonContent}>
+                  <MaterialIcons name="payment" size={16} color="#FFF" />
+                  <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
@@ -203,7 +211,9 @@ const LongTermDetailsScreen = () => {
           ) : (
             <View style={styles.noDataContainer}>
               <MaterialIcons name="error-outline" size={36} color="#A64B2A" />
-              <Text style={styles.noDataText}>{t("noPaymentCyclesAvailable")}</Text>
+              <Text style={styles.noDataText}>
+                {t("noPaymentCyclesAvailable")}
+              </Text>
             </View>
           )}
         </ScrollView>

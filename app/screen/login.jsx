@@ -9,7 +9,6 @@ import { AuthContext } from "../../config/AuthContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { Ionicons } from '@expo/vector-icons';
-import useActionCheckNetwork from "../../hooks/useAction";
 import { t } from "i18next";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { WebView } from "react-native-webview";
@@ -17,12 +16,14 @@ import { Modal } from "react-native";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
+import useActionCheckNetwork from "../../hooks/useAction";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState(null);
   const navigation = useNavigation();
   const { user, login, loading, setUser, setIsGuest } = useContext(AuthContext);
   const modalRef = useRef(null);
@@ -31,7 +32,7 @@ export default function LoginScreen() {
   const webViewRef = useRef(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [oauthUrl, setOauthUrl] = useState(null);
-
+  const requireNetwork = useActionCheckNetwork();
   useEffect(() => {
     if (user?.token !== undefined && !hasNavigated && !loading) {
       if (user?.roleName === "ROLE_CHEF") {
@@ -46,6 +47,28 @@ export default function LoginScreen() {
   }, [user, hasNavigated, loading])
 
 
+  const saveDeviceToken = async (email, token) => {
+    if (!email || !token) return;
+    try {
+      const encodedToken = encodeURIComponent(token);
+      await axios.put(
+        "https://vietchef.ddns.net/no-auth/save-device-token",
+        null,
+        {
+          params: {
+            email,
+            token: encodedToken,
+          },
+        }
+      );
+      console.log("Device token saved successfully");
+    } catch (error) {
+      console.error("Error saving device token:", error?.response?.data);
+    }
+  };
+
+
+
   const handleLogin = async () => {
     if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
       modalRef.current.open();
@@ -54,18 +77,17 @@ export default function LoginScreen() {
     setLoadingA(true);
     const token = await SecureStore.getItemAsync('expoPushToken');
     const result = await login(usernameOrEmail, password, token);
-    if (result) {
+    if (result != null) {
       if (result?.roleName === "ROLE_CHEF") {
         navigation.navigate("(chef)", { screen: "home" })
       }
-    } else if (result?.roleName === "ROLE_CUSTOMER") {
-      navigation.navigate("(tabs)", { screen: "home" });
+      else if (result?.roleName === "ROLE_CUSTOMER") {
+        navigation.navigate("(tabs)", { screen: "home" });
+      }
+      console.log("roi voday")
     }
     else {
-      console.log("result", result)
-      if (axios.isCancel(error)) {
-        return;
-      }
+      console.log("roi xuong day1")
       if (modalRef.current) {
         modalRef.current.open();
       }
@@ -99,6 +121,7 @@ export default function LoginScreen() {
     setOauthUrl(null);
   };
 
+  // Xử lý redirect từ Google OAuth
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
 
@@ -107,18 +130,12 @@ export default function LoginScreen() {
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
       const fullName = params.get("full_name");
-      console.log('1');
       if (access_token && refresh_token) {
-        console.log('2');
         SecureStore.setItemAsync("refreshToken", refresh_token);
-        console.log('3');
         const decoded = jwtDecode(access_token);
-        console.log('4');
         const decodedFullName = fullName
           ? decodeURIComponent(fullName)
           : "Unknown";
-        console.log('5');
-
         setUser({
           fullName: decodedFullName,
           token: access_token,
@@ -129,25 +146,8 @@ export default function LoginScreen() {
 
         const encodedToken = encodeURIComponent(token);
 
-        try {
-          const sub = decoded?.sub;
-          if (sub && encodedToken) {
-            await axios.put(
-              "https://vietchef.ddns.net/no-auth/save-device-token",
-              null,
-              {
-                params: {
-                  email: decoded?.sub,
-                  token: encodedToken,
-                },
-              }
-            );
-            console.log("Device token saved successfully");
-          }
-        } catch (error) {
-          console.error("Error saving device token:", error);
-        }
-        console.log('qqqq');
+        await saveDeviceToken(decoded?.sub, newToken);
+
         setOauthUrl(null);
         setIsGuest(false);
         navigation.navigate("(tabs)", { screen: "home" });
@@ -196,7 +196,7 @@ export default function LoginScreen() {
         </View>
         <View style={{ alignItems: "center" }}>
           <TouchableOpacity
-            onPress={() => handleLogin()}
+            onPress={() => requireNetwork(() => handleLogin())}
             style={{
               padding: 13,
               marginTop: 10,
@@ -206,6 +206,7 @@ export default function LoginScreen() {
               borderRadius: 50,
               width: 300,
             }}
+            disabled={loadingA}
           >
             {loadingA ? (
               <ActivityIndicator size="large" color="#fff" />
@@ -218,7 +219,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => signinWithGoogle()}
+            onPress={() => requireNetwork(() => signinWithGoogle())}
             style={{
               padding: 13,
               marginTop: 10,

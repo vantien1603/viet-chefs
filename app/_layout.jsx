@@ -452,6 +452,24 @@ export default function RootLayout() {
                         headerShown: false,
                       }}
                     />
+                    <Stack.Screen
+                      name="screen/search"
+                      options={{
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="screen/completeBooking"
+                      options={{
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="screen/menuDetails"
+                      options={{
+                        headerShown: false,
+                      }}
+                    />
                   </Stack>
                 </ConfirmModalProvider>
               </ModalNotiProvider>

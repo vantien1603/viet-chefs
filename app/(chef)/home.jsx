@@ -74,10 +74,15 @@ const Home = () => {
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.profileContainer}>
                         <Image
-                            source={require("../../assets/images/logo.png")}
+                            source={
+                                user?.avatarUrl
+                                    ? { uri: user.avatarUrl }
+                                    : require("../../assets/images/logo.png")
+                            }
                             style={styles.profileImage}
                             resizeMode="cover"
                         />
+
                         <View style={styles.greetingContainer}>
                             <Text style={styles.greetingText}>Welcome back,</Text>
                             <Text style={styles.userName}>{user?.fullName || 'Chef'} </Text>

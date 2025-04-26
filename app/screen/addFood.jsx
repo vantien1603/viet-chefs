@@ -7,36 +7,36 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  TextInput
 } from "react-native";
-import { TextInput, Button, RadioButton } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Dropdown } from "react-native-element-dropdown";
+import { Dropdown, MultiSelect } from "react-native-element-dropdown";
 import Header from "../../components/header";
-import Toast from "react-native-toast-message";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AXIOS_API from "../../config/AXIOS_API";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import { AuthContext } from "../../config/AuthContext";
 import axios from "axios";
+import useAxiosFormData from "../../config/AXIOS_API_FORM";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const AddNewFoodScreen = () => {
   const [foodName, setFoodName] = useState("");
   const [image, setImage] = useState(null);
   const [details, setDetails] = useState("");
   const [cookTime, setCookTime] = useState("");
-  const [type, setType] = useState("");
+  const [selectedFoodTypeIds, setSelectedFoodTypeIds] = useState([]);
   const [cuisineType, setCuisineType] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [estimatedCookGroup, setEstimatedCookGroup] = useState("");
   const [errors, setErrors] = useState({});
-  const [dishes, setDishes] = useState([]);
   const [foodTypes, setFoodTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
+  const axiosInstanceForm = useAxiosFormData();
+  const { showModal } = useCommonNoification();
   const { user } = useContext(AuthContext);
   const cookGroups = [
     { label: "1. Nấu riêng", value: "1" },
@@ -94,6 +94,7 @@ const AddNewFoodScreen = () => {
 
   useEffect(() => {
     const fetchFoodTypes = async () => {
+      setLoading(true);
       try {
         const response = await axiosInstance.get("/food-types");
         const formattedFoodTypes = response.data.map((item) => ({
@@ -109,6 +110,8 @@ const AddNewFoodScreen = () => {
           return;
         }
         showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu loại món ăn.", "Failed");
+      } finally {
+        setLoading(false)
       }
     };
     fetchFoodTypes();
@@ -120,14 +123,13 @@ const AddNewFoodScreen = () => {
     if (!cookTime.trim()) newError.cookTime = "Cook Time is required";
     if (!details.trim()) newError.details = "Details is required";
     if (!estimatedCookGroup) newError.estimatedCookGroup = "Estimate Cook Group is required";
-    if (!type) newError.type = "Food Type is required";
+    if (selectedFoodTypeIds.length === 0) newError.type = "Food Type is required";
     if (!cuisineType) newError.cuisineType = "Cuisine Type is required";
     if (!basePrice.trim()) newError.basePrice = "Base Price is required";
 
     if (Object.keys(newError).length > 0) {
       setErrors(newError);
       showModal("Error", `Please fill in all the required fields`, "Failed");
-
       return;
     }
 
@@ -136,11 +138,11 @@ const AddNewFoodScreen = () => {
     formData.append("description", details);
     formData.append("cookTime", cookTime);
     formData.append("estimatedCookGroup", estimatedCookGroup);
-    formData.append("foodTypeId", type);
+    formData.append("foodTypeIds", selectedFoodTypeIds);
     formData.append("cuisineType", cuisineType);
     formData.append("serviceType", "Home Cooking");
     formData.append("basePrice", basePrice);
-    formData.append("chefId", user?.chefId);
+    formData.append("chefId", parseInt(user?.chefId));
 
     if (image) {
       const filename = image.split("/").pop();
@@ -153,13 +155,13 @@ const AddNewFoodScreen = () => {
         type,
       });
     }
-
+    setLoading(true);
     try {
-      const response = await axiosInstance.post("/dishes", formData);
-
-      if (response.status === 201) {
-        showModal("Success", "Added chef successfully", "Success");
-
+      console.log(formData);
+      const response = await axiosInstanceForm.post("/dishes", formData);
+      console.log("tao toa")
+      if (response.status === 201 || response.status === 200) {
+        showModal("Success", "Added new dish successfully", "Success");
         setTimeout(() => {
           router.back();
         }, 1000);
@@ -168,12 +170,11 @@ const AddNewFoodScreen = () => {
         setImage(null);
         setDetails("");
         setCookTime("");
-        setType("");
+        setSelectedFoodTypeIds([]);
         setCuisineType("");
         setBasePrice("");
         setEstimatedCookGroup("");
         setErrors({});
-        setDishes((prev) => [...prev, response.data]);
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -183,6 +184,8 @@ const AddNewFoodScreen = () => {
         return;
       }
       showModal("Error", "Failed to add food. Please try again.", "Failed");
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -242,27 +245,47 @@ const AddNewFoodScreen = () => {
         />
 
         <Text style={styles.label}>Food type</Text>
-        <Dropdown
-          style={[commonStyles.input, errors.type && styles.inputError]}
+        <MultiSelect
+          disable={loading}
+          style={[styles.dropdown, errors.type && styles.inputError]}
+          placeholder="Select Food Types"
           data={foodTypes}
           labelField="label"
           valueField="value"
-          placeholder="Select a food type"
-          value={type}
-          onChange={(item) => setType(item.value)}
-          renderRightIcon={() => (
-            <MaterialIcons name="arrow-drop-down" size={24} color="#555" />
-          )}
-          selectedTextStyle={styles.selectedTextStyle}
-          placeholderStyle={styles.placeholderStyle}
-          containerStyle={styles.dropdownMenu}
-          itemTextStyle={styles.itemTextStyle}
-          disabled={loading}
+          value={Array.isArray(selectedFoodTypeIds) ? selectedFoodTypeIds : []}
+          onChange={(selectedIds) => {
+            const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
+            setSelectedFoodTypeIds(safeSelectedIds);
+            setSelectedFoodTypeIds(prev => safeSelectedIds);
+          }}
+          renderItem={(item) => {
+            const isSelected = Array.isArray(selectedFoodTypeIds) && selectedFoodTypeIds.includes(item.value);
+            return (
+              <View style={{
+                padding: 10,
+                backgroundColor: isSelected ? '#F9F5F0' : 'white',
+                borderWidth: 2,
+                borderRadius: 6,
+                borderColor: isSelected ? '#F8BF40' : 'transparent',
+                flexDirection: 'row',
+                alignItems: 'center'
+              }}>
+                <Text style={{ color: 'black' }}>{item.label}</Text>
+              </View>
+            );
+          }}
+          selectedStyle={{
+            backgroundColor: '#f5f5f5',
+            borderRadius: 10,
+            color: 'black'
+          }}
         />
+
+
 
         <Text style={styles.label}>Cuisine type</Text>
         <Dropdown
-          style={[commonStyles.input, errors.cuisineType && styles.inputError]}
+          style={[styles.dropdown, errors.cuisineType && styles.inputError]}
           data={cuisineTypes}
           labelField="label"
           valueField="value"
@@ -281,7 +304,7 @@ const AddNewFoodScreen = () => {
 
         <Text style={styles.label}>Estimated cook group</Text>
         <Dropdown
-          style={[commonStyles.input, errors.estimatedCookGroup && styles.inputError]}
+          style={[styles.dropdown, errors.estimatedCookGroup && styles.inputError]}
           data={cookGroups}
           labelField="label"
           valueField="value"
@@ -305,7 +328,7 @@ const AddNewFoodScreen = () => {
           placeholder="Add details"
           multiline
           numberOfLines={4}
-          style={[styles.input, styles.textArea, errors.details && styles.inputError]}
+          style={[styles.textArea, errors.details && styles.inputError]}
           disabled={loading}
         />
 
@@ -320,7 +343,7 @@ const AddNewFoodScreen = () => {
         />
       </ScrollView>
       <TouchableOpacity
-        onPress={handleSave}
+        onPress={() => handleSave()}
         disabled={loading}
         style={{
           position: "absolute",
@@ -361,22 +384,42 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 12,
   },
-  input: {
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#D1C7BC",
+  dropdown: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
     paddingHorizontal: 12,
-    backgroundColor: "#FFF8EF",
+    paddingVertical: 10,
+    // marginLeft: 10,
+    flex: 1,
+  },
+  input: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    // paddingVertical: 8,
+    paddingHorizontal: 12,
     fontSize: 15,
-    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    flex: 1,
+    color: '#333',
   },
   inputError: {
     borderColor: "red",
   },
   textArea: {
-    minHeight: 100,
-    textAlignVertical: "top",
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#333',
+    minHeight: 120,
+    textAlignVertical: 'top',
+    marginBottom: 10,
   },
   errorText: {
     color: "red",

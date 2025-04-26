@@ -12,11 +12,11 @@ import {
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
-import useAxios from "../config/AXIOS_API"; // Import useAxios
+import useAxios from "../config/AXIOS_API";
 
 // Custom hook for cancellation logic
 const useBookingCancellation = () => {
-  const axiosInstance = useAxios(); // Use useAxios inside hook
+  const axiosInstance = useAxios();
 
   const handleCancel = async (bookingId, onRefresh) => {
     try {
@@ -70,7 +70,6 @@ const useBookingCancellation = () => {
 
   const handleCancelBooking = (bookingId, bookingType, onRefresh) => {
     return new Promise((resolve, reject) => {
-      // Validate bookingType
       if (
         !bookingType ||
         !["SINGLE", "LONG_TERM"].includes(bookingType.toUpperCase())
@@ -132,25 +131,20 @@ const BookingCard = ({
   onViewReview,
   refreshing,
   reviewed,
-  onPayment,
 }) => {
   const isSingleBooking = booking.bookingType === "SINGLE";
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
 
-
   useEffect(() => {
-    if (
-      !["PENDING", "PENDING_FIRST_CYCLE"].includes(status) ||
-      !booking.createdAt
-    ) {
+    if (status !== "PENDING" || !booking.createdAt) {
       return;
     }
 
     const calculateTimeRemaining = () => {
       const createdAt = new Date(booking.createdAt).getTime();
-      const expirationTime = createdAt + 60 * 60 * 1000;
+      const expirationTime = createdAt + 60 * 60 * 1000; // 1 hour from createdAt
       const currentTime = new Date().getTime();
       const timeDiff = expirationTime - currentTime;
 
@@ -213,22 +207,6 @@ const BookingCard = ({
 
   const renderButtons = () => {
     const buttons = [];
-
-    if (
-      ["PENDING", "PENDING_FIRST_CYCLE"].includes(status) &&
-      booking.bookingType === "LONG_TERM" &&
-      onPayment
-    ) {
-      buttons.push(
-        <TouchableOpacity
-          key="payment"
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => onPayment(booking.id)}
-        >
-          <Text style={styles.buttonText}>Pay</Text>
-        </TouchableOpacity>
-      );
-    }
 
     if (
       [
@@ -302,7 +280,30 @@ const BookingCard = ({
     }
 
     return buttons.length > 0 ? (
-      <View style={styles.buttonContainer}>{buttons}</View>
+      <View style={styles.buttonContainer}>
+        {status === "PENDING" && timeRemaining ? (
+          <View style={styles.buttonContent}>
+            <Text
+              style={[
+                styles.timerText,
+                timeRemaining === "Expired" && styles.expiredText,
+              ]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={timeRemaining === "Expired" ? "#991b1b" : "#64748b"}
+              />{" "}
+              {timeRemaining === "Expired"
+                ? "Payment Deadline Expired"
+                : `Time to Pay: ${timeRemaining}`}
+            </Text>
+            <View style={styles.buttonRow}>{buttons}</View>
+          </View>
+        ) : (
+          <View style={styles.buttonRow}>{buttons}</View>
+        )}
+      </View>
     ) : null;
   };
 
@@ -358,19 +359,6 @@ const BookingCard = ({
               {booking.bookingDetails[0].startTime}
             </Text>
           )}
-          {["PENDING", "PENDING_FIRST_CYCLE"].includes(status) && timeRemaining && (
-            <Text
-              style={[
-                styles.detailText,
-                timeRemaining === "Expired" && styles.expiredText,
-              ]}
-            >
-              <Ionicons name="time-outline" size={14} color="#64748b" />{" "}
-              {timeRemaining === "Expired"
-                ? "Payment Deadline Expired"
-                : `Time to Pay: ${timeRemaining}`}
-            </Text>
-          )}
           <Text style={styles.price}>${booking.totalPrice}</Text>
         </View>
       </View>
@@ -379,17 +367,11 @@ const BookingCard = ({
   );
 };
 
-const BookingList = ({
-  bookings,
-  onLoadMore,
-  refreshing,
-  onRefresh,
-  onPayment,
-}) => {
-  const axiosInstance = useAxios(); // Use useAxios for rebooking
+const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
+  const axiosInstance = useAxios();
   const [loadingBookingId, setLoadingBookingId] = useState(null);
   const [reviewed, setReviewed] = useState(false);
-  const { handleCancelBooking } = useBookingCancellation(); // Use custom hook
+  const { handleCancelBooking } = useBookingCancellation();
 
   const handleRebook = async (booking) => {
     setLoadingBookingId(booking.id);
@@ -491,7 +473,6 @@ const BookingList = ({
               onViewReview={handleViewReview}
               reviewed={reviewed}
               refreshing={refreshing}
-              onPayment={onPayment}
             />
           );
         }}
@@ -570,11 +551,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     padding: 12,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     justifyContent: "flex-end",
   },
@@ -611,6 +599,11 @@ const styles = StyleSheet.create({
   expiredText: {
     color: "#991b1b",
     fontWeight: "600",
+  },
+  timerText: {
+    fontSize: 12,
+    color: "#64748b",
+    textAlign: "left",
   },
 });
 

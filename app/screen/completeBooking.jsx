@@ -73,23 +73,38 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
     );
 };
 
-const Schedule = () => {
+const ScheduleCompleted = () => {
     const axiosInstance = useAxios();
-    const [page, setPage] = useState(0);
-    const [schedules, setSchedules] = useState([]);
+    const [page, setPage] = useState({
+        COMPLETED: 0,
+        CANCELED: 0
+    });
+    const [schedules, setSchedules] = useState({
+        COMPLETED: 0,
+        CANCELED: []
+    });
     const [loading, setLoading] = useState(false);
     const [refresh, setRefresh] = useState(false);
+    const [totalPages, setTotalPages] = useState({
+        COMPLETED: 0,
+        CANCELED: 0
+    }); const [index, setIndex] = useState(0);
     const navigation = useNavigation();
-    const [totalPages, setTotalPages] = useState(0);
-    const {showModal} = useCommonNoification();
+    const { showModal } = useCommonNoification();
     const PAGE_SIZE = 20;
 
-    const fetchBookingDetails = async (pageNum, isRefresh = false) => {
+    const routes = [
+        { key: 'completed', title: 'Completed' },
+        { key: 'cancelled', title: 'Cancelled' }
+    ];
+
+    const fetchBookingDetails = async (pageNum, status, isRefresh = false) => {
         if (loading && !isRefresh) return;
         setLoading(true);
         try {
             const response = await axiosInstance.get('/bookings/booking-details/chefs', {
                 params: {
+                    status: status,
                     pageNo: pageNum,
                     pageSize: PAGE_SIZE,
                     sortBy: 'id',
@@ -99,17 +114,20 @@ const Schedule = () => {
 
             if (response.status === 200) {
                 const data = response.data.content || [];
-                setTotalPages(response.data.totalPages);
-                const filterData = data.filter((booking) => booking.status === 'WAITING_FOR_CONFIRMATION' || booking.status === 'COMPLETED');
-                setSchedules(isRefresh ? filterData : (prev) => [...prev, ...filterData]);
+                setTotalPages(prev => ({
+                    ...prev,
+                    [status]: response.data.totalPages
+                }));
+                // setSchedules(isRefresh ? data : (prev) => [...prev, ...data]);
+
+                setSchedules(prev => ({
+                    ...prev,
+                    [status]: isRefresh ? data : [...prev[status], ...data]
+                }));
             }
         } catch (error) {
-            if (error.response?.status === 401) {
-                return;
-            }
-            if (axios.isCancel(error)) {
-                return;
-            }
+            if (error.response?.status === 401) return;
+            if (axios.isCancel(error)) return;
             showModal("Error", "Có lỗi xảy ra khi tải dữ liệu.", "Failed");
         } finally {
             setLoading(false);
@@ -118,27 +136,62 @@ const Schedule = () => {
     };
 
     useFocusEffect(
-        React.useCallback(() => {
-            fetchBookingDetails(0, true);
+        useCallback(() => {
+            fetchBookingDetails(0, "COMPLETED", true);
+            fetchBookingDetails(0, "CANCELED", true);
         }, [])
     );
 
     const loadMoreData = async () => {
-        if (!loading && page + 1 <= totalPages - 1) {
-            const nextPage = page + 1;
-            setPage(nextPage);
-            await fetchBookingDetails(nextPage);
+        if (!loading) {
+            if (index === 0 && page.COMPLETED + 1 < totalPages.COMPLETED - 1) {
+                const nextPage = page.COMPLETED + 1;
+                setPage(prev => ({
+                    ...prev,
+                    COMPLETED: prev.COMPLETED + 1
+                }));
+
+                await fetchBookingDetails(nextPage, 'COMPLETED');
+            } else if (index === 1 && page.CANCELED + 1 < totalPages.CANCELED - 1) {
+                const nextPage = page.CANCELED + 1;
+                setPage(prev => ({
+                    ...prev,
+                    CANCELED: prev.CANCELED + 1
+                }));
+                await fetchBookingDetails(nextPage, 'CANCELED');
+            }
         }
     };
 
     const handleRefresh = async () => {
         setRefresh(true);
-        setPage(0);
-        await fetchBookingDetails(0, true);
+        if (index === 0) {
+            setPage(prev => ({
+                ...prev,
+                COMPLETED: 0
+            }));
+            await fetchBookingDetails(0, 'COMPLETED', true);
+        } else if (index === 1) {
+            setPage(prev => ({
+                ...prev,
+                CANCELED: 0
+            }));
+            await fetchRequestBooking(0, 'CANCELED', true);
+        }
     };
 
+    const viewDetail = useCallback((id) => {
+        navigation.navigate('screen/detailsScheduleBooking', { bookingId: id });
+    }, [navigation]);
+
     const renderScene = ({ route }) => {
-        const sortedBookings = schedules.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
+        let filtered = [];
+        if (route.key === 'completed') {
+            filtered = schedules.COMPLETED || [];
+        } else if (route.key === 'cancelled') {
+            filtered = schedules.CANCELED || [];
+        }
+        const sortedBookings = filtered?.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
 
         return (
             <ScheduleRender
@@ -147,13 +200,10 @@ const Schedule = () => {
                 refreshing={refresh}
                 onRefresh={handleRefresh}
                 onViewDetail={viewDetail}
+                loading={loading}
             />
         );
     };
-
-    const viewDetail = useCallback((id) => {
-        navigation.navigate('screen/detailsScheduleBooking', { bookingId: id });
-    }, [navigation]);
 
     return (
         <SafeAreaView style={commonStyles.container}>
@@ -162,23 +212,22 @@ const Schedule = () => {
                 navigationState={{ index, routes }}
                 renderScene={renderScene}
                 onIndexChange={setIndex}
-                loading={loading}
+                initialLayout={{ width: 300 }}
                 renderTabBar={(props) => (
                     <TabBar
                         {...props}
-                        scrollEnabled
                         inactiveColor="gray"
                         activeColor="#9C583F"
                         indicatorStyle={{ backgroundColor: '#A9411D' }}
-                        style={{ backgroundColor: '#EBE5DD', elevation: 0, shadowOpacity: 0, borderBottomWidth: 0 }}
-                        labelStyle={{ color: '#A9411D', fontWeight: 'bold' }}
-                        tabStyle={{ paddingVertical: 0, width: 130 }}
+                        style={{ backgroundColor: '#EBE5DD' }}
+                        labelStyle={{ fontWeight: 'bold' }}
                     />
                 )}
             />
         </SafeAreaView>
     );
 };
+
 
 const styles = StyleSheet.create({
     section: {
@@ -206,4 +255,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default Schedule;
+export default ScheduleCompleted;

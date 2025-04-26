@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../components/header'
 import useAxios from '../../config/AXIOS_API'
 import { View, ScrollView, TouchableOpacity, StyleSheet, Text, Image, ActivityIndicator } from 'react-native'
-import { useRoute } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 import { commonStyles } from '../../style'
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -17,13 +17,14 @@ const DetailsBooking = () => {
     const [loading, setLoading] = useState(false);
     const axiosInstance = useAxios();
     const route = useRoute();
-    const router = useRouter();
     const { bookingId } = route.params;
     const [detail, setDetail] = useState({});
     const [customer, setCustomer] = useState({});
     const [images, setImages] = useState([]);
     const { showModal } = useCommonNoification();
     const axiosInstanceForm = useAxiosFormData();
+    const navigation = useNavigation();
+
 
     useEffect(() => {
         fetchBooking();
@@ -54,7 +55,6 @@ const DetailsBooking = () => {
 
     const pickImage = async () => {
         if (images.length >= 2) {
-            // alert("Chỉ được chọn tối đa 2 ảnh.");
             showModal("Warning", "Chỉ được chọn tối đa 2 ảnh.", "Warning");
             return;
         }
@@ -76,7 +76,6 @@ const DetailsBooking = () => {
             setImages((prev) => {
                 const remainingSlots = 2 - prev.length;
                 if (remainingSlots <= 0) {
-                    // alert("Chỉ được chọn tối đa 2 ảnh.");
                     showModal("Warning", "Chỉ được chọn tối đa 2 ảnh.", "Warning");
                     return prev;
                 }
@@ -91,13 +90,11 @@ const DetailsBooking = () => {
     const takePhoto = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
         if (permissionResult.granted === false) {
-            // alert("Permission to access camera is required!");
             showModal("Warning", "Permission to access camera is required!", "Warning");
             return;
         }
 
         if (images.length >= 2) {
-            // alert("Chỉ được chọn tối đa 2 ảnh.");
             showModal("Warning", "Chỉ được chọn tối đa 2 ảnh.", "Warning");
             return;
         }
@@ -142,13 +139,14 @@ const DetailsBooking = () => {
                 fetchBooking();
             }
         } catch (error) {
+            console.log(error.response.data)
             if (error.response?.status === 401) {
                 return;
             }
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal("Error", "Có lỗi xảy ra trong quá trình checkout.", "Failed");
+            showModal("Error", error.response.data.message, "Failed");
         } finally {
             setLoading(false);
         }
@@ -166,7 +164,13 @@ const DetailsBooking = () => {
                                 <Text style={styles.itemContentLabel}>Name: </Text>
                                 <Text style={{ fontWeight: "bold", fontSize: 16 }}>{customer?.fullName}</Text>
                             </Text>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => navigation.navigate("screen/message", {
+                                contact: {
+                                    id: customer.id,
+                                    name: customer.fullName,
+                                    avatar: customer.avatarUrl
+                                }
+                            })}>
                                 <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
                             </TouchableOpacity>
                         </View>

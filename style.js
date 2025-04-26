@@ -50,8 +50,6 @@ export const commonStyles = StyleSheet.create({
   },
   input: {
     height: 50,
-    borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 10,
     marginBottom: 15,
     marginTop: 10,
@@ -61,18 +59,6 @@ export const commonStyles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#968B7B'
   },
-  // input: {
-  //   height: 50,
-  //   borderWidth: 1,
-  //   borderColor: '#ccc',
-  //   borderRadius: 30,
-  //   marginBottom: 15,
-  //   paddingLeft: 20,
-  //   paddingRight: 20,
-  //   backgroundColor: '#FFF8EF',
-  //   borderWidth: 2,
-  //   borderColor: '#383737'
-  // },
   subButton: {
     textAlign: 'center',
     color: '#A9411D',

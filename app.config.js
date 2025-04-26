@@ -40,7 +40,7 @@ export default {
       router: {
         origin: false,
       },
-      // "eas": {
+      // eas: {
       //   "projectId": "7633a8b3-2237-454d-98da-394babd667ae"
       // },
       eas: {

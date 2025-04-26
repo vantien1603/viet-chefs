@@ -331,7 +331,8 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
+      // showModal("Error", "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -349,7 +350,10 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải cài đặt lịch làm việc", "Failed");
+      // showModal("Error", error.response.data.message, "Failed");
+      console.log(error.response.data);
+
     } finally {
       setLoading(false);
     }

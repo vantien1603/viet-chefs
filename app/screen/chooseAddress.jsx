@@ -195,15 +195,6 @@ const ChooseAddressScreen = () => {
     </View>
   );
 
-  const renderSuggestionItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.suggestionItem}
-      onPress={() => selectAddress(item)}
-    >
-      <Text style={styles.suggestionText}>{item.description}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Choose Address" />

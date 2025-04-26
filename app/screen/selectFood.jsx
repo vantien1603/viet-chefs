@@ -45,9 +45,9 @@ const MenuCard = ({ item, isSelected, onSelect }) => (
   <TouchableOpacity onPress={onSelect} style={[styles.menuCard, isSelected && styles.selectedMenu]}>
     <Image
       source={{
-        uri: item.imageUrl || "https://via.placeholder.com/80",
+        uri: item?.imageUrl,
       }}
-      style={styles.menuImage}
+      style={styles.image}
       resizeMode="cover"
     />
     <View style={styles.cardContent}>
@@ -93,7 +93,7 @@ const SelectFood = () => {
       } catch (error) {
         if (error.response?.status === 401) {
           return;
-      }
+        }
         if (axios.isCancel(error)) {
           return;
         }
@@ -118,7 +118,7 @@ const SelectFood = () => {
       } catch (error) {
         if (error.response?.status === 401) {
           return;
-      }
+        }
         if (axios.isCancel(error)) {
           return;
         }
@@ -185,13 +185,6 @@ const SelectFood = () => {
     setSelectedDishes({});
     setExtraDishIds({});
     setDishNotes({});
-  };
-
-  const handleAddNote = (id, text) => {
-    setDishNotes((prev) => ({
-      ...prev,
-      [id]: text,
-    }));
   };
 
   const handleBack = () => {
@@ -336,10 +329,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     elevation: 3,
     marginRight: 16,
-    marginBottom: 12,
+    marginBottom: 50,
     width: 340,
     overflow: "hidden",
-
   },
   dishCard: {
     flexDirection: "row",
@@ -376,12 +368,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
     marginTop: 6,
   }),
-  menuImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    marginRight: 16,
-  },
   image: {
     width: 80,
     height: 80,

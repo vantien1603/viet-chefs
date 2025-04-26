@@ -16,7 +16,7 @@ import useAxios from "../../config/AXIOS_API";
 import { router, useLocalSearchParams } from "expo-router";
 import { t } from "i18next";
 import { AuthContext } from "../../config/AuthContext";
-import { Dropdown } from "react-native-element-dropdown";
+import { Dropdown, MultiSelect } from "react-native-element-dropdown";
 import * as ImagePicker from "expo-image-picker";
 import { commonStyles } from "../../style";
 import { useCommonNoification } from "../../context/commonNoti";
@@ -74,37 +74,41 @@ const DishDetails = () => {
 
 
   useEffect(() => {
-    const fetchDishDetails = async () => {
-      setLoading(true);
-      try {
-        const response = await axiosInstance.get(`/dishes/${dishId}`);
-        setDish(response.data);
-        setDishesName(response.data.name)
-        setOldDish(response.data);
-        if (menuId && response.data.id && !selectedDishes.some((item) => item.id === response.data.id)) {
-          setSelectedDishes([
-            {
-              id: response.data.id,
-              name: response.data.name || dishName,
-              imageUrl: response.data.imageUrl,
-            },
-          ]);
-        }
-      } catch (error) {
-        if (error.response?.status === 401) {
-          return;
-        }
-        if (axios.isCancel(error)) {
-          console.log("Yêu cầu đã bị huỷ do không có mạng.");
-          return;
-        }
-        showModal("Error", "Có lỗi xảy ra trong quá trình tải món ăn", "Failed");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDishDetails();
   }, [dishId, dishName, menuId]);
+
+  const fetchDishDetails = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/dishes/${dishId}`);
+      setDish(response.data);
+      setDishesName(response.data.name)
+      setOldDish(response.data);
+      if (menuId && response.data.id && !selectedDishes.some((item) => item.id === response.data.id)) {
+        setSelectedDishes([
+          {
+            id: response.data.id,
+            name: response.data.name || dishName,
+            imageUrl: response.data.imageUrl,
+          },
+        ]);
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        console.log("Yêu cầu đã bị huỷ do không có mạng.");
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải món ăn", "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
 
   useEffect(() => {
     const fetchChefDetails = async () => {
@@ -197,11 +201,14 @@ const DishDetails = () => {
 
 
   const handleSave = async () => {
+    console.log("cccc");
     setLoading(true);
     try {
+      console.log("cccc1");
+
       const formData = new FormData();
       formData.append('chefId', user?.chefId);
-      formData.append('foodTypeId', dish.foodTypeId.toString());
+      formData.append('foodTypeId', dish.foodTypeId);
       formData.append('dishName', dishesName);
       formData.append('description', dish.description);
       formData.append('cuisineType', dish.cuisineType);
@@ -209,6 +216,7 @@ const DishDetails = () => {
       formData.append('estimatedCookGroup', dish.estimatedCookGroup);
       formData.append('cookTime', dish.cookTime);
       formData.append('basePrice', dish.basePrice);
+      console.log("cccc2");
 
       if (image) {
         const filename = image.split("/").pop();
@@ -220,19 +228,28 @@ const DishDetails = () => {
           type,
         });
       }
+
       const response = await axiosInstanceForm.put(`/dishes/${dish.id}`, formData);
       if (response.status === 200) {
         showModal("Success", "Update dishes successfully");
+        fetchDishDetails();
       }
+      console.log("cccc3");
+
 
     } catch (error) {
+      console.log(error);
       if (error.response?.status === 401) {
         return;
       }
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Update dishes failed", 'Failed');
+      if (error.response.status === 413) {
+        showModal("Error", "Dung lượng ảnh quá lớn", 'Failed');
+        return;
+      }
+      showModal("Error", error.response.data.message, 'Failed');
     } finally {
       setIsEditing(false);
       setLoading(false);
@@ -246,13 +263,13 @@ const DishDetails = () => {
       const response = await axiosInstance.delete(`/dishes/${dish.id}`);
       if (response.status === 200 || response.status === 204) {
         showModal("Success", "Delete dish delete successfully.");
+        router.back();
       }
     } catch (error) {
       if (error.response?.status === 401) {
         return;
       }
       if (axios.isCancel(error)) {
-        console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
       showModal("Error", "Có lỗi xảy ra trong quá trình xóa món ăn", "Failed");
@@ -261,22 +278,10 @@ const DishDetails = () => {
     }
   }
 
-
-
   return (
 
     <SafeAreaView style={commonStyles.container}>
       <ScrollView style={commonStyles.containerContent} showsVerticalScrollIndicator={false}>
-        {/* <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: dish?.imageUrl }}
-            style={styles.dishImage}
-            resizeMode="cover"
-          />
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View> */}
         <View style={styles.imageContainer}>
           {isEditing ? (
             <TouchableOpacity onPress={() => pickImage()}>
@@ -312,112 +317,144 @@ const DishDetails = () => {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-
-        {isEditing ? (
-          <TextInput
-            style={styles.inputEditing}
-            value={dishesName}
-            onChangeText={setDishesName}
-            placeholder="Tên món ăn"
-          />
-        ) : (
-          <Text style={styles.dishName}>{dish.name || dishName}</Text>
-        )}
-
-
-        {isEditing ? (
-          <TextInput
-            style={styles.textArea}
-            value={dish.description}
-            onChangeText={(text) => setDish(prev => ({ ...prev, description: text }))}
-            placeholder="Mô tả món ăn"
-            multiline
-            numberOfLines={3}
-          />
-        ) : (
-          <Text style={styles.description}>{dish.description}</Text>
-        )}
-
-
-
-        {/* <View style={styles.detailsContainer}> */}
-        <View style={styles.detailItem}>
-          {isEditing ? (
-            <Dropdown
-              data={foodType}
-              labelField="label"
-              valueField="value"
-              value={dish.foodTypeId.toString()}
-              onChange={item => setDish(prev => ({
-                ...prev,
-                foodTypeId: item,
-              }))}
-              placeholder="Select Food Type"
-              style={styles.dropdown}
-              selectedTextStyle={styles.selectedText}
-              containerStyle={styles.dropdownContainer}
-            />
-          ) : (
-            <>
-              <Ionicons name="fast-food-outline" size={20} color="black" />
-              <Text style={styles.detailText}>Food type: {foodType.find(ft => parseInt(ft.value) === dish.foodTypeId)?.label || ""}</Text>
-            </>
-
-          )}
-        </View>
-        <View style={styles.detailItem}>
+        <View style={{ padding: 10 }}>
           {isEditing ? (
             <TextInput
-              style={styles.input}
-              value={dish.cuisineType}
-              onChangeText={(text) => {
-                setDish(prev => ({ ...prev, cuisineType: text }))
-              }}
+              style={styles.inputEditing}
+              value={dishesName}
+              onChangeText={(text) => setDishesName(text)}
+              placeholder="Tên món ăn"
             />
           ) : (
-            <>
-              <Ionicons name="restaurant-outline" size={20} color="#555" />
-              <Text style={styles.detailText}>Cuisine: {dish.cuisineType}</Text>
-            </>
+            <Text style={styles.dishName}>{dish.name || dishName}</Text>
           )}
-        </View>
-        <View style={styles.detailItem}>
+
+
           {isEditing ? (
             <TextInput
-              style={styles.input}
-              value={dish.serviceType}
-              onChangeText={(text) => {
-                setDish(prev => ({ ...prev, serviceType: text }))
-
-              }}
-            />
-          ) : (<>
-            <Ionicons name="home-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>Type: {dish.serviceType}</Text>
-          </>
-
-          )}
-        </View>
-        <View style={styles.detailItem}>
-          {isEditing ? (
-            <TextInput
-              style={styles.input}
-              value={dish.cookTime.toString()}
-              onChangeText={(text) => setDish(prev => ({ ...prev, serviceType: text }))}
+              style={styles.textArea}
+              value={dish.description}
+              onChangeText={(text) => setDish(prev => ({ ...prev, description: text }))}
+              placeholder="Mô tả món ăn"
+              multiline
+              numberOfLines={3}
             />
           ) : (
-            <>
-              <Ionicons name="time-outline" size={20} color="#555" />
-              <Text style={styles.detailText}>
-                Cook Time: {dish.cookTime} mins
-              </Text>
+            <Text style={styles.description}>{dish.description}</Text>
+          )}
+
+          <View >
+            {isEditing ? (
+              <MultiSelect
+                style={styles.dropdown}
+                placeholder="Select Food Types"
+                data={foodType}
+                labelField="label"
+                valueField="value"
+                value={dish.foodTypes.map(item => item.id.toString())}
+                onChange={(selectedIds) => {
+                  const selectedFoodTypes = foodType
+                    .filter(ft => selectedIds.includes(ft.value))
+                    .map(ft => ({
+                      id: ft.value,
+                      name: ft.label,
+                    }));
+                  console.log(selectedFoodTypes)
+
+                  setDish(prev => ({
+                    ...prev,
+                    foodTypes: selectedFoodTypes,
+                  }));
+                }}
+                renderItem={(item) => {
+                  const isInitiallySelected = dish.foodTypes?.some(ft => ft.id.toString() === item.value);
+                  console.log(isInitiallySelected)
+                  return (
+                    <View style={{
+                      padding: 10,
+                      backgroundColor: isInitiallySelected ? '#F9F5F0' : 'white',
+                      borderWidth: 2,
+                      borderRadius: 6,
+                      borderColor: isInitiallySelected ? '#F8BF40' : 'transparent',
+                      flexDirection: 'row',
+                      alignItems: 'center'
+                    }}>
+                      <Text style={{ color: 'black' }}>{item.label}</Text>
+                    </View>
+                  );
+                }}
+                selectedStyle={{
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: 10,
+                  color: 'black'
+                }}
+              />
+
+            ) : (
+              <>
+                <Ionicons name="fast-food-outline" size={20} color="black" />
+                <Text style={styles.detailText}>
+                  Food type: {dish.foodTypes?.map(ft => ft.name).join(", ")}
+                </Text>
+              </>
+            )}
+
+
+          </View>
+          <View style={styles.detailItem}>
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={dish.cuisineType}
+                onChangeText={(text) => {
+                  setDish(prev => ({ ...prev, cuisineType: text }))
+                }}
+              />
+            ) : (
+              <>
+                <Ionicons name="restaurant-outline" size={20} color="#555" />
+                <Text style={styles.detailText}>Cuisine: {dish.cuisineType}</Text>
+              </>
+            )}
+          </View>
+          <View style={styles.detailItem}>
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={dish.serviceType}
+                onChangeText={(text) => {
+                  setDish(prev => ({ ...prev, serviceType: text }))
+
+                }}
+              />
+            ) : (<>
+              <Ionicons name="home-outline" size={20} color="#555" />
+              <Text style={styles.detailText}>Type: {dish.serviceType}</Text>
             </>
 
-          )}
-        </View>
-        {/* </View> */}
+            )}
+          </View>
+          <View style={styles.detailItem}>
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={dish.cookTime.toString()}
+                // value={dish.cookTime}
+                onChangeText={(text) => setDish(prev => ({ ...prev, cookTime: text }))}
+              />
+            ) : (
+              <>
+                <Ionicons name="time-outline" size={20} color="#555" />
+                <Text style={styles.detailText}>
+                  Cook Time: {dish.cookTime} mins
+                </Text>
+              </>
 
-        {/* <View style={styles.detailsContainer}>
+            )}
+          </View>
+          {/* </View> */}
+
+          {/* <View style={styles.detailsContainer}>
           <View style={styles.detailItem}>
             <Ionicons name="fast-food-outline" size={20} color="black" />
             <Text style={styles.detailText}>Food type: {foodType.find(ft => parseInt(ft.value) === dish.foodTypeId)?.label || ""}</Text>
@@ -442,35 +479,37 @@ const DishDetails = () => {
           </View>
         </View> */}
 
-        {user?.roleName != "ROLE_CHEF" && (
+          {user?.roleName != "ROLE_CHEF" && (
 
-          chef && (
-            <View style={styles.chefContainer}>
-              <Text style={styles.sectionTitle}>{t("chef")}</Text>
-              <View style={styles.chefInfo}>
-                <Image
-                  source={{
-                    uri:
-                      chef.user?.avatarUrl && chef.user.avatarUrl !== "default"
-                        ? chef.user.avatarUrl
-                        : "https://via.placeholder.com/50",
-                  }}
-                  style={styles.chefAvatar}
-                  resizeMode="cover"
-                />
-                <View style={styles.chefText}>
-                  <Text style={styles.chefName}>
-                    {chef.user?.fullName || t("chef")}
-                  </Text>
-                  <Text style={styles.chefBio} numberOfLines={2}>
-                    {chef.bio || t("noInformation")}
-                  </Text>
+            chef && (
+              <View style={styles.chefContainer}>
+                <Text style={styles.sectionTitle}>{t("chef")}</Text>
+                <View style={styles.chefInfo}>
+                  <Image
+                    source={{
+                      uri:
+                        chef.user?.avatarUrl && chef.user.avatarUrl !== "default"
+                          ? chef.user.avatarUrl
+                          : "https://via.placeholder.com/50",
+                    }}
+                    style={styles.chefAvatar}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.chefText}>
+                    <Text style={styles.chefName}>
+                      {chef.user?.fullName || t("chef")}
+                    </Text>
+                    <Text style={styles.chefBio} numberOfLines={2}>
+                      {chef.bio || t("noInformation")}
+                    </Text>
+                  </View>
+
                 </View>
-
               </View>
-            </View>
-          )
-        )}
+            )
+          )}
+        </View>
+
       </ScrollView>
 
       {user?.roleName === "ROLE_CHEF" ? (

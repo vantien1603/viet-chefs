@@ -1,39 +1,20 @@
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import * as WebBrowser from 'expo-web-browser'
 import { Redirect, router } from 'expo-router'
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
+import { Platform } from 'react-native';
 
-export default function WelcomeScreen() {
-  const navigation = useNavigation();
-  const [isCheckingUser, setIsCheckingUser] = useState(false);
 
-  useEffect(() => {
-    const setupPermissions = async () => {
-      const hasRequestedPermissions = await AsyncStorage.getItem('hasRequestedPermissions');
-      if (hasRequestedPermissions === 'true') {
-        console.log('Permissions already requested, skipping prompts.');
-        return;
-      }
 
-      await setupNotifications();
-
-      await setupLocationPermissions();
-
-      await AsyncStorage.setItem('hasRequestedPermissions', 'true');
-    };
-
-    setupPermissions();
-  }, []);
-
-  const setupNotifications = async () => {
+async function registerForPushNotificationsAsync() {
+  try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -44,39 +25,121 @@ export default function WelcomeScreen() {
 
     if (finalStatus !== 'granted') {
       Alert.alert('Failed to get push token for push notification!');
-      return;
+      return null;
     }
 
     const token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('Expo Push Token:', token);
-    await SecureStore.setItemAsync("expoPushToken", token);
+    return token;
+  } catch (error) {
+    console.error('Error registering for push notifications:', error);
+    return null;
+  }
+}
 
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
 
-    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-    });
+export default function WelcomeScreen() {
+  const navigation = useNavigation();
+  const [isCheckingUser, setIsCheckingUser] = useState(false);
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification clicked:', response);
-    });
+  const [expoPushToken, setExpoPushToken] = useState('');
+  const [channels, setChannels] = useState([]);
+  const [notification, setNotification] = useState();
+  const notificationListener = useRef();
+  const responseListener = useRef();
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const { user, loading } = useContext(AuthContext);
 
-    return () => {
-      foregroundSubscription.remove();
-      responseSubscription.remove();
-    };
+
+  // const setupNotifications1 = async () => {
+  //   const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  //   let finalStatus = existingStatus;
+
+  //   if (existingStatus !== 'granted') {
+  //     const { status } = await Notifications.requestPermissionsAsync();
+  //     finalStatus = status;
+  //   }
+
+  //   if (finalStatus !== 'granted') {
+  //     Alert.alert('Failed to get push token for push notification!');
+  //     return;
+  //   }
+
+  //   const token = (await Notifications.getExpoPushTokenAsync()).data;
+  //   console.log('Expo Push Token:', token);
+  //   await SecureStore.setItemAsync("expoPushToken", token);
+
+  //   Notifications.setNotificationHandler({
+  //     handleNotification: async () => ({
+  //       shouldShowAlert: true,
+  //       shouldPlaySound: true,
+  //       shouldSetBadge: false,
+  //     }),
+  //   });
+
+  //   const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+  //   });
+
+  //   const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+  //     console.log('Notification clicked:', response);
+  //   });
+
+  //   return () => {
+  //     foregroundSubscription.remove();
+  //     responseSubscription.remove();
+  //   };
+  // };
+
+
+  const setupNotifications = async () => {
+    try {
+      // Đăng ký và lấy token
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        setExpoPushToken(token);
+        await SecureStore.setItem('expoPushToken', token);
+        console.log('Expo Push Token:', token);
+      }
+
+      // Lấy kênh thông báo cho Android
+      if (Platform.OS === 'android') {
+        const value = await Notifications.getNotificationChannelsAsync();
+        setChannels(value ?? []);
+      }
+
+      // Cấu hình xử lý thông báo
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+
+      // Làm sạch các subscription cũ
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+
+      // Lắng nghe thông báo khi app ở foreground
+      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        setNotification(notification);
+        Alert.alert(
+          'Thông báo nhận được!',
+          notification.request.content.body || 'Có thông báo mới'
+        );
+      });
+
+      // Lắng nghe khi người dùng tương tác với thông báo
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('Notification clicked:', response);
+      });
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      setupNotifications();
-    }, [user])
-  );
 
   const setupLocationPermissions = async () => {
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
@@ -94,9 +157,7 @@ export default function WelcomeScreen() {
   const handleLogin = () => {
     router.push('screen/login');
   };
-  const [hasNavigated, setHasNavigated] = useState(false);
 
-  const { user, loading } = useContext(AuthContext);
 
   useFocusEffect(
     useCallback(() => {
