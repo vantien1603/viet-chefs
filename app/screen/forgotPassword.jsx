@@ -13,6 +13,7 @@ import Header from "../../components/header";
 import { router } from "expo-router";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");

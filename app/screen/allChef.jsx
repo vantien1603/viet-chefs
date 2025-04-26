@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -17,30 +17,18 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../../config/AuthContext";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [favoriteLoading, setFavoriteLoading] = useState({}); // Per-chef loading state
   const axiosInstance = useAxios();
+  const { user } = useContext(AuthContext);
 
-  // Lấy danh sách yêu thích từ AsyncStorage khi khởi động
-  useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        const storedFavorites = await AsyncStorage.getItem("favorites");
-        if (storedFavorites) {
-          setFavorites(JSON.parse(storedFavorites));
-        }
-      } catch (err) {
-        console.error("Lỗi khi tải danh sách yêu thích:", err);
-      }
-    };
-    loadFavorites();
-  }, []);
-
-  // Lấy danh sách đầu bếp từ API
+  // Fetch list of chefs from API
   const fetchChefs = async () => {
     try {
       setLoading(true);
@@ -60,21 +48,55 @@ const AllChefs = () => {
     fetchChefs();
   }, []);
 
-  // Hàm xử lý thêm/xóa khỏi danh sách yêu thích
+  // Handle adding/removing chef from favorites
   const toggleFavorite = async (chefId) => {
-    let updatedFavorites;
-    if (favorites.includes(chefId)) {
-      updatedFavorites = favorites.filter((id) => id !== chefId);
-      Alert.alert("Thông báo", "Đã xóa đầu bếp khỏi danh sách yêu thích!");
-    } else {
-      updatedFavorites = [...favorites, chefId];
-      Alert.alert("Thông báo", "Đã thêm đầu bếp vào danh sách yêu thích!");
+    if (!user?.userId) {
+      Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm vào danh sách yêu thích.");
+      return;
     }
-    setFavorites(updatedFavorites);
+
+    setFavoriteLoading((prev) => ({ ...prev, [chefId]: true }));
+
     try {
-      await AsyncStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+      // Check if chef is favorited
+      const isFavoriteResponse = await axiosInstance.get(
+        `/favorite-chefs/${user.userId}/chefs/${chefId}`
+      );
+      const isFavorite = isFavoriteResponse.data; // Boolean: true/false
+
+      if (isFavorite) {
+        // Remove from favorites (DELETE request)
+        await axiosInstance.delete(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        const updatedFavorites = favorites.filter((id) => id !== chefId);
+        setFavorites(updatedFavorites);
+        await AsyncStorage.setItem(
+          "favorites",
+          JSON.stringify(updatedFavorites)
+        );
+        Alert.alert("Thông báo", "Đã xóa đầu bếp khỏi danh sách yêu thích!");
+      } else {
+        // Add to favorites (POST request)
+        await axiosInstance.post(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        const updatedFavorites = [...favorites, chefId];
+        setFavorites(updatedFavorites);
+        await AsyncStorage.setItem(
+          "favorites",
+          JSON.stringify(updatedFavorites)
+        );
+        Alert.alert("Thông báo", "Đã thêm đầu bếp vào danh sách yêu thích!");
+      }
     } catch (err) {
-      console.error("Lỗi khi lưu danh sách yêu thích:", err);
+      let errorMessage =
+        err.response?.data?.message ||
+        `Lỗi khi ${favorites.includes(chefId) ? "xóa" : "thêm"} đầu bếp vào danh sách yêu thích.`;
+      // Alert.alert("Lỗi", errorMessage);
+      console.log("Error toggling favorite:", errorMessage);
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
     }
   };
 
@@ -99,9 +121,7 @@ const AllChefs = () => {
       />
       <View style={styles.chefInfo}>
         <Text style={styles.chefName}>{item.user.fullName}</Text>
-        <Text style={styles.chefSpecialization}>
-          {item?.specialization}
-        </Text>
+        <Text style={styles.chefSpecialization}>{item?.specialization}</Text>
         <Text style={styles.chefBio} numberOfLines={2}>
           {item?.bio}
         </Text>
@@ -118,16 +138,21 @@ const AllChefs = () => {
           </Text>
         </View>
       </View>
-      {/* Biểu tượng yêu thích ở góc dưới bên trái */}
+      {/* Favorite icon */}
       <TouchableOpacity
         style={styles.favoriteIcon}
         onPress={() => toggleFavorite(item.id)}
+        disabled={favoriteLoading[item.id]}
       >
-        <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
-          size={24}
-          color={favorites.includes(item.id) ? "#e74c3c" : "#888"}
-        />
+        {favoriteLoading[item.id] ? (
+          <ActivityIndicator size="small" color="#e74c3c" />
+        ) : (
+          <Ionicons
+            name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+            size={24}
+            color={favorites.includes(item.id) ? "#e74c3c" : "#888"}
+          />
+        )}
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -175,16 +200,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -200,7 +215,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    position: "relative", // Để sử dụng position absolute cho biểu tượng
+    position: "relative",
   },
   chefAvatar: {
     width: 80,
@@ -248,9 +263,9 @@ const styles = StyleSheet.create({
   },
   favoriteIcon: {
     position: "absolute",
-    bottom: 16, // Khoảng cách từ dưới lên
-    left: 16, // Khoảng cách từ bên trái
-    padding: 4, // Khu vực nhấn lớn hơn
+    bottom: 16,
+    left: 16,
+    padding: 4,
   },
   loadingContainer: {
     flex: 1,
