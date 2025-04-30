@@ -157,11 +157,18 @@ const EditAddress = () => {
         let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
           }, ${addr.region || ""}, ${addr.country || ""}`;
 
+        const existingCurrentLocation = addresses.find(
+          (addr) => addr.title === "Vị trí hiện tại"
+        );
         const newLocation = {
           title: "Vị trí hiện tại",
           address: fullAddress,
         };
-        await handleCreateAddress(newLocation);
+        if (existingCurrentLocation) {
+          await handleUpdateCurrentAddress({ ...existingCurrentLocation, address: fullAddress })
+        } else {
+          await handleCreateAddress(newLocation);
+        }
         setCurrentAddress(null);
         setSelectedId(null);
       }
@@ -171,6 +178,28 @@ const EditAddress = () => {
       setLoading(false);
     }
   };
+
+  const handleUpdateCurrentAddress = async (addresData) => {
+    try {
+      const response = await axiosInstance.put("/address", addresData);
+      if (response.status === 200) {
+        setAddresses((prev) =>
+          prev.map((addr) =>
+            addr.id === addresData.id
+              ? { ...addr, address: addresData.address }
+              : addr
+          )
+        );
+        showModal("Success", "Cập nhật vị trí hiện tại thành công.", "Success");
+      }
+    } catch (error) {
+      if (error.response.status === 401 || axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật vị trí hiện tại. ", "Failed");
+    }
+  }
+
 
   const handleCreateAddress = async (addressData) => {
     if (addresses.length >= 5) {
@@ -189,7 +218,7 @@ const EditAddress = () => {
 
       }
     } catch (error) {
-      if (axios.isCancel(error)) {
+      if (error.response.status === 401 || axios.isCancel(error)) {
         return;
       }
       showModal("Error", "Có lỗi xảy ra trong quá trình lưu địa chỉ.", "Failed");

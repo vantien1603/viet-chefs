@@ -43,7 +43,7 @@ const ChefMenu = () => {
         params: { chefId: user?.chefId },
       });
       setMenus(response.data.content);
-      console.log(response.data.content)
+      // console.log(response.data.content)
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -119,9 +119,11 @@ const ChefMenu = () => {
     }))
   }
 
+
+
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title="Menu" />
+      <Header title="Menu" rightIcon={"add"} onRightPress={() => router.push("/screen/addMenu")} />
 
       {selectionMode && (
         <View style={styles.floatingActions}>

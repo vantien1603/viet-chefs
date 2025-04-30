@@ -10,27 +10,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
-import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useConfirmModal } from "../../context/commonConfirm";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
+import { useSelectedItems } from "../../context/itemContext";
 
 const PaymentBookingScreen = () => {
   const params = useLocalSearchParams();
   const bookingId = params.bookingId;
-  const bookingData = JSON.parse(params.bookingData || "{}");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const axiosInstance = useAxios();
   const [isPaySuccess, setIsPaySuccess] = useState(false);
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
-  const totalPrice = bookingData?.totalPrice || 0;
-  console.log("Booking Data:", bookingData);
   const { showModal } = useCommonNoification();
+  const { totalPrice } = useSelectedItems();
+
   const handleCompletePayment = async () => {
     console.log("press nef")
     setLoading(true);
@@ -57,10 +56,6 @@ const PaymentBookingScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleConfirmPayment = () => {
-    setModalVisible(true);
   };
 
   const handleBackHome = () => {
@@ -111,7 +106,6 @@ const PaymentBookingScreen = () => {
         </View>
       </View>
 
-      {/* Modal xác nhận thanh toán */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -160,8 +154,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    paddingTop: 40, // Đưa nội dung lên cao hơn một chút
-    justifyContent: "flex-start", // Đưa nội dung lên trên
+    paddingTop: 40, 
+    justifyContent: "flex-start", 
     alignItems: "center",
   },
   title: {

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Image, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -77,6 +77,7 @@ export default function LoginScreen() {
     setLoadingA(true);
     const token = await SecureStore.getItemAsync('expoPushToken');
     const result = await login(usernameOrEmail, password, token);
+    console.log("asdasd", result)
     if (result != null) {
       if (result?.roleName === "ROLE_CHEF") {
         navigation.navigate("(chef)", { screen: "home" })
@@ -121,7 +122,6 @@ export default function LoginScreen() {
     setOauthUrl(null);
   };
 
-  // Xử lý redirect từ Google OAuth
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
 
@@ -158,8 +158,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
-      <SafeAreaView >
+    <GestureHandlerRootView style={commonStyles.container}>
+      <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 50 }}>
         <TouchableOpacity onPress={() => navigation.navigate('index')}>
           <View style={{
             width: 60,
@@ -180,7 +180,7 @@ export default function LoginScreen() {
           style={{ width: 400, height: 250 }}
           resizeMode="cover"
         />
-        <Text style={commonStyles.titleText}>VIET CHEFS</Text>
+        <Text style={commonStyles.titleText}>VIET CHEF</Text>
         <TextInput
           style={commonStyles.input}
           placeholder="Username or Email"
@@ -259,7 +259,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
         </View>
-      </SafeAreaView>
+      </ScrollView>
 
       <Modalize ref={modalRef} adjustToContentHeight>
         <View style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center' }}>

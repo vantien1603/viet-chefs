@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     padding: 15,
   },
   detailRow: {
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     marginBottom: 20,
   },
   summaryRow: {
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     marginBottom: 20,
   },
   infoLabel: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: "#ccc",
+    borderTopColor: "#CCCCCC",
   },
   spacer: {
     height: 100,

@@ -896,7 +896,6 @@ const styles = StyleSheet.create({
   },
   slotRow: {
     paddingHorizontal: 10,
-    // backgroundColor: "#ccc",
     flexDirection: "row",
     marginBottom: 20,
     alignItems: "center",
@@ -906,7 +905,7 @@ const styles = StyleSheet.create({
     // flex: 1,
     // height: 40,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     borderRadius: 8,
     paddingHorizontal: 10,
     marginHorizontal: 5,

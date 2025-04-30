@@ -9,16 +9,16 @@ export const ConfirmModalProvider = ({ children }) => {
   const [modalContent, setModalContent] = useState({
     title: '',
     message: '',
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
 
   const showConfirm = useCallback((title, message, onConfirm) => {
-    setModalContent({ 
-      title: title || 'Confirm', 
-      message: message || 'Are you sure?', 
-      onConfirm: typeof onConfirm === 'function' ? onConfirm : () => {} 
+    setModalContent({
+      title: title || 'Confirm',
+      message: message || 'Are you sure?',
+      onConfirm: typeof onConfirm === 'function' ? onConfirm : () => { }
     });
-    
+
     setTimeout(() => {
       setIsVisible(true);
     }, 50);
@@ -27,8 +27,8 @@ export const ConfirmModalProvider = ({ children }) => {
   const handleConfirm = () => {
     console.log("bam confirm ne");
     const callback = modalContent.onConfirm;
-        setIsVisible(false);
-        setTimeout(() => {
+    setIsVisible(false);
+    setTimeout(() => {
       if (callback && typeof callback === 'function') {
         callback();
       }
@@ -51,23 +51,26 @@ export const ConfirmModalProvider = ({ children }) => {
         animationOut="slideOutDown"
         useNativeDriver={true}
         statusBarTranslucent
-        backdropTransitionOutTiming={0}
-        onBackdropPress={null}
+        backdropTransitionOutTiming={10}
+        onBackdropPress={closeModal}
+        swipeDirection="down"
+        onSwipeComplete={closeModal}
+
       >
         <View style={styles.modalContent}>
           <View style={styles.indicator} />
           <Text style={styles.title}>{modalContent.title || 'Confirm'}</Text>
           <Text style={styles.message}>{modalContent.message || 'Are you sure?'}</Text>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancel]} 
+            <TouchableOpacity
+              style={[styles.button, styles.cancel]}
               onPress={closeModal}
               activeOpacity={0.7}
             >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.button, styles.confirm]} 
+            <TouchableOpacity
+              style={[styles.button, styles.confirm]}
               onPress={handleConfirm}
               activeOpacity={0.7}
             >

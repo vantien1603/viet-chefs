@@ -15,6 +15,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const navigation = useNavigation();
+  const [searchText, setSearchText] = useState("");
 
   async function getUserById(userId) {
     if (typeof userId !== 'string') {
@@ -64,9 +65,8 @@ const Chat = () => {
         });
 
         await Promise.all(userPromises);
-
         setMessages(Object.values(messagesData));
-        // console.log("Messages Data:", messagesData);
+        setLoading(false);
       });
       return unsubscribe;
     };
@@ -76,12 +76,22 @@ const Chat = () => {
     if (user?.userId != null) {
       unsubscribe = fetchMessages();
     }
-    setLoading(false);
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, [user?.userId]);
+
+
+  const filteredMessages = messages.filter((item) =>
+    item.name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+
+  const handleSearch = (text) => {
+    setSearchText(text);
+  };
+
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -116,13 +126,13 @@ const Chat = () => {
             color="gray"
             style={commonStyles.searchIcon}
           />
-          <TextInput style={commonStyles.searchInput} placeholder="Search" />
+          <TextInput style={commonStyles.searchInput} placeholder="Search" onChangeText={handleSearch} />
         </View>
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color="#ccc" />
         ) : (
           <FlatList
-            data={messages}
+            data={filteredMessages}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
           />

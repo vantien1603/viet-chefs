@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { router, useLocalSearchParams, useSegments } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useAxios from "../../config/AXIOS_API";
@@ -24,6 +24,7 @@ import { commonStyles } from "../../style";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { useSelectedItems } from "../../context/itemContext";
 
 
 const ChefDetail = () => {
@@ -38,40 +39,14 @@ const ChefDetail = () => {
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
   const navigation = useNavigation();
+  const { setChefId, clearSelection } = useSelectedItems();
 
   useEffect(() => {
-    // fetchData();
     fetchDishes();
     fetchChefById();
   }, []);
-  const segments = useSegments();
-  
-  console.log("Current Segments:", segments);
-  // const fetchData = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     const [dishesResponse, chefResponse] = await Promise.all([
-  //       axiosInstance.get(`/dishes?chefId=${chefId}`, { timeout: 5000 }),
-  //       axiosInstance.get(`/chefs/${chefId}`, { timeout: 5000 }),
-  //     ]);
-  //     setDishes(dishesResponse.data.content);
-  //     setChefs(chefResponse.data);
-  //   } catch (error) {
-  //     if (error.response?.status === 401) {
-  //       return;
-  //     }
-  //     if (axios.isCancel(error)) {
-  //       console.log("Yêu cầu đã bị huỷ do không có mạng.");
-  //       return;
-  //     }
-  //     showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   const fetchChefById = async () => {
-    if (!chefId) return;
     setIsLoading(true);
     try {
       const response = await axiosInstance.get(`/chefs/${chefId}`);
@@ -113,7 +88,6 @@ const ChefDetail = () => {
   const onOpenModal = () => {
     modalizeRef.current?.open();
   };
-
   const toggleBio = () => setExpandedBio(!expandedBio);
   const toggleDesc = () => setExpandedDesc(!expandedDesc);
   const toggleDetails = () => setShowMoreDetails(!showMoreDetails);
@@ -388,10 +362,9 @@ const ChefDetail = () => {
             style={styles.modalButton}
             onPress={() => {
               modalizeRef.current?.close();
-              router.push({
-                pathname: "/screen/selectFood",
-                params: { chefId: chefId },
-              });
+              clearSelection();
+              setChefId(chefId);
+              router.push("/screen/selectFood");
             }}
           >
             <View>

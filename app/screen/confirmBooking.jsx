@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  BackHandler,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
@@ -21,180 +21,103 @@ import { t } from "i18next";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
+import { useSelectedItems } from "../../context/itemContext";
 
 const ConfirmBookingScreen = () => {
+  const { selectedMenu, selectedDishes, extraDishIds, selectedDay, specialRequest, numPeople, startTime, dishNotes, ingredientPrep, address, chefId, setTotalPrice } = useSelectedItems();
   const axiosInstance = useAxios();
+  const [calcuResult, setCalcuResult] = useState({});
   const [loading, setLoading] = useState(false);
-  const params = useLocalSearchParams();
-
-  const bookingData = JSON.parse(params.bookingData || "{}");
-  const selectedMenu = JSON.parse(params.selectedMenu || "null");
-  const selectedDishes = JSON.parse(params.selectedDishes || "[]");
-  const sessionDate = params.sessionDate || "N/A";
-  const startTime = params.startTime || "N/A";
-  const chefId = parseInt(params.chefId);
-  const location = params.address || "N/A";
-  const requestDetails = params.requestDetails;
-  const dishNotes = JSON.parse(params.dishNotes || "{}");
-  const numPeople = parseInt(params.numPeople) || 1;
-  const menuId = params.menuId || null;
-  const chefBringIngredients = params.chefBringIngredients;
   const { user } = useContext(AuthContext);
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
   const { showModal } = useCommonNoification();
+  const allDishes = [
+    ...(selectedMenu?.menuItems || []),
+    ...(selectedMenu ? Object.values(extraDishIds || {}) : Object.values(selectedDishes || {})),
+  ];
 
-
-  const menuDishes =
-    selectedMenu?.menuItems?.map((item) => ({
-      id: item.dishId || item.id,
-      name: item.dishName || item.name || "Unnamed Dish",
-    })) || [];
-
-  const extraDishes = selectedDishes.map((dish) => ({
-    id: dish.id,
-    name: dish.name || "Unnamed Dish",
-  }));
-
-  const allDishes = [...menuDishes, ...extraDishes];
-  const numberOfDishes = allDishes.length;
-
-  const menuDishList =
-    menuDishes.length > 0
-      ? `${selectedMenu?.name || "Menu"}: ${menuDishes
-        .map((dish) => {
-          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
-          return `${dish.name}${note}`;
-        })
-        .join(", ")}`
-      : "";
-
-  const extraDishList =
-    extraDishes.length > 0
-      ? `${extraDishes
-        .map((dish) => {
-          const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
-          return `${dish.name}${note}`;
-        })
-        .join(", ")}`
-      : "";
-
-  const dishList =
-    [menuDishList, extraDishList].filter(Boolean).join(" | ") || "N/A";
-
-  const numberOfMenuDishes = menuDishes.length;
 
   useEffect(() => {
-    const backAction = () => {
-      router.push({
-        pathname: "/screen/booking",
-        params: {
-          chefId: chefId.toString(),
-          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-          selectedDishes:
-            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
-          dishNotes: JSON.stringify(dishNotes),
-          address: location,
-          sessionDate,
-          startTime,
-          numPeople: numPeople.toString(),
-          requestDetails,
-          menuId: menuId || null,
-          chefBringIngredients,
+    fetchCalculatorBooking();
+  }, [])
+
+  const fetchCalculatorBooking = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        chefId: parseInt(chefId),
+        guestCount: numPeople,
+        bookingDetail: {
+          sessionDate: selectedDay.format("YYYY-MM-DD"),
+          startTime: `${startTime}:00`,
+          location: address?.address,
+          menuId: selectedMenu ? selectedMenu.id : null,
+          extraDishIds:
+            Object.keys(extraDishIds).length > 0
+              ? Object.keys(extraDishIds).map((key) => extraDishIds[key].id)
+              : Object.keys(selectedDishes).map((key) => selectedDishes[key].id),
+          dishes: null,
+          chefBringIngredients: ingredientPrep === "chef",
         },
-      });
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [
-    chefId,
-    selectedMenu,
-    selectedDishes,
-    dishNotes,
-    location,
-    sessionDate,
-    startTime,
-    numPeople,
-    requestDetails,
-    menuId,
-    chefBringIngredients
-  ]);
-
-  const handleBack = () => {
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        chefId: chefId.toString(),
-        selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-        selectedDishes:
-          selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
-        dishNotes: JSON.stringify(dishNotes),
-        address: location,
-        sessionDate,
-        startTime,
-        numPeople: numPeople.toString(),
-        requestDetails,
-        menuId: menuId || null,
-        chefBringIngredients
-      },
-    });
-  };
-
+      };
+      const response = await axiosInstance.post("/bookings/calculate-single-booking", payload);
+      if (response.status === 200) setCalcuResult(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response.status === 401) {
+        return;
+      }
+      showModal("Error", error.response.data.message, "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
   const handleKeepBooking = async () => {
     setLoading(true);
     try {
-      const selectedDishIds = allDishes.map((dish) => dish.id);
+      const selectedDishIds = allDishes.map((dish) => dish.id || dish.dishId);
+      console.log(selectedDishIds);
       const payload = {
         customerId: user?.userId,
         chefId: parseInt(chefId),
-        requestDetails: requestDetails,
+        requestDetails: specialRequest,
         guestCount: numPeople,
         bookingDetails: [
           {
-            sessionDate: sessionDate,
+            sessionDate: selectedDay.format("YYYY-MM-DD"),
             startTime: `${startTime}:00`,
-            location: location,
-            totalPrice: bookingData.totalPrice || 0,
-            chefCookingFee: bookingData.chefCookingFee || 0,
-            priceOfDishes: bookingData.priceOfDishes || 0,
-            arrivalFee: bookingData.arrivalFee || 0,
-            chefServingFee: bookingData.chefServingFee || 0,
-            timeBeginCook: bookingData.timeBeginCook || null,
-            timeBeginTravel: bookingData.timeBeginTravel || null,
-            platformFee: bookingData.platformFee || 0,
-            totalChefFeePrice: bookingData.totalChefFeePrice || 0,
-            totalCookTime: (bookingData.cookTimeMinutes || 0) / 60,
+            location: address?.address,
+            totalPrice: calcuResult.totalPrice || 0,
+            chefCookingFee: calcuResult.chefCookingFee || 0,
+            priceOfDishes: calcuResult.priceOfDishes || 0,
+            arrivalFee: calcuResult.arrivalFee || 0,
+            timeBeginCook: calcuResult.timeBeginCook || null,
+            timeBeginTravel: calcuResult.timeBeginTravel || null,
+            platformFee: calcuResult.platformFee || 0,
+            totalChefFeePrice: calcuResult.totalChefFeePrice || 0,
+            totalCookTime: (calcuResult.cookTimeMinutes || 0) / 60,
             isUpdated: false,
-            menuId: menuId,
+            menuId: selectedMenu.id,
             dishes: selectedDishIds.map((dishId) => ({
               dishId: dishId,
               notes: dishNotes[dishId] || null,
             })),
-            chefBringIngredients
+            chefBringIngredients: ingredientPrep === "chef"
           },
         ],
       };
-      console.log("Payload for booking confirmation:", payload);
-
       const response = await axiosInstance.post("/bookings", payload);
-      console.log("API Response:", response.data);
-
-      showModal("Success", "Booking confirmed successfully!", "Success");
-
+      if (response.status === 201 || response.status === 200) {
+        showModal("Success", "Booking confirmed successfully!", "Success");
+      }
+      setTotalPrice(calcuResult.totalPrice)
       router.push({
         pathname: "/screen/paymentBooking",
         params: {
           bookingId: response.data.id,
-          bookingData: JSON.stringify(bookingData),
         },
       });
     } catch (error) {
-      if (axios.isCancel(error)) {
+      if (axios.isCancel(error) || error.response.status === 401) {
         return;
       }
       showModal("Error", error.response.data.message, "Failed");
@@ -203,18 +126,9 @@ const ConfirmBookingScreen = () => {
     }
   };
 
-  // const handleKeepBooking = async () => {
-  //   setLoading(true);
-  //   try {
-  //     await handleConfirmBooking();
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("confirmAndPayment")} onLeftPress={handleBack} />
+      <Header title={t("confirmAndPayment")} />
       <ScrollView
         style={commonStyles.containerContent}
         contentContainerStyle={{ paddingBottom: 170 }}
@@ -233,7 +147,7 @@ const ConfirmBookingScreen = () => {
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{location}</Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{address?.address}</Text>
           </View>
         </View>
 
@@ -250,11 +164,10 @@ const ConfirmBookingScreen = () => {
               marginBottom: 20,
             }}
           >
-            {/* Subsection: Thời Gian Làm Việc */}
             <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
-              <Text style={styles.details}>{sessionDate}</Text>
+              <Text style={styles.details}>{selectedDay.format("YYYY-MM-DD")}</Text>
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
@@ -263,25 +176,24 @@ const ConfirmBookingScreen = () => {
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginTravel")}</Text>
               <Text style={styles.details}>
-                {bookingData.timeBeginTravel || "N/A"}
+                {calcuResult.timeBeginTravel || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginCook")}</Text>
               <Text style={styles.details}>
-                {bookingData.timeBeginCook || "N/A"}
+                {calcuResult.timeBeginCook || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("cookTime")}</Text>
               <Text style={styles.details}>
-                {bookingData.cookTimeMinutes
-                  ? `${bookingData.cookTimeMinutes} ${t("minutes")}`
+                {calcuResult.cookTimeMinutes
+                  ? `${calcuResult.cookTimeMinutes} ${t("minutes")}`
                   : "N/A"}
               </Text>
             </View>
 
-            {/* Subsection: Chi Tiết Công Việc */}
             <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
               {t("jobDetails")}
             </Text>
@@ -291,24 +203,50 @@ const ConfirmBookingScreen = () => {
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("totalNumberOfDishes")}</Text>
-              <Text style={styles.details}>{numberOfDishes}</Text>
+              <Text style={styles.details}>{allDishes.length}</Text>
             </View>
             {selectedMenu && (
-              <View style={styles.row}>
-                <Text style={{ fontSize: 14, flex: 1 }}>{t("dishesInMenu")}</Text>
-                <Text style={styles.details}>{numberOfMenuDishes}</Text>
+              <View>
+                <View style={styles.row}>
+                  <Text style={{ fontSize: 14, flex: 1 }}>{t("menu")}</Text>
+                  <Text style={styles.details}>{selectedMenu.name}</Text>
+                </View>
+                {selectedMenu.menuItems.map((item, idx) => (
+                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                    <Text style={styles.dishName}>{item.dishName}</Text>
+                  </View>
+                )
+                )}
               </View>
             )}
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("dishList")}</Text>
-              <Text style={[styles.details, { flex: 2 }]}>{dishList}</Text>
+            <View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
+              </View>
+              {selectedMenu ? (
+                Object.keys(extraDishIds).map((key, idx) => (
+                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                    <Text style={styles.dishName}>{extraDishIds[key].name}</Text>
+                  </View>
+                ))) : (
+                Object.keys(selectedDishes).map((key, idx) => (
+                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                    <Text style={styles.dishName}>{selectedDishes[key].name}</Text>
+                  </View>
+                )))
+              }
             </View>
+
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
               <Text style={styles.details}>
-                {chefBringIngredients === "true" ? t("chefWillPrepareIngredients") : t("IWillPrepareIngredients")}
+                {ingredientPrep === "customer" ? t("IWillPrepareIngredients") : t("chefWillPrepareIngredients")}
               </Text>
             </View>
+            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+              {t("specialRequest")}
+            </Text>
+            <Text style={{ fontSize: 14 }}>{specialRequest}</Text>
           </View>
         </View>
         <View style={{ padding: 5 }} />
@@ -340,7 +278,7 @@ const ConfirmBookingScreen = () => {
               {t("total")}:
             </Text>
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-              {bookingData.totalPrice?.toLocaleString("en-US", {
+              {calcuResult.totalPrice?.toLocaleString("en-US", {
                 style: "currency",
                 currency: "USD",
               }) || "$0"}

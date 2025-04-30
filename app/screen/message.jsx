@@ -42,8 +42,8 @@ const Message = () => {
                     .map(doc => doc.data())
                     .filter(
                         message =>
-                            (message.sender === user.userId && message.receiver === contact.id) ||
-                            (message.sender === contact.id && message.receiver === user.userId)
+                            (message.sender === user.userId && message.receiver === contact.id.toString()) ||
+                            (message.sender === contact.id.toString() && message.receiver === user.userId)
                     )
                     .map(doc => ({
                         id: doc._id,
@@ -67,7 +67,7 @@ const Message = () => {
                 name: user.fullName,
                 avatar: user.avatarUrl
             },
-            receiver: contact.id,
+            receiver: contact.id.toString(),
             _id: Math.random().toString(36),
             // read: false,
         };
@@ -75,7 +75,7 @@ const Message = () => {
         await addDoc(collection(database, 'chats'), newMessage);
 
         const userPromises = [];
-        userPromises.push(getUserById(contact.id).then(userInfo => {
+        userPromises.push(getUserById(contact.id.toString()).then(userInfo => {
             if (userInfo) {
                 console.log("reciver:", userInfo);
                 setReceiver(userInfo);

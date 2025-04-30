@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
+    TextInput, // Add TextInput for search
 } from "react-native";
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,6 +26,7 @@ const ChefDishes = () => {
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedDishes, setSelectedDishes] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(""); // State to manage search input
     const router = useRouter();
     const axiosInstance = useAxios();
     const { user } = useContext(AuthContext);
@@ -45,6 +47,7 @@ const ChefDishes = () => {
                 params: { chefId: user.chefId }
             });
             setDishes(response.data.content);
+            setFilteredDishes(response.data.content); // Initialize filtered dishes
         } catch (error) {
             if (error.response?.status === 401) {
                 return;
@@ -55,6 +58,19 @@ const ChefDishes = () => {
             showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu món ăn.", "Failed");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const filterDishes = (query) => {
+        setSearchQuery(query);
+        if (query === "") {
+            setFilteredDishes(dishes); // Show all dishes when the search bar is empty
+        } else {
+            const filtered = dishes.filter(dish =>
+                dish.name.toLowerCase().includes(query.toLowerCase()) ||
+                dish.description.toLowerCase().includes(query.toLowerCase())
+            );
+            setFilteredDishes(filtered);
         }
     };
 
@@ -81,7 +97,6 @@ const ChefDishes = () => {
         setSelectedDishes([]);
     };
 
-
     const handleDelete = async () => {
         if (selectedDishes.length === 0) return;
         showConfirm("Delele confirm", `Are you sure want to delete ${selectedDishes.length} dishes?`, () => requireAuthAndNetWork(async () => {
@@ -94,8 +109,6 @@ const ChefDishes = () => {
 
                 fetchDishes();
                 setSelectedDishes([]);
-                console.log(results);
-                console.log("statusss", results.length);
                 results.forEach((result) => {
                     if (result.status === "fulfilled") {
                         successCount++;
@@ -108,7 +121,7 @@ const ChefDishes = () => {
                 } else if (errorCount === results.length) {
                     showModal("Error", "All dishes delete failed.", "Failed");
                 } else {
-                    showModal("Warning", `Some dishes created failed. Number of dishes success: ${successCount}, Number of dishes failed: ${errorCount}`, "Warning");
+                    showModal("Warning", `Some dishes failed to delete. Success: ${successCount}, Failed: ${errorCount}`, "Warning");
                 }
             } catch (error) {
                 if (error.response?.status === 401) {
@@ -121,15 +134,22 @@ const ChefDishes = () => {
             } finally {
                 setLoading(false);
             }
-        }))
-
-    }
-
-
+        }));
+    };
 
     return (
         <SafeAreaView style={styles.container}>
             <Header title="All dishes" rightIcon={"add"} onRightPress={() => router.push("/screen/addFood")} />
+
+            <View style={styles.searchBarContainer}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search dishes..."
+                    value={searchQuery}
+                    onChangeText={filterDishes}
+                />
+            </View>
+
             {selectionMode && (
                 <View style={styles.floatingActions}>
                     <TouchableOpacity style={[styles.floatingButton, { flexDirection: 'row', alignItems: 'center' }]} onPress={selectAll}>
@@ -140,60 +160,38 @@ const ChefDishes = () => {
                         <Text style={[styles.floatingText, { color: "red" }]}>({selectedDishes.length})</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.floatingButton, { backgroundColor: "#E0E0E0" }]} onPress={cancelSelection}>
-                        {/* <Text style={[styles.floatingText, { color: "#333" }]}>Hủy</Text> */}
                         <MaterialIcons name="cancel" size={24} color="black" />
                     </TouchableOpacity>
                 </View>
             )}
 
-
             <FlatList
-                data={dishes}
+                data={filteredDishes} // Use filtered dishes here
                 keyExtractor={(item) => item.id.toString()}
                 numColumns={2}
-                // refreshing={refresh}
-                // onRefresh={fetchDishes}
                 contentContainerStyle={{ padding: 10, gap: 20, paddingVertical: 30 }}
                 columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 15 }}
-                ListEmptyComponent={
-                    // !loading ? (
-                    <Text style={{ textAlign: "center", fontSize: 16 }}>No dish available</Text>
-                    // ) : (
-                    // <ActivityIndicator size="large" color="#6c5ce7" />
-                    // )
-                }
-                ListHeaderComponent={
-                    loading && (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#6c5ce7" />
-                        </View>
-                    )
-                }
+                ListEmptyComponent={<Text style={{ textAlign: "center", fontSize: 16 }}>No dish available</Text>}
+                ListHeaderComponent={loading && (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#6c5ce7" />
+                    </View>
+                )}
                 renderItem={({ item: dish }) => (
                     <TouchableOpacity
-                        style={[
-                            styles.cardContainer,
-                            selectedDishes.includes(dish.id) && styles.selectedCard,
-                        ]}
+                        style={[styles.cardContainer, selectedDishes.includes(dish.id) && styles.selectedCard]}
                         onLongPress={() => handleLongPress(dish.id)}
                         onPress={() => {
                             if (selectionMode) {
                                 toggleSelection(dish.id);
                             } else {
-                                router.push({
-                                    pathname: "/screen/dishDetails",
-                                    params: { dishId: dish.id },
-                                })
+                                router.push({ pathname: "/screen/dishDetails", params: { dishId: dish.id } });
                             }
                         }}
                     >
                         <View style={styles.card}>
                             <View style={styles.imageContainer}>
-                                <Image
-                                    source={{ uri: dish.imageUrl }}
-                                    style={styles.image}
-                                    defaultSource={require("../../assets/images/1.jpg")}
-                                />
+                                <Image source={{ uri: dish.imageUrl }} style={styles.image} defaultSource={require("../../assets/images/1.jpg")} />
                             </View>
                             <Text style={styles.title}>{dish.name}</Text>
                             <Text style={styles.description}>{dish.description}</Text>
@@ -209,24 +207,22 @@ const ChefDishes = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FDFBF6",
+        backgroundColor: "#FDFBF6"
     },
-    actionButtons: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        backgroundColor: "#FFF",
-        borderTopWidth: 1,
-        borderTopColor: "#EEE",
+    searchBarContainer: {
+        padding: 10,
+        backgroundColor: "#FFF"
     },
-    actionText: {
-        color: "#007BFF",
-        fontSize: 16,
+    searchInput: {
+        height: 50,
+        borderColor: '#F8BF40',
+        borderWidth: 1,
+        borderRadius: 20,
+        paddingLeft: 10
     },
     cardContainer: {
         width: "48%",
-        alignItems: "center",
+        alignItems: "center"
     },
     selectedCard: {
         borderWidth: 3,
@@ -238,9 +234,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 8,
         elevation: 10,
-        transform: [{ scale: 1.03 }],
+        transform: [{ scale: 1.03 }]
     },
-
     card: {
         backgroundColor: "#A9411D",
         borderRadius: 16,
@@ -248,14 +243,12 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         alignItems: "center",
         width: "100%",
-        //   height:'100%',
         height: 220,
         position: "relative",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
-        shadowRadius: 4,
-        //   elevation: 5,
+        shadowRadius: 4
     },
     imageContainer: {
         width: 120,
@@ -266,12 +259,12 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: -30,
         justifyContent: "center",
-        alignItems: "center",
+        alignItems: "center"
     },
     image: {
         width: "100%",
         height: "100%",
-        resizeMode: "cover",
+        resizeMode: "cover"
     },
     title: {
         fontSize: 16,
@@ -279,28 +272,26 @@ const styles = StyleSheet.create({
         color: "#FFF",
         marginTop: 60,
         textAlign: "center",
-        marginBottom: 4,
+        marginBottom: 4
     },
     description: {
         fontSize: 13,
         color: "#F8BF40",
         textAlign: "center",
-        marginBottom: 6,
+        marginBottom: 6
     },
     cookTime: {
         fontSize: 13,
         color: "#FFFFFFAA",
-        textAlign: "center",
+        textAlign: "center"
     },
-
     floatingActions: {
         position: "absolute",
         bottom: 20,
         right: 20,
         zIndex: 999,
-        gap: 10,
+        gap: 10
     },
-
     floatingButton: {
         backgroundColor: "#FFF9C4",
         paddingVertical: 10,
@@ -313,13 +304,11 @@ const styles = StyleSheet.create({
         elevation: 6,
         alignItems: 'center'
     },
-
     floatingText: {
         fontSize: 16,
         color: "#333",
-        fontWeight: "bold",
+        fontWeight: "bold"
     },
-
 });
 
 export default ChefDishes;

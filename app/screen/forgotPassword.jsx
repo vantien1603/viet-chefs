@@ -15,6 +15,7 @@ import AXIOS_BASE from "../../config/AXIOS_BASE";
 import useAxios from "../../config/AXIOS_API";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
+import { t } from "i18next";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   input: {
     height: 50,
     width: "100%",
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 15,

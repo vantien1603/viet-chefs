@@ -24,7 +24,7 @@ async function registerForPushNotificationsAsync() {
     }
 
     if (finalStatus !== 'granted') {
-      Alert.alert('Failed to get push token for push notification!');
+      // Alert.alert('Failed to get push token for push notification!');
       return null;
     }
 
@@ -49,50 +49,8 @@ export default function WelcomeScreen() {
   const [hasNavigated, setHasNavigated] = useState(false);
   const { user, loading } = useContext(AuthContext);
 
-
-  // const setupNotifications1 = async () => {
-  //   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  //   let finalStatus = existingStatus;
-
-  //   if (existingStatus !== 'granted') {
-  //     const { status } = await Notifications.requestPermissionsAsync();
-  //     finalStatus = status;
-  //   }
-
-  //   if (finalStatus !== 'granted') {
-  //     Alert.alert('Failed to get push token for push notification!');
-  //     return;
-  //   }
-
-  //   const token = (await Notifications.getExpoPushTokenAsync()).data;
-  //   console.log('Expo Push Token:', token);
-  //   await SecureStore.setItemAsync("expoPushToken", token);
-
-  //   Notifications.setNotificationHandler({
-  //     handleNotification: async () => ({
-  //       shouldShowAlert: true,
-  //       shouldPlaySound: true,
-  //       shouldSetBadge: false,
-  //     }),
-  //   });
-
-  //   const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-  //   });
-
-  //   const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-  //     console.log('Notification clicked:', response);
-  //   });
-
-  //   return () => {
-  //     foregroundSubscription.remove();
-  //     responseSubscription.remove();
-  //   };
-  // };
-
-
   const setupNotifications = async () => {
     try {
-      // Đăng ký và lấy token
       const token = await registerForPushNotificationsAsync();
       if (token) {
         setExpoPushToken(token);
@@ -100,13 +58,11 @@ export default function WelcomeScreen() {
         console.log('Expo Push Token:', token);
       }
 
-      // Lấy kênh thông báo cho Android
       if (Platform.OS === 'android') {
         const value = await Notifications.getNotificationChannelsAsync();
         setChannels(value ?? []);
       }
 
-      // Cấu hình xử lý thông báo
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
@@ -115,7 +71,6 @@ export default function WelcomeScreen() {
         }),
       });
 
-      // Làm sạch các subscription cũ
       if (notificationListener.current) {
         Notifications.removeNotificationSubscription(notificationListener.current);
       }
@@ -123,16 +78,11 @@ export default function WelcomeScreen() {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
 
-      // Lắng nghe thông báo khi app ở foreground
       notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
         setNotification(notification);
-        Alert.alert(
-          'Thông báo nhận được!',
-          notification.request.content.body || 'Có thông báo mới'
-        );
+        
       });
 
-      // Lắng nghe khi người dùng tương tác với thông báo
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
         console.log('Notification clicked:', response);
       });
@@ -155,7 +105,7 @@ export default function WelcomeScreen() {
   };
 
   const handleLogin = () => {
-    router.push('screen/login');
+    router.push("screen/login");
   };
 
 
@@ -187,26 +137,26 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView
       style={{
-        height: '100%',
-        alignItems: 'center',
-        backgroundColor: '#EBE5DD',
-        justifyContent: 'center',
+        height: "100%",
+        alignItems: "center",
+        backgroundColor: "#EBE5DD",
+        justifyContent: "center",
       }}
     >
-      <View style={{ alignItems: 'center' }}>
+      <View style={{ alignItems: "center" }}>
         <Image
-          source={require('../assets/images/logo.png')}
+          source={require("../assets/images/logo.png")}
           style={{ width: 400, height: 250 }}
-          resizeMode='cover'
+          resizeMode="cover"
         />
         <Text
           style={{
             marginTop: 25,
             fontSize: 35,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            color: '#A9411D',
-            fontFamily: 'nunito-bold',
+            fontWeight: "bold",
+            textAlign: "center",
+            color: "#A9411D",
+            fontFamily: "nunito-bold",
           }}
         >
           VIỆT CHEFS
@@ -215,14 +165,14 @@ export default function WelcomeScreen() {
 
       <View>
         <TouchableOpacity
-          onPress={() => router.push('screen/signup')}
+          onPress={() => router.push("screen/signup")}
           style={{
             padding: 13,
             marginTop: 40,
-            backgroundColor: '#383737',
+            backgroundColor: "#383737",
             borderRadius: 50,
             borderWidth: 2,
-            borderColor: '#383737',
+            borderColor: "#383737",
             width: 300,
           }}
           disabled={isCheckingUser}
@@ -248,7 +198,7 @@ export default function WelcomeScreen() {
             padding: 13,
             marginTop: 10,
             borderWidth: 2,
-            borderColor: '#383737',
+            borderColor: "#383737",
             borderRadius: 50,
             width: 300,
           }}

@@ -63,7 +63,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
           ))}
 
         </Text>
-        <Text style={styles.itemContentLabel}>Price: {item.totalPrice}</Text>
+        <Text style={styles.itemContentLabel}>Price: ${item.totalPrice}</Text>
       </TouchableOpacity>
     )
 
@@ -117,17 +117,6 @@ const Schedule = () => {
     if (loading && !isRefresh) return;
     setLoading(true);
     try {
-      // const response = await axiosInstance.get('/bookings/booking-details/chefs'
-      //   , {
-      //     params: {
-      //       pageNo: pageNum,
-      //       pageSize: PAGE_SIZE,
-      //       sortBy: 'id',
-      //       sortDir: 'asc',
-      //     },
-      //   }
-      // );
-
       const requests = statuses.map(status =>
         axiosInstance.get('/bookings/booking-details/chefs', {
           params: {
@@ -262,46 +251,6 @@ const Schedule = () => {
           />
         )}
       />
-
-
-      {/* <ScrollView>
-        {schedules.length > 0 ? schedules.map((item) = (
-          <TouchableOpacity key={item.id} style={[styles.section,]} onPress={() => onViewDetail(item.id)}>
-            <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
-              <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
-            </View>
-            <Text numberOfLines={1} ellipsizeMode="tail">
-              <Text style={styles.itemContentLabel}>Address: </Text>
-              <Text style={styles.itemContent}>{item.location}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.itemContentLabel}>Dinner time: </Text>
-              <Text style={styles.itemContent}>{item.startTime}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.itemContentLabel}>Travel time: </Text>
-              <Text style={styles.itemContent}>{item.timeBeginTravel}</Text>
-            </Text>
-            <Text numberOfLines={2} ellipsizeMode="tail">
-              <Text style={styles.itemContentLabel}>Dishes: </Text>
-              {item.dishes?.length === 0 && (
-                <Text style={styles.itemContent}>
-                  Not yet
-                </Text>
-              )}
-              {item.dishes && item.dishes.map((dish) => (
-                <Text key={dish.id} style={styles.itemContent}>{dish.dish?.name}, </Text>
-              ))}
-
-            </Text>
-            <Text style={styles.itemContentLabel}>Price: {item.totalPrice}</Text>
-          </TouchableOpacity>
-        )) : (
-          <Text style={{ textAlign: 'center' }}>No schedules</Text>
-        )}
-      </ScrollView> */}
-
     </SafeAreaView>
   );
 };

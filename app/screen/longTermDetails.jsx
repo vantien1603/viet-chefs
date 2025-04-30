@@ -152,7 +152,7 @@ const LongTermDetailsScreen = () => {
                     styles.detailStatus,
                     {
                       color:
-                        detail.status === "CONFIRMED"
+                        detail.status === "COMPLETED"
                           ? "#2ECC71"
                           : detail.status === "PENDING"
                             ? "#A64B2A"

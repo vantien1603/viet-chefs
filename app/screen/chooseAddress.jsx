@@ -20,6 +20,8 @@ import Toast from "react-native-toast-message";
 import { API_GEO_KEY } from "@env";
 import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
+import { useSelectedItems } from "../../context/itemContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ChooseAddressScreen = () => {
   const params = useLocalSearchParams();
@@ -31,12 +33,13 @@ const ChooseAddressScreen = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const { showModal } = useCommonNoification();
+  const { address, setAddress } = useSelectedItems();
+
   useEffect(() => {
     const fetchAddress = async () => {
       try {
         const response = await axiosInstance.get("/address/my-addresses");
         setAddresses(response.data);
-        console.log(response.data);
       } catch (error) {
         if (error.response?.status === 401) {
           return;
@@ -110,6 +113,7 @@ const ChooseAddressScreen = () => {
   const handleSearch = (query) => {
     setSearchQuery(query);
     setNewAddress({ ...newAddress, address: query });
+    fetchAddressSuggestions(query);
   };
 
   const createAddress = async () => {
@@ -137,12 +141,11 @@ const ChooseAddressScreen = () => {
         setSearchQuery("");
         setSuggestions([]);
         showModal("Success", "Địa chỉ đã được tạo", "Success");
-
       }
     } catch (error) {
       if (error.response?.status === 401) {
         return;
-    }
+      }
       if (axios.isCancel(error)) {
         return;
       }
@@ -150,56 +153,56 @@ const ChooseAddressScreen = () => {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedAddressIndex === null) {
       showModal("Error", "Vui lòng chọn một địa chỉ.", "Failed");
       return;
     }
-
     const selectedAddress = addresses[selectedAddressIndex];
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        chefId: params.chefId,
-        selectedMenu: params.selectedMenu,
-        selectedDishes: params.selectedDishes,
-        dishNotes: params.dishNotes,
-        sessionDate: params.sessionDate,
-        startTime: params.startTime,
-        address: selectedAddress.address,
-        numPeople: params.numPeople,
-        requestDetails: params.requestDetails,
-        menuId: params.menuId,
-        selectedAddress: JSON.stringify(selectedAddress),
-      },
-    });
+    setAddress(selectedAddress.address);
+    await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
+    router.replace("/screen/booking");
   };
 
+
+  useEffect(() => {
+    console.log(address);
+    if (address && addresses.length > 0) {
+      console.log("do")
+      const index = addresses.findIndex(
+        (item) =>
+          item.address === address?.address &&
+          item.title === address?.title
+      );
+      console.log("inde", index);
+      if (index !== -1) {
+        setSelectedAddressIndex(index);
+      }
+    }
+  }, [addresses, address]);
+
+
   const renderAddressItem = ({ item, index }) => (
-    <View style={styles.addressContainer}>
-      <TouchableOpacity onPress={() => setSelectedAddressIndex(index)}>
-        <Ionicons
-          name={
-            selectedAddressIndex === index
-              ? "radio-button-on"
-              : "radio-button-off"
-          }
-          size={24}
-          color={selectedAddressIndex === index ? "#A64B2A" : "#999"}
-        />
-      </TouchableOpacity>
+    <TouchableOpacity style={styles.addressContainer} onPress={() => setSelectedAddressIndex(index)}>
+      <Ionicons
+        name={
+          selectedAddressIndex === index
+            ? "radio-button-on"
+            : "radio-button-off"
+        }
+        size={24}
+        color={selectedAddressIndex === index ? "#A64B2A" : "#999"}
+      />
       <View style={styles.addressDetails}>
         <Text style={styles.titleText}>{item.title}</Text>
         <Text style={styles.addressText}>{item.address}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Choose Address" />
-
-      {/* Address Section */}
+      <Header title="Choose Address" onLeftPress={() => router.replace("/screen/booking")} />
       <View style={styles.headerContainer}>
         <Text style={styles.sectionTitle}>{t("address")}</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -214,7 +217,6 @@ const ChooseAddressScreen = () => {
         contentContainerStyle={{ paddingBottom: 80 }}
       />
 
-      {/* Confirm Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.confirmButton}
@@ -224,7 +226,6 @@ const ChooseAddressScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Modal for Adding New Address */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -235,44 +236,16 @@ const ChooseAddressScreen = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("addNewAddress")}</Text>
 
-            {/* Title Selection with Home/Work Buttons */}
             <Text style={styles.inputLabel}>{t("addressLabel")}</Text>
-            <View style={styles.titleButtonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.titleButton,
-                  newAddress.title === "Home" && styles.titleButtonSelected,
-                ]}
-                onPress={() => setNewAddress({ ...newAddress, title: "Home" })}
-              >
-                <Text
-                  style={[
-                    styles.titleButtonText,
-                    newAddress.title === "Home" && styles.titleButtonTextSelected,
-                  ]}
-                >
-                  Home
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.titleButton,
-                  newAddress.title === "Work" && styles.titleButtonSelected,
-                ]}
-                onPress={() => setNewAddress({ ...newAddress, title: "Work" })}
-              >
-                <Text
-                  style={[
-                    styles.titleButtonText,
-                    newAddress.title === "Work" && styles.titleButtonTextSelected,
-                  ]}
-                >
-                  Work
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Title ex: home, work,..."
+              placeholderTextColor="#999"
+              value={newAddress.title}
+              onChangeText={(text) => setNewAddress({ ...newAddress, title: text })}
+            />
 
-            {/* Address Input */}
+
             <Text style={styles.inputLabel}>{t("address")}</Text>
             <TextInput
               style={styles.input}
@@ -287,7 +260,6 @@ const ChooseAddressScreen = () => {
               returnKeyType="search"
             />
 
-            {/* Address Suggestions */}
             {suggestions.length > 0 && (
               <ScrollView
                 style={styles.suggestionContainer}
@@ -307,7 +279,6 @@ const ChooseAddressScreen = () => {
               </ScrollView>
             )}
 
-            {/* Modal Buttons */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 onPress={() => {

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import useAxios from "../../config/AXIOS_API";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { t } from "i18next";
 import { AuthContext } from "../../config/AuthContext";
 import { Dropdown, MultiSelect } from "react-native-element-dropdown";
@@ -24,17 +24,16 @@ import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useConfirmModal } from "../../context/commonConfirm";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import axios from "axios";
+import { useSelectedItems } from "../../context/itemContext";
 
 const DishDetails = () => {
-  const navigation = useNavigation();
-  const { dishId, dishName, menuId, chefId } = useLocalSearchParams();
-  const [dishesName, setDishesName] = useState({ dishName });
+  const { dishId } = useLocalSearchParams();
+  const { selectedDishes, setSelectedDishes, setChefId, isLoop, setIsLoop, clearSelection } = useSelectedItems();
+  const [dishesName, setDishesName] = useState("");
   const [dish, setDish] = useState({});
   const [oldDish, setOldDish] = useState({});
   const [chef, setChef] = useState(null);
   const axiosInstance = useAxios();
-  const [selectedDishes, setSelectedDishes] = useState([]);
-  const [dishNotes, setDishNotes] = useState({});
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -44,6 +43,13 @@ const DishDetails = () => {
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
   const axiosInstanceForm = useAxiosFormData();
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log(isLoop);
+      if (!isLoop) clearSelection();
+    }, [])
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -72,10 +78,9 @@ const DishDetails = () => {
     fetchFoodTypes();
   }, [])
 
-
   useEffect(() => {
     fetchDishDetails();
-  }, [dishId, dishName, menuId]);
+  }, []);
 
   const fetchDishDetails = async () => {
     setLoading(true);
@@ -84,15 +89,6 @@ const DishDetails = () => {
       setDish(response.data);
       setDishesName(response.data.name)
       setOldDish(response.data);
-      if (menuId && response.data.id && !selectedDishes.some((item) => item.id === response.data.id)) {
-        setSelectedDishes([
-          {
-            id: response.data.id,
-            name: response.data.name || dishName,
-            imageUrl: response.data.imageUrl,
-          },
-        ]);
-      }
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -101,18 +97,16 @@ const DishDetails = () => {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
+      console.log(error.response.data.message)
       showModal("Error", "Có lỗi xảy ra trong quá trình tải món ăn", "Failed");
     } finally {
       setLoading(false);
     }
   };
 
-
-
-
   useEffect(() => {
     const fetchChefDetails = async () => {
-      const chefIdToFetch = dish.chefId || chefId || user.chefId;
+      const chefIdToFetch = dish?.chef?.id || user?.chefId;
       if (chefIdToFetch) {
         try {
           const response = await axiosInstance.get(`/chefs/${chefIdToFetch}`);
@@ -130,50 +124,37 @@ const DishDetails = () => {
       }
     };
     fetchChefDetails();
-  }, [dish.chefId, chefId]);
-
-  const handleAddItem = () => {
-    if (dish.id && !selectedDishes.some((item) => item.id === dish.id)) {
-      setSelectedDishes((prev) => [
-        ...prev,
-        {
-          id: dish.id,
-          name: dish.name || dishName,
-          imageUrl: dish.imageUrl,
-        },
-      ]);
-    }
-  };
-
-  const handleBooking = () => {
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        chefId: dish.chefId?.toString() || chefId,
-        selectedDishes: JSON.stringify(selectedDishes),
-        dishNotes: JSON.stringify(dishNotes),
-        latestDishId: dish.id?.toString(),
-      },
-    });
-  };
+  }, [dish?.chef?.id]);
 
   const handleBack = () => {
-    if (menuId) {
-      router.push({
-        pathname: "/screen/menuDetails",
-        params: {
-          menuId,
-          menuName,
-          chefId,
-          selectedDishes: JSON.stringify(selectedDishes),
-          latestDishId: dish.id?.toString(),
-        },
-      });
+    if (isLoop) {
+      setIsLoop(false);
+      router.replace("/screen/selectFood");
     } else {
-      navigation.goBack();
+      setIsLoop(false);
+      router.back();
+    }
+  }
+
+  const handleBooking = () => {
+    setChefId(dish.chef?.id);
+    if (!Object.values(selectedDishes).some((item) => item.id === dish.id)) {
+      setSelectedDishes((prev) => ({
+        ...prev,
+        [dish.id]: {
+          id: dish.id,
+          name: dish.name,
+          imageUrl: dish.imageUrl,
+          description: dish.description
+        },
+      }));
+    }
+    if (!isLoop) {
+      router.push("/screen/selectFood");
+    } else {
+      router.replace("/screen/selectFood");
     }
   };
-
 
   const pickImage = async () => {
     console.log('cc')
@@ -190,7 +171,6 @@ const DishDetails = () => {
   };
 
   const handleCancel = () => {
-    console.log("ccc")
     if (oldDish) {
       setDish(oldDish);
       setDishesName(oldDish.name);
@@ -199,13 +179,9 @@ const DishDetails = () => {
     setIsEditing(false);
   };
 
-
   const handleSave = async () => {
-    console.log("cccc");
     setLoading(true);
     try {
-      console.log("cccc1");
-
       const formData = new FormData();
       formData.append('chefId', user?.chefId);
       formData.append('foodTypeId', dish.foodTypeId);
@@ -216,7 +192,6 @@ const DishDetails = () => {
       formData.append('estimatedCookGroup', dish.estimatedCookGroup);
       formData.append('cookTime', dish.cookTime);
       formData.append('basePrice', dish.basePrice);
-      console.log("cccc2");
 
       if (image) {
         const filename = image.split("/").pop();
@@ -234,9 +209,6 @@ const DishDetails = () => {
         showModal("Success", "Update dishes successfully");
         fetchDishDetails();
       }
-      console.log("cccc3");
-
-
     } catch (error) {
       console.log(error);
       if (error.response?.status === 401) {
@@ -255,7 +227,6 @@ const DishDetails = () => {
       setLoading(false);
     }
   };
-
 
   const handleDelete = async () => {
     setLoading(true);
@@ -277,9 +248,7 @@ const DishDetails = () => {
       setLoading(false);
     }
   }
-
   return (
-
     <SafeAreaView style={commonStyles.container}>
       <ScrollView style={commonStyles.containerContent} showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
@@ -312,7 +281,7 @@ const DishDetails = () => {
           )}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={handleBack}
+            onPress={() => handleBack()}
           >
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
@@ -326,7 +295,7 @@ const DishDetails = () => {
               placeholder="Tên món ăn"
             />
           ) : (
-            <Text style={styles.dishName}>{dish.name || dishName}</Text>
+            <Text style={styles.dishName}>{dish.name}</Text>
           )}
 
 
@@ -342,8 +311,8 @@ const DishDetails = () => {
           ) : (
             <Text style={styles.description}>{dish.description}</Text>
           )}
-
-          <View >
+          {/* lat qua chef sua cai nay */}
+          <View style={{ marginBottom: 12 }}>
             {isEditing ? (
               <MultiSelect
                 style={styles.dropdown}
@@ -389,17 +358,14 @@ const DishDetails = () => {
                   color: 'black'
                 }}
               />
-
             ) : (
-              <>
+              <View style={styles.detailItem}>
                 <Ionicons name="fast-food-outline" size={20} color="black" />
                 <Text style={styles.detailText}>
                   Food type: {dish.foodTypes?.map(ft => ft.name).join(", ")}
                 </Text>
-              </>
+              </View>
             )}
-
-
           </View>
           <View style={styles.detailItem}>
             {isEditing ? (
@@ -449,38 +415,9 @@ const DishDetails = () => {
                   Cook Time: {dish.cookTime} mins
                 </Text>
               </>
-
             )}
           </View>
-          {/* </View> */}
-
-          {/* <View style={styles.detailsContainer}>
-          <View style={styles.detailItem}>
-            <Ionicons name="fast-food-outline" size={20} color="black" />
-            <Text style={styles.detailText}>Food type: {foodType.find(ft => parseInt(ft.value) === dish.foodTypeId)?.label || ""}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="restaurant-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>
-              {t("cuisine")}: {dish.cuisineType}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="home-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>
-              {t("type")}: {dish.serviceType}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="time-outline" size={20} color="#555" />
-            <Text style={styles.detailText}>
-              {t("cookTime")}: {dish.cookTime} {t("minutes")}
-            </Text>
-          </View>
-        </View> */}
-
           {user?.roleName != "ROLE_CHEF" && (
-
             chef && (
               <View style={styles.chefContainer}>
                 <Text style={styles.sectionTitle}>{t("chef")}</Text>
@@ -509,7 +446,6 @@ const DishDetails = () => {
             )
           )}
         </View>
-
       </ScrollView>
 
       {user?.roleName === "ROLE_CHEF" ? (
@@ -562,25 +498,19 @@ const DishDetails = () => {
           </View>
         )
       ) : (
-        !menuId && (
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={selectedDishes.length > 0 ? handleBooking : handleAddItem}
-            >
-              <Text style={styles.actionButtonText}>
-                {selectedDishes.length > 0
-                  ? `Booking - ${selectedDishes.length} item${selectedDishes.length > 1 ? "s" : ""}`
-                  : "Add Item"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleBooking}
+          >
+            <Text style={styles.actionButtonText}>
+              Select item
+            </Text>
+          </TouchableOpacity>
+        </View>
       )
       }
-
     </SafeAreaView >
-
   );
 };
 
@@ -593,8 +523,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 250,
     borderRadius: 20,
-    // borderBottomLeftRadius: 20,
-    // borderBottomRightRadius: 20,
   },
   backButton: {
     position: "absolute",
@@ -637,7 +565,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   chefContainer: {
-    paddingHorizontal: 16,
     marginBottom: 24,
   },
   sectionTitle: {
@@ -711,7 +638,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: 'row',
     justifyContent: 'space-around',
-    // zIndex:-1
   },
   updateButton: {
     backgroundColor: "orange",
@@ -761,7 +687,6 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    // marginLeft: 10,
     flex: 1,
   },
   selectedText: {
@@ -785,7 +710,5 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 10,
   },
-
 });
-
 export default DishDetails;

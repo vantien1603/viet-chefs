@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     marginBottom: 20,
   },
   summaryRow: {
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#CCCCCC",
     marginBottom: 20,
   },
   infoLabel: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: "#ccc",
+    borderTopColor: "#CCCCCC",
     flexDirection: "row", // Sắp xếp nút theo hàng ngang
     justifyContent: "space-between", // Các nút cách đều nhau
   },

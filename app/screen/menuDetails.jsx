@@ -102,14 +102,6 @@ const MenuDetails = () => {
         setLoadingAction(true);
         try {
             const selectedDishPayload = selectedDishes.map((dishId) => ({ dishId }));
-            const payload = {
-                name: editedMenu.name || menu.name,
-                description: editedMenu.description,
-                hasDiscount: editedMenu.hasDiscount,
-                discountPercentage: (editedMenu.discountPercentage || 0),
-                totalCookTime: editedMenu.totalCookTime / 60 || 0,
-                menuItems: selectedDishPayload
-            };
 
             const formData = new FormData();
             formData.append('name', editedMenu.name || menu.name);
@@ -328,17 +320,17 @@ const MenuDetails = () => {
                             </Text>
                         </TouchableOpacity>
 
-                        {isEditing && (
+                        {/* {isEditing && (
                             <TextInput
                                 placeholder="Total cook time (minutes)"
                                 keyboardType="numeric"
-                                value={editedMenu.totalCookTime?.toString() || ""}
+                                value={editedMenu.totalCookTime?.toString()}
                                 onChangeText={(text) =>
                                     setEditedMenu((prev) => ({ ...prev, totalCookTime: parseInt(text) || 0 }))
                                 }
                                 style={commonStyles.input}
                             />
-                        )}
+                        )} */}
 
 
                         <View>
@@ -349,7 +341,9 @@ const MenuDetails = () => {
                                     onChangeText={(text) =>
                                         setEditedMenu({ ...editedMenu, description: text })
                                     }
-                                    style={commonStyles.input}
+                                    style={commonStyles.inputDes}
+                                    textAlignVertical="top"
+                                    multiline={true}
                                 />
                             ) : (
                                 <Text style={styles.itemContent}>{menu.description}</Text>

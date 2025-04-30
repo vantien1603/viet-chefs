@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -19,21 +19,25 @@ import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../../config/AuthContext";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [favoriteLoading, setFavoriteLoading] = useState({});
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const { user } = useContext(AuthContext);
+  const requireAuthAndNetwork = useRequireAuthAndNetwork();
 
   useEffect(() => {
     fetchChefs();
     loadFavorites();
   }, []);
 
-  // Lấy danh sách yêu thích từ AsyncStorage khi khởi động
   const loadFavorites = async () => {
     try {
       const storedFavorites = await AsyncStorage.getItem("favorites");
@@ -41,7 +45,7 @@ const AllChefs = () => {
         setFavorites(JSON.parse(storedFavorites));
       }
     } catch (err) {
-      console.error("Lỗi khi tải danh sách yêu thích:", err);
+      showModal("Error", "Có lỗi khi tải danh sách đầu bếp yêu thích", "Failed");
     }
   };
 
@@ -66,21 +70,44 @@ const AllChefs = () => {
     }
   };
 
-  // Hàm xử lý thêm/xóa khỏi danh sách yêu thích
   const toggleFavorite = async (chefId) => {
-    let updatedFavorites;
-    if (favorites.includes(chefId)) {
-      updatedFavorites = favorites.filter((id) => id !== chefId);
-      Alert.alert("Thông báo", "Đã xóa đầu bếp khỏi danh sách yêu thích!");
-    } else {
-      updatedFavorites = [...favorites, chefId];
-      Alert.alert("Thông báo", "Đã thêm đầu bếp vào danh sách yêu thích!");
-    }
-    setFavorites(updatedFavorites);
+    setFavoriteLoading((prev) => ({ ...prev, [chefId]: true }));
     try {
-      await AsyncStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+      const isFavoriteResponse = await axiosInstance.get(
+        `/favorite-chefs/${user.userId}/chefs/${chefId}`
+      );
+      const isFavorite = isFavoriteResponse.data;
+      console.log("cac", isFavorite);
+
+      if (isFavorite) {
+        await axiosInstance.delete(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        const updatedFavorites = favorites.filter((id) => id !== chefId);
+        setFavorites(updatedFavorites);
+        await AsyncStorage.setItem(
+          "favorites",
+          JSON.stringify(updatedFavorites)
+        );
+      } else {
+        await axiosInstance.post(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        const updatedFavorites = [...favorites, chefId];
+        setFavorites(updatedFavorites);
+        await AsyncStorage.setItem(
+          "favorites",
+          JSON.stringify(updatedFavorites)
+        );
+      }
     } catch (err) {
-      console.error("Lỗi khi lưu danh sách yêu thích:", err);
+      let errorMessage =
+        err.response?.data?.message ||
+        `Lỗi khi ${favorites.includes(chefId) ? "xóa" : "thêm"
+        } đầu bếp vào danh sách yêu thích.`;
+      console.log("Error toggling favorite:", errorMessage);
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
     }
   };
 
@@ -129,16 +156,20 @@ const AllChefs = () => {
           </Text>
         </View>
       </View>
-      {/* Biểu tượng yêu thích ở góc dưới bên trái */}
       <TouchableOpacity
         style={styles.favoriteIcon}
-        onPress={() => toggleFavorite(item.id)}
+        onPress={() => requireAuthAndNetwork(() => toggleFavorite(item.id))}
+        disabled={favoriteLoading[item.id]}
       >
-        <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
-          size={24}
-          color={favorites.includes(item.id) ? "#e74c3c" : "#888"}
-        />
+        {favoriteLoading[item.id] ? (
+          <ActivityIndicator size="small" color="#e74c3c" />
+        ) : (
+          <Ionicons
+            name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+            size={24}
+            color={favorites.includes(item.id) ? "#e74c3c" : "#888"}
+          />
+        )}
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -172,16 +203,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -197,7 +218,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    position: "relative", // Để sử dụng position absolute cho biểu tượng
+    position: "relative",
   },
   chefAvatar: {
     width: 80,
@@ -245,9 +266,9 @@ const styles = StyleSheet.create({
   },
   favoriteIcon: {
     position: "absolute",
-    bottom: 16, // Khoảng cách từ dưới lên
-    left: 16, // Khoảng cách từ bên trái
-    padding: 4, // Khu vực nhấn lớn hơn
+    bottom: 16,
+    left: 16,
+    padding: 4,
   },
   loadingContainer: {
     flex: 1,

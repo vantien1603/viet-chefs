@@ -56,8 +56,20 @@ export const commonStyles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 20,
     backgroundColor: '#FFF8EF',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#968B7B'
+  },
+  inputDes: {
+    borderRadius: 10,
+    marginBottom: 15,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFF8EF',
+    borderWidth: 1,
+    borderColor: '#968B7B',
+    height: 100,
+
   },
   subButton: {
     textAlign: 'center',
@@ -91,7 +103,7 @@ export const commonStyles = StyleSheet.create({
   },
   orText: {
     textAlign: 'center',
-    color: '#ccc',
+    color: '#CCCCCC',
     marginVertical: 20,
   },
   googleButton: {

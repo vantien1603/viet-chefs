@@ -8,7 +8,6 @@ import useAxios from '../../config/AXIOS_API'
 import { AuthContext } from '../../config/AuthContext'
 import { useNavigation } from '@react-navigation/native'
 import { useCommonNoification } from '../../context/commonNoti'
-import useActionCheckNetwork from '../../hooks/useAction'
 import axios from 'axios'
 
 

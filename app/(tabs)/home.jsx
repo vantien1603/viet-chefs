@@ -184,7 +184,7 @@ export default function Home() {
         params: {
           customerLat: location.latitude,
           customerLng: location.longitude,
-          distance: 30,
+          distance: 300,
           pageNo: 0,
           pageSize: 30,
           sortBy: "id",
@@ -211,7 +211,7 @@ export default function Home() {
         params: {
           customerLat: location.latitude,
           customerLng: location.longitude,
-          distance: 30,
+          distance: 300,
           pageNo: 0,
           pageSize: 30,
           sortBy: "id",
