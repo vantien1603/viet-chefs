@@ -236,10 +236,6 @@ const OrderHistories = () => {
         onLoadMore={handleLoadMore}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        // role={user?.roleName}
-        // onAccept={handleAccept}
-        // onReject={handleReject}
-        // onPayment={handlePayment}
       />
     ),
   });

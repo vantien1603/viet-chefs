@@ -1,4 +1,3 @@
-import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -10,7 +9,6 @@ import {
   StyleSheet,
   TextInput,
   ActivityIndicator,
-  BackHandler,
   Image,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
@@ -21,8 +19,9 @@ import useAxios from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
 import moment from "moment";
 import { commonStyles } from "../../style";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { t } from "i18next";
+import { router, useLocalSearchParams } from "expo-router";
 
 // Utility Functions
 const generateTimeSlots = () => {
@@ -110,30 +109,10 @@ const LongTermSelectBooking = () => {
   const todayString = moment().format("YYYY-MM-DD");
 
   const toggleDishActive = (date, dishId) => {
-    setActiveDish(
-      (prev) =>
-        prev?.date === date && prev?.dishId === dishId
-          ? null // Ẩn nút X nếu nhấn lại
-          : { date, dishId } // Hiển thị nút X cho món được nhấn
+    setActiveDish((prev) =>
+      prev?.date === date && prev?.dishId === dishId ? null : { date, dishId }
     );
   };
-
-  useEffect(() => {
-    const backAction = () => {
-      router.push({
-        pathname: "/screen/longTermBooking",
-        params: { selectedPackage, numPeople, address, chefId },
-      });
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     handleMenu();
@@ -173,7 +152,6 @@ const LongTermSelectBooking = () => {
           ? JSON.parse(params.dishNotes)
           : {};
 
-      // Khôi phục trạng thái lặp lại
       if (params.isRepeatEnabled) {
         setIsRepeatEnabled(JSON.parse(params.isRepeatEnabled));
       }
@@ -185,7 +163,7 @@ const LongTermSelectBooking = () => {
         const existingDate = prev[date] || {
           selected: true,
           selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
-          showMenu: false,
+          showMenu: true, // Đặt mặc định showMenu là true khi quay lại từ chọn món
           startTime: "",
           menuId: null,
           extraDishIds: [],
@@ -227,14 +205,14 @@ const LongTermSelectBooking = () => {
 
       lastProcessedParams.current = paramsString;
     }
-  }, [params, isRepeatEnabled]);
+  }, []);
 
   const handleRepeatSelection = () => {
     if (!isRepeatEnabled || selectedWeekdays.length === 0) {
       Toast.show({
         type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng chọn ít nhất một ngày trong tuần.",
+        text1: t("error"),
+        text2: t("selectAtLeastOneWeekday"),
       });
       return;
     }
@@ -246,9 +224,8 @@ const LongTermSelectBooking = () => {
     if (hasSelectedFood) {
       Toast.show({
         type: "info",
-        text1: "Thông báo",
-        text2:
-          "Bạn đã chọn món ăn. Vui lòng xóa các ngày hiện tại trước khi áp dụng lịch mới.",
+        text1: t("info"),
+        text2: t("clearSelectedDatesBeforeNewSchedule"),
       });
       return;
     }
@@ -283,8 +260,8 @@ const LongTermSelectBooking = () => {
       if (currentDate.isAfter(moment(todayString).add(1, "year"))) {
         Toast.show({
           type: "error",
-          text1: "Lỗi",
-          text2: "Không thể chọn đủ ngày với các ngày trong tuần đã chọn.",
+          text1: t("error"),
+          text2: t("cannotSelectEnoughDays"),
         });
         return;
       }
@@ -293,8 +270,8 @@ const LongTermSelectBooking = () => {
     setSelectedDates(newDates);
     Toast.show({
       type: "success",
-      text1: "Đã chọn ngày",
-      text2: `Đã chọn ${selectedCount} ngày theo lịch lặp lại. Bạn có thể chỉnh sửa thủ công trên lịch.`,
+      text1: t("success"),
+      text2: t("datesSelectedWithRepeat", { count: selectedCount }),
     });
   };
 
@@ -360,18 +337,13 @@ const LongTermSelectBooking = () => {
         const response = await axiosInstance.get(
           `/bookings/unavailable-dates?chefId=${chefId}`
         );
-
         setUnavailableDates(response.data);
-        console.log("Unavailable dates:", response.data);
       } catch (error) {
-        console.error(
-          "Error fetching unavailable dates:",
-          error?.response?.data || error
-        );
+        console.error("Error fetching unavailable dates:", error);
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: "Unable to fetch unavailable dates.",
+          text1: t("error"),
+          text2: t("unableToFetchUnavailableDates"),
         });
       }
     };
@@ -443,16 +415,13 @@ const LongTermSelectBooking = () => {
         console.error("Unexpected response format:", response.data);
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: "Unexpected availability response format.",
+          text1: t("error"),
+          text2: t("unexpectedAvailabilityResponse"),
         });
       }
       setAvailability(availabilityMap);
     } catch (error) {
-      console.error(
-        "Error fetching availability:",
-        error?.response?.data || error.message
-      );
+      console.log("Error fetching availability:", error);
       setAvailability({});
     } finally {
       setIsFetchingAvailability(false);
@@ -463,10 +432,6 @@ const LongTermSelectBooking = () => {
     const dayAvailability = Array.isArray(availability[date])
       ? availability[date]
       : [];
-
-    if (!dayAvailability.length) {
-      return [];
-    }
 
     const availableSlots = new Set();
     dayAvailability.forEach(({ startTime: availStart, endTime: availEnd }) => {
@@ -511,8 +476,8 @@ const LongTermSelectBooking = () => {
     if (moment(dateString).isSameOrBefore(todayString, "day")) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Cannot select past dates.",
+        text1: t("error"),
+        text2: t("cannotSelectPastDates"),
       });
       return;
     }
@@ -520,38 +485,42 @@ const LongTermSelectBooking = () => {
     if (unavailableDates.includes(dateString)) {
       Toast.show({
         type: "error",
-        text1: "Unavailable",
-        text2: "This date is fully booked.",
+        text1: t("unavailable"),
+        text2: t("dateFullyBooked"),
       });
       return;
     }
 
-    let newSelection = { ...selectedDates };
-    if (newSelection[dateString]) {
-      delete newSelection[dateString];
-    } else if (
-      Object.keys(newSelection).length < selectedPackage.durationDays
-    ) {
-      newSelection[dateString] = {
-        selected: true,
-        selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
-        showMenu: false,
-        startTime: "",
-        menuId: null,
-        extraDishIds: [],
-        menuDishNotes: {},
-        extraDishNotes: {},
-        chefBringIngredients: false,
-      };
-    } else {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: `You can only select ${selectedPackage.durationDays} days.`,
-      });
-      return;
-    }
-    setSelectedDates(newSelection);
+    setSelectedDates((prev) => {
+      let newSelection = { ...prev };
+      if (newSelection[dateString]) {
+        delete newSelection[dateString];
+      } else if (
+        Object.keys(newSelection).length < selectedPackage.durationDays
+      ) {
+        newSelection[dateString] = {
+          selected: true,
+          selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
+          showMenu: false,
+          startTime: "",
+          menuId: null,
+          extraDishIds: [],
+          menuDishNotes: {},
+          extraDishNotes: {},
+          chefBringIngredients: false,
+        };
+      } else {
+        Toast.show({
+          type: "error",
+          text1: t("error"),
+          text2: t("maxDaysSelected", {
+            count: selectedPackage.durationDays,
+          }),
+        });
+        return prev;
+      }
+      return newSelection;
+    });
   };
 
   const removeDate = (date) => {
@@ -617,8 +586,10 @@ const LongTermSelectBooking = () => {
     if (Object.keys(selectedDates).length !== selectedPackage.durationDays) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: `Please select exactly ${selectedPackage.durationDays} days.`,
+        text1: t("error"),
+        text2: t("selectExactDays", {
+          count: selectedPackage.durationDays,
+        }),
       });
       return;
     }
@@ -626,19 +597,29 @@ const LongTermSelectBooking = () => {
     if (!numPeople || !address) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Guest count or address is invalid.",
+        text1: t("error"),
+        text2: t("invalidGuestCountOrAddress"),
       });
       return;
     }
+
+    // Kiểm tra xem có ngày nào trong 3 ngày tiếp theo (ngày mai, ngày mốt, ngày kia) được chọn không
+    const hasNearFutureDate = Object.keys(selectedDates).some((date) =>
+      moment(date).isBetween(
+        moment(todayString).add(1, "day"),
+        moment(todayString).add(3, "days"),
+        undefined,
+        "[]"
+      )
+    );
 
     for (const date of Object.keys(selectedDates)) {
       const selectedTime = selectedDates[date].startTime;
       if (!selectedTime) {
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: `Please select a start time for ${date}.`,
+          text1: t("error"),
+          text2: t("selectStartTime", { date }),
         });
         return;
       }
@@ -646,53 +627,31 @@ const LongTermSelectBooking = () => {
       if (!availableSlots.includes(selectedTime)) {
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: `Selected time ${selectedTime} for ${date} is not available.`,
+          text1: t("error"),
+          text2: t("timeNotAvailable", { time: selectedTime, date }),
         });
         return;
       }
 
-      // Kiểm tra bắt buộc chọn món khi showMenu = true
-      if (selectedDates[date].showMenu) {
+      // Nếu có ngày trong 3 ngày tiếp theo, tất cả các ngày phải bật showMenu và có món ăn
+      if (hasNearFutureDate) {
         if (
-          !selectedDates[date].menuId &&
-          (!selectedDates[date].extraDishIds ||
-            selectedDates[date].extraDishIds.length === 0)
+          !selectedDates[date].showMenu ||
+          (!selectedDates[date].menuId &&
+            (!selectedDates[date].extraDishIds ||
+              selectedDates[date].extraDishIds.length === 0))
         ) {
           Toast.show({
             type: "error",
-            text1: "Error",
-            text2: `Please select a menu or extra dishes for ${date}.`,
+            text1: t("error"),
+            text2: t("selectDishesForAllDays"),
           });
           return;
         }
       }
-
-      // Kiểm tra chọn món trong vòng 4 ngày
-      const isWithinFourDays = moment(date).isBetween(
-        moment(todayString),
-        moment(todayString).add(4, "days"),
-        undefined,
-        "[]"
-      );
-      if (
-        isWithinFourDays &&
-        selectedDates[date].showMenu &&
-        !selectedDates[date].menuId &&
-        (!selectedDates[date].extraDishIds ||
-          selectedDates[date].extraDishIds.length === 0)
-      ) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: `Please select dishes for ${date} to allow the chef to prepare.`,
-        });
-        return;
-      }
     }
 
     const bookingDetails = Object.keys(selectedDates).map((date) => {
-      // Lấy danh sách món ăn từ menu (nếu có menuId)
       const menuId = selectedDates[date].menuId;
       const menu = menuItems.find((m) => m.id === menuId);
       const menuDishes = menu
@@ -703,7 +662,6 @@ const LongTermSelectBooking = () => {
           }))
         : [];
 
-      // Lấy danh sách món ăn bổ sung từ extraDishIds
       const extraDishes = selectedDates[date].extraDishIds
         ? selectedDates[date].extraDishIds.map((dishId) => {
             const dish = dishes.find((d) => d.id === dishId);
@@ -715,7 +673,6 @@ const LongTermSelectBooking = () => {
           })
         : [];
 
-      // Kết hợp tất cả món ăn (menu + extra)
       const allDishes = [...menuDishes, ...extraDishes];
 
       return {
@@ -757,14 +714,17 @@ const LongTermSelectBooking = () => {
           numPeople,
           address,
           selectedDates: JSON.stringify(selectedDates),
+          dishes: JSON.stringify(
+            dishes.map((dish) => ({ id: dish.id, name: dish.name }))
+          ),
         },
       });
     } catch (error) {
       console.log("Error:", error.response?.data || error.message);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to calculate long-term booking.",
+        text1: t("error"),
+        text2: t("failedToCalculateBooking"),
       });
     }
   };
@@ -779,8 +739,8 @@ const LongTermSelectBooking = () => {
       console.log("Error fetching menus:", error);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Unable to fetch menus.",
+        text1: t("error"),
+        text2: t("unableToFetchMenus"),
       });
       setMenuItems([]);
     }
@@ -800,6 +760,13 @@ const LongTermSelectBooking = () => {
   };
 
   const navigateToSelectFood = (date) => {
+    setSelectedDates((prev) => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        showMenu: true, // Bật showMenu khi chuyển sang màn hình chọn món
+      },
+    }));
     router.push({
       pathname: "/screen/chooseFoodForLongterm",
       params: {
@@ -839,12 +806,12 @@ const LongTermSelectBooking = () => {
           contentContainerStyle={styles.scrollViewContent}
         >
           <Text style={styles.title}>
-            {t("selectedDate")} (Cần chọn đúng{" "}
-            {selectedPackage?.durationDays || 0} ngày):
+            {t("selectedDate")} ({t("needToSelect")}{" "}
+            {selectedPackage?.durationDays || 0} {t("days")}):
           </Text>
           <Text style={styles.summary}>
-            Đã chọn: {Object.keys(selectedDates).length}/
-            {selectedPackage?.durationDays || 0} ngày
+            {t("selected")}: {Object.keys(selectedDates).length}/
+            {selectedPackage?.durationDays || 0} {t("days")}
           </Text>
 
           {selectedPackage?.durationDays >= 10 && (
@@ -856,7 +823,11 @@ const LongTermSelectBooking = () => {
                     style={styles.infoButton}
                     onPress={showRepeatInfo}
                   >
-                    <Text style={styles.infoButtonText}>{t("apply")}</Text>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={20}
+                      color="black"
+                    />
                   </TouchableOpacity>
                 </View>
                 <Switch
@@ -906,7 +877,7 @@ const LongTermSelectBooking = () => {
                     onPress={handleRepeatSelection}
                     disabled={selectedWeekdays.length === 0}
                   >
-                    <Text style={styles.applyButtonText}>Áp dụng</Text>
+                    <Text style={styles.applyButtonText}>{t("apply")}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -920,7 +891,8 @@ const LongTermSelectBooking = () => {
                   ...acc,
                   [date]: {
                     selected: true,
-                    selectedColor: "#6C63FF",
+                    selectedColor:
+                      selectedDates[date].selectedColor || "#6C63FF",
                   },
                 }),
                 {}
@@ -968,18 +940,22 @@ const LongTermSelectBooking = () => {
               {expandedWeeks[index] !== false && (
                 <View style={styles.weekContent}>
                   {week.dates.map((date) => {
-                    const isWithinFourDays = moment(date).isBetween(
-                      moment(todayString),
-                      moment(todayString).add(4, "days"),
-                      undefined,
-                      "[]"
+                    // Kiểm tra xem có ngày nào trong 3 ngày tiếp theo được chọn không
+                    const hasNearFutureDate = Object.keys(selectedDates).some(
+                      (d) =>
+                        moment(d).isBetween(
+                          moment(todayString).add(1, "day"),
+                          moment(todayString).add(3, "days"),
+                          undefined,
+                          "[]"
+                        )
                     );
                     const needsMenuSelection =
-                      isWithinFourDays &&
-                      !selectedDates[date].showMenu &&
-                      !selectedDates[date].menuId &&
-                      (!selectedDates[date].extraDishIds ||
-                        selectedDates[date].extraDishIds.length === 0);
+                      hasNearFutureDate &&
+                      (!selectedDates[date].showMenu ||
+                        (!selectedDates[date].menuId &&
+                          (!selectedDates[date].extraDishIds ||
+                            selectedDates[date].extraDishIds.length === 0)));
 
                     return (
                       <View
@@ -1007,7 +983,7 @@ const LongTermSelectBooking = () => {
 
                         {needsMenuSelection && (
                           <Text style={styles.warningText}>
-                            {t("selectDishesMessage")}
+                            {t("selectDishesForAllDays")}
                           </Text>
                         )}
 
@@ -1019,11 +995,7 @@ const LongTermSelectBooking = () => {
                               updateBookingDetail(date, "showMenu", value)
                             }
                             trackColor={{ false: "#767577", true: "#81b0ff" }}
-                            thumbColor={
-                              selectedDates[date].showMenu
-                                ? "#f5dd4b"
-                                : "#f4f3f4"
-                            }
+                            thumbColor={selectedDates[date].showMenu ? "#f5dd4b" : "#f4f3f4"}
                           />
                         </View>
 
@@ -1149,10 +1121,7 @@ const LongTermSelectBooking = () => {
                                     const dish = dishes.find(
                                       (d) => d.id === dishId
                                     );
-                                    // console.log("dishdad", dish);
-                                    const imageUrl =
-                                      dish?.imageUrl ||
-                                      "https://via.placeholder.com/40";
+                                    const imageUrl = dish?.imageUrl;
 
                                     return (
                                       <TouchableOpacity
@@ -1177,7 +1146,10 @@ const LongTermSelectBooking = () => {
                                           {selectedDates[date].extraDishNotes[
                                             dishId
                                           ] &&
-                                            `(Ghi chú: ${selectedDates[date].extraDishNotes[dishId]})`}
+                                            `(${t("note")}: ${
+                                              selectedDates[date]
+                                                .extraDishNotes[dishId]
+                                            })`}
                                         </Text>
                                         <View style={styles.dishActions}>
                                           <Text
@@ -1217,8 +1189,8 @@ const LongTermSelectBooking = () => {
                             <View style={styles.switchContainer}>
                               <Text style={styles.label}>
                                 {selectedDates[date].chefBringIngredients
-                                  ? "Chef Bring Ingredients"
-                                  : "I will prepare Ingredients"}
+                                  ? t("chefBringIngredients")
+                                  : t("iWillPrepareIngredients")}
                               </Text>
                               <Switch
                                 value={selectedDates[date].chefBringIngredients}
@@ -1435,7 +1407,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#555",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,

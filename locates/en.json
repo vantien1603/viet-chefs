@@ -71,7 +71,7 @@
     "priceOfDishes": "Price of Dishes",
     "arrivalFee": "Arrival Fee",
     "chefServingFee": "Chef Serving Fee",
-    "platformFee": "Platform Fee",
+    "platformFee": "Applicable fees",
     "totalChefFee": "Total Chef Fee",
     "discountAmount": "Discount Amount",
     "schedule": "Schedule",
@@ -222,7 +222,13 @@
     "favoriteList": "Favorite List",
     "removedFromFavorites": "Removed From Favorites",
     "success": "Success",
-    "pleaseLogin": "Please Login"
+    "pleaseLogin": "Please Login",
+    "travelFee": "Travel fee",
+    "cookingFee" : "Cooking fee",
+    "dishFee" : "Dish fee",
+    "discount" : "Discount",
+    "totalCookTime" : "Total cook time",
+    "totalPerDay": "Total per Day"
 
 
 }

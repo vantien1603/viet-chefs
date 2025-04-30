@@ -434,12 +434,6 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
-                  name="screen/dishNote"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
                   name="screen/longTermDetails"
                   options={{
                     headerShown: false,

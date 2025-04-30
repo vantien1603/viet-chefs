@@ -320,21 +320,6 @@ const BookingCard = ({
             <Text style={styles.packageName} numberOfLines={1}>
               {booking.bookingPackage?.name || "One day"}
             </Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusStyle(status).backgroundColor },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: getStatusStyle(status).textColor },
-                ]}
-              >
-                {status}
-              </Text>
-            </View>
           </View>
           <Text style={styles.detailText}>
             <Ionicons name="person-outline" size={14} color="#64748b" /> Chef:{" "}

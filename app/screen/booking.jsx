@@ -9,7 +9,6 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
-  BackHandler,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { commonStyles } from "../../style";
@@ -132,10 +131,45 @@ const BookingScreen = () => {
   const [ingredientPrep, setIngredientPrep] = useState("customer");
   const [unavailableDates, setUnavailableDates] = useState([]);
 
-  const modalizeRef = useRef(null);
-  const addressModalizeRef = useRef(null);
+  const currentMonth = moment().format("MM");
+  const currentYear = moment().format("YYYY");
 
-  // Restore sessionDate and startTime
+  const modalizeRef = useRef(null);
+
+  const handlePrevMonth = () => {
+    setSelectedDay(null); // Reset selected day
+    setStartTime(null); // Reset start time
+    if (month === "01") {
+      setMonth("12");
+      setYear((prev) => (parseInt(prev) - 1).toString());
+    } else {
+      setMonth((prev) => {
+        const newMonth = parseInt(prev) - 1;
+        return newMonth.toString().padStart(2, "0");
+      });
+    }
+  };
+
+  const handleNextMonth = () => {
+    setSelectedDay(null); // Reset selected day
+    setStartTime(null); // Reset start time
+    if (month === "12") {
+      setMonth("01");
+      setYear((prev) => (parseInt(prev) + 1).toString());
+    } else {
+      setMonth((prev) => {
+        const newMonth = parseInt(prev) + 1;
+        return newMonth.toString().padStart(2, "0");
+      });
+    }
+  };
+
+  const isPrevMonthDisabled = () => {
+    const currentMoment = moment(`${currentYear}-${currentMonth}`, "YYYY-MM");
+    const selectedMoment = moment(`${year}-${month}`, "YYYY-MM");
+    return selectedMoment.isSameOrBefore(currentMoment, "month");
+  };
+
   useEffect(() => {
     if (sessionDate && moment(sessionDate, "YYYY-MM-DD").isValid()) {
       setSelectedDay(moment(sessionDate));
@@ -150,7 +184,6 @@ const BookingScreen = () => {
     }
   }, [paramStartTime]);
 
-  // Update address if passed back from ChooseAddressScreen
   useEffect(() => {
     if (params.selectedAddress) {
       const parsedSelectedAddress = JSON.parse(params.selectedAddress);
@@ -162,7 +195,6 @@ const BookingScreen = () => {
     }
   }, [params.selectedAddress]);
 
-  // Fetch unavailable dates
   useEffect(() => {
     const fetchUnavailableDates = async () => {
       try {
@@ -181,33 +213,6 @@ const BookingScreen = () => {
 
     fetchUnavailableDates();
   }, [chefId]);
-
-  useEffect(() => {
-    const backAction = () => {
-      router.push({
-        pathname: "/screen/selectFood",
-        params: {
-          chefId,
-          selectedMenu: parsedSelectedMenu
-            ? JSON.stringify(parsedSelectedMenu)
-            : null,
-          selectedDishes:
-            parsedSelectedDishes.length > 0
-              ? JSON.stringify(parsedSelectedDishes)
-              : null,
-          dishNotes: JSON.stringify(dishNotes),
-        },
-      });
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [chefId, parsedSelectedMenu, parsedSelectedDishes, dishNotes]);
 
   useEffect(() => {
     const loadSelectedAddress = async () => {
@@ -343,7 +348,6 @@ const BookingScreen = () => {
 
   const availableTimeSlots = getAvailableTimeSlots();
 
-  const isBeforeToday = (date) => date.isBefore(today, "day");
   const isSelectedDay = (day) => selectedDay && selectedDay.isSame(day, "day");
   const isToday = (date) => moment(date).isSame(today, "day");
 
@@ -354,22 +358,7 @@ const BookingScreen = () => {
   const decrementPeople = () =>
     setNumPeople((prev) => (prev > 1 ? prev - 1 : 1));
 
-  const fetchAddresses = async () => {
-    try {
-      const response = await axiosInstance.get("/address/my-addresses");
-      setAddresses(response.data);
-      console.log("Fetched addresses:", response.data);
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tải danh sách địa chỉ",
-      });
-    }
-  };
-
-  const openAddressModal = () => {
+  const chooseAddress = () => {
     router.push({
       pathname: "/screen/chooseAddress",
       params: {
@@ -393,19 +382,6 @@ const BookingScreen = () => {
     });
   };
 
-  const selectAddress = async (selectedAddress) => {
-    setAddress(selectedAddress.address);
-    try {
-      await AsyncStorage.setItem(
-        "selectedAddress",
-        JSON.stringify(selectedAddress)
-      );
-      console.log("Saved selected address:", selectedAddress.address);
-    } catch (error) {
-      console.error("Error saving selected address:", error);
-    }
-    addressModalizeRef.current?.close();
-  };
 
   const handleAddItems = () => {
     router.push({
@@ -445,24 +421,24 @@ const BookingScreen = () => {
     if (!selectedDay) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Please select a date.",
+        text1: t("error"),
+        text2: t("pleaseSelectDate"),
       });
       return;
     }
     if (!startTime) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Please select a start time.",
+        text1: t("error"),
+        text2: t("pleaseSelectStartTime"),
       });
       return;
     }
     if (!address) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Please select an address.",
+        text1: t("error"),
+        text2: t("pleaseSelectAddress"),
       });
       return;
     }
@@ -523,8 +499,8 @@ const BookingScreen = () => {
       );
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to calculate booking.",
+        text1: t("error"),
+        text2: error.response?.data?.message || t("failedToCalculateBooking"),
       });
     } finally {
       setLoading(false);
@@ -556,47 +532,12 @@ const BookingScreen = () => {
     })),
   ];
 
-  const renderAddressModal = () => (
-    <Modalize
-      ref={addressModalizeRef}
-      handlePosition="outside"
-      modalStyle={styles.modalStyle}
-      handleStyle={styles.handleStyle}
-      adjustToContentHeight={true}
-    >
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Select Address</Text>
-        {addresses.length === 0 ? (
-          <Text style={styles.noAddressesText}>{t("noAddresses")}</Text>
-        ) : (
-          addresses.map((item) => (
-            <TouchableOpacity
-              key={item.id.toString()}
-              onPress={() => selectAddress(item)}
-              style={styles.addressItem}
-            >
-              <View style={styles.addressInfo}>
-                <Text style={styles.addressTitle}>{item.title}</Text>
-                <Text style={styles.addressText}>{item.address}</Text>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
-        <TouchableOpacity
-          onPress={() => addressModalizeRef.current?.close()}
-          style={styles.cancelButton}
-        >
-          <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-        </TouchableOpacity>
-      </View>
-    </Modalize>
-  );
-
   const initialIndex = days.findIndex((item) => isToday(item.date));
   const safeInitialIndex = initialIndex >= 0 ? initialIndex : 0;
+
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title="Booking" onLeftPress={handleBack} />
+      <Header title={t("booking")} onLeftPress={handleBack} />
       <ScrollView
         style={{ flex: 1, paddingHorizontal: 10 }}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -634,7 +575,7 @@ const BookingScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("address")}</Text>
           <TouchableOpacity
-            onPress={openAddressModal}
+            onPress={chooseAddress}
             style={styles.locationContainer}
           >
             <MaterialIcons
@@ -644,13 +585,40 @@ const BookingScreen = () => {
               style={styles.locationIcon}
             />
             <Text style={styles.locationText}>
-              {address || "Select an address"}
+              {address || t("selectAnAddress")}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("selectDate")}</Text>
+          <View style={styles.monthNavigationContainer}>
+            <Text style={styles.sectionTitle}>
+              {t("selectDate")} -{" "}
+              {moment(`${year}-${month}`, "YYYY-MM").format("MMMM YYYY")}
+            </Text>
+            <View style={styles.monthButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.monthButton,
+                  isPrevMonthDisabled() && styles.disabledMonthButton,
+                ]}
+                onPress={handlePrevMonth}
+                disabled={isPrevMonthDisabled()}
+              >
+                <MaterialIcons
+                  name="chevron-left"
+                  size={24}
+                  color={isPrevMonthDisabled() ? "#D1D1D1" : "#A64B2A"}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.monthButton}
+                onPress={handleNextMonth}
+              >
+                <MaterialIcons name="chevron-right" size={24} color="#A64B2A" />
+              </TouchableOpacity>
+            </View>
+          </View>
           <FlatList
             data={days}
             keyExtractor={(item) => item.day.toString()}
@@ -683,14 +651,14 @@ const BookingScreen = () => {
                     } else if (isUnavailable) {
                       Toast.show({
                         type: "error",
-                        text1: "Unavailable",
-                        text2: "This date is fully booked.",
+                        text1: t("unavailable"),
+                        text2: t("dateFullyBooked"),
                       });
                     } else {
                       Toast.show({
                         type: "error",
-                        text1: "Invalid Date",
-                        text2: "Cannot select today or past dates.",
+                        text1: t("invalidDate"),
+                        text2: t("cannotSelectPastDates"),
                       });
                     }
                   }}
@@ -783,13 +751,7 @@ const BookingScreen = () => {
               {parsedSelectedMenu &&
               (parsedSelectedMenu.menuItems || []).length > 0
                 ? parsedSelectedMenu.menuItems.map((item, idx) => (
-                    <View
-                      key={idx}
-                      style={[
-                        styles.dishRow,
-                        latestDishId && item.dishId === parseInt(latestDishId),
-                      ]}
-                    >
+                    <View key={idx} style={styles.dishRow}>
                       <View style={styles.dishInfo}>
                         <Image
                           source={
@@ -804,7 +766,7 @@ const BookingScreen = () => {
                           <Text style={styles.dishName}>{item.dishName}</Text>
                           {dishNotes[item.dishId || item.id] && (
                             <Text style={styles.noteText}>
-                              {t("note")}: {dishNotes[item.dishId]}
+                              {t("note")}: {dishNotes[item.dishId || item.id]}
                             </Text>
                           )}
                         </View>
@@ -818,15 +780,7 @@ const BookingScreen = () => {
 
               {parsedSelectedDishes.length > 0 &&
                 parsedSelectedDishes.map((dish, idx) => (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.dishRow,
-                      latestDishId &&
-                        dish.id === parseInt(latestDishId) &&
-                        styles.latestDish,
-                    ]}
-                  >
+                  <View key={idx} style={styles.dishRow}>
                     <View style={styles.dishInfo}>
                       <Image
                         source={
@@ -839,7 +793,7 @@ const BookingScreen = () => {
                       />
                       <View style={styles.dishText}>
                         <Text style={styles.dishName}>
-                          {dish.name || "Unnamed Dish"}
+                          {dish.name || t("unnamedDish")}
                         </Text>
                         {dishNotes[dish.id] && (
                           <Text style={styles.noteText}>
@@ -966,9 +920,6 @@ const BookingScreen = () => {
           </View>
         </View>
       </Modalize>
-
-      {renderAddressModal()}
-      <Toast />
     </GestureHandlerRootView>
   );
 };
@@ -1093,11 +1044,9 @@ const styles = StyleSheet.create({
     color: "#777",
     marginTop: 5,
   },
-  latestTag: {
-    fontSize: 12,
-    color: "#A64B2A",
-    fontWeight: "bold",
-    marginTop: 5,
+  latestDish: {
+    borderColor: "#A64B2A",
+    borderWidth: 1,
   },
   editText: {
     fontSize: 14,
@@ -1352,13 +1301,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 10,
   },
-  loadingText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#777",
+  monthNavigationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
   },
-  ingredientPrepContainer: {
-    marginTop: 10,
+  monthButtons: {
+    flexDirection: "row",
+  },
+  monthButton: {
+    padding: 10,
+    marginLeft: 10,
+  },
+  disabledMonthButton: {
+    opacity: 0.5,
   },
 });
 

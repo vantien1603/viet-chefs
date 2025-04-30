@@ -19,9 +19,11 @@ import axios from "axios";
 import Toast from "react-native-toast-message";
 import { API_GEO_KEY } from "@env";
 import { t } from "i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ChooseAddressScreen = () => {
   const params = useLocalSearchParams();
+  const { source, chefId, selectedPackage, numPeople } = params; // Add source and other params
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
   const axiosInstance = useAxios();
   const [addresses, setAddresses] = useState([]);
@@ -158,7 +160,7 @@ const ChooseAddressScreen = () => {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedAddressIndex === null) {
       Toast.show({
         type: "error",
@@ -169,22 +171,48 @@ const ChooseAddressScreen = () => {
     }
 
     const selectedAddress = addresses[selectedAddressIndex];
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        chefId: params.chefId,
-        selectedMenu: params.selectedMenu,
-        selectedDishes: params.selectedDishes,
-        dishNotes: params.dishNotes,
-        sessionDate: params.sessionDate,
-        startTime: params.startTime,
-        address: selectedAddress.address,
-        numPeople: params.numPeople,
-        requestDetails: params.requestDetails,
-        menuId: params.menuId,
-        selectedAddress: JSON.stringify(selectedAddress),
-      },
-    });
+
+    // Save selected address to AsyncStorage
+    try {
+      await AsyncStorage.setItem(
+        "selectedAddress",
+        JSON.stringify(selectedAddress)
+      );
+      console.log("Saved selected address:", selectedAddress.address);
+    } catch (error) {
+      console.error("Error saving selected address:", error);
+    }
+
+    if (source === "longTerm") {
+      // Navigate back to LongTermBookingScreen
+      router.push({
+        pathname: "/screen/longTermBooking",
+        params: {
+          chefId,
+          selectedPackage,
+          numPeople,
+          address: selectedAddress.address,
+        },
+      });
+    } else {
+      // Navigate to regular booking screen
+      router.push({
+        pathname: "/screen/booking",
+        params: {
+          chefId: params.chefId,
+          selectedMenu: params.selectedMenu,
+          selectedDishes: params.selectedDishes,
+          dishNotes: params.dishNotes,
+          sessionDate: params.sessionDate,
+          startTime: params.startTime,
+          address: selectedAddress.address,
+          numPeople: params.numPeople,
+          requestDetails: params.requestDetails,
+          menuId: params.menuId,
+          selectedAddress: JSON.stringify(selectedAddress),
+        },
+      });
+    }
   };
 
   const renderAddressItem = ({ item, index }) => (
@@ -228,10 +256,7 @@ const ChooseAddressScreen = () => {
 
       {/* Confirm Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirm}
-        >
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
           <Text style={styles.confirmButtonText}>{t("confirm")}</Text>
         </TouchableOpacity>
       </View>
@@ -260,7 +285,8 @@ const ChooseAddressScreen = () => {
                 <Text
                   style={[
                     styles.titleButtonText,
-                    newAddress.title === "Home" && styles.titleButtonTextSelected,
+                    newAddress.title === "Home" &&
+                      styles.titleButtonTextSelected,
                   ]}
                 >
                   Home
@@ -276,7 +302,8 @@ const ChooseAddressScreen = () => {
                 <Text
                   style={[
                     styles.titleButtonText,
-                    newAddress.title === "Work" && styles.titleButtonTextSelected,
+                    newAddress.title === "Work" &&
+                      styles.titleButtonTextSelected,
                   ]}
                 >
                   Work
