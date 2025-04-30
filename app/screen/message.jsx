@@ -29,7 +29,6 @@ const Message = () => {
     const navigation = useNavigation();
     const { contact } = route.params;
 
-    console.log("cconascnac", contact);
     useEffect(() => {
         if (!user.userId || !contact.id) return;
 

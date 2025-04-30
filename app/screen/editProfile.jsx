@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
@@ -18,6 +19,7 @@ import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import Toast from "react-native-toast-message";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const EditProfile = () => {
   const router = useRouter();
@@ -53,6 +55,48 @@ const EditProfile = () => {
   );
   const [avatar, setAvatar] = useState(profileData.avatarUrl || null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({ name: "", phone: "", dob: "" });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Validation functions
+  const validatePhone = (phone) => {
+    const phoneRegex = /^\d{10}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const validateDob = (dob) => {
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobRegex.test(dob)) return false;
+    const date = new Date(dob);
+    return date instanceof Date && !isNaN(date) && date < new Date();
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { name: "", phone: "", dob: "" };
+
+    if (!name) {
+      newErrors.name = "Họ và tên là bắt buộc";
+      valid = false;
+    }
+    if (!phone) {
+      newErrors.phone = "Số điện thoại là bắt buộc";
+      valid = false;
+    } else if (!validatePhone(phone)) {
+      newErrors.phone = "Số điện thoại phải có đúng 10 chữ số";
+      valid = false;
+    }
+    if (!dob) {
+      newErrors.dob = "Ngày sinh là bắt buộc";
+      valid = false;
+    } else if (!validateDob(dob)) {
+      newErrors.dob = "Ngày sinh phải có định dạng YYYY-MM-DD và hợp lệ";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
 
   // Pick image with compression
   const pickImage = async () => {
@@ -71,7 +115,7 @@ const EditProfile = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5, // Compress image
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -79,15 +123,28 @@ const EditProfile = () => {
     }
   };
 
+  // Handle date selection
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === "ios"); // Keep picker open on iOS until confirmed
+    if (selectedDate) {
+      const formattedDate = selectedDate.toISOString().split("T")[0]; // Format to YYYY-MM-DD
+      setDob(formattedDate);
+      setErrors({
+        ...errors,
+        dob: validateDob(formattedDate) ? "" : "Ngày sinh không hợp lệ",
+      });
+    }
+  };
+
   // Update profile
   const handleUpdateProfile = async () => {
-    if (isLoading) return; // Ngăn spam nút Lưu
+    if (isLoading) return;
 
-    if (!name || !phone || !dob) {
+    if (!validateForm()) {
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: "Vui lòng điền đầy đủ thông tin bắt buộc!",
+        text2: "Vui lòng kiểm tra và điền đầy đủ thông tin hợp lệ!",
       });
       return;
     }
@@ -100,7 +157,6 @@ const EditProfile = () => {
       formData.append("gender", mapGenderToApi(gender));
       formData.append("phone", phone);
 
-      // Only append new avatar
       if (avatar && avatar !== profileData.avatarUrl) {
         const filename = avatar.split("/").pop();
         const match = /\.(\w+)$/.exec(filename);
@@ -131,10 +187,15 @@ const EditProfile = () => {
         });
         setTimeout(() => {
           router.back();
-        }, 1500); // Delay để hiển thị toast
+        }, 1500);
       }
     } catch (error) {
       console.log("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể cập nhật hồ sơ. Vui lòng thử lại!",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -145,10 +206,7 @@ const EditProfile = () => {
       <Header title="Chỉnh sửa hồ sơ" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: avatar }}
-            style={styles.avatar}
-          />
+          <Image source={{ uri: avatar }} style={styles.avatar} />
           <TouchableOpacity onPress={pickImage} disabled={isLoading}>
             <Text
               style={[styles.changeImageText, isLoading && styles.disabledText]}
@@ -167,12 +225,16 @@ const EditProfile = () => {
 
         <Text style={styles.label}>Họ và tên *</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.name && styles.inputError]}
           value={name}
-          onChangeText={setName}
+          onChangeText={(text) => {
+            setName(text);
+            setErrors({ ...errors, name: text ? "" : "Họ và tên là bắt buộc" });
+          }}
           editable={!isLoading}
           placeholder="Nhập họ và tên"
         />
+        {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
         <Text style={styles.label}>Email</Text>
         <TextInput
@@ -183,23 +245,49 @@ const EditProfile = () => {
 
         <Text style={styles.label}>Số điện thoại *</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.phone && styles.inputError]}
           value={phone}
-          onChangeText={setPhone}
+          onChangeText={(text) => {
+            setPhone(text);
+            setErrors({
+              ...errors,
+              phone: text
+                ? validatePhone(text)
+                  ? ""
+                  : "Số điện thoại phải có đúng 10 chữ số"
+                : "Số điện thoại là bắt buộc",
+            });
+          }}
           keyboardType="phone-pad"
           editable={!isLoading}
           placeholder="Nhập số điện thoại"
         />
+        {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
         <Text style={styles.label}>Ngày sinh *</Text>
-        <TextInput
-          style={styles.input}
-          value={dob}
-          onChangeText={setDob}
-          placeholder="YYYY-MM-DD"
-          keyboardType="numeric"
-          editable={!isLoading}
-        />
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          disabled={isLoading}
+        >
+          <TextInput
+            style={[styles.input, errors.dob && styles.inputError]}
+            value={dob}
+            editable={false}
+            placeholder="YYYY-MM-DD"
+          />
+        </TouchableOpacity>
+        {errors.dob && <Text style={styles.errorText}>{errors.dob}</Text>}
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={dob ? new Date(dob) : new Date()}
+            mode="date"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            maximumDate={new Date()}
+            onChange={handleDateChange}
+            locale="vi-VN"
+          />
+        )}
 
         <Text style={styles.label}>Giới tính</Text>
         <View style={styles.genderContainer}>
@@ -293,6 +381,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: "#FFF",
   },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 16,
+    marginTop: -10,
+  },
   disabledInput: {
     backgroundColor: "#F5F5F5",
     color: "#666",
@@ -336,12 +433,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
-    flexDirection: "row", // Để căn giữa ActivityIndicator và text
+    flexDirection: "row",
     justifyContent: "center",
   },
   saveButtonDisabled: {
     backgroundColor: "#AAA",
-    opacity: 0.7, // Làm mờ nút khi disabled
+    opacity: 0.7,
   },
   saveButtonText: {
     color: "#FFF",

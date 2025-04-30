@@ -25,7 +25,7 @@ const Chat = () => {
     const userDoc = await getDoc(userDocRef);
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      console.log('User Data:', userData);
+      // console.log('User Data:', userData);
       return userData;
     } else {
       console.log('No such document!');
@@ -46,7 +46,7 @@ const Chat = () => {
           const data = doc.data();
           if (data.sender === user.userId || data.receiver === user.userId) {
             const key = data.sender === user.userId ? data.receiver : data.sender;
-            console.log("key", key);
+            // console.log("key", key);
             userPromises.push(getUserById(key).then(userInfo => {
               if (userInfo) {
                 const currentTime = new Date(data.createdAt.seconds * 1000);
