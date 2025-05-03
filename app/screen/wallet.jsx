@@ -15,6 +15,7 @@ import { commonStyles } from "../../style";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import moment from "moment/moment";
+import { t } from "i18next";
 
 const WalletScreen = () => {
   const [balance, setBalance] = useState(0);
@@ -23,13 +24,14 @@ const WalletScreen = () => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [depositAmount, setDepositAmount] = useState(0);
-  const [showBalance, setShowBalance] = useState(false);
+  const [paypalAccountEmail, setPaypalAccountEmail] = useState(null);
   const params = useLocalSearchParams();
   const axiosInstance = useAxios();
 
   const fetchWalletData = async () => {
     try {
       const response = await axiosInstance.get("/users/profile/my-wallet");
+      console.log("data", response.data);
 
       const walletData = response.data.wallet;
       const customerTransactions =
@@ -40,6 +42,7 @@ const WalletScreen = () => {
       setWalletId(walletData.id);
       setWalletType(walletData.walletType);
       setDepositAmount(walletData.depositAmount ?? 0);
+      setPaypalAccountEmail(walletData.paypalAccountEmail);
 
       let formattedTransactions = [];
       const txList =
@@ -104,7 +107,7 @@ const WalletScreen = () => {
     if (walletId) {
       router.push({
         pathname: "/screen/withdrawal",
-        params: { id: walletId, balance },
+        params: { id: walletId, balance, paypalAccountEmail },
       });
     }
   };
@@ -118,10 +121,6 @@ const WalletScreen = () => {
       pathname: "/screen/statistic",
       params: { transactions: JSON.stringify(transactions) },
     });
-  };
-
-  const toggleShowBalance = () => {
-    setShowBalance(!showBalance);
   };
 
   const renderTransaction = ({ item, index }) => {
@@ -173,39 +172,24 @@ const WalletScreen = () => {
           </View>
           <View style={styles.balanceRow}>
             <View style={styles.balanceInfo}>
-              <TouchableOpacity
-                onPress={toggleShowBalance}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={showBalance ? "eye-outline" : "eye-off-outline"}
-                  size={20}
-                  color="#555"
-                />
-              </TouchableOpacity>
               <Text style={styles.balanceText}>
-                {showBalance
-                  ? (balance ?? 0).toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })
-                  : "********"}
+                ${balance.toLocaleString("en-US")}
               </Text>
             </View>
-            <View style={{flexDirection: "row", marginTop: 10}}>
+            <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.depositContainer}
                 onPress={handleDeposit}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
-                <Text style={styles.depositText}>Deposit</Text>
+                <Text style={styles.depositText}>{t("topUp")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.depositContainer}
                 onPress={handleWithdrawal}
               >
                 <Ionicons name="remove-circle-outline" size={18} color="#fff" />
-                <Text style={styles.depositText}>Withdrawal</Text>
+                <Text style={styles.depositText}>Withdraw</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -271,21 +255,27 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   balanceRow: {
-    // flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
+    justifyContent: "center",
     alignItems: "center",
   },
   balanceInfo: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
   },
   eyeIcon: {
     marginRight: 8,
   },
   balanceText: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#222",
     fontWeight: "600",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%", // Đảm bảo chiếm toàn bộ chiều rộng để căn giữa
   },
   depositContainer: {
     flexDirection: "row",
@@ -294,7 +284,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    marginRight: 10
+    width: "45%", // Chia đều không gian cho hai nút
+    justifyContent: "center",
   },
   depositText: {
     color: "#fff",
