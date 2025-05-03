@@ -45,6 +45,9 @@ const SearchResultScreen = () => {
   const [location, setLocation] = useState(null);
   const [distance, setDistance] = useState(30);
   const [tempDistance, setTempDistance] = useState(30);
+  const [priceRange, setPriceRange] = useState(null);
+  const [tempPriceRange, setTempPriceRange] = useState(null);
+  const [activeFilter, setActiveFilter] = useState(null); // Theo dõi field filter đang mở
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
@@ -56,9 +59,9 @@ const SearchResultScreen = () => {
       return null;
     }
   });
-  const [lastParams, setLastParams] = useState(null); // Lưu tham số lần gọi trước
-  const [lastDishResults, setLastDishResults] = useState([]); // Lưu kết quả món ăn
-  const [lastChefResults, setLastChefResults] = useState([]); // Lưu kết quả đầu bếp
+  const [lastParams, setLastParams] = useState(null);
+  const [lastDishResults, setLastDishResults] = useState([]);
+  const [lastChefResults, setLastChefResults] = useState([]);
 
   const distanceOptions = [
     { label: "1 km", value: 1 },
@@ -75,6 +78,11 @@ const SearchResultScreen = () => {
     { label: "$10 - $100", value: { min: 10, max: 100 } },
     { label: "$100 - $1000", value: { min: 100, max: 1000 } },
     { label: "Over $1000", value: { min: 1000, max: Infinity } },
+  ];
+
+  const filterFields = [
+    { index: 0, name: "Distance", value: distance ? `${distance} km` : "All" },
+    { index: 1, name: "Price", value: priceRange ? priceRange.label : "All" },
   ];
 
   useEffect(() => {
@@ -154,141 +162,24 @@ const SearchResultScreen = () => {
     }
   };
 
-  const getCurrentLocation = async () => {
-    setLoading(true);
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Toast.show({
-          type: "error",
-          text1: "Permission Denied",
-          text2: "Location services are required.",
-        });
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      let reverseGeocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (reverseGeocode.length > 0) {
-        let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
-          addr.city || ""
-        }, ${addr.region || ""}, ${addr.country || ""}`;
-
-        const newAddress = {
-          id: Date.now().toString(),
-          title: "Current Location",
-          address: fullAddress,
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-
-        setAddresses((prev) => [...prev, newAddress]);
-        selectAddress(newAddress);
-      }
-    } catch (error) {
-      console.error("Error getting current location:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to get location",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  //   if (!keyword || keyword.trim().length < 2) {
-  //     setSuggestions([]);
-  //     setShowSuggestions(false);
-  //     return;
-  //   }
-
-  //   const params = {
-  //     keyword,
-  //     customerLat: location?.latitude || 0,
-  //     customerLng: location?.longitude || 0,
-  //     distance,
-  //   };
-
-  //   // Kiểm tra tham số để sử dụng cache
-  //   if (lastParams && JSON.stringify(params) === JSON.stringify(lastParams)) {
-  //     setSuggestions(suggestions);
-  //     setShowSuggestions(suggestions.length > 0);
-  //     return;
-  //   }
-
-  //   try {
-  //     const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
-  //       params,
-  //     });
-  //     const chefsResponse = await axiosInstance.get("/chefs/nearby/search", {
-  //       params,
-  //     });
-
-  //     const dishSuggestions = dishesResponse.data.content
-  //       .map((dish) => ({
-  //         type: "dish",
-  //         id: dish.id,
-  //         name: dish.name,
-  //         imageUrl: dish.imageUrl,
-  //       }))
-  //       .slice(0, 5);
-
-  //     const chefSuggestions = chefsResponse.data.content
-  //       .map((chef) => ({
-  //         type: "chef",
-  //         id: chef.id,
-  //         name: chef.user.fullName || chef.user.username,
-  //         imageUrl: chef.user.avatarUrl,
-  //       }))
-  //       .slice(0, 5);
-
-  //     const combinedSuggestions = [...dishSuggestions, ...chefSuggestions];
-  //     setSuggestions(combinedSuggestions);
-  //     setShowSuggestions(combinedSuggestions.length > 0);
-  //     setLastParams(params); // Cập nhật tham số lần gọi
-  //   } catch (error) {
-  //     console.error("Error fetching suggestions:", error);
-  //     setSuggestions([]);
-  //     setShowSuggestions(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   const delayDebounceFn = setTimeout(() => {
-  //     // fetchSuggestions(searchQuery);
-  //   }, 500); // Tăng debounce lên 500ms
-
-  //   return () => clearTimeout(delayDebounceFn);
-  // }, [searchQuery, location, distance]);
-
   const fetchData = async (params) => {
     const {
       keyword = searchQuery || "",
       lat = location?.latitude,
       lng = location?.longitude,
       distance: dist = distance,
+      priceRange: pr = priceRange,
       isSearch = false,
     } = params;
-
-    if (!lat || !lng) {
-      setDishes([]);
-      setChefs([]);
-      return;
-    }
 
     const apiParams = {
       keyword,
       customerLat: lat,
       customerLng: lng,
       distance: dist,
+      ...(pr && { minPrice: pr.value.min, maxPrice: pr.value.max }),
     };
 
-    // Kiểm tra cache
     if (
       lastParams &&
       JSON.stringify({
@@ -337,7 +228,7 @@ const SearchResultScreen = () => {
         setIsSelected(1);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.log("Error fetching data:", error);
       setDishes([]);
       setChefs([]);
       if (isSearch) {
@@ -350,41 +241,29 @@ const SearchResultScreen = () => {
 
   useEffect(() => {
     const getLocationAndFetchData = async () => {
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert(
-            "Permission Denied",
-            "Location permission is required to search nearby chefs and dishes."
-          );
-          setLocation(null);
-          setDishes([]);
-          setChefs([]);
-          return;
-        }
-
-        if (!location) {
-          let userLocation = await Location.getCurrentPositionAsync({});
-          setLocation({
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-          });
-          await fetchData({
-            lat: userLocation.coords.latitude,
-            lng: userLocation.coords.longitude,
-          });
-        } else {
-          await fetchData({ lat: location.latitude, lng: location.longitude });
-        }
-      } catch (error) {
-        console.error("Error getting location:", error);
-        Alert.alert(
-          "Location Error",
-          "Failed to fetch your location. Please ensure location services are enabled."
-        );
-        setLocation(null);
-        setDishes([]);
-        setChefs([]);
+      if (selectedAddress?.latitude && selectedAddress?.longitude) {
+        setLocation({
+          latitude: selectedAddress.latitude,
+          longitude: selectedAddress.longitude,
+        });
+        await fetchData({
+          keyword: query || "",
+          lat: selectedAddress.latitude,
+          lng: selectedAddress.longitude,
+          isSearch: !!query,
+        });
+      } else {
+        let userLocation = await Location.getCurrentPositionAsync({});
+        setLocation({
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
+        });
+        await fetchData({
+          keyword: query || "",
+          lat: userLocation.coords.latitude,
+          lng: userLocation.coords.longitude,
+          isSearch: !!query,
+        });
       }
 
       await fetchAddresses();
@@ -395,19 +274,11 @@ const SearchResultScreen = () => {
     };
 
     getLocationAndFetchData();
-  }, [location]);
+  }, [selectedAddress]);
 
   const handleSearch = async () => {
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery === "") return;
-
-    if (!location) {
-      Alert.alert(
-        "Location Unavailable",
-        "Location services are required for searches."
-      );
-      return;
-    }
 
     await fetchData({
       keyword: trimmedQuery,
@@ -434,19 +305,27 @@ const SearchResultScreen = () => {
     }
   };
 
-  const openFilterModal = () => {
+  const openFilterModal = (filterName) => {
     Keyboard.dismiss();
+    setActiveFilter(filterName);
     setTempDistance(distance);
+    setTempPriceRange(priceRange);
     modalizeRef.current?.open();
   };
 
   const applyFilter = async () => {
-    setDistance(tempDistance);
+    if (activeFilter === "Distance") {
+      setDistance(tempDistance);
+    } else if (activeFilter === "Price") {
+      setPriceRange(tempPriceRange);
+    }
+
     if (location) {
       await fetchData({
         lat: location.latitude,
         lng: location.longitude,
-        distance: tempDistance,
+        distance: activeFilter === "Distance" ? tempDistance : distance,
+        priceRange: activeFilter === "Price" ? tempPriceRange : priceRange,
       });
     }
     modalizeRef.current?.close();
@@ -508,12 +387,9 @@ const SearchResultScreen = () => {
             }
             returnKeyType="search"
             autoFocus={true}
-            editable={true} // Ngăn nhập văn bản, chỉ để hiển thị và nhấn
+            editable={true}
           />
         </View>
-        <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
-          <Icon name="filter" size={24} color="#4EA0B7" />
-        </TouchableOpacity>
       </View>
 
       <TouchableOpacity
@@ -530,6 +406,35 @@ const SearchResultScreen = () => {
           {selectedAddress?.address || "Current Location"}
         </Text>
       </TouchableOpacity>
+
+      <View style={styles.filterContainer}>
+        <TouchableOpacity style={{marginRight: 10}}>
+          <Icon name="filter" size={24} color="#4EA0B7" />
+        </TouchableOpacity>
+        <FlatList
+          data={filterFields}
+          keyExtractor={(item) => item.index.toString()}
+          horizontal
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.filterItem}
+              onPress={() => openFilterModal(item.name)}
+            >
+              <Text style={styles.filterText}>
+                {item.name}: {item.value}
+              </Text>
+              <Icon
+                name="chevron-down"
+                size={16}
+                color="#4EA0B7"
+                style={styles.filterIcon}
+              />
+            </TouchableOpacity>
+          )}
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterList}
+        />
+      </View>
 
       <View style={styles.rowNgayGui}>
         <FlatList
@@ -602,9 +507,6 @@ const SearchResultScreen = () => {
                 <Text style={styles.serving}>
                   Max Serving: {item.maxServingSize}
                 </Text>
-                {/* {item.rating && (
-                  <Text style={styles.rating}>Rating: {item.rating} ⭐</Text>
-                )} */}
               </View>
             </View>
           </TouchableOpacity>
@@ -690,22 +592,43 @@ const SearchResultScreen = () => {
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Filter Options</Text>
 
-        <View style={styles.dropdownContainer}>
-          <Text style={styles.dropdownLabel}>Distance</Text>
-          <Dropdown
-            style={styles.dropdown}
-            data={distanceOptions}
-            labelField="label"
-            valueField="value"
-            placeholder="Select distance"
-            value={tempDistance}
-            onChange={(item) => setTempDistance(item.value)}
-            selectedTextStyle={styles.selectedTextStyle}
-            placeholderStyle={styles.placeholderStyle}
-            itemTextStyle={styles.itemTextStyle}
-            containerStyle={styles.dropdownItemContainer}
-          />
-        </View>
+        {activeFilter === "Distance" && (
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>Distance</Text>
+            <Dropdown
+              style={styles.dropdown}
+              data={distanceOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select distance"
+              value={tempDistance}
+              onChange={(item) => setTempDistance(item.value)}
+              selectedTextStyle={styles.selectedTextStyle}
+              placeholderStyle={styles.placeholderStyle}
+              itemTextStyle={styles.itemTextStyle}
+              containerStyle={styles.dropdownItemContainer}
+            />
+          </View>
+        )}
+
+        {/* {activeFilter === "Price" && (
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>Price Range</Text>
+            <Dropdown
+              style={styles.dropdown}
+              data={priceRangeOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select price range"
+              value={tempPriceRange}
+              onChange={(item) => setTempPriceRange(item)}
+              selectedTextStyle={styles.selectedTextStyle}
+              placeholderStyle={styles.placeholderStyle}
+              itemTextStyle={styles.itemTextStyle}
+              containerStyle={styles.dropdownItemContainer}
+            />
+          </View>
+        )} */}
 
         <View style={styles.modalButtons}>
           <TouchableOpacity
@@ -751,7 +674,30 @@ const SearchResultScreen = () => {
           ))
         )}
         <TouchableOpacity
-          onPress={getCurrentLocation}
+          onPress={() => {
+            setLoading(true);
+            Location.getCurrentPositionAsync({})
+              .then((location) => {
+                const newAddress = {
+                  id: Date.now().toString(),
+                  title: "Current Location",
+                  address: `${location.coords.latitude}, ${location.coords.longitude}`,
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                };
+                setAddresses((prev) => [...prev, newAddress]);
+                selectAddress(newAddress);
+              })
+              .catch((error) => {
+                console.error("Error getting current location:", error);
+                Toast.show({
+                  type: "error",
+                  text1: "Error",
+                  text2: "Failed to get current location",
+                });
+              })
+              .finally(() => setLoading(false));
+          }}
           style={{
             backgroundColor: "#A64B2A",
             padding: 15,
@@ -841,9 +787,6 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginLeft: 15,
   },
-  filterButton: {
-    marginLeft: 10,
-  },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -858,6 +801,31 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
     flexWrap: "wrap",
+  },
+  filterContainer: {
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+  },
+  filterList: {
+    flexGrow: 0,
+  },
+  filterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
+    backgroundColor: "#FFF8EF",
+    borderRadius: 20,
+  },
+  filterText: {
+    fontSize: 14,
+    color: "#333",
+    marginRight: 5,
+  },
+  filterIcon: {
+    marginLeft: 5,
   },
   card: {
     backgroundColor: "#A9411D",
@@ -930,10 +898,6 @@ const styles = StyleSheet.create({
     color: "#F8BF40",
   },
   price: {
-    fontSize: 12,
-    color: "#F8BF40",
-  },
-  rating: {
     fontSize: 12,
     color: "#F8BF40",
   },
