@@ -156,7 +156,7 @@
 "certificateImageUrl": "Certificate Image URL",
 "enterCertificateUrl": "Enter the URL of your certificate image",
 "submit": "Submit",
-  "depositToWallet": "Deposit Money into Wallet",
+  "topUp": "Top up",
 "currentBalance": "Current Balance",
 "enterDepositAmount": "Enter Amount to Deposit",
 "paymentMethod": "Payment Method",

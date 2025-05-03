@@ -18,9 +18,12 @@ const WithdrawalScreen = () => {
   const params = useLocalSearchParams();
   const balance = Number(params.balance);
   const walletId = params.id;
+  const paypalAccountEmail = params.paypalAccountEmail;
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [error, setError] = useState("");
   const axiosInstance = useAxios();
+  const [email, setEmail] = useState(paypalAccountEmail || "");
+  const [isEditing, setIsEditing] = useState(false);
 
   const amo = parseFloat(withdrawAmount);
   const isWithdraw = !withdrawAmount || amo <= 0 || isNaN(amo) || amo > balance;
@@ -49,7 +52,9 @@ const WithdrawalScreen = () => {
   const handleWithdraw = () => {
     Alert.alert(
       "Xác nhận rút tiền",
-      `Bạn có chắc chắn muốn rút $${parseFloat(withdrawAmount).toFixed(2)} từ VietChef Wallet không?`,
+      `Bạn có chắc chắn muốn rút $${parseFloat(withdrawAmount).toFixed(
+        2
+      )} từ VietChef Wallet không?`,
       [
         {
           text: "Hủy",
@@ -77,6 +82,41 @@ const WithdrawalScreen = () => {
     );
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const toggleEditing = () => {
+    if (isEditing) {
+      if (!email) {
+        Alert.alert("Lỗi", "Email không được để trống");
+        return;
+      }
+      if (!validateEmail(email)) {
+        Alert.alert("Lỗi", "Vui lòng nhập email hợp lệ");
+        return;
+      }
+      handleUpdateEmail(email);
+    } else {
+      setIsEditing(true);
+    }
+  };
+
+  const handleUpdateEmail = async (newEmail) => {
+    try {
+      const response = await axiosInstance.put(
+        `/users/profile/my-wallet?email=${encodeURIComponent(newEmail)}`
+      );
+      console.log("email updated", response.data);
+      setEmail(newEmail);
+      setIsEditing(false);
+      Alert.alert("Thành công", "Email PayPal đã được cập nhật");
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title="Withdrawal" />
@@ -85,6 +125,26 @@ const WithdrawalScreen = () => {
         <View style={styles.walletContainer}>
           <Text style={styles.walletText}>VietChef Wallet</Text>
           <Text style={styles.balanceText}>${balance}</Text>
+        </View>
+        <View style={styles.emailContainer}>
+          <Text style={styles.label}>Paypal account email</Text>
+          <View style={styles.row}>
+            <TextInput
+              style={styles.inputEmail}
+              value={email}
+              onChangeText={setEmail}
+              editable={isEditing}
+              placeholder="Enter your PayPal email"
+              placeholderTextColor="#999"
+            />
+            <TouchableOpacity onPress={toggleEditing}>
+              {isEditing ? (
+                <MaterialIcons name="check" size={24} color="green" />
+              ) : (
+                <MaterialIcons name="edit" size={24} color="black" />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Withdraw amount</Text>
@@ -115,17 +175,17 @@ const WithdrawalScreen = () => {
             <Text style={{ color: "red", marginTop: 5 }}>{error}</Text>
           ) : null}
         </View>
-        <View style={styles.amountButtonsContainer}>
-          {predefinedAmounts.map((amount, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.amountButton}
-              onPress={() => handleAmountPress(amount)}
-            >
-              <Text style={styles.amountText}>${amount}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      </View>
+      <View style={styles.amountButtonsContainer}>
+        {predefinedAmounts.map((amount, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.amountButton}
+            onPress={() => handleAmountPress(amount)}
+          >
+            <Text style={styles.amountText}>${amount}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
       <View style={styles.footer}>
         <TouchableOpacity
@@ -150,7 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     backgroundColor: "#fff",
-    marginHorizontal: 10,
+    marginHorizontal: 5,
   },
   title: {
     fontSize: 18,
@@ -177,8 +237,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
+  emailContainer: {
+    marginTop: 10,
+  },
+  inputEmail: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: "#333",
+  },
+  row: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#CCCCCC",
+    borderRadius: 5,
+    padding: 5,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   inputContainer: {
-    marginTop: 20,
+    marginTop: 10,
   },
   label: {
     fontSize: 16,
@@ -198,7 +276,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 20,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    padding: 10,
+    marginHorizontal: 5
   },
   amountButton: {
     width: "30%",
