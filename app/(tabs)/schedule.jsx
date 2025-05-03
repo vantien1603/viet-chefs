@@ -138,7 +138,7 @@ const CustomerSchedule = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Schedule" />
+      <Header title="Activity" onRightPress={() => router.push("/screen/history")} rightText="Lịch sử"/>
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

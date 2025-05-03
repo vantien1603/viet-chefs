@@ -192,7 +192,6 @@ const ReviewBookingScreen = () => {
               ) || [];
             const hasMenu = menuId && menu;
             const hasExtraDishes = extraDishes.length > 0;
-            const showSeparator = hasMenu && hasExtraDishes;
 
             return (
               <View key={index} style={styles.dateContainer}>
@@ -297,7 +296,6 @@ const ReviewBookingScreen = () => {
                           ))}
                         </>
                       )}
-                      {showSeparator && <Text style={styles.separator}>|</Text>}
                       {hasExtraDishes && (
                         <>
                           <View style={styles.detailRow}>

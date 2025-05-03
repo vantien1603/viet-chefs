@@ -79,7 +79,7 @@ const ChefDetail = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={t("chefInfo")} />
+      <Header title={t("chefInfo")} onLeftPress={handleBack}/>
       <FlatList
         ListHeaderComponent={
           <>

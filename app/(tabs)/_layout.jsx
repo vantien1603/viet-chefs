@@ -64,8 +64,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                       ? "chatbubble-outline"
                       : route.name === "schedule"
                       ? "calendar-outline"
-                      : route.name === "history"
-                      ? "time-outline"
                       : route.name === "bag"
                       ? "briefcase-outline"
                       : "person-outline"
@@ -74,9 +72,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                   color={isFocused ? "white" : "#B0BEC5"}
                 />
               </TouchableOpacity>
-
-              {/* ) */}
-              {/* } */}
             </View>
           );
         })}
@@ -97,9 +92,8 @@ export default function TabLayout() {
             tabBar={(props) => <CustomTabBar {...props} />}
         >
             <Tabs.Screen name="home" />
-            <Tabs.Screen name="chat" />
             <Tabs.Screen name="schedule" />
-            <Tabs.Screen name="history" />
+            <Tabs.Screen name="chat" />
             <Tabs.Screen name="profile" />
         </Tabs>
     );

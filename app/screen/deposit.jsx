@@ -103,7 +103,7 @@ const DepositScreen = () => {
         <View style={styles.balanceContainer}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <Text style={styles.sectionTitle}>{t("currentBalance")}</Text>
-            <Text style={styles.sectionTitle}>{balance}</Text>
+            <Text style={styles.sectionTitle}>${balance}</Text>
           </View>
           <View style={styles.separator} />
           <TextInput

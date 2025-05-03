@@ -44,23 +44,24 @@ const ConfirmBookingScreen = () => {
   // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
   const menuDishes =
     selectedMenu?.menuItems?.map((item) => ({
-      id: item.dishId || item.id,
-      name: item.dishName || item.name || "Unnamed Dish",
+      id: item.dishId,
+      name: item.dishName,
     })) || [];
 
   const extraDishes = selectedDishes.map((dish) => ({
     id: dish.id,
-    name: dish.name || "Unnamed Dish",
+    name: dish.name,
   }));
 
   // Combine all dishes for the total count
   const allDishes = [...menuDishes, ...extraDishes];
+  console.log("allDish", allDishes);
   const numberOfDishes = allDishes.length;
 
   // Format the dish list: "Menu Name: Dish 1, Dish 2, ..." + extra dishes
   const menuDishList =
     menuDishes.length > 0
-      ? `${selectedMenu?.name || "Menu"}: ${menuDishes
+      ? `${selectedMenu?.name}: ${menuDishes
           .map((dish) => {
             const note = dishNotes[dish.id] ? ` (${dishNotes[dish.id]})` : "";
             return `${dish.name}${note}`;
@@ -79,51 +80,9 @@ const ConfirmBookingScreen = () => {
       : "";
 
   const dishList =
-    [menuDishList, extraDishList].filter(Boolean).join(" | ") || "N/A";
+    [menuDishList, extraDishList].filter(Boolean).join(" | ");
 
   const numberOfMenuDishes = menuDishes.length;
-
-  useEffect(() => {
-    const backAction = () => {
-      router.push({
-        pathname: "/screen/booking",
-        params: {
-          chefId: chefId.toString(),
-          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-          selectedDishes:
-            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
-          dishNotes: JSON.stringify(dishNotes),
-          address: location,
-          sessionDate,
-          startTime,
-          numPeople: numPeople.toString(),
-          requestDetails,
-          menuId: menuId || null,
-          chefBringIngredients,
-        },
-      });
-      return true; 
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [
-    chefId,
-    selectedMenu,
-    selectedDishes,
-    dishNotes,
-    location,
-    sessionDate,
-    startTime,
-    numPeople,
-    requestDetails,
-    menuId,
-    chefBringIngredients
-  ]);
 
   const handleBack = () => {
     router.push({
@@ -179,7 +138,6 @@ const ConfirmBookingScreen = () => {
         ],
       };
       console.log("Payload for booking confirmation:", payload);
-
       const response = await axiosInstance.post("/bookings", payload);
       console.log("API Response:", response.data);
 
@@ -196,6 +154,7 @@ const ConfirmBookingScreen = () => {
           bookingData: JSON.stringify(bookingData),
         },
       });
+
     } catch (error) {
       console.error("Error creating booking:", error);
       Toast.show({

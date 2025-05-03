@@ -100,30 +100,23 @@ const WalletScreen = () => {
     }
   };
 
+  const handleWithdrawal = () => {
+    if (walletId) {
+      router.push({
+        pathname: "/screen/withdrawal",
+        params: { id: walletId, balance },
+      });
+    }
+  };
+
   const handleBack = () => {
     router.push("/(tabs)/profile");
   };
 
-  // Calculate Expense and Income
-  // const calculateTotals = () => {
-  //   let expense = 0;
-  //   let income = 0;
-
-  //   transactions.forEach((tx) => {
-  //     if (["DEPOSIT", "REFUND"].includes(tx.transactionType)) {
-  //       income += tx.amount;
-  //     } else {
-  //       expense += tx.amount;
-  //     }
-  //   });
-
-  //   return { expense, income };
-  // };
-
   const handleStatistic = () => {
     router.push({
       pathname: "/screen/statistic",
-      params: { transactions: JSON.stringify(transactions) }, 
+      params: { transactions: JSON.stringify(transactions) },
     });
   };
 
@@ -199,13 +192,22 @@ const WalletScreen = () => {
                   : "********"}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.depositContainer}
-              onPress={handleDeposit}
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#fff" />
-              <Text style={styles.depositText}>Deposit</Text>
-            </TouchableOpacity>
+            <View style={{flexDirection: "row", marginTop: 10}}>
+              <TouchableOpacity
+                style={styles.depositContainer}
+                onPress={handleDeposit}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                <Text style={styles.depositText}>Deposit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.depositContainer}
+                onPress={handleWithdrawal}
+              >
+                <Ionicons name="remove-circle-outline" size={18} color="#fff" />
+                <Text style={styles.depositText}>Withdrawal</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -269,7 +271,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   balanceRow: {
-    flexDirection: "row",
+    // flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
@@ -292,6 +294,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    marginRight: 10
   },
   depositText: {
     color: "#fff",

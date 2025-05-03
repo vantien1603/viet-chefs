@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 
-const Header = ({ title, subtitle, onRightPress, rightIcon, onLeftPress }) => {
+const Header = ({ title, subtitle, onRightPress, rightIcon, rightText, onLeftPress }) => {
   const router = useRouter();
 
   const handleLeftPress = onLeftPress || (() => router.back());
@@ -15,13 +15,23 @@ const Header = ({ title, subtitle, onRightPress, rightIcon, onLeftPress }) => {
           <Ionicons name="arrow-back" size={24} color="black" />
         </View>
       </TouchableOpacity>
-      <View style={[styles.textContainer, { flexDirection: !subtitle && "row" }]}>
+      <View style={[styles.textContainer, { flexDirection: !subtitle ? "row" : "column" }]}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
-      <TouchableOpacity onPress={onRightPress}>
-        <View style={[styles.iconContainer, { backgroundColor: !rightIcon && "transparent" }]}>
+      <TouchableOpacity onPress={onRightPress} disabled={!onRightPress}>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: rightIcon || rightText ? "" : "transparent",
+              flexDirection: "row",
+              alignItems: "center",
+            },
+          ]}
+        >
           {rightIcon ? <Ionicons name={rightIcon} size={24} color="black" /> : null}
+          {rightText ? <Text style={styles.rightText}>{rightText}</Text> : null}
         </View>
       </TouchableOpacity>
     </View>
@@ -59,6 +69,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: "#888",
+  },
+  rightText: {
+    fontSize: 16,
+    color: "#A9411D",
+    marginLeft: 8 // This could still reference rightIcon; fix below
   },
 });
 
