@@ -246,11 +246,7 @@ const BookingScreen = () => {
     const extraDishIds = parsedSelectedDishes.map((dish) => dish.id);
     const allDishIds = [...new Set([...menuDishIds, ...extraDishIds])];
     setDishIds(allDishIds);
-
-    if (latestDishId) {
-      console.log("Latest dish added:", latestDishId);
-    }
-  }, [parsedSelectedMenu, parsedSelectedDishes, latestDishId]);
+  }, [parsedSelectedMenu, parsedSelectedDishes]);
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -493,7 +489,7 @@ const BookingScreen = () => {
         },
       });
     } catch (error) {
-      console.error(
+      console.log(
         "Error calling calculate-single-booking:",
         error.response?.data
       );

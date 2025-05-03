@@ -473,21 +473,11 @@ const LongTermSelectBooking = () => {
 
   const onDayPress = (day) => {
     const dateString = day.dateString;
-    if (moment(dateString).isSameOrBefore(todayString, "day")) {
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("cannotSelectPastDates"),
-      });
+    if (moment(dateString).isSameOrBefore(todayString, "day")) { //không cho chọn ngày quá khứ
       return;
     }
 
-    if (unavailableDates.includes(dateString)) {
-      Toast.show({
-        type: "error",
-        text1: t("unavailable"),
-        text2: t("dateFullyBooked"),
-      });
+    if (unavailableDates.includes(dateString)) { //kiểm tra nếu ngày đã hết chỗ
       return;
     }
 
