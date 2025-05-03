@@ -15,7 +15,13 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 
-const { height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+// Hàm chọn ngẫu nhiên n phần tử từ một mảng
+const getRandomItems = (array, n) => {
+  const shuffled = [...array].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, n);
+};
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -23,6 +29,7 @@ export default function SearchScreen() {
   const axiosInstance = useAxios();
   const [searchQuery, setSearchQuery] = useState(initialQuery || "");
   const [suggestions, setSuggestions] = useState([]);
+  const [defaultSuggestions, setDefaultSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const textInputRef = useRef(null);
   const [lastParams, setLastParams] = useState(null);
@@ -31,14 +38,8 @@ export default function SearchScreen() {
   const parsedAddress = selectedAddress ? JSON.parse(selectedAddress) : null;
 
   const fetchSuggestions = async (keyword) => {
-    if (!keyword || keyword.trim().length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
     const params = {
-      keyword,
+      keyword: keyword || "",
       customerLat: parsedAddress?.latitude || 0,
       customerLng: parsedAddress?.longitude || 0,
       distance: 30,
@@ -54,30 +55,39 @@ export default function SearchScreen() {
       const dishesResponse = await axiosInstance.get("/dishes/nearby/search", { params });
       const chefsResponse = await axiosInstance.get("/chefs/nearby/search", { params });
 
-      const dishSuggestions = dishesResponse.data.content
-        .map((dish) => ({
-          type: "dish",
-          id: dish.id,
-          name: dish.name,
-          imageUrl: dish.imageUrl,
-        }));
+      const dishSuggestions = dishesResponse.data.content.map((dish) => ({
+        type: "dish",
+        id: dish.id,
+        name: dish.name,
+        imageUrl: dish.imageUrl,
+      }));
 
-      const chefSuggestions = chefsResponse.data.content
-        .map((chef) => ({
-          type: "chef",
-          id: chef.id,
-          name: chef.user.fullName || chef.user.username,
-          imageUrl: chef.user.avatarUrl,
-        }));
+      const chefSuggestions = chefsResponse.data.content.map((chef) => ({
+        type: "chef",
+        id: chef.id,
+        name: chef.user.fullName || chef.user.username,
+        imageUrl: chef.user.avatarUrl,
+      }));
 
       const combinedSuggestions = [...dishSuggestions, ...chefSuggestions];
-      setSuggestions(combinedSuggestions);
-      setShowSuggestions(combinedSuggestions.length > 0);
+
+      // Nếu keyword rỗng (gợi ý mặc định), chọn ngẫu nhiên 6 mục
+      if (!keyword) {
+        const randomSuggestions = getRandomItems(combinedSuggestions, 6);
+        setDefaultSuggestions(randomSuggestions);
+        setShowSuggestions(randomSuggestions.length > 0);
+      } else {
+        // Nếu có keyword, hiển thị tất cả kết quả tìm kiếm động
+        setSuggestions(combinedSuggestions);
+        setShowSuggestions(combinedSuggestions.length > 0);
+      }
+
       setCachedSuggestions(combinedSuggestions);
       setLastParams(params);
     } catch (error) {
       console.error("Error fetching suggestions:", error);
       setSuggestions([]);
+      setDefaultSuggestions([]);
       setShowSuggestions(false);
     }
   };
@@ -86,12 +96,22 @@ export default function SearchScreen() {
     if (initialQuery) {
       setSearchQuery(initialQuery);
       fetchSuggestions(initialQuery);
+    } else {
+      // Khi mở màn hình và không có query, gọi API với keyword rỗng để lấy gợi ý mặc định
+      fetchSuggestions("");
     }
   }, [initialQuery]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchSuggestions(searchQuery);
+      if (searchQuery.trim().length >= 2) {
+        fetchSuggestions(searchQuery);
+      } else if (searchQuery.trim().length === 0) {
+        fetchSuggestions("");
+      } else {
+        setShowSuggestions(false);
+        setSuggestions([]);
+      }
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
@@ -141,20 +161,12 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <View style={styles.searchContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#4EA0B7" />
         </TouchableOpacity>
         <View style={styles.searchInputWrapper}>
           <TouchableOpacity onPress={handleSearchIconPress}>
-            <Icon
-              name="search"
-              size={24}
-              color="#4EA0B7"
-              style={styles.searchIcon}
-            />
+            <Icon name="search" size={24} color="#4EA0B7" style={styles.searchIcon} />
           </TouchableOpacity>
           <TextInput
             ref={textInputRef}
@@ -170,7 +182,36 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {showSuggestions && (
+      {/* Hiển thị tiêu đề "Gợi ý tìm kiếm" và danh sách 6 gợi ý ngẫu nhiên từ API khi ô tìm kiếm trống */}
+      {searchQuery.trim().length === 0 && showSuggestions && (
+        <View style={styles.defaultSuggestionsContainer}>
+          <Text style={styles.sectionTitle}>Gợi ý tìm kiếm</Text>
+          <FlatList
+            data={defaultSuggestions}
+            keyExtractor={(item) => `${item.type}-${item.id}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.defaultSuggestionItem}
+                onPress={() => selectSuggestion(item)}
+              >
+                {item.imageUrl && (
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.defaultSuggestionImage}
+                    resizeMode="cover"
+                  />
+                )}
+                <Text style={styles.defaultSuggestionText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+          />
+        </View>
+      )}
+
+      {/* Hiển thị kết quả tìm kiếm động khi người dùng nhập từ khóa */}
+      {showSuggestions && searchQuery.trim().length > 0 && (
         <View style={styles.suggestionsContainer}>
           <FlatList
             data={suggestions}
@@ -269,5 +310,38 @@ const styles = StyleSheet.create({
   suggestionType: {
     fontSize: 12,
     color: "#4EA0B7",
+  },
+  defaultSuggestionsContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  defaultSuggestionItem: {
+    flex: 1,
+    margin: 5,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    padding: 5,
+    alignItems: "center",
+    height: 170
+  },
+  defaultSuggestionImage: {
+    width: (width - 110) / 2,
+    height: 130,
+    borderRadius: 10,
+    marginVertical: 5,
+  },
+  defaultSuggestionText: {
+    fontSize: 14,
+    color: "#333",
+    textAlign: "center",
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
   },
 });
