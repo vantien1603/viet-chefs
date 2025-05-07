@@ -52,17 +52,16 @@ const timeSlots = generateTimeSlots();
 
 const BookingScreen = () => {
   const params = useLocalSearchParams();
-
   const parsedParams = useMemo(
     () => ({
       chefId: params.chefId,
       selectedMenu: params.selectedMenu
-        ? JSON.parse(params.selectedMenu)
+        ? JSON.parse(params.selectedMenu || "null")
         : null,
-      selectedDishes: params.selectedDishes
-        ? JSON.parse(params.selectedDishes)
+      selectedDishes: params.selectedDishes // Sửa từ params.selectDishes thành params.selectedDishes
+        ? JSON.parse(params.selectedDishes || "[]")
         : [],
-      dishNotes: params.dishNotes ? JSON.parse(params.dishNotes) : {},
+      dishNotes: params.dishNotes ? JSON.parse(params.dishNotes || "{}") : {},
       updatedDishId: params.updatedDishId,
       updatedNote: params.updatedNote,
       latestDishId: params.latestDishId,
@@ -77,7 +76,7 @@ const BookingScreen = () => {
     [
       params.chefId,
       params.selectedMenu,
-      params.selectedDishes,
+      params.selectedDishes, // Cập nhật tên tham số
       params.dishNotes,
       params.updatedDishId,
       params.updatedNote,
@@ -99,14 +98,12 @@ const BookingScreen = () => {
     dishNotes: initialDishNotes,
     updatedDishId,
     updatedNote,
-    latestDishId,
     sessionDate,
     startTime: paramStartTime,
     address: paramAddress,
     numPeople: paramNumPeople,
     requestDetails: paramRequestDetails,
     menuId,
-    chefBringIngredients,
   } = parsedParams;
 
   const [month, setMonth] = useState(moment().format("MM"));
@@ -136,9 +133,14 @@ const BookingScreen = () => {
 
   const modalizeRef = useRef(null);
 
+  // Debug parsed data
+  useEffect(() => {
+    console.log("Parsed selectedDishes:", parsedSelectedDishes);
+  }, [parsedSelectedDishes]);
+
   const handlePrevMonth = () => {
-    setSelectedDay(null); // Reset selected day
-    setStartTime(null); // Reset start time
+    setSelectedDay(null);
+    setStartTime(null);
     if (month === "01") {
       setMonth("12");
       setYear((prev) => (parseInt(prev) - 1).toString());
@@ -151,8 +153,8 @@ const BookingScreen = () => {
   };
 
   const handleNextMonth = () => {
-    setSelectedDay(null); // Reset selected day
-    setStartTime(null); // Reset start time
+    setSelectedDay(null);
+    setStartTime(null);
     if (month === "12") {
       setMonth("01");
       setYear((prev) => (parseInt(prev) + 1).toString());
@@ -186,8 +188,8 @@ const BookingScreen = () => {
 
   useEffect(() => {
     if (params.selectedAddress) {
-      const parsedSelectedAddress = JSON.parse(params.selectedAddress);
-      setAddress(parsedSelectedAddress.address);
+      const parsedSelectedAddress = JSON.parse(params.selectedAddress || "{}");
+      setAddress(parsedSelectedAddress.address || "");
       AsyncStorage.setItem(
         "selectedAddress",
         JSON.stringify(parsedSelectedAddress)
@@ -220,7 +222,7 @@ const BookingScreen = () => {
         const savedAddress = await AsyncStorage.getItem("selectedAddress");
         if (savedAddress && !paramAddress) {
           const parsedAddress = JSON.parse(savedAddress);
-          setAddress(parsedAddress.address);
+          setAddress(parsedAddress.address || "");
           console.log("Loaded selected address:", parsedAddress.address);
         }
       } catch (error) {
@@ -241,11 +243,11 @@ const BookingScreen = () => {
 
   useEffect(() => {
     const menuDishIds =
-      parsedSelectedMenu?.menuItems?.map((item) => item.dishId || item.id) ||
-      [];
+      parsedSelectedMenu?.menuItems?.map((item) => item.dishId || item.id) || [];
     const extraDishIds = parsedSelectedDishes.map((dish) => dish.id);
     const allDishIds = [...new Set([...menuDishIds, ...extraDishIds])];
     setDishIds(allDishIds);
+    console.log("Calculated dishIds:", allDishIds); // Debug dishIds
   }, [parsedSelectedMenu, parsedSelectedDishes]);
 
   useEffect(() => {
@@ -378,7 +380,6 @@ const BookingScreen = () => {
     });
   };
 
-
   const handleAddItems = () => {
     router.push({
       pathname: "/screen/selectFood",
@@ -466,6 +467,7 @@ const BookingScreen = () => {
         "/bookings/calculate-single-booking",
         payload
       );
+      console.log("bok", response.data);
       router.push({
         pathname: "screen/confirmBooking",
         params: {
@@ -587,16 +589,16 @@ const BookingScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.monthNavigationContainer}>
+          <View style={{ flexDirection: "row" }}>
             <Text style={styles.sectionTitle}>
               {t("selectDate")} -{" "}
               {moment(`${year}-${month}`, "YYYY-MM").format("MMMM YYYY")}
             </Text>
-            <View style={styles.monthButtons}>
+            <View style={{ flexDirection: "row" }}>
               <TouchableOpacity
                 style={[
                   styles.monthButton,
-                  isPrevMonthDisabled() && styles.disabledMonthButton,
+                  isPrevMonthDisabled() && { opacity: 0.5 },
                 ]}
                 onPress={handlePrevMonth}
                 disabled={isPrevMonthDisabled()}
@@ -824,9 +826,13 @@ const BookingScreen = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("ingredientPreparation")}</Text>
-          <View style={styles.ingredientPrepContainer}>
+          <View>
             <TouchableOpacity
-              style={styles.checkboxContainer}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 5,
+              }}
               onPress={() => setIngredientPrep("customer")}
             >
               <MaterialIcons
@@ -843,7 +849,7 @@ const BookingScreen = () => {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.checkboxContainer}
+              style={{ flexDirection: "row", alignItems: "center" }}
               onPress={() => setIngredientPrep("chef")}
             >
               <MaterialIcons
@@ -921,20 +927,6 @@ const BookingScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F8BF40",
-    backgroundColor: "#FDFBF6",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#A9411D",
-    marginLeft: 10,
-  },
   section: {
     borderTopColor: "#E5E5E5",
     borderTopWidth: 1,
@@ -1006,6 +998,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   dishRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1039,10 +1036,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#777",
     marginTop: 5,
-  },
-  latestDish: {
-    borderColor: "#A64B2A",
-    borderWidth: 1,
   },
   editText: {
     fontSize: 14,
@@ -1254,64 +1247,6 @@ const styles = StyleSheet.create({
     color: "#777",
     textAlign: "center",
     marginVertical: 10,
-  },
-  noAddressesText: {
-    fontSize: 16,
-    color: "#777",
-    textAlign: "center",
-    marginVertical: 20,
-  },
-  addressItem: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
-  },
-  addressInfo: {
-    flex: 1,
-  },
-  addressTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 5,
-  },
-  addressText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    marginHorizontal: 5,
-  },
-  checkboxText: {
-    fontSize: 16,
-    color: "#333",
-    marginLeft: 10,
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-  },
-  monthNavigationContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  monthButtons: {
-    flexDirection: "row",
-  },
-  monthButton: {
-    padding: 10,
-    marginLeft: 10,
-  },
-  disabledMonthButton: {
-    opacity: 0.5,
   },
 });
 

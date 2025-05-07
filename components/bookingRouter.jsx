@@ -121,7 +121,6 @@ const useBookingCancellation = () => {
   return { handleCancelBooking };
 };
 
-// Rest of the BookingCard and BookingList components remain unchanged
 const BookingCard = ({
   booking,
   onCancel,
@@ -130,7 +129,6 @@ const BookingCard = ({
   refreshing,
   reviewed,
 }) => {
-  const isSingleBooking = booking.bookingType === "SINGLE";
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -141,8 +139,8 @@ const BookingCard = ({
     }
 
     const calculateTimeRemaining = () => {
-      const createdAt = new Date(booking.createdAt).getTime();
-      const expirationTime = createdAt + 60 * 60 * 1000; // 1 hour from createdAt
+      const updatedAt = new Date(booking.updatedAt).getTime();
+      const expirationTime = updatedAt + 60 * 60 * 1000; // 1 hour from updatedAt
       const currentTime = new Date().getTime();
       const timeDiff = expirationTime - currentTime;
 
@@ -162,7 +160,7 @@ const BookingCard = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [booking.createdAt, status]);
+  }, [booking.updatedAt, status]);
 
   const handlePress = () => {
     router.push({
@@ -179,28 +177,6 @@ const BookingCard = ({
         refreshing: refreshing.toString(),
       },
     });
-  };
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "PENDING":
-      case "PENDING_FIRST_CYCLE":
-        return { backgroundColor: "#fed7aa", textColor: "#7c2d12" };
-      case "CONFIRMED":
-      case "CONFIRMED_PARTIALLY_PAID":
-      case "CONFIRMED_PAID":
-      case "PAID":
-      case "PAID_FIRST_CYCLE":
-      case "DEPOSITED":
-        return { backgroundColor: "#a7f3d0", textColor: "#064e3b" };
-      case "COMPLETED":
-        return { backgroundColor: "#bfdbfe", textColor: "#1e3a8a" };
-      case "CANCELED":
-      case "OVERDUE":
-        return { backgroundColor: "#fecaca", textColor: "#991b1b" };
-      default:
-        return { backgroundColor: "#e5e7eb", textColor: "#4b5563" };
-    }
   };
 
   const renderButtons = () => {
@@ -337,8 +313,6 @@ const BookingCard = ({
 };
 
 const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
-  const axiosInstance = useAxios();
-  const [loadingBookingId, setLoadingBookingId] = useState(null);
   const [reviewed, setReviewed] = useState(false);
   const { handleCancelBooking } = useBookingCancellation();
 
