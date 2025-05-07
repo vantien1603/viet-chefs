@@ -125,7 +125,6 @@ const useBookingCancellation = () => {
 const BookingCard = ({
   booking,
   onCancel,
-  onRebook,
   onReview,
   onViewReview,
   refreshing,
@@ -265,17 +264,6 @@ const BookingCard = ({
           </TouchableOpacity>
         );
       }
-      if (onRebook) {
-        buttons.push(
-          <TouchableOpacity
-            key="rebook"
-            style={[styles.button, styles.primaryButton]}
-            onPress={() => onRebook(booking)}
-          >
-            <Text style={styles.buttonText}>Rebook</Text>
-          </TouchableOpacity>
-        );
-      }
     }
 
     return buttons.length > 0 ? (
@@ -354,76 +342,6 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
   const [reviewed, setReviewed] = useState(false);
   const { handleCancelBooking } = useBookingCancellation();
 
-  const handleRebook = async (booking) => {
-    setLoadingBookingId(booking.id);
-    try {
-      const bookingDetailId = booking.bookingDetails?.[0]?.id;
-      if (!bookingDetailId) {
-        throw new Error("Booking detail ID not found");
-      }
-      const response = await axiosInstance.get(
-        `/bookings/booking-details/${bookingDetailId}`
-      );
-      const bookingDetails = response.data;
-
-      let selectedMenu = null;
-      if (bookingDetails.menuId) {
-        const allowedDishIds = bookingDetails.dishes.map(({ dish }) => dish.id);
-
-        const menuValidationResponse = await axiosInstance.post(
-          `/menus/${bookingDetails.menuId}/validate`,
-          allowedDishIds
-        );
-        const isMenuValid = menuValidationResponse.data.success;
-        if (!isMenuValid) {
-          throw new Error(
-            menuValidationResponse.data.message ||
-              "Selected menu has changed or is no longer valid"
-          );
-        }
-
-        selectedMenu = {
-          id: bookingDetails.menuId,
-          name: `Menu ${bookingDetails.menuId}`,
-          menuItems: [],
-        };
-      }
-
-      const selectedDishes = bookingDetails.dishes.map(({ dish }) => ({
-        id: dish.id,
-        name: dish.name,
-        imageUrl: dish.imageUrl || null,
-      }));
-
-      const dishNotes = {};
-      bookingDetails.dishes.forEach(({ dish, notes }) => {
-        dishNotes[dish.id] = notes || "";
-      });
-
-      router.push({
-        pathname: "/screen/booking",
-        params: {
-          chefId: booking.chef.id,
-          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-          selectedDishes:
-            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
-          dishNotes: JSON.stringify(dishNotes),
-          numPeople: booking.guestCount.toString(),
-          address: bookingDetails.location || null,
-        },
-      });
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to initiate rebooking.",
-        visibilityTime: 4000,
-      });
-    } finally {
-      setLoadingBookingId(null);
-    }
-  };
-
   const handleReview = (bookingId, chefId) => {
     router.push({
       pathname: "/screen/review",
@@ -449,7 +367,6 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
               onCancel={(bookingId) =>
                 handleCancelBooking(bookingId, item.bookingType, onRefresh)
               }
-              onRebook={handleRebook}
               onReview={handleReview}
               onViewReview={handleViewReview}
               reviewed={reviewed}

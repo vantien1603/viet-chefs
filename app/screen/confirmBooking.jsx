@@ -156,16 +156,7 @@ const ConfirmBookingScreen = () => {
       });
 
     } catch (error) {
-      console.error("Error creating booking:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2:
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to confirm booking. Please try again.",
-      });
-      throw error;
+      console.error("Error creating booking:", error.response?.data?.message);
     }
   };
 

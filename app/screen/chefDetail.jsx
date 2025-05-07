@@ -7,7 +7,6 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -18,6 +17,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 const ChefDetail = () => {
   const [expandedBio, setExpandedBio] = useState(false);
@@ -64,6 +64,21 @@ const ChefDetail = () => {
     router.push("/(tabs)/home");
   };
 
+  const handleChat = () => {
+    if (chefs?.user) {
+      router.push({
+        pathname: "/screen/message",
+        params: {
+          contact: JSON.stringify({
+            id: chefs.user.username, // Chef's user ID
+            name: chefs.user.fullName, // Chef's name
+            avatar: chefs.user.avatarUrl
+          }),
+        },
+      });
+    }
+  };
+
   const toggleBio = () => setExpandedBio(!expandedBio);
   const toggleDesc = () => setExpandedDesc(!expandedDesc);
   const toggleDetails = () => setShowMoreDetails(!showMoreDetails);
@@ -79,7 +94,7 @@ const ChefDetail = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={t("chefInfo")} onLeftPress={handleBack}/>
+      <Header title={t("chefInfo")} onLeftPress={handleBack} />
       <FlatList
         ListHeaderComponent={
           <>
@@ -101,12 +116,23 @@ const ChefDetail = () => {
                       style={styles.avatar}
                     />
                     <View style={styles.textContainer}>
-                      <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                        <TouchableOpacity onPress={handleChat}>
+                          <Ionicons
+                            name="chatbubble-ellipses-outline"
+                            size={24}
+                            color="black"
+                          />
+                        </TouchableOpacity>
+                      </View>
                       <Text style={styles.specialty}>
                         {chefs?.specialization}
                       </Text>
                       <View style={styles.starContainer}>
-                        {Array(5).fill().map((_, i) => (
+                        {Array(5)
+                          .fill()
+                          .map((_, i) => (
                             <Icon
                               key={i}
                               name="star"
@@ -197,7 +223,7 @@ const ChefDetail = () => {
                         </Text>
                       </View>
                       <View style={styles.section}>
-                        <Text style={styles.label}>{t("pricePerMeal")}:</Text>
+                        <Text style={styles.label}>{t("pricePerHour")}:</Text>
                         <Text style={styles.value}>${chefs?.price}</Text>
                       </View>
                     </>

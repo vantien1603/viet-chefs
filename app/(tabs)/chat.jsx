@@ -1,112 +1,124 @@
-import React, { useContext, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, Image, ActivityIndicator } from "react-native";
+import React, { useContext, useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { collection, query, onSnapshot, orderBy, doc, getDoc } from "firebase/firestore";
-import { database } from "../../config/firebase";
 import { commonStyles } from "../../style";
 import { AuthContext } from "../../config/AuthContext";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Header from "../../components/header";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import useAxios from "../../config/AXIOS_API";
+import Toast from "react-native-toast-message";
 
 const Chat = () => {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const navigation = useNavigation();
+  const axiosInstance = useAxios();
 
-  async function getUserById(userId) {
-    if (typeof userId !== 'string') {
-      console.error('Invalid userId11');
-      return null;
-    }
-    const userDocRef = doc(database, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      // console.log('User Data:', userData);
-      return userData;
-    } else {
-      console.log('No such document!');
-      return null;
-    }
-  }
   useEffect(() => {
-    const fetchMessages = () => {
-      setLoading(true);
-      const collectionRef = collection(database, 'chats');
-      const q = query(collectionRef, orderBy('createdAt', 'desc'));
-
-      const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-        const messagesData = {};
-        const userPromises = [];
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.sender === user.userId || data.receiver === user.userId) {
-            const key = data.sender === user.userId ? data.receiver : data.sender;
-            // console.log("key", key);
-            userPromises.push(getUserById(key).then(userInfo => {
-              if (userInfo) {
-                const currentTime = new Date(data.createdAt.seconds * 1000);
-                if (!messagesData[key]) {
-                  messagesData[key] = {
-                    id: key,
-                    name: userInfo.name,
-                    message: data.text,
-                    time: currentTime.toLocaleTimeString(),
-                    avatar: "https://esx.bigo.sg/eu_live/2u6/2ZuCJH.jpg",
-                    read: false,
-                  };
-                }
-              }
-            }));
-          }
+    const fetchConversations = async () => {
+      if (!user?.sub) {
+        console.error("No username found");
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không tìm thấy username",
         });
+        return;
+      }
 
-        await Promise.all(userPromises);
-
-        setMessages(Object.values(messagesData));
-        // console.log("Messages Data:", messagesData);
-      });
-      return unsubscribe;
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`/conversations/${user.sub}`);
+        console.log("Dữ liệu conversations:", response.data);
+        const messagesData = await Promise.all(
+          response.data.map(async (message) => {
+            const otherUserId =
+              message.senderId === user.sub
+                ? message.recipientId
+                : message.senderId;
+            const otherUserName =
+              message.senderId === user.sub
+                ? message.recipientName
+                : message.senderName;
+            let avatarUrl = null;
+            try {
+              const userResponse = await axiosInstance.get(
+                `/users/${otherUserId}`
+              );
+              avatarUrl = userResponse.data?.avatarUrl || null;
+              console.log(`Avatar for ${otherUserId}:`, avatarUrl);
+            } catch (error) {
+              console.error(`Lỗi khi lấy dữ liệu người dùng ${otherUserId}:`, error);
+            }
+            return {
+              id: message.chatId,
+              username: otherUserId,
+              name: otherUserName,
+              message: message.content,
+              senderName: message.senderName,
+              time: new Date(message.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              read: true,
+              avatarUrl, // Thêm avatarUrl
+            };
+          })
+        );
+        setConversations(messagesData);
+      } catch (error) {
+        console.error("Lỗi khi lấy conversations:", error);
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không tải được danh sách trò chuyện",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
-    let unsubscribe;
-
-    if (user?.userId != null) {
-      unsubscribe = fetchMessages();
-    }
-    setLoading(false);
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [user?.userId]);
+    fetchConversations();
+  }, [user?.sub]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.messageItem}
-      onPress={() => navigation.navigate("screen/message", {
-        contact: {
-          id: item.id,
-          name: item.name,
-          avatar: item.avatar
-        }
-      })}
+      onPress={() =>
+        navigation.navigate("screen/message", {
+          contact: JSON.stringify({
+            id: item.username,
+            name: item.name,
+            avatarUrl: item.avatarUrl, // Use avatarUrl instead of avatar
+          }),
+        })
+      }
     >
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+      <Image
+        source={{ uri: item.avatarUrl }}
+        style={styles.avatar}
+      />
       <View style={styles.messageContent}>
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.message} numberOfLines={1} ellipsizeMode="tail">
-          {item.message}
+          {item.senderName}: {item.message}
         </Text>
       </View>
       <Text style={styles.time}>{item.time}</Text>
-
     </TouchableOpacity>
   );
+
   return (
     <SafeAreaView style={commonStyles.container}>
       <Header title={"Chat"} />
@@ -118,21 +130,19 @@ const Chat = () => {
             color="gray"
             style={commonStyles.searchIcon}
           />
-          <TextInput style={commonStyles.searchInput} placeholder="Search" />
+          <TextInput style={commonStyles.searchInput} placeholder="Tìm kiếm" />
         </View>
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
           <FlatList
-            data={messages}
+            data={conversations}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
           />
         )}
-
       </View>
     </SafeAreaView>
-
   );
 };
 
@@ -152,16 +162,15 @@ const styles = StyleSheet.create({
   },
   messageContent: {
     flex: 1,
-    justifyContent:'center'
+    justifyContent: "center",
   },
   name: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom:5
+    marginBottom: 5,
   },
   message: {
     fontSize: 16,
-    // color: "#7F7F7F",
     color: "#000",
   },
   time: {
@@ -183,4 +192,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Chat
+export default Chat;

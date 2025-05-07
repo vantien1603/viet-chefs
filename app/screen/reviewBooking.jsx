@@ -135,22 +135,11 @@ const ReviewBookingScreen = () => {
     } catch (error) {
       const errorMessage =
         error?.response?.data?.message || t("failedToConfirmBooking");
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: errorMessage,
-      });
-      console.error("Error confirming booking:", error);
+      console.error("Error confirming booking:", errorMessage);
     }
   };
 
   const handleBackPress = () => {
-    Toast.show({
-      type: "info",
-      text1: t("back"),
-      text2: t("returnedToSelectDate"),
-      visibilityTime: 2000,
-    });
     router.push({
       pathname: "/screen/longTermSelect",
       params: {

@@ -103,12 +103,7 @@ const SelectFood = () => {
         const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
         setMenus(menuResponse.data.content || []);
       } catch (error) {
-        console.error("Error fetching menus:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to fetch menus.",
-        });
+        console.warn("Error fetching menus:", error);
       }
     };
     fetchMenus();
