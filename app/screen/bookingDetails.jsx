@@ -7,10 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Image,
-  Modal,
 } from "react-native";
-import { useLocalSearchParams, router, useNavigation } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
@@ -25,9 +23,6 @@ const BookingDetailScreen = () => {
   const [dishNames, setDishNames] = useState({});
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const navigation = useNavigation();
   const axiosInstance = useAxios();
 
   const fetchBookingDetail = async () => {
@@ -161,16 +156,6 @@ const BookingDetailScreen = () => {
     });
   };
 
-  const openImageModal = (imageUrl) => {
-    setSelectedImage(imageUrl);
-    setModalVisible(true);
-  };
-
-  const closeImageModal = () => {
-    setModalVisible(false);
-    setSelectedImage(null);
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
@@ -202,7 +187,7 @@ const BookingDetailScreen = () => {
       <Header title={t("sessionDetail")} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Log images for debugging */}
-        {console.log("Booking Detail Images:", bookingDetail?.images)}
+        {/* {console.log("Booking Detail Images:", bookingDetail?.images)} */}
 
         {/* Booking Info */}
         <View style={styles.card}>
@@ -376,77 +361,7 @@ const BookingDetailScreen = () => {
             </Text>
           </View>
         </View>
-
-        {/* Images Section */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t("images")}</Text>
-          {!bookingDetail?.images || bookingDetail?.images.length === 0 ? (
-            <View style={styles.noDataContainer}>
-              <MaterialIcons
-                name="image-not-supported"
-                size={24}
-                color="#A64B2A"
-              />
-              <Text style={[styles.detailValue, { color: "#A64B2A" }]}>
-                {t("noImagesAvailable")}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.imageContainer}>
-              {bookingDetail?.images.map((image, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => openImageModal(image?.imageUrl)}
-                  style={styles.imageWrapper}
-                >
-                  <Image
-                    source={{
-                      uri: image?.imageUrl,
-                    }}
-                    style={styles.image}
-                    resizeMode="cover"
-                    onError={() =>
-                      console.log(`Failed to load image: ${image?.imageUrl}`)
-                    }
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
       </ScrollView>
-
-      {/* Image Zoom Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeImageModal}
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.modalBackground}
-            onPress={closeImageModal}
-          >
-            <Image
-              source={{
-                uri: selectedImage,
-              }}
-              style={styles.zoomedImage}
-              resizeMode="contain"
-              onError={() =>
-                console.log(`Failed to load zoomed image: ${selectedImage}`)
-              }
-            />
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={closeImageModal}
-            >
-              <MaterialIcons name="close" size={24} color="#FFF" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </View>
-      </Modal>
 
       {!bookingDetail.isUpdated && (
         <TouchableOpacity
@@ -461,8 +376,6 @@ const BookingDetailScreen = () => {
           )}
         </TouchableOpacity>
       )}
-
-      <Toast />
     </SafeAreaView>
   );
 };
@@ -471,19 +384,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   sectionTitle: {
     fontSize: 20,
@@ -559,46 +459,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 16,
-  },
-  imageContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  imageWrapper: {
-    width: "48%",
-    marginBottom: 10,
-  },
-  image: {
-    width: "100%",
-    height: 150,
-    borderRadius: 8,
-    backgroundColor: "#f0f0f0", // Debug background
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-  },
-  zoomedImage: {
-    width: "90%",
-    height: "70%",
-    borderRadius: 8,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 40,
-    right: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    borderRadius: 20,
-    padding: 8,
   },
 });
 

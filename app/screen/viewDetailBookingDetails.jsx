@@ -10,11 +10,15 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  Modal,
+  Image,
 } from "react-native";
 import { commonStyles } from "../../style";
 import Toast from "react-native-toast-message";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { MaterialIcons } from "@expo/vector-icons";
+import { t } from "i18next";
 
 const ViewDetailBookingDetails = () => {
   const { bookingDetailsId } = useLocalSearchParams();
@@ -23,6 +27,8 @@ const ViewDetailBookingDetails = () => {
   const [reportReasonDetail, setReportReasonDetail] = useState("");
   const [isReported, setIsReported] = useState(false);
   const modalizeRef = useRef(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -53,7 +59,10 @@ const ViewDetailBookingDetails = () => {
         setBookingDetails({ ...bookingDetails, status: "COMPLETED" });
       }
     } catch (error) {
-      console.log("Error confirming completion:", error?.response?.data?.message);
+      console.log(
+        "Error confirming completion:",
+        error?.response?.data?.message
+      );
       Toast.show({
         type: "error",
         text1: "Error",
@@ -69,6 +78,16 @@ const ViewDetailBookingDetails = () => {
   const closeReportModal = () => {
     modalizeRef.current?.close();
     setReportReasonDetail("");
+  };
+
+  const openImageModal = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    setModalVisible(false);
+    setSelectedImage(null);
   };
 
   const handleSubmitReport = async () => {
@@ -185,7 +204,7 @@ const ViewDetailBookingDetails = () => {
                 : "0"}
             </Text>
             <Text style={styles.label}>
-              Phí nền tảng:{" "}
+              Phí áp dụng:{" "}
               {bookingDetails.platformFee
                 ? `${bookingDetails.platformFee.toFixed(2)}`
                 : "0"}
@@ -205,7 +224,7 @@ const ViewDetailBookingDetails = () => {
                 <View key={dish.id} style={styles.dishItem}>
                   <Text style={styles.label}>
                     - {dish.dish?.name || "N/A"} (Ghi chú:{" "}
-                    {dish.notes || "Không có"})
+                    {dish.notes || "N/A"})
                   </Text>
                 </View>
               ))
@@ -230,16 +249,54 @@ const ViewDetailBookingDetails = () => {
               {bookingDetails.timeBeginTravel || "N/A"}
             </Text>
           </View>
+          {/* Images Section */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t("images")}</Text>
+            {!bookingDetails?.images || bookingDetails?.images.length === 0 ? (
+              <View style={styles.noDataContainer}>
+                <MaterialIcons
+                  name="image-not-supported"
+                  size={24}
+                  color="#A64B2A"
+                />
+                <Text style={[styles.detailValue, { color: "#A64B2A" }]}>
+                  {t("noImagesAvailable")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.imageContainer}>
+                {bookingDetails?.images.map((image, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => openImageModal(image?.imageUrl)}
+                    style={styles.imageWrapper}
+                  >
+                    <Image
+                      source={{
+                        uri: image?.imageUrl,
+                      }}
+                      style={styles.image}
+                      resizeMode="cover"
+                      onError={() =>
+                        console.log(`Failed to load image: ${image?.imageUrl}`)
+                      }
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </ScrollView>
         <View style={styles.footer}>
-          {!isReported && bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#dc3545" }]}
-              onPress={openReportModal}
-            >
-              <Text style={styles.buttonText}>Report</Text>
-            </TouchableOpacity>
-          )}
+          {!isReported &&
+            bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#dc3545" }]}
+                onPress={openReportModal}
+              >
+                <Text style={styles.buttonText}>Report</Text>
+              </TouchableOpacity>
+            )}
           {bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
             <TouchableOpacity
               style={[styles.button, { backgroundColor: "#28a745" }]}
@@ -250,6 +307,37 @@ const ViewDetailBookingDetails = () => {
           )}
         </View>
       </View>
+      {/* Image Zoom Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeImageModal}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalBackground}
+            onPress={closeImageModal}
+          >
+            <Image
+              source={{
+                uri: selectedImage,
+              }}
+              style={styles.zoomedImage}
+              resizeMode="contain"
+              onError={() =>
+                console.log(`Failed to load zoomed image: ${selectedImage}`)
+              }
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closeImageModal}
+            >
+              <MaterialIcons name="close" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       <Modalize
         ref={modalizeRef}
@@ -290,8 +378,6 @@ const ViewDetailBookingDetails = () => {
           </View>
         </View>
       </Modalize>
-
-      <Toast />
     </GestureHandlerRootView>
   );
 };
@@ -315,11 +401,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#CCCCCC",
   },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
     color: "#333",
+  },
+  noDataContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#666",
+    flex: 1,
   },
   label: {
     fontSize: 16,
@@ -401,6 +510,46 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  imageContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  imageWrapper: {
+    width: "48%",
+    marginBottom: 10,
+  },
+  image: {
+    width: "100%",
+    height: 150,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0", // Debug background
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+  },
+  zoomedImage: {
+    width: "90%",
+    height: "70%",
+    borderRadius: 8,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 20,
+    padding: 8,
   },
 });
 

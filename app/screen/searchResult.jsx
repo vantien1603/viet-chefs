@@ -47,7 +47,9 @@ const SearchResultScreen = () => {
   const [tempDistance, setTempDistance] = useState(30);
   const [priceRange, setPriceRange] = useState(null);
   const [tempPriceRange, setTempPriceRange] = useState(null);
-  const [activeFilter, setActiveFilter] = useState(null); // Theo dõi field filter đang mở
+  const [rateRange, setRateRange] = useState(null);
+  const [tempRateRange, setTempRateRange] = useState(null); // Sửa từ tempRateRang
+  const [activeFilter, setActiveFilter] = useState(null);
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
@@ -80,9 +82,18 @@ const SearchResultScreen = () => {
     { label: "Over $1000", value: { min: 1000, max: Infinity } },
   ];
 
+  const rateRangeOptions = [
+    { label: "1 sao trở lên", value: { min: 1, max: 5 } },
+    { label: "2 sao trở lên", value: { min: 2, max: 5 } },
+    { label: "3 sao trở lên", value: { min: 3, max: 5 } },
+    { label: "4 sao trở lên", value: { min: 4, max: 5 } },
+    { label: "5 sao", value: { min: 5, max: 5 } },
+  ];
+
   const filterFields = [
     { index: 0, name: "Distance", value: distance ? `${distance} km` : "All" },
     { index: 1, name: "Price", value: priceRange ? priceRange.label : "All" },
+    { index: 2, name: "Rating", value: rateRange ? rateRange.label : "All" },
   ];
 
   useEffect(() => {
@@ -169,6 +180,7 @@ const SearchResultScreen = () => {
       lng = location?.longitude,
       distance: dist = distance,
       priceRange: pr = priceRange,
+      rateRange: ra = rateRange,
       isSearch = false,
     } = params;
 
@@ -178,7 +190,10 @@ const SearchResultScreen = () => {
       customerLng: lng,
       distance: dist,
       ...(pr && { minPrice: pr.value.min, maxPrice: pr.value.max }),
+      ...(ra && { minRate: ra.value.min, maxRate: ra.value.max }),
     };
+
+    console.log("API Params:", apiParams);
 
     if (
       lastParams &&
@@ -211,14 +226,38 @@ const SearchResultScreen = () => {
         },
       });
 
+      let chefsData = chefsResponse.data.content;
       const dishesData = dishesResponse.data.content;
-      const chefsData = chefsResponse.data.content;
+
+      console.log("Raw Chefs Data:", chefsData);
+
+      // Lọc chefs theo averageRating tại client-side (nếu API không lọc)
+      if (ra) {
+        chefsData = chefsData.filter(
+          (chef) =>
+            chef.averageRating >= ra.value.min &&
+            chef.averageRating <= ra.value.max
+        );
+      }
+
+      // Sắp xếp chefs theo averageRating (giảm dần)
+      chefsData = chefsData.sort((a, b) => b.averageRating - a.averageRating);
+
+      console.log("Filtered and Sorted Chefs:", chefsData);
 
       setDishes(dishesData);
       setChefs(chefsData);
       setLastDishResults(dishesData);
       setLastChefResults(chefsData);
       setLastParams({ ...apiParams });
+
+      if (chefsData.length === 0 && ra) {
+        Toast.show({
+          type: "info",
+          text1: "No Results",
+          text2: "No chefs found with the selected rating filter",
+        });
+      }
 
       if (isSearch) {
         const isChefPriority =
@@ -310,6 +349,7 @@ const SearchResultScreen = () => {
     setActiveFilter(filterName);
     setTempDistance(distance);
     setTempPriceRange(priceRange);
+    setTempRateRange(rateRange); // Sửa từ tempRateRang
     modalizeRef.current?.open();
   };
 
@@ -318,6 +358,8 @@ const SearchResultScreen = () => {
       setDistance(tempDistance);
     } else if (activeFilter === "Price") {
       setPriceRange(tempPriceRange);
+    } else if (activeFilter === "Rating") {
+      setRateRange(tempRateRange); // Sửa từ tempRateRang
     }
 
     if (location) {
@@ -326,6 +368,7 @@ const SearchResultScreen = () => {
         lng: location.longitude,
         distance: activeFilter === "Distance" ? tempDistance : distance,
         priceRange: activeFilter === "Price" ? tempPriceRange : priceRange,
+        rateRange: activeFilter === "Rating" ? tempRateRange : rateRange,
       });
     }
     modalizeRef.current?.close();
@@ -408,7 +451,7 @@ const SearchResultScreen = () => {
       </TouchableOpacity>
 
       <View style={styles.filterContainer}>
-        <TouchableOpacity style={{marginRight: 10}}>
+        <TouchableOpacity style={{ marginRight: 10 }}>
           <Icon name="filter" size={24} color="#4EA0B7" />
         </TouchableOpacity>
         <FlatList
@@ -441,7 +484,6 @@ const SearchResultScreen = () => {
           data={[
             { index: 0, name: "Recommended" },
             { index: 1, name: "Chefs" },
-            { index: 2, name: "Ratings" },
           ]}
           keyExtractor={(item) => item.index.toString()}
           horizontal
@@ -497,9 +539,14 @@ const SearchResultScreen = () => {
                 />
               )}
               <View style={styles.chefInfo}>
-                <Text style={styles.title}>
-                  {truncateText(item.user.fullName)}
-                </Text>
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={styles.title}>
+                    {truncateText(item.user.fullName)}
+                  </Text>
+                  <Text style={styles.rating}>
+                    {item.averageRating.toFixed(1)} ⭐
+                  </Text>
+                </View>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
                 </Text>
@@ -519,7 +566,7 @@ const SearchResultScreen = () => {
             onPress={() =>
               router.push({
                 pathname: "/screen/dishDetails",
-                params: { dishId: item.id },
+                params: { dishId: item.id, chefId: item.chef.id.toString() },
               })
             }
           >
@@ -611,7 +658,7 @@ const SearchResultScreen = () => {
           </View>
         )}
 
-        {/* {activeFilter === "Price" && (
+        {activeFilter === "Price" && (
           <View style={styles.dropdownContainer}>
             <Text style={styles.dropdownLabel}>Price Range</Text>
             <Dropdown
@@ -628,7 +675,26 @@ const SearchResultScreen = () => {
               containerStyle={styles.dropdownItemContainer}
             />
           </View>
-        )} */}
+        )}
+
+        {activeFilter === "Rating" && (
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>Rating Range</Text>
+            <Dropdown
+              style={styles.dropdown}
+              data={rateRangeOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select rating range"
+              value={tempRateRange}
+              onChange={(item) => setTempRateRange(item)}
+              selectedTextStyle={styles.selectedTextStyle}
+              placeholderStyle={styles.placeholderStyle}
+              itemTextStyle={styles.itemTextStyle}
+              containerStyle={styles.dropdownItemContainer}
+            />
+          </View>
+        )}
 
         <View style={styles.modalButtons}>
           <TouchableOpacity
@@ -834,7 +900,7 @@ const styles = StyleSheet.create({
     margin: 5,
     flex: 1,
     width: screenWidth * 0.45,
-    height: 300,
+    height: 270,
     maxWidth: "48%",
   },
   chefContainer: {
@@ -878,6 +944,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#FFF",
     marginBottom: 4,
+  },
+  rating: {
+    fontSize: 14,
+    color: "#FFF",
+    marginBottom: 4,
+    marginLeft: 20,
   },
   address: {
     fontSize: 10,

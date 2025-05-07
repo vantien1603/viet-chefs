@@ -24,14 +24,13 @@ const DishCard = ({ item, isSelected, onToggle }) => (
       {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
     </View>
     <Image
-      source={{ uri: item.imageUrl || "https://via.placeholder.com/80" }}
+      source={{ uri: item.imageUrl }}
       style={styles.image}
       resizeMode="cover"
     />
     <View style={styles.cardContent}>
       <Text style={styles.title}>{item.name}</Text>
       <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
-      {/* {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null} */}
     </View>
   </TouchableOpacity>
 );
@@ -41,7 +40,7 @@ const MenuCard = ({ item, isSelected, onSelect }) => (
     style={[
       styles.menuCard,
       {
-        borderColor: isSelected ? "#F8BF40" : "transparent", // Chỉ thay đổi màu viền
+        borderColor: isSelected ? "#F8BF40" : "transparent",
       },
     ]}
     onPress={onSelect}
@@ -70,31 +69,55 @@ const SelectFood = () => {
     dishNotes: dishNotesParam,
   } = params;
 
-  const [selectedMenu, setSelectedMenu] = useState(
-    selectedMenuParam && selectedMenuParam !== ""
-      ? JSON.parse(selectedMenuParam)?.id
-      : null
-  );
-  const [selectedDishes, setSelectedDishes] = useState(() => {
-    if (selectedDishesParam && selectedDishesParam !== "") {
-      const dishes = JSON.parse(selectedDishesParam);
-      return dishes.reduce((acc, dish) => {
-        acc[dish.id] = true;
-        return acc;
-      }, {});
-    }
-    return {};
-  });
+  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [selectedDishes, setSelectedDishes] = useState({});
   const [extraDishIds, setExtraDishIds] = useState({});
-  const [dishNotes, setDishNotes] = useState(
-    dishNotesParam && dishNotesParam !== "" ? JSON.parse(dishNotesParam) : {}
-  );
+  const [dishNotes, setDishNotes] = useState({});
   const [menus, setMenus] = useState([]);
   const [dishes, setDishes] = useState([]);
   const axiosInstance = useAxios();
 
   const menuFlatListRef = useRef(null);
   const dishesFlatListRef = useRef(null);
+
+  // Đồng bộ hóa state với params khi params thay đổi
+  useEffect(() => {
+    // Đồng bộ selectedMenu
+    if (selectedMenuParam && selectedMenuParam !== "") {
+      const parsedMenu = JSON.parse(selectedMenuParam);
+      setSelectedMenu(parsedMenu?.id || null);
+    } else {
+      setSelectedMenu(null);
+    }
+
+    // Đồng bộ selectedDishes và extraDishIds
+    if (selectedDishesParam && selectedDishesParam !== "") {
+      const parsedDishes = JSON.parse(selectedDishesParam);
+      const dishState = parsedDishes.reduce((acc, dish) => {
+        acc[dish.id] = true;
+        return acc;
+      }, {});
+
+      if (selectedMenu) {
+        // Nếu đã có selectedMenu, chuyển dữ liệu sang extraDishIds
+        setExtraDishIds(dishState);
+        setSelectedDishes({}); // Reset selectedDishes
+      } else {
+        setSelectedDishes(dishState);
+        setExtraDishIds({}); // Reset extraDishIds
+      }
+    } else {
+      setSelectedDishes({});
+      setExtraDishIds({});
+    }
+
+    // Đồng bộ dishNotes
+    if (dishNotesParam && dishNotesParam !== "") {
+      setDishNotes(JSON.parse(dishNotesParam));
+    } else {
+      setDishNotes({});
+    }
+  }, [selectedMenuParam, selectedDishesParam, dishNotesParam]);
 
   // Fetch menus
   useEffect(() => {
@@ -120,10 +143,12 @@ const SelectFood = () => {
       try {
         let dishesResponse;
         if (selectedMenu) {
+          // Gọi API để lấy các món ngoài menu
           dishesResponse = await axiosInstance.get(
             `/dishes/not-in-menu?menuId=${selectedMenu}`
           );
         } else {
+          // Gọi API để lấy tất cả món ăn của chef
           dishesResponse = await axiosInstance.get(`/dishes?chefId=${chefId}`);
         }
         setDishes(dishesResponse.data.content || []);
@@ -138,7 +163,7 @@ const SelectFood = () => {
       }
     };
     fetchDishes();
-  }, [selectedMenu]);
+  }, [selectedMenu, chefId]); // Thêm chefId vào dependencies để đảm bảo fetch lại nếu cần
 
   // Handle physical back button
   useEffect(() => {
@@ -161,34 +186,19 @@ const SelectFood = () => {
   const toggleDish = (id) => {
     if (selectedMenu) {
       setExtraDishIds((prev) => {
-        const newState = { ...prev, [id]: !prev[id] };
-        if (!newState[id]) {
-          setDishNotes((prevNotes) => {
-            const updatedNotes = { ...prevNotes };
-            delete updatedNotes[id];
-            return updatedNotes;
-          });
-        }
+        const newState = { ...prev, [id]: !prev[id] }; // Giữ nguyên các món khác, chỉ toggle món hiện tại
         return newState;
       });
     } else {
       setSelectedDishes((prev) => {
-        const newState = { ...prev, [id]: !prev[id] };
-        if (!newState[id]) {
-          setDishNotes((prevNotes) => {
-            const updatedNotes = { ...prevNotes };
-            delete updatedNotes[id];
-            return updatedNotes;
-          });
-        }
+        const newState = { ...prev, [id]: !prev[id] }; // Giữ nguyên các món khác, chỉ toggle món hiện tại
         return newState;
       });
     }
   };
 
   const handleSelectMenu = (menuId) => {
-    const selectedDishesCount =
-      Object.values(selectedDishes).filter(Boolean).length;
+    const selectedDishesCount = Object.values(selectedDishes).filter(Boolean).length;
     if (selectedDishesCount > 0) {
       Toast.show({
         type: "error",
@@ -227,6 +237,8 @@ const SelectFood = () => {
       return;
     }
 
+    console.log("Selected dishes data in handleContinue:", selectedDishesData);
+
     router.push({
       pathname: "/screen/booking",
       params: {
@@ -243,8 +255,8 @@ const SelectFood = () => {
 
   const renderDish = ({ item }) => {
     const isSelected = selectedMenu
-      ? extraDishIds[item.id]
-      : selectedDishes[item.id];
+      ? extraDishIds[item.id] || false
+      : selectedDishes[item.id] || false;
     return (
       <DishCard
         item={item}
@@ -334,15 +346,15 @@ const styles = StyleSheet.create({
     marginBottom: 50,
     width: 340,
     height: 100,
-    borderWidth: 2, // Đặt borderWidth cố định
-    borderColor: "transparent", // Mặc định là trong suốt
+    borderWidth: 2,
+    borderColor: "transparent",
   },
   menuImage: {
     width: 72,
     height: 72,
     borderRadius: 12,
     marginRight: 12,
-    backgroundColor: "#f0f0f0", // fallback nếu image không load
+    backgroundColor: "#f0f0f0",
   },
   dishCard: {
     flexDirection: "row",
