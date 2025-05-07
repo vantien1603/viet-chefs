@@ -156,7 +156,7 @@ const ConfirmBookingScreen = () => {
       });
 
     } catch (error) {
-      console.error("Error creating booking:", error);
+      console.log("Error creating booking:", error?.response?.data);
       Toast.show({
         type: "error",
         text1: "Error",

@@ -132,7 +132,7 @@
 "cookTime": "Cook Time",
 "jobDetails": "Job Details",
 "totalNumberOfDishes": "Total Number of Dishes",
-"s": "Number of Dishes in Menu",
+"dishesInMenu": "Number of Dishes in Menu",
 "dishList": "Dish List",
 "total": "Total",
   "bookingPayment": "Booking Payment",

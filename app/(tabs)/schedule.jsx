@@ -13,6 +13,7 @@ import useAxios from "../../config/AXIOS_API";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 const CustomerSchedule = () => {
   const axiosInstance = useAxios();
@@ -55,10 +56,56 @@ const CustomerSchedule = () => {
     });
   };
 
+  const handleRebook = (bookingDetail) => {
+    if (bookingDetail.status !== "COMPLETED") {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Rebook is only allowed when status is COMPLETED",
+      });
+      return;
+    }
+  
+    let selectedMenu = null;
+    if (bookingDetail.menuId) {
+      selectedMenu = {
+        id: bookingDetail.menuId,
+        name: `Menu ${bookingDetail.menuId}`,
+        menuItems: [],
+      };
+    }
+  
+    const selectDishes = bookingDetail.dishes.map(({ dish }) => ({
+      id: dish.id,
+      name: dish.name,
+      imageUrl: dish?.imageUrl,
+    }));
+  
+    const dishNotes = {};
+    if (bookingDetail.dishes && bookingDetail.dishes.length > 0) {
+      bookingDetail.dishes.forEach(({ dish, notes }) => {
+        dishNotes[dish.id] = notes || "";
+      });
+    }
+  
+    console.log("Rebook Data:", { selectedMenu, selectDishes, dishNotes });
+    console.log("length", selectDishes.length)
+  
+    router.push({
+      pathname: "/screen/booking",
+      params: {
+        chefId: bookingDetail.booking?.chef?.id,
+        selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
+        selectedDishes: selectDishes.length > 0 ? JSON.stringify(selectDishes) : null,
+        dishNotes: Object.keys(dishNotes).length > 0 ? JSON.stringify(dishNotes) : null,
+        address: bookingDetail.location,
+      },
+    });
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Filter booking details to only include SCHEDULED or COMPLETED statuses
   const filteredBookingDetails = bookingDetails.filter(
     (detail) => detail.status === "SCHEDULED" || detail.status === "COMPLETED"
   );
@@ -74,49 +121,61 @@ const CustomerSchedule = () => {
     (detail) => new Date(detail.sessionDate) < today
   );
 
-  // Component render danh sách đặt chỗ
   const renderBookingList = (details) => (
     <ScrollView style={styles.container}>
       {details.length > 0 ? (
         details.map((detail) => (
-          <TouchableOpacity
-            key={detail.id}
-            style={styles.bookingItem}
-            onPress={() => handlePressDetail(detail.id)}
-          >
-            <View style={styles.row}>
-              <Text style={styles.label1}>
-                {detail.booking?.chef?.user?.fullName || "N/A"}
-              </Text>
-              <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
-            </View>
-            <Text style={styles.label}>Giờ: {detail.startTime || "N/A"}</Text>
-            <Text style={styles.label}>
-              Địa chỉ: {detail.location || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Tổng giá:{" "}
-              {detail.totalPrice ? `${detail.totalPrice.toFixed(2)}` : "N/A"}
-            </Text>
-            <Text
-              style={[
-                styles.labelStatus,
-                {
-                  color:
-                    detail.status === "COMPLETED"
-                      ? "green"
-                      : detail.status === "SCHEDULED"
-                      ? "orange"
-                      : "black",
-                },
-              ]}
+          <View key={detail.id} style={styles.bookingItem}>
+            <TouchableOpacity
+              onPress={() => handlePressDetail(detail.id)}
+              style={styles.touchableArea}
             >
-              {detail.status}{" "}
-              {detail.status === "COMPLETED" && (
-                <Ionicons name="checkmark-done" size={24} color="green" />
-              )}
-            </Text>
-          </TouchableOpacity>
+              <View style={styles.row}>
+                <Text style={styles.label1}>
+                  {detail.booking?.chef?.user?.fullName || "N/A"}
+                </Text>
+                <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
+              </View>
+              <Text style={styles.label}>Giờ: {detail.startTime || "N/A"}</Text>
+              <Text style={styles.label}>
+                Địa chỉ: {detail.location || "N/A"}
+              </Text>
+              <Text style={styles.label}>
+                Tổng giá:{" "}
+                {detail.totalPrice
+                  ? `${detail.totalPrice.toFixed(2)}`
+                  : "N/A"}
+              </Text>
+              <View style={styles.statusContainer}>
+                <Text
+                  style={[
+                    styles.labelStatus,
+                    {
+                      color:
+                        detail.status === "COMPLETED"
+                          ? "green"
+                          : detail.status === "SCHEDULED"
+                          ? "orange"
+                          : "black",
+                    },
+                  ]}
+                >
+                  {detail.status}
+                  {detail.status === "COMPLETED" && (
+                    <Ionicons name="checkmark-done" size={24} color="green" />
+                  )}
+                </Text>
+                {detail.status === "COMPLETED" && (
+                  <TouchableOpacity
+                    style={styles.rebookButton}
+                    onPress={() => handleRebook(detail)}
+                  >
+                    <Text style={styles.rebookText}>Rebook</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
         ))
       ) : (
         <Text style={styles.noData}>Không có đặt chỗ nào.</Text>
@@ -124,12 +183,10 @@ const CustomerSchedule = () => {
     </ScrollView>
   );
 
-  // Định nghĩa các tab
   const TodayRoute = () => renderBookingList(todayDetails);
   const UpcomingRoute = () => renderBookingList(upcomingDetails);
   const PastRoute = () => renderBookingList(pastDetails);
 
-  // Cấu hình SceneMap
   const renderScene = SceneMap({
     today: TodayRoute,
     upcoming: UpcomingRoute,
@@ -138,7 +195,11 @@ const CustomerSchedule = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Activity" onRightPress={() => router.push("/screen/history")} rightText="Lịch sử"/>
+      <Header
+        title="Activity"
+        onRightPress={() => router.push("/screen/history")}
+        rightText="Lịch sử"
+      />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
@@ -160,6 +221,7 @@ const CustomerSchedule = () => {
           />
         )}
       />
+      <Toast />
     </SafeAreaView>
   );
 };
@@ -176,6 +238,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     marginBottom: 10,
+  },
+  touchableArea: {
+    flex: 1,
   },
   row: {
     flexDirection: "row",
@@ -207,10 +272,28 @@ const styles = StyleSheet.create({
   indicator: {
     backgroundColor: "#007AFF",
   },
+  statusContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 5,
+  },
   labelStatus: {
     textAlign: "right",
     color: "green",
     fontWeight: "bold",
+  },
+  rebookButton: {
+    backgroundColor: "#17a2b8",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  rebookText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 

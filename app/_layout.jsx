@@ -290,7 +290,7 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
-                  name="screen/orderHistories"
+                  name="screen/history"
                   options={{
                     headerShown: false,
                   }}

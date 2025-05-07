@@ -121,17 +121,14 @@ const useBookingCancellation = () => {
   return { handleCancelBooking };
 };
 
-// Rest of the BookingCard and BookingList components remain unchanged
 const BookingCard = ({
   booking,
   onCancel,
-  onRebook,
   onReview,
   onViewReview,
   refreshing,
   reviewed,
 }) => {
-  const isSingleBooking = booking.bookingType === "SINGLE";
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -142,8 +139,8 @@ const BookingCard = ({
     }
 
     const calculateTimeRemaining = () => {
-      const createdAt = new Date(booking.createdAt).getTime();
-      const expirationTime = createdAt + 60 * 60 * 1000; // 1 hour from createdAt
+      const updatedAt = new Date(booking.updatedAt).getTime();
+      const expirationTime = updatedAt + 60 * 60 * 1000; // 1 hour from updatedAt
       const currentTime = new Date().getTime();
       const timeDiff = expirationTime - currentTime;
 
@@ -163,7 +160,7 @@ const BookingCard = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [booking.createdAt, status]);
+  }, [booking.updatedAt, status]);
 
   const handlePress = () => {
     router.push({
@@ -180,28 +177,6 @@ const BookingCard = ({
         refreshing: refreshing.toString(),
       },
     });
-  };
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "PENDING":
-      case "PENDING_FIRST_CYCLE":
-        return { backgroundColor: "#fed7aa", textColor: "#7c2d12" };
-      case "CONFIRMED":
-      case "CONFIRMED_PARTIALLY_PAID":
-      case "CONFIRMED_PAID":
-      case "PAID":
-      case "PAID_FIRST_CYCLE":
-      case "DEPOSITED":
-        return { backgroundColor: "#a7f3d0", textColor: "#064e3b" };
-      case "COMPLETED":
-        return { backgroundColor: "#bfdbfe", textColor: "#1e3a8a" };
-      case "CANCELED":
-      case "OVERDUE":
-        return { backgroundColor: "#fecaca", textColor: "#991b1b" };
-      default:
-        return { backgroundColor: "#e5e7eb", textColor: "#4b5563" };
-    }
   };
 
   const renderButtons = () => {
@@ -262,17 +237,6 @@ const BookingCard = ({
             onPress={() => onReview(booking.id, booking.chef.id)}
           >
             <Text style={styles.buttonText}>Review</Text>
-          </TouchableOpacity>
-        );
-      }
-      if (onRebook) {
-        buttons.push(
-          <TouchableOpacity
-            key="rebook"
-            style={[styles.button, styles.primaryButton]}
-            onPress={() => onRebook(booking)}
-          >
-            <Text style={styles.buttonText}>Rebook</Text>
           </TouchableOpacity>
         );
       }
@@ -349,80 +313,8 @@ const BookingCard = ({
 };
 
 const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
-  const axiosInstance = useAxios();
-  const [loadingBookingId, setLoadingBookingId] = useState(null);
   const [reviewed, setReviewed] = useState(false);
   const { handleCancelBooking } = useBookingCancellation();
-
-  const handleRebook = async (booking) => {
-    setLoadingBookingId(booking.id);
-    try {
-      const bookingDetailId = booking.bookingDetails?.[0]?.id;
-      if (!bookingDetailId) {
-        throw new Error("Booking detail ID not found");
-      }
-      const response = await axiosInstance.get(
-        `/bookings/booking-details/${bookingDetailId}`
-      );
-      const bookingDetails = response.data;
-
-      let selectedMenu = null;
-      if (bookingDetails.menuId) {
-        const allowedDishIds = bookingDetails.dishes.map(({ dish }) => dish.id);
-
-        const menuValidationResponse = await axiosInstance.post(
-          `/menus/${bookingDetails.menuId}/validate`,
-          allowedDishIds
-        );
-        const isMenuValid = menuValidationResponse.data.success;
-        if (!isMenuValid) {
-          throw new Error(
-            menuValidationResponse.data.message ||
-              "Selected menu has changed or is no longer valid"
-          );
-        }
-
-        selectedMenu = {
-          id: bookingDetails.menuId,
-          name: `Menu ${bookingDetails.menuId}`,
-          menuItems: [],
-        };
-      }
-
-      const selectedDishes = bookingDetails.dishes.map(({ dish }) => ({
-        id: dish.id,
-        name: dish.name,
-        imageUrl: dish.imageUrl || null,
-      }));
-
-      const dishNotes = {};
-      bookingDetails.dishes.forEach(({ dish, notes }) => {
-        dishNotes[dish.id] = notes || "";
-      });
-
-      router.push({
-        pathname: "/screen/booking",
-        params: {
-          chefId: booking.chef.id,
-          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-          selectedDishes:
-            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
-          dishNotes: JSON.stringify(dishNotes),
-          numPeople: booking.guestCount.toString(),
-          address: bookingDetails.location || null,
-        },
-      });
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to initiate rebooking.",
-        visibilityTime: 4000,
-      });
-    } finally {
-      setLoadingBookingId(null);
-    }
-  };
 
   const handleReview = (bookingId, chefId) => {
     router.push({
@@ -449,7 +341,6 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
               onCancel={(bookingId) =>
                 handleCancelBooking(bookingId, item.bookingType, onRefresh)
               }
-              onRebook={handleRebook}
               onReview={handleReview}
               onViewReview={handleViewReview}
               reviewed={reviewed}

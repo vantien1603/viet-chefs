@@ -53,7 +53,7 @@ const DishDetails = () => {
 
   useEffect(() => {
     const fetchChefDetails = async () => {
-      const chefIdToFetch = dish.chefId || chefId;
+      const chefIdToFetch = dish.chef?.id || chefId;
       if (chefIdToFetch) {
         try {
           const response = await axiosInstance.get(`/chefs/${chefIdToFetch}`);
@@ -85,10 +85,9 @@ const DishDetails = () => {
     router.push({
       pathname: "/screen/booking",
       params: {
-        chefId: dish.chefId?.toString() || chefId,
+        chefId: dish.chef?.id || chefId,
         selectedDishes: JSON.stringify(selectedDishes),
         dishNotes: JSON.stringify(dishNotes),
-        latestDishId: dish.id?.toString(),
       },
     });
   };
@@ -102,7 +101,6 @@ const DishDetails = () => {
           menuName,
           chefId,
           selectedDishes: JSON.stringify(selectedDishes),
-          latestDishId: dish.id?.toString(),
         },
       });
     } else {
@@ -160,7 +158,7 @@ const DishDetails = () => {
                   uri:
                     chef.user?.avatarUrl && chef.user.avatarUrl !== "default"
                       ? chef.user.avatarUrl
-                      : "https://via.placeholder.com/50",
+                      : "",
                 }}
                 style={styles.chefAvatar}
                 resizeMode="cover"

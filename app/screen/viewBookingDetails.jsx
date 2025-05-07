@@ -29,6 +29,7 @@ const ViewBookingDetailsScreen = () => {
   const [bookingDetails, setBookingDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [depositLoading, setDepositLoading] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
   const axiosInstance = useAxios();
 
   const fetchBookingDetails = async () => {
@@ -57,7 +58,6 @@ const ViewBookingDetailsScreen = () => {
       const response = await axiosInstance.post(
         `/bookings/${bookingId}/deposit`
       );
-      // console.log("Deposit response:", JSON.stringify(response.data, null, 2));
 
       const depositSuccessful =
         response.status === 200 || response.data?.status === "DEPOSITED";
@@ -82,22 +82,28 @@ const ViewBookingDetailsScreen = () => {
             text2: "Deposit processed but status not updated yet. Please wait.",
           });
         }
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Deposit failed. Please try again.",
-        });
       }
     } catch (error) {
-      console.error("Error making deposit:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to process deposit",
-      });
+      console.log("Error making deposit:", error);
     } finally {
       setDepositLoading(false);
+    }
+  };
+
+  const handlePay = async () => {
+    setPayLoading(true);
+    try {
+      const response = await axiosInstance.post(
+        `/bookings/${bookingId}/payment`
+      );
+      if (response.status === 200) {
+        await fetchBookingDetails();
+        router.push("/(tabs)/home");
+      }
+    } catch (error) {
+      console.log("Error making payment:", error);
+    } finally {
+      setPayLoading(false);
     }
   };
 
@@ -314,6 +320,22 @@ const ViewBookingDetailsScreen = () => {
             <View style={styles.depositButtonContent}>
               <MaterialIcons name="payment" size={18} color="#FFF" />
               <Text style={styles.depositButtonText}>Make Deposit</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
+      {bookingType === "SINGLE" && (
+        <TouchableOpacity
+          style={[styles.depositButton, payLoading && styles.disabledButton]}
+          onPress={handlePay}
+          disabled={payLoading}
+        >
+          {payLoading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <View style={styles.depositButtonContent}>
+              <MaterialIcons name="attach-money" size={18} color="#FFF" />
+              <Text style={styles.depositButtonText}>Pay</Text>
             </View>
           )}
         </TouchableOpacity>

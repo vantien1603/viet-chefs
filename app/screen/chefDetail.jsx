@@ -197,7 +197,7 @@ const ChefDetail = () => {
                         </Text>
                       </View>
                       <View style={styles.section}>
-                        <Text style={styles.label}>{t("pricePerMeal")}:</Text>
+                        <Text style={styles.label}>{t("pricePerHour")}:</Text>
                         <Text style={styles.value}>${chefs?.price}</Text>
                       </View>
                     </>
