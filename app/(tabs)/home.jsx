@@ -28,6 +28,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [chef, setChef] = useState([]);
   const [dishes, setDishes] = useState([]);
+  const [chefFavorite, setChefFavorite] = useState([]);
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -44,11 +45,9 @@ export default function Home() {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await axiosInstance.get("/notifications/my");
+      const response = await axiosInstance.get("/notifications/my/count");
       if (response.status === 200) {
-        const unread = response.data.content.filter(
-          (notification) => !notification.read
-        ).length;
+        const unread = response.data.notiNotChat;
         setUnreadCount(unread);
       }
     } catch (error) {
@@ -56,9 +55,11 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    fetchUnreadCount();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+    }, [])
+  );
 
   const getCurrentLocation = async () => {
     try {
@@ -144,6 +145,24 @@ export default function Home() {
     }
   };
 
+  const fetchChefFavorite = async () => {
+    try {
+      if (!location) return;
+      const response = await axiosInstance.get("/favorite-chefs/nearby", {
+        params: {
+          customerLat: location.latitude,
+          customerLng: location.longitude,
+          distance: 30,
+          sortBy: "id",
+          sortDir: "asc",
+        },
+      });
+      setChefFavorite(response.data.content.slice(0, 7));
+    } catch (error) {
+      console.log("Error fetching favorite chefs:", error?.response?.data);
+    }
+  };
+
   const fetchChef = async () => {
     try {
       if (!location) return;
@@ -152,8 +171,6 @@ export default function Home() {
           customerLat: location.latitude,
           customerLng: location.longitude,
           distance: 30,
-          pageNo: 0,
-          pageSize: 30,
           sortBy: "id",
           sortDir: "asc",
         },
@@ -175,8 +192,6 @@ export default function Home() {
           customerLat: location.latitude,
           customerLng: location.longitude,
           distance: 30,
-          pageNo: 0,
-          pageSize: 30,
           sortBy: "id",
           sortDir: "asc",
         },
@@ -191,13 +206,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
     if (location) {
       fetchChef();
       fetchDishes();
+      fetchChefFavorite();
     }
   }, [location]);
 
@@ -218,6 +230,30 @@ export default function Home() {
       },
     });
   };
+
+  const renderChefFavoriteItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/screen/chefDetail",
+          params: { chefId: item.chefId },
+        })
+      }
+    >
+      <View style={styles.imageContainer}>
+        <Image
+          source={{
+            uri: item?.chefAvatar,
+          }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+      </View>
+      <Text style={styles.title}>{item.chefName}</Text>
+      <Text style={{ color: "#F8BF40" }}>{item.chefSpecialization}</Text>
+    </TouchableOpacity>
+  );
 
   const renderDishItem = ({ item }) => (
     <TouchableOpacity
@@ -254,19 +290,14 @@ export default function Home() {
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri:
-              item.user.avatarUrl === "default"
-                ? "https://via.placeholder.com/120"
-                : item.user.avatarUrl,
+            uri: item.user.avatarUrl,
           }}
           style={styles.image}
           resizeMode="contain"
         />
       </View>
       <Text style={styles.title}>{item.user.fullName}</Text>
-      <Text style={{ color: "#F8BF40" }}>
-        {item.specialization || "Đầu bếp"}
-      </Text>
+      <Text style={{ color: "#F8BF40" }}>{item.specialization}</Text>
     </TouchableOpacity>
   );
 
@@ -333,7 +364,7 @@ export default function Home() {
 
           <View style={styles.searchContainer}>
             <TextInput
-              placeholder="Search..."
+              placeholder={t("search")}
               style={styles.searchInput}
               value={query}
               onChangeText={setQuery}
@@ -369,7 +400,47 @@ export default function Home() {
               <Icon name="search" size={24} color="#4EA0B7" />
             </TouchableOpacity>
           </View>
+          {/* đầu bếp yêu thích gần đây */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
+            {chefFavorite.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
+                <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                  {t("seeAll")}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
+          {chefFavorite.length === 0 ? (
+            <View style={{ alignItems: "center", marginTop: 10 }}>
+              <Text style={{ fontSize: 16, color: "#888" }}>
+                Không có đầu bếp nào gần bạn.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
+            >
+              {chefFavorite.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderChefFavoriteItem({ item })}
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* món ăn gần đây */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
@@ -398,6 +469,7 @@ export default function Home() {
             ))}
           </ScrollView>
 
+          {/* đầu bếp gần đây */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/allChef")}>

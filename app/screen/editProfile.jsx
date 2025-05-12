@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import Toast from "react-native-toast-message";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { t } from "i18next";
 
 const EditProfile = () => {
   const router = useRouter();
@@ -141,11 +142,6 @@ const EditProfile = () => {
     if (isLoading) return;
 
     if (!validateForm()) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng kiểm tra và điền đầy đủ thông tin hợp lệ!",
-      });
       return;
     }
 
@@ -180,22 +176,12 @@ const EditProfile = () => {
           await AsyncStorage.setItem("@avatar", avatar);
         }
 
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Cập nhật hồ sơ thành công!",
-        });
         setTimeout(() => {
           router.back();
         }, 1500);
       }
     } catch (error) {
       console.log("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể cập nhật hồ sơ. Vui lòng thử lại!",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +189,7 @@ const EditProfile = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Chỉnh sửa hồ sơ" />
+      <Header title={t("editProfile")} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarContainer}>
           <Image source={{ uri: avatar }} style={styles.avatar} />
@@ -211,7 +197,7 @@ const EditProfile = () => {
             <Text
               style={[styles.changeImageText, isLoading && styles.disabledText]}
             >
-              Thay đổi ảnh
+              {t("changeImage")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -223,16 +209,16 @@ const EditProfile = () => {
           editable={false}
         />
 
-        <Text style={styles.label}>Họ và tên *</Text>
+        <Text style={styles.label}>{t("fullName")} *</Text>
         <TextInput
           style={[styles.input, errors.name && styles.inputError]}
           value={name}
           onChangeText={(text) => {
             setName(text);
-            setErrors({ ...errors, name: text ? "" : "Họ và tên là bắt buộc" });
+            setErrors({ ...errors, name: text ? "" : t("fullNameIsRequired") });
           }}
           editable={!isLoading}
-          placeholder="Nhập họ và tên"
+          placeholder={t("enterFullName")}
         />
         {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
@@ -243,7 +229,7 @@ const EditProfile = () => {
           editable={false}
         />
 
-        <Text style={styles.label}>Số điện thoại *</Text>
+        <Text style={styles.label}>{t("phone")} *</Text>
         <TextInput
           style={[styles.input, errors.phone && styles.inputError]}
           value={phone}
@@ -254,17 +240,17 @@ const EditProfile = () => {
               phone: text
                 ? validatePhone(text)
                   ? ""
-                  : "Số điện thoại phải có đúng 10 chữ số"
-                : "Số điện thoại là bắt buộc",
+                  : t("phoneIsValid")
+                : t("phoneNumberIsRequired"),
             });
           }}
           keyboardType="phone-pad"
           editable={!isLoading}
-          placeholder="Nhập số điện thoại"
+          placeholder={t("enterPhoneNumber")}
         />
         {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
-        <Text style={styles.label}>Ngày sinh *</Text>
+        <Text style={styles.label}>{t("dob")} *</Text>
         <TouchableOpacity
           onPress={() => setShowDatePicker(true)}
           disabled={isLoading}
@@ -289,7 +275,7 @@ const EditProfile = () => {
           />
         )}
 
-        <Text style={styles.label}>Giới tính</Text>
+        <Text style={styles.label}>{t("gender")}</Text>
         <View style={styles.genderContainer}>
           <TouchableOpacity
             style={[
@@ -304,7 +290,7 @@ const EditProfile = () => {
                 gender === "Nam" ? styles.genderTextSelected : styles.genderText
               }
             >
-              Nam
+              {t("male")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -320,7 +306,7 @@ const EditProfile = () => {
                 gender === "Nữ" ? styles.genderTextSelected : styles.genderText
               }
             >
-              Nữ
+              {t("female")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -335,7 +321,7 @@ const EditProfile = () => {
           {isLoading ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Lưu</Text>
+            <Text style={styles.saveButtonText}>{t("save")}</Text>
           )}
         </TouchableOpacity>
       </View>

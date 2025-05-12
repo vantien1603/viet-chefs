@@ -11,7 +11,6 @@ import {
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Dropdown } from "react-native-element-dropdown";
@@ -29,7 +28,6 @@ const UpdateBookingDetailScreen = () => {
   const [selectedDishes, setSelectedDishes] = useState([]); // Dishes được chọn (bao gồm notes)
   const axiosInstance = useAxios();
 
-console.log("cc", chefId);
   // Fetch danh sách menu
   useEffect(() => {
     const fetchMenus = async () => {
@@ -180,18 +178,8 @@ console.log("cc", chefId);
         platformFee: response.data.platformFee || 0,
         totalChefFeePrice: response.data.totalChefFeePrice || 0,
         discountAmout: response.data.discountAmout || 0,
-        timeBeginCook: response.data.timeBeginCook || {
-          hour: 0,
-          minute: 0,
-          second: 0,
-          nano: 0,
-        },
-        timeBeginTravel: response.data.timeBeginTravel || {
-          hour: 0,
-          minute: 0,
-          second: 0,
-          nano: 0,
-        },
+        timeBeginCook: response.data.timeBeginCook,
+        timeBeginTravel: response.data.timeBeginTravel,
         menuId: selectedMenu ? parseInt(selectedMenu) : null, // Cho phép menuId là null
       };
 
@@ -212,11 +200,6 @@ console.log("cc", chefId);
     } finally {
       setLoading(false);
     }
-  };
-
-  const clearMenuSelection = () => {
-    setSelectedMenu(null);
-    setSelectedExtraDishIds([]); // Xóa danh sách extra dishes khi bỏ chọn menu
   };
 
   const renderMenuDishItem = ({ item }) => (
@@ -367,7 +350,6 @@ console.log("cc", chefId);
         )}
       </TouchableOpacity>
 
-      <Toast />
     </SafeAreaView>
   );
 };

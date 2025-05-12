@@ -316,27 +316,12 @@ const LongTermBookingScreen = () => {
           }}
           onPress={() => {
             if (!selectedPackage) {
-              Toast.show({
-                type: "error",
-                text1: "Lỗi",
-                text2: "Vui lòng chọn một gói dịch vụ!",
-              });
               return;
             }
             if (!numPeople || numPeople < 1) {
-              Toast.show({
-                type: "error",
-                text1: "Lỗi",
-                text2: "Vui lòng chọn số người hợp lệ!",
-              });
               return;
             }
             if (!address) {
-              Toast.show({
-                type: "error",
-                text1: "Lỗi",
-                text2: "Vui lòng chọn địa chỉ!",
-              });
               return;
             }
             router.push({

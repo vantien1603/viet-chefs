@@ -7,13 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
@@ -37,9 +33,8 @@ const ConfirmBookingScreen = () => {
   const numPeople = parseInt(params.numPeople) || 1;
   const menuId = params.menuId || null;
   const chefBringIngredients = params.chefBringIngredients;
+  const distanceKm = params.distanceKm || 0;
   const { user } = useContext(AuthContext);
-
-  console.log("in", chefBringIngredients);
 
   // Extract dishes from selectedMenu (menu items) and selectedDishes (extra dishes)
   const menuDishes =
@@ -55,7 +50,6 @@ const ConfirmBookingScreen = () => {
 
   // Combine all dishes for the total count
   const allDishes = [...menuDishes, ...extraDishes];
-  console.log("allDish", allDishes);
   const numberOfDishes = allDishes.length;
 
   // Format the dish list: "Menu Name: Dish 1, Dish 2, ..." + extra dishes
@@ -79,8 +73,7 @@ const ConfirmBookingScreen = () => {
           .join(", ")}`
       : "";
 
-  const dishList =
-    [menuDishList, extraDishList].filter(Boolean).join(" | ");
+  const dishList = [menuDishList, extraDishList].filter(Boolean).join(" | ");
 
   const numberOfMenuDishes = menuDishes.length;
 
@@ -99,7 +92,7 @@ const ConfirmBookingScreen = () => {
         numPeople: numPeople.toString(),
         requestDetails,
         menuId: menuId || null,
-        chefBringIngredients
+        chefBringIngredients,
       },
     });
   };
@@ -133,19 +126,12 @@ const ConfirmBookingScreen = () => {
               dishId: dishId,
               notes: dishNotes[dishId] || null,
             })),
-            chefBringIngredients
+            chefBringIngredients,
           },
         ],
       };
       console.log("Payload for booking confirmation:", payload);
       const response = await axiosInstance.post("/bookings", payload);
-      console.log("API Response:", response.data);
-
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Booking confirmed successfully!",
-      });
 
       router.push({
         pathname: "/screen/paymentBooking",
@@ -154,18 +140,8 @@ const ConfirmBookingScreen = () => {
           bookingData: JSON.stringify(bookingData),
         },
       });
-
     } catch (error) {
-      console.log("Error creating booking:", error?.response?.data);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2:
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to confirm booking. Please try again.",
-      });
-      throw error;
+      console.error("Error creating booking:", error);
     }
   };
 
@@ -227,13 +203,17 @@ const ConfirmBookingScreen = () => {
               <Text style={styles.details}>{`${startTime}`}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginTravel")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("timeBeginTravel")}
+              </Text>
               <Text style={styles.details}>
                 {bookingData.timeBeginTravel || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginCook")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("timeBeginCook")}
+              </Text>
               <Text style={styles.details}>
                 {bookingData.timeBeginCook || "N/A"}
               </Text>
@@ -249,19 +229,25 @@ const ConfirmBookingScreen = () => {
 
             {/* Subsection: Chi Tiết Công Việc */}
             <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
-            {t("jobDetails")}
+              {t("jobDetails")}
             </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("numberOfPeople")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("numberOfPeople")}
+              </Text>
               <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("totalNumberOfDishes")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("totalNumberOfDishes")}
+              </Text>
               <Text style={styles.details}>{numberOfDishes}</Text>
             </View>
             {selectedMenu && (
               <View style={styles.row}>
-                <Text style={{ fontSize: 14, flex: 1 }}>{t("dishesInMenu")}</Text>
+                <Text style={{ fontSize: 14, flex: 1 }}>
+                  {t("dishesInMenu")}
+                </Text>
                 <Text style={styles.details}>{numberOfMenuDishes}</Text>
               </View>
             )}
@@ -272,7 +258,15 @@ const ConfirmBookingScreen = () => {
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
               <Text style={styles.details}>
-                {chefBringIngredients === "true" ? t("chefWillPrepareIngredients") : t("IWillPrepareIngredients")}
+                {chefBringIngredients === "true"
+                  ? t("chefWillPrepareIngredients")
+                  : t("IWillPrepareIngredients")}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("distance")}</Text>
+              <Text style={styles.details}>
+                {distanceKm ? `${distanceKm} km` : "N/A"}
               </Text>
             </View>
           </View>
@@ -303,7 +297,7 @@ const ConfirmBookingScreen = () => {
         >
           <View style={styles.costRow}>
             <Text style={{ flex: 1, fontSize: 18, fontWeight: "bold" }}>
-            {t("total")}:
+              {t("total")}:
             </Text>
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>
               {bookingData.totalPrice?.toLocaleString("en-US", {
@@ -334,7 +328,6 @@ const ConfirmBookingScreen = () => {
           )}
         </TouchableOpacity>
       </View>
-      <Toast />
     </SafeAreaView>
   );
 };

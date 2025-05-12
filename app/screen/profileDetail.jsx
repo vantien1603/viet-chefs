@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from "expo-router"; // Thêm useFocusEffect
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const ProfileDetail = () => {
   const router = useRouter();
@@ -69,11 +70,11 @@ const ProfileDetail = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Thông tin cá nhân" />
+      <Header title={t("personalInformation")} />
       <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
         <View style={{ alignItems: "center", marginBottom: 20 }}>
           <Image
-            source={{ uri: avatarUrl || "https://via.placeholder.com/100" }}
+            source={{ uri: avatarUrl }}
             style={{ width: 100, height: 100, borderRadius: 50 }}
           />
         </View>
@@ -81,25 +82,25 @@ const ProfileDetail = () => {
         <Text style={styles.label}>Username</Text>
         <Text style={styles.text}>{username}</Text>
 
-        <Text style={styles.label}>Họ và tên</Text>
+        <Text style={styles.label}>{t("fullName")}</Text>
         <Text style={styles.text}>{fullName}</Text>
 
         <Text style={styles.label}>Email</Text>
         <Text style={styles.text}>{email}</Text>
 
-        <Text style={styles.label}>Số điện thoại</Text>
+        <Text style={styles.label}>{t("phone")}</Text>
         <Text style={styles.text}>{phone}</Text>
 
-        <Text style={styles.label}>Ngày sinh</Text>
+        <Text style={styles.label}>{t("dob")}</Text>
         <Text style={styles.text}>{dob}</Text>
 
-        <Text style={styles.label}>Giới tính</Text>
+        <Text style={styles.label}>{t("gender")}</Text>
         <Text style={styles.text}>{gender}</Text>
       </ScrollView>
 
       <View style={styles.fixedButtonContainer}>
         <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-          <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
+          <Text style={styles.editButtonText}>{t("editProfile")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

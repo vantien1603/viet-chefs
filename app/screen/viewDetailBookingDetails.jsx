@@ -346,11 +346,11 @@ const ViewDetailBookingDetails = () => {
         handlePosition="outside"
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Report Chef No-Show</Text>
+          <Text style={styles.modalTitle}>Report</Text>
           <Text style={styles.modalLabel}>Reason</Text>
           <TextInput
             style={[styles.input, { backgroundColor: "#e0e0e0" }]}
-            value="CHEF_NO_SHOW"
+            value="Chef not arrived"
             editable={false}
           />
           <Text style={styles.modalLabel}>Detail (Optional)</Text>

@@ -5,6 +5,7 @@ import { commonStyles } from '../../style'
 import Header from '../../components/header'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router'
+import { t } from 'i18next'
 const ForgotPasswordScreen = () => {
     const router= useRouter();
     const [mail,setMail] = useState();
@@ -14,24 +15,13 @@ const ForgotPasswordScreen = () => {
     }
     return (
         <SafeAreaView style={commonStyles.containerContent}>
-            <Header title="Forgot password" />
-            <Text style={{ fontSize: 16, paddingVertical: 20, }}>Select which contact details should we use to reset your password</Text>
+            <Header title={t("forgot")} />
+            <Text style={{ fontSize: 16, paddingVertical: 20, }}>{t("contactDetails")}</Text>
             <View>
-                <TouchableOpacity onPress={()=> handleForgot()} style={styles.optionRow}>
-                    <Ionicons name="chatbubble-ellipses-sharp" size={40} color="#A9411D" />
-                    <View style={{ marginLeft: 15 }}>
-                        <Text style={styles.contentText}>Via sms</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 36 }}>•• ••• ••</Text>
-                            <Text style={{ fontSize: 18 }}>8 18</Text>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
                 <TouchableOpacity style={styles.optionRow} onPress={() => router.push("/screen/forgotPassword")}>
                     <Ionicons name="mail-sharp" size={40} color="#A9411D" />
                     <View style={{ marginLeft: 15 }}>
-                        <Text style={styles.contentText}>Via email</Text>
+                        <Text style={styles.contentText}>{t("viaEmail")}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={{ fontSize: 40 }}>•••••••</Text>
                             <Text style={{ fontSize: 22 }}>@gmail.com</Text>

@@ -14,6 +14,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
@@ -57,11 +58,6 @@ const ReviewScreen = () => {
       setCriteriaComments(initialComments);
     } catch (error) {
       console.error("Error fetching review criteria:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load review criteria.",
-      });
     }
   };
 
@@ -82,11 +78,6 @@ const ReviewScreen = () => {
     );
 
     if (!hasAnyRating) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please rate at least one criterion.",
-      });
       return;
     }
 
@@ -104,20 +95,9 @@ const ReviewScreen = () => {
       const response = await axiosInstance.post("/reviews", payload);
       console.log("Review Response:", response.data);
 
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Review submitted successfully!",
-      });
-
       router.push("(tabs)/history");
     } catch (error) {
       console.error("Error submitting review:", error?.response?.data);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to submit review.",
-      });
     } finally {
       setLoading(false);
     }
@@ -143,12 +123,12 @@ const ReviewScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Review Booking" />
+      <Header title={t("reviewBooking")} />
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
-        <Text style={styles.label}>Rating Criteria</Text>
+        <Text style={styles.label}>{t("ratingCriteria")}</Text>
         {criteria.map((criterion) => (
           <View key={criterion.criteriaId} style={styles.criterionContainer}>
             <View style={styles.criterionRow}>
@@ -160,12 +140,12 @@ const ReviewScreen = () => {
             </View>
           </View>
         ))}
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t("description")}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={description}
           onChangeText={setDescription}
-          placeholder="Enter your review description (optional)"
+          placeholder={t("enterReviewDescription")}
           multiline
         />
       </ScrollView>
@@ -179,7 +159,7 @@ const ReviewScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>Submit Review</Text>
+            <Text style={styles.submitButtonText}>{t("submitReview")}</Text>
           )}
         </TouchableOpacity>
       </View>

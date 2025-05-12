@@ -14,7 +14,6 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import WebView from "react-native-webview";
-import Toast from "react-native-toast-message";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
@@ -32,11 +31,6 @@ const DepositScreen = () => {
 
   const handleDeposit = async () => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng nhập số tiền hợp lệ!",
-      });
       return;
     }
 
@@ -53,13 +47,7 @@ const DepositScreen = () => {
         throw new Error("Không nhận được URL thanh toán từ server");
       }
     } catch (error) {
-      console.error("Error creating PayPal deposit:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2:
-          error.response?.data?.message || "Không thể tạo giao dịch PayPal",
-      });
+      console.log("Error creating PayPal deposit:", error);
     } finally {
       setLoading(false);
     }
@@ -68,11 +56,6 @@ const DepositScreen = () => {
   const onNavigationStateChange = (navState) => {
     const { url } = navState;
     if (url.includes("success")) {
-      Toast.show({
-        type: "success",
-        text1: "Thành công",
-        text2: "Nạp tiền thành công!",
-      });
       setShowWebView(false);
       router.push({
         pathname: "/screen/wallet",
@@ -82,11 +65,6 @@ const DepositScreen = () => {
         },
       });
     } else if (url.includes("cancel")) {
-      Toast.show({
-        type: "info",
-        text1: "Đã hủy",
-        text2: "Giao dịch đã bị hủy.",
-      });
       setShowWebView(false);
     }
   };
@@ -207,7 +185,6 @@ const DepositScreen = () => {
           )}
         </View>
       </Modal>
-      <Toast />
     </SafeAreaView>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  BackHandler,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -18,6 +18,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
+import { Ionicons } from "@expo/vector-icons";
+import { AuthContext } from "../../config/AuthContext";
 
 const ChefDetail = () => {
   const [expandedBio, setExpandedBio] = useState(false);
@@ -26,49 +28,122 @@ const ChefDetail = () => {
   const [dishes, setDishes] = useState([]);
   const [chefs, setChefs] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [favoriteLoading, setFavoriteLoading] = useState({});
   const { chefId } = useLocalSearchParams();
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
+  const { user } = useContext(AuthContext);
 
-  // Gộp API calls
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [dishesResponse, chefResponse] = await Promise.all([
-          axiosInstance.get(`/dishes?chefId=${chefId}`, { timeout: 5000 }),
-          axiosInstance.get(`/chefs/${chefId}`, { timeout: 5000 }),
-        ]);
+        const requests = [
+          axiosInstance.get(`/dishes?chefId=${chefId}`),
+          axiosInstance.get(`/chefs/${chefId}`),
+        ];
+
+        if (user?.userId) {
+          requests.push(
+            axiosInstance.get(`/favorite-chefs/${user.userId}/chefs/${chefId}`)
+          );
+        }
+
+        const [dishesResponse, chefResponse, favoriteResponse] =
+          await Promise.all(requests);
+
         setDishes(dishesResponse.data.content);
         setChefs(chefResponse.data);
+
+        if (user?.userId && favoriteResponse) {
+          if (favoriteResponse.data) {
+            setFavorites([chefId]);
+          } else {
+            setFavorites([]);
+          }
+        }
       } catch (error) {
-        console.log("e", error);
+        console.error("Error fetching data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     if (chefId) fetchData();
-  }, [chefId]);
+  }, [chefId, user]);
+
+  const toggleFavorite = async (chefId) => {
+    if (!user?.userId) {
+      Alert.alert("Lỗi", "Vui lòng đăng nhập để thêm vào danh sách yêu thích.");
+      return;
+    }
+
+    setFavoriteLoading((prev) => ({ ...prev, [chefId]: true }));
+
+    try {
+      const isFavorite = favorites.includes(chefId);
+
+      if (isFavorite) {
+        await axiosInstance.delete(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        setFavorites(favorites.filter((id) => id !== chefId));
+        Toast.show({
+          type: "success",
+          text1: "Thông báo",
+          text2: "Đã xóa đầu bếp khỏi danh sách yêu thích!",
+        });
+      } else {
+        await axiosInstance.post(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        setFavorites([...favorites, chefId]);
+        Toast.show({
+          type: "success",
+          text1: "Thông báo",
+          text2: "Đã thêm đầu bếp vào danh sách yêu thích!",
+        });
+      }
+    } catch (err) {
+      let errorMessage =
+        err.response?.data?.message ||
+        `Lỗi khi ${
+          favorites.includes(chefId) ? "xóa" : "thêm"
+        } đầu bếp vào danh sách yêu thích.`;
+      console.error("Error toggling favorite:", errorMessage);
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
+    }
+  };
 
   const onOpenModal = () => {
     modalizeRef.current?.open();
-    Toast.show({
-      type: "success",
-      text1: "Mở tùy chọn",
-      text2: "Chọn loại đặt chỗ phù hợp với bạn",
-    });
   };
 
   const handleBack = () => {
     router.push("/(tabs)/home");
   };
 
+  const handleChat = () => {
+    if (chefs?.user) {
+      router.push({
+        pathname: "/screen/message",
+        params: {
+          contact: JSON.stringify({
+            id: chefs.user.username,
+            name: chefs.user.fullName,
+            avatar: chefs.user.avatarUrl,
+          }),
+        },
+      });
+    }
+  };
+
   const toggleBio = () => setExpandedBio(!expandedBio);
   const toggleDesc = () => setExpandedDesc(!expandedDesc);
   const toggleDetails = () => setShowMoreDetails(!showMoreDetails);
 
-  // Component con tối ưu với React.memo
   const DishCard = React.memo(({ dish, onPress }) => (
     <TouchableOpacity style={styles.dishCard} onPress={onPress}>
       <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
@@ -79,7 +154,7 @@ const ChefDetail = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#EBE5DD" }}>
-      <Header title={t("chefInfo")} onLeftPress={handleBack}/>
+      <Header title={t("chefInfo")} onLeftPress={handleBack} />
       <FlatList
         ListHeaderComponent={
           <>
@@ -92,21 +167,61 @@ const ChefDetail = () => {
               chefs && (
                 <View style={styles.profileContainer}>
                   <View style={styles.header}>
-                    <Image
-                      source={
-                        chefs?.user?.avatarUrl === "default"
-                          ? require("../../assets/images/avatar.png")
-                          : { uri: chefs?.user?.avatarUrl }
-                      }
-                      style={styles.avatar}
-                    />
+                    <View style={styles.avatarContainer}>
+                      <Image
+                        source={
+                          chefs?.user?.avatarUrl === "default"
+                            ? require("../../assets/images/avatar.png")
+                            : { uri: chefs?.user?.avatarUrl }
+                        }
+                        style={styles.avatar}
+                      />
+                      <TouchableOpacity
+                        style={styles.favoriteIcon}
+                        onPress={() => toggleFavorite(chefId)}
+                        disabled={favoriteLoading[chefId]}
+                      >
+                        {favoriteLoading[chefId] ? (
+                          <ActivityIndicator size="small" color="#e74c3c" />
+                        ) : (
+                          <Ionicons
+                            name={
+                              favorites.includes(chefId)
+                                ? "heart"
+                                : "heart-outline"
+                            }
+                            size={24}
+                            color={
+                              favorites.includes(chefId) ? "#e74c3c" : "#888"
+                            }
+                          />
+                        )}
+                      </TouchableOpacity>
+                    </View>
                     <View style={styles.textContainer}>
-                      <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={styles.name}>{chefs?.user?.fullName}</Text>
+                        <TouchableOpacity onPress={handleChat}>
+                          <Ionicons
+                            name="chatbubble-ellipses-outline"
+                            size={24}
+                            color="black"
+                          />
+                        </TouchableOpacity>
+                      </View>
                       <Text style={styles.specialty}>
                         {chefs?.specialization}
                       </Text>
                       <View style={styles.starContainer}>
-                        {Array(5).fill().map((_, i) => (
+                        {Array(5)
+                          .fill()
+                          .map((_, i) => (
                             <Icon
                               key={i}
                               name="star"
@@ -239,7 +354,12 @@ const ChefDetail = () => {
               <Text style={styles.sectionTitle}>{t("featuredDishes")}</Text>
               <TouchableOpacity
                 style={styles.viewAllContainer}
-                onPress={() => router.push("/screen/allDish")}
+                onPress={() =>
+                  router.push({
+                    pathname: "/screen/allDish",
+                    params: { chefId: chefId },
+                  })
+                }
               >
                 <Icon name="restaurant-outline" size={16} color="#b0532c" />
                 <Text style={styles.viewAll}>{t("seeAllDishes")}</Text>
@@ -337,11 +457,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  avatarContainer: {
+    position: "relative",
+  },
   avatar: {
     width: 90,
     height: 90,
     borderRadius: 45,
     backgroundColor: "#eee",
+  },
+  favoriteIcon: {
+    position: "absolute",
+    bottom: -5,
+    right: -5,
+    padding: 4,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   textContainer: {
     marginLeft: 16,

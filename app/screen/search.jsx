@@ -14,6 +14,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
+import { t } from "i18next";
 
 const { width, height } = Dimensions.get("window");
 
@@ -170,7 +171,7 @@ export default function SearchScreen() {
           </TouchableOpacity>
           <TextInput
             ref={textInputRef}
-            placeholder="Search chefs or dishes"
+            placeholder={t("searchDishOrChef")}
             placeholderTextColor="#4EA0B7"
             style={styles.searchInput}
             value={searchQuery}
@@ -185,7 +186,7 @@ export default function SearchScreen() {
       {/* Hiển thị tiêu đề "Gợi ý tìm kiếm" và danh sách 6 gợi ý ngẫu nhiên từ API khi ô tìm kiếm trống */}
       {searchQuery.trim().length === 0 && showSuggestions && (
         <View style={styles.defaultSuggestionsContainer}>
-          <Text style={styles.sectionTitle}>Gợi ý tìm kiếm</Text>
+          <Text style={styles.sectionTitle}>{t("recommendSeach")}</Text>
           <FlatList
             data={defaultSuggestions}
             keyExtractor={(item) => `${item.type}-${item.id}`}

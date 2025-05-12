@@ -12,6 +12,7 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { router } from "expo-router";
+import { t } from "i18next";
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
@@ -85,43 +86,43 @@ const NotificationScreen = () => {
     switch (title) {
       case "Booking Confirmed":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "confirm", ...params },
         });
         break;
       case "Booking Expired":
         router.push({
-          pathname: "(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "cancel", ...params },
         });
         break;
       case "Please Confirm Your Booking with a Deposit":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "pending", ...params },
         });
         break;
       case "Booking Created Successfully":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/(screen/history",
           params: { tab: "", ...params },
         });
         break;
       case "Deposit Successful":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "paidDeposit", ...params },
         });
         break;
       case "Payment Successful":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "paidDeposit", ...params },
         });
         break;
       case "Booking Overdue & Refunded":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "cancel", ...params },
         });
         break;
@@ -151,16 +152,16 @@ const NotificationScreen = () => {
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>Không có thông báo nào</Text>
+      <Text style={styles.emptyText}>{t("noNotifications")}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Thông báo" />
+      <Header title={t("notifications")} />
       <View style={styles.headerActions}>
         <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
-          <Text style={styles.markAllText}>Đánh dấu tất cả đã đọc</Text>
+          <Text style={styles.markAllText}>{t("markAllAsRead")}</Text>
         </TouchableOpacity>
       </View>
       <FlatList

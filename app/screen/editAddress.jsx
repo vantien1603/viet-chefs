@@ -19,7 +19,7 @@ import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
-import { API_GEO_KEY } from "@env"; 
+import { API_GEO_KEY } from "@env";
 import { t } from "i18next";
 
 const EditAddress = () => {
@@ -32,7 +32,7 @@ const EditAddress = () => {
   const [editingAddress, setEditingAddress] = useState(null);
   const axiosInstance = useAxios();
   const [suggestions, setSuggestions] = useState([]);
-
+  
 
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
@@ -51,6 +51,7 @@ const EditAddress = () => {
           },
         }
       );
+      console.log("Suggestions response:", response.data);
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
       }
@@ -166,11 +167,6 @@ const EditAddress = () => {
       }
     } catch (error) {
       console.error(error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể lấy vị trí",
-      });
     } finally {
       setLoading(false);
     }
@@ -179,11 +175,6 @@ const EditAddress = () => {
   const handleCreateAddress = async (addressData) => {
     // Kiểm tra giới hạn 5 địa chỉ
     if (addresses.length >= 5) {
-      Toast.show({
-        type: "error",
-        text1: "Giới hạn",
-        text2: "Bạn chỉ được tạo tối đa 5 địa chỉ",
-      });
       setModalVisible(false);
       return;
     }
@@ -194,29 +185,14 @@ const EditAddress = () => {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
         setNewAddress({ title: "", address: "" });
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Địa chỉ đã được tạo",
-        });
       }
     } catch (error) {
       console.error("Error creating address:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tạo địa chỉ",
-      });
     }
   };
 
   const handleUpdateAddress = async () => {
     if (!editingAddress.title || !editingAddress.address) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng điền đầy đủ thông tin",
-      });
       return;
     }
     try {
@@ -236,12 +212,7 @@ const EditAddress = () => {
         });
       }
     } catch (error) {
-      console.error("Error updating address:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể cập nhật địa chỉ",
-      });
+      console.log("Error updating address:", error);
     }
   };
 
@@ -266,19 +237,9 @@ const EditAddress = () => {
                   setSelectedId(null);
                   await AsyncStorage.removeItem("selectedAddress");
                 }
-                Toast.show({
-                  type: "success",
-                  text1: "Thành công",
-                  text2: "Địa chỉ đã được xóa",
-                });
               }
             } catch (error) {
               console.error("Error deleting address:", error);
-              Toast.show({
-                type: "error",
-                text1: "Lỗi",
-                text2: "Không thể xóa địa chỉ",
-              });
             }
           },
           style: "destructive",
@@ -359,7 +320,9 @@ const EditAddress = () => {
             marginBottom: 10,
           }}
         >
-          <Text style={{ color: "#666", fontSize: 16 }}>{t("addressList")}</Text>
+          <Text style={{ color: "#666", fontSize: 16 }}>
+            {t("addressList")}
+          </Text>
           <TouchableOpacity onPress={() => setModalVisible(true)}>
             <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
               {t("addNew")}
@@ -393,16 +356,13 @@ const EditAddress = () => {
                 value={
                   editingAddress ? editingAddress.address : newAddress.address
                 }
-                onChangeText={(text) =>
+                onChangeText={(text) => {
                   editingAddress
                     ? setEditingAddress({ ...editingAddress, address: text })
-                    : setNewAddress({ ...newAddress, address: text })
-                }
-                onSubmitEditing={(event) => {
-                  event.persist();
-                  fetchAddressSuggestions(event.nativeEvent.text);
+                    : setNewAddress({ ...newAddress, address: text });
+                  fetchAddressSuggestions(text);
                 }}
-                returnKeyType="search"
+                // returnKeyType="search"
               />
 
               {suggestions.length > 0 && (
@@ -475,7 +435,6 @@ const EditAddress = () => {
           </Text>
         )}
       </TouchableOpacity>
-      
     </SafeAreaView>
   );
 };

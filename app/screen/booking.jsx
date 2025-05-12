@@ -488,6 +488,7 @@ const BookingScreen = () => {
           numPeople: numPeople.toString(),
           menuId: parsedSelectedMenu ? parsedSelectedMenu.id : null,
           chefBringIngredients: ingredientPrep === "chef",
+          distanceKm: response.data.distanceKm,
         },
       });
     } catch (error) {

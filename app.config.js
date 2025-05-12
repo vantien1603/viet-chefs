@@ -46,12 +46,12 @@ export default {
       eas: {
         projectId: "af076336-773f-45ab-a366-b43c92c97da5",
       },
-      apiKey: process.env.API_KEY,
-      authDomain: process.env.AUTH_DOMAIN,
-      projectId: process.env.PROJECT_ID,
-      storageBucket: process.env.STORAGE_BUCKET,
-      messagingSenderId: process.env.MESSAGING_SENDER_ID,
-      appId: process.env.APP_ID,
+      // apiKey: process.env.API_KEY,
+      // authDomain: process.env.AUTH_DOMAIN,
+      // projectId: process.env.PROJECT_ID,
+      // storageBucket: process.env.STORAGE_BUCKET,
+      // messagingSenderId: process.env.MESSAGING_SENDER_ID,
+      // appId: process.env.APP_ID,
     },
   },
 };

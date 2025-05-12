@@ -39,11 +39,6 @@ const PaymentLongterm = () => {
       );
 
       if (response.status === 200 || response.status === 201) {
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Đặt cọc đã được xác nhận!",
-        });
         router.push("(tabs)/home");
       }
     } catch (error) {
@@ -51,52 +46,29 @@ const PaymentLongterm = () => {
       const errorMessage =
         error.response?.data?.message ||
         "Có lỗi khi xác nhận đặt cọc. Vui lòng thử lại.";
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: errorMessage,
-      });
     }
   };
 
-  // const handleBackPress = () => {
-  //   Toast.show({
-  //     type: "info",
-  //     text1: "Quay lại",
-  //     text2: "Đã quay lại màn hình xác nhận đặt chỗ.",
-  //     visibilityTime: 2000,
-  //   });
-  //   router.push({
-  //     pathname: "/screen/reviewBooking",
-  //     params: {
-  //       bookingData: JSON.stringify(bookingData),
-  //       chefId: params.chefId,
-  //       selectedPackage: params.selectedPackage,
-  //       numPeople: params.numPeople,
-  //       selectedDates: params.selectedDates,
-  //     },
-  //   });
-  // };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title="Thanh toán đặt cọc" />
+      <Header title={t("depositPayment")} />
       <ScrollView style={styles.container}>
-        <Text style={styles.title}>Xác nhận đặt cọc</Text>
+        <Text style={styles.title}>{t("depositConfirmation")}</Text>
 
         <View style={styles.summaryContainer}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tổng tiền đặt chỗ:</Text>
+            <Text style={styles.summaryLabel}>{t("totalDeposit")}:</Text>
             <Text style={styles.summaryValue}>${totalPrice.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Số tiền đặt cọc (5%):</Text>
+            <Text style={styles.summaryLabel}>{t("depositAmount")} (5%):</Text>
             <Text style={[styles.summaryValue, styles.depositValue]}>
               ${depositAmount.toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Số tiền còn lại:</Text>
+            <Text style={styles.summaryLabel}>{t("remainingAmount")}:</Text>
             <Text style={styles.summaryValue}>
               ${(totalPrice - depositAmount).toFixed(2)}
             </Text>
@@ -104,12 +76,12 @@ const PaymentLongterm = () => {
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoLabel}>Thông tin đặt chỗ:</Text>
+          <Text style={styles.infoLabel}>{t("infor")}:</Text>
           <Text style={styles.infoValue}>
-            Địa điểm: {bookingData.bookingDetails?.[0]?.location || "N/A"}
+            {t("location")}: {bookingData.bookingDetails?.[0]?.location || "N/A"}
           </Text>
           <Text style={styles.infoValue}>
-            Số ngày: {bookingData.bookingDetails?.length || 0}
+            {t("numberOfDays")}: {bookingData.bookingDetails?.length || 0}
           </Text>
         </View>
 
@@ -121,13 +93,13 @@ const PaymentLongterm = () => {
           style={styles.confirmButton}
           onPress={() => router.push("/(tabs)/home")}
         >
-          <Text style={styles.confirmButtonText}>Quay về trang chủ</Text>
+          <Text style={styles.confirmButtonText}>{t("backHome")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.confirmButton}
           onPress={handleConfirmDeposit}
         >
-          <Text style={styles.confirmButtonText}>Xác nhận đặt cọc</Text>
+          <Text style={styles.confirmButtonText}>{t("depositConfirmation")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

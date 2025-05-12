@@ -17,11 +17,11 @@ import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 
 const menuItems = [
-  { id: "1", icon: "wallet", title: "VietPay" },
-  { id: "2", icon: "lock-closed", title: "Change password" },
-  { id: "3", icon: "heart", title: "Favorite chef" },
-  { id: "4", icon: "briefcase", title: "Create chef account" },
-  { id: "5", icon: "settings", title: "Setting" },
+  { id: "1", icon: "wallet", title: "vietPay" },
+  { id: "2", icon: "lock-closed", title: "changePassword" },
+  { id: "3", icon: "heart", title: "favoriteChef" },
+  { id: "4", icon: "briefcase", title: "createChefAccount" },
+  { id: "5", icon: "settings", title: "settings" },
 ];
 
 const Profile = () => {
@@ -129,7 +129,7 @@ const Profile = () => {
             color="black"
             style={styles.menuIcon}
           />
-          <Text style={styles.menuTitle}>{item.title}</Text>
+          <Text style={styles.menuTitle}>{t(item.title)}</Text>
           <Ionicons name="chevron-forward" size={20} color="gray" />
         </TouchableOpacity>
       ))}

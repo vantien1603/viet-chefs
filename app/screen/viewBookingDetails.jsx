@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
@@ -41,12 +40,7 @@ const ViewBookingDetailsScreen = () => {
       // console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
-      console.error("Error fetching booking details:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load booking details",
-      });
+      console.log("Error fetching booking details:", error);
     } finally {
       setLoading(false);
     }
@@ -324,24 +318,24 @@ const ViewBookingDetailsScreen = () => {
           )}
         </TouchableOpacity>
       )}
-      {bookingType === "SINGLE" && (
-        <TouchableOpacity
-          style={[styles.depositButton, payLoading && styles.disabledButton]}
-          onPress={handlePay}
-          disabled={payLoading}
-        >
-          {payLoading ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <View style={styles.depositButtonContent}>
-              <MaterialIcons name="attach-money" size={18} color="#FFF" />
-              <Text style={styles.depositButtonText}>Pay</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      )}
+      {bookingType === "SINGLE" &&
+        bookingDetails.some((detail) => detail.status === "PENDING") && (
+          <TouchableOpacity
+            style={[styles.depositButton, payLoading && styles.disabledButton]}
+            onPress={handlePay}
+            disabled={payLoading}
+          >
+            {payLoading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <View style={styles.depositButtonContent}>
+                <MaterialIcons name="attach-money" size={18} color="#FFF" />
+                <Text style={styles.depositButtonText}>Pay</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
 
-      <Toast />
     </SafeAreaView>
   );
 };

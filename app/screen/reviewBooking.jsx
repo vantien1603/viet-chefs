@@ -33,6 +33,7 @@ const ReviewBookingScreen = () => {
     useState(false);
   const platformFeeModalRef = useRef(null);
   const [menus, setMenus] = useState({}); // State to store menu details
+  const distanceKm = params.distanceKm;
 
   // Fetch menu details
   useEffect(() => {
@@ -135,22 +136,11 @@ const ReviewBookingScreen = () => {
     } catch (error) {
       const errorMessage =
         error?.response?.data?.message || t("failedToConfirmBooking");
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: errorMessage,
-      });
-      console.error("Error confirming booking:", error);
+      console.error("Error confirming booking:", errorMessage);
     }
   };
 
   const handleBackPress = () => {
-    Toast.show({
-      type: "info",
-      text1: t("back"),
-      text2: t("returnedToSelectDate"),
-      visibilityTime: 2000,
-    });
     router.push({
       pathname: "/screen/longTermSelect",
       params: {
@@ -159,7 +149,7 @@ const ReviewBookingScreen = () => {
         selectedPackage: JSON.stringify(selectedPackage),
         numPeople: guestCount.toString(),
         selectedDates: JSON.stringify(selectedDates),
-        dishes: JSON.stringify(dishes), 
+        dishes: JSON.stringify(dishes),
       },
     });
   };
@@ -270,9 +260,7 @@ const ReviewBookingScreen = () => {
                         <>
                           <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>{t("menu")}:</Text>
-                            <Text style={styles.detailValue}>
-                              {menu.name}
-                            </Text>
+                            <Text style={styles.detailValue}>{menu.name}</Text>
                           </View>
                           {menuDishes.map((dish, idx) => (
                             <View key={idx} style={styles.dishRow}>
@@ -310,7 +298,7 @@ const ReviewBookingScreen = () => {
                             // Fallback to dishes array if name is missing
                             const dishName =
                               dish.name ||
-                              dishes.find((d) => d.id === dish.dishId)?.name
+                              dishes.find((d) => d.id === dish.dishId)?.name;
                             return (
                               <View key={idx} style={styles.dishRow}>
                                 <Text style={styles.dishName}>
@@ -342,6 +330,12 @@ const ReviewBookingScreen = () => {
           })}
 
           <View style={styles.summaryContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>{t("distance")}:</Text>
+              <Text style={styles.summaryValue}>
+                {distanceKm} km
+              </Text>
+            </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t("discount")}:</Text>
               <Text style={[styles.summaryValue, styles.discount]}>
