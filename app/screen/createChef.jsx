@@ -135,7 +135,7 @@ const CreateChefScreen = () => {
       // keyboardVerticalOffset={-80} // Adjust offset to prevent overlap
     >
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title="Register Chef" />
+        <Header title={t("registerChef")} />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.form}>
             <TextInput

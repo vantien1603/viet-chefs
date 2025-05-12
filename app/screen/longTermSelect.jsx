@@ -574,22 +574,10 @@ const LongTermSelectBooking = () => {
 
   const handleConfirm = async () => {
     if (Object.keys(selectedDates).length !== selectedPackage.durationDays) {
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("selectExactDays", {
-          count: selectedPackage.durationDays,
-        }),
-      });
       return;
     }
 
     if (!numPeople || !address) {
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("invalidGuestCountOrAddress"),
-      });
       return;
     }
 
@@ -606,20 +594,10 @@ const LongTermSelectBooking = () => {
     for (const date of Object.keys(selectedDates)) {
       const selectedTime = selectedDates[date].startTime;
       if (!selectedTime) {
-        Toast.show({
-          type: "error",
-          text1: t("error"),
-          text2: t("selectStartTime", { date }),
-        });
         return;
       }
       const availableSlots = getAvailableTimeSlots(date);
       if (!availableSlots.includes(selectedTime)) {
-        Toast.show({
-          type: "error",
-          text1: t("error"),
-          text2: t("timeNotAvailable", { time: selectedTime, date }),
-        });
         return;
       }
 
@@ -631,11 +609,6 @@ const LongTermSelectBooking = () => {
             (!selectedDates[date].extraDishIds ||
               selectedDates[date].extraDishIds.length === 0))
         ) {
-          Toast.show({
-            type: "error",
-            text1: t("error"),
-            text2: t("selectDishesForAllDays"),
-          });
           return;
         }
       }
@@ -695,6 +668,7 @@ const LongTermSelectBooking = () => {
         "/bookings/calculate-long-term-booking",
         payload
       );
+      console.log("Booking response:", response.data);
       router.push({
         pathname: "/screen/reviewBooking",
         params: {
@@ -707,6 +681,7 @@ const LongTermSelectBooking = () => {
           dishes: JSON.stringify(
             dishes.map((dish) => ({ id: dish.id, name: dish.name }))
           ),
+          distanceKm: response.data.distanceKm,
         },
       });
     } catch (error) {

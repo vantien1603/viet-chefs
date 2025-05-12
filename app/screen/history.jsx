@@ -8,6 +8,7 @@ import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import BookingList from "../../components/bookingRouter";
+import { t } from "i18next";
 
 const OrderHistories = () => {
   const { user } = useContext(AuthContext);
@@ -29,7 +30,6 @@ const OrderHistories = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const PAGE_SIZE = 10;
 
   // Map each tab to a single primary status
@@ -58,48 +58,6 @@ const OrderHistories = () => {
     }
   }, [tab]);
 
-  const fetchRequestBooking = async (page, status, isRefresh = false) => {
-    if (isLoading && !isRefresh) return;
-    setIsLoading(true);
-    try {
-      // console.log("Fetching chef bookings with status:", status, "page:", page);
-      const response = await axiosInstance.get("/bookings/chefs/my-bookings", {
-        params: {
-          status,
-          pageNo: page,
-          pageSize: PAGE_SIZE,
-          sortBy: "id",
-          sortDir: "desc",
-        },
-      });
-
-      // console.log("Chef bookings response:", response.data);
-      const bookingData = response.data.content || response.data || [];
-      setBookings((prev) => {
-        const newData = isRefresh ? bookingData : [...prev, ...bookingData];
-        const uniqueData = Array.from(
-          new Map(newData.map((item) => [item.id, item])).values()
-        );
-        return uniqueData;
-      });
-      setTotalPages(
-        response.data.totalPages ||
-          Math.ceil(
-            (response.data.totalElements || bookingData.length) / PAGE_SIZE
-          )
-      );
-      setPageNo(page);
-    } catch (error) {
-      showModal(
-        "Error",
-        "Failed to fetch chef bookings: " + (error.message || "Unknown error")
-      );
-    } finally {
-      setIsLoading(false);
-      if (isRefresh) setRefreshing(false);
-    }
-  };
-
   const fetchBookingDetails = async (page, status, isRefresh = false) => {
     if (isLoading && !isRefresh) return;
     setIsLoading(true);
@@ -114,8 +72,7 @@ const OrderHistories = () => {
         },
       });
 
-      // console.log("Bookings response:", response.data);
-      const bookingData = response.data.content || response.data || [];
+      const bookingData = response.data.content;
       setBookings((prev) => {
         const newData = isRefresh ? bookingData : [...prev, ...bookingData];
         const uniqueData = Array.from(
@@ -157,21 +114,15 @@ const OrderHistories = () => {
     const currentStatus = statusMap[routes[index].key];
     setBookings([]);
     setPageNo(0);
-    if (user.roleName === "ROLE_CHEF") {
-      fetchRequestBooking(0, currentStatus);
-    } else {
-      fetchBookingDetails(0, currentStatus);
-    }
-  }, [user?.roleName, index]);
+
+    fetchBookingDetails(0, currentStatus);
+  }, [index]);
 
   const handleLoadMore = () => {
     if (pageNo < totalPages - 1 && !isLoading) {
       const currentStatus = statusMap[routes[index].key];
-      if (user?.roleName === "ROLE_CHEF") {
-        fetchRequestBooking(pageNo + 1, currentStatus);
-      } else {
-        fetchBookingDetails(pageNo + 1, currentStatus);
-      }
+
+      fetchBookingDetails(pageNo + 1, currentStatus);
     }
   };
 
@@ -180,12 +131,9 @@ const OrderHistories = () => {
     setBookings([]);
     const currentStatus = statusMap[routes[index].key];
     console.log("Refreshing with status:", currentStatus);
-    if (user?.roleName === "ROLE_CHEF") {
-      fetchRequestBooking(0, currentStatus, true);
-    } else {
-      fetchBookingDetails(0, currentStatus, true);
-    }
-  }, [user?.roleName, index]);
+
+    fetchBookingDetails(0, currentStatus, true);
+  }, [index]);
 
   const renderScene = SceneMap({
     pending: () => (
@@ -243,7 +191,7 @@ const OrderHistories = () => {
   if (!user?.roleName) {
     return (
       <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
-        <Header title="Order History" />
+        <Header title={t("orderHistory")} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
             Please log in to view your order history
@@ -255,7 +203,7 @@ const OrderHistories = () => {
 
   return (
     <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
-      <Header title="Order History" />
+      <Header title={t("orderHistory")} />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

@@ -13,7 +13,7 @@ import useAxios from "../../config/AXIOS_API";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
+import { t } from "i18next";
 
 const CustomerSchedule = () => {
   const axiosInstance = useAxios();
@@ -40,6 +40,7 @@ const CustomerSchedule = () => {
           }
         );
         setBookingDetails(response.data.content);
+        console.log("Booking Details:", response.data.content);
       } catch (error) {
         console.log("err", error);
       }
@@ -107,7 +108,7 @@ const CustomerSchedule = () => {
   today.setHours(0, 0, 0, 0);
 
   const filteredBookingDetails = bookingDetails.filter(
-    (detail) => detail.status === "SCHEDULED" || detail.status === "COMPLETED"
+    (detail) => detail.status === "SCHEDULED" || detail.status === "COMPLETED" || detail.status === "SCHEDULED_COMPLETE" || detail.status === "WAITING_FOR_CONFIRMATION"
   );
 
   const todayDetails = filteredBookingDetails.filter(
@@ -136,12 +137,12 @@ const CustomerSchedule = () => {
                 </Text>
                 <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
               </View>
-              <Text style={styles.label}>Giờ: {detail.startTime || "N/A"}</Text>
+              <Text style={styles.label}>{t("time")}: {detail.startTime || "N/A"}</Text>
               <Text style={styles.label}>
-                Địa chỉ: {detail.location || "N/A"}
+                {t("address")}: {detail.location || "N/A"}
               </Text>
               <Text style={styles.label}>
-                Tổng giá:{" "}
+                {t("totalPrice")}:{" "}
                 {detail.totalPrice
                   ? `${detail.totalPrice.toFixed(2)}`
                   : "N/A"}
@@ -154,13 +155,13 @@ const CustomerSchedule = () => {
                       color:
                         detail.status === "COMPLETED"
                           ? "green"
-                          : detail.status === "SCHEDULED"
+                          : detail.status === "SCHEDULED" || detail.status === "SCHEDULED_COMPLETE"
                           ? "orange"
                           : "black",
                     },
                   ]}
                 >
-                  {detail.status}
+                  {detail.status.replace("_", " ")}
                   {detail.status === "COMPLETED" && (
                     <Ionicons name="checkmark-done" size={24} color="green" />
                   )}
@@ -170,7 +171,7 @@ const CustomerSchedule = () => {
                     style={styles.rebookButton}
                     onPress={() => handleRebook(detail)}
                   >
-                    <Text style={styles.rebookText}>Rebook</Text>
+                    <Text style={styles.rebookText}>{t("rebook")}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -178,7 +179,7 @@ const CustomerSchedule = () => {
           </View>
         ))
       ) : (
-        <Text style={styles.noData}>Không có đặt chỗ nào.</Text>
+        <Text style={styles.noData}>{t("noBookings")}</Text>
       )}
     </ScrollView>
   );
@@ -196,9 +197,9 @@ const CustomerSchedule = () => {
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header
-        title="Activity"
+        title={t("activity")}
         onRightPress={() => router.push("/screen/history")}
-        rightText="Lịch sử"
+        rightText={t("history")}
       />
       <TabView
         navigationState={{ index, routes }}
@@ -221,7 +222,6 @@ const CustomerSchedule = () => {
           />
         )}
       />
-      <Toast />
     </SafeAreaView>
   );
 };

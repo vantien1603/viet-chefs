@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,8 @@ import Header from "../../components/header";
 import { useNavigation } from "@react-navigation/native";
 import useAxios from "../../config/AXIOS_API";
 import Toast from "react-native-toast-message";
+import { t } from "i18next";
+import { useFocusEffect } from "expo-router";
 
 const Chat = () => {
   const { user } = useContext(AuthContext);
@@ -24,73 +26,153 @@ const Chat = () => {
   const [conversations, setConversations] = useState([]);
   const navigation = useNavigation();
   const axiosInstance = useAxios();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredConversations, setFilteredConversations] = useState([]);
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      if (!user?.sub) {
-        console.error("No username found");
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: "Không tìm thấy username",
-        });
-        return;
+  const fetchConversations = async () => {
+    if (!user?.sub) {
+      console.error("No username found");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không tìm thấy username",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/conversations/${user.sub}`);
+      console.log("Dữ liệu conversations:", response.data);
+      const messagesData = await Promise.all(
+        response.data.map(async (message) => {
+          const otherUserId =
+            message.senderId === user.sub
+              ? message.recipientId
+              : message.senderId;
+          const otherUserName =
+            message.senderId === user.sub
+              ? message.recipientName
+              : message.senderName;
+          let avatarUrl = null;
+          try {
+            const userResponse = await axiosInstance.get(
+              `/users/${otherUserId}`
+            );
+            avatarUrl = userResponse.data?.avatarUrl;
+            console.log(`Avatar for ${otherUserId}:`, avatarUrl);
+          } catch (error) {
+            console.error(
+              `Lỗi khi lấy dữ liệu người dùng ${otherUserId}:`,
+              error
+            );
+          }
+
+          const messageDate = new Date(message.timestamp);
+          const now = new Date();
+
+          // Tính số ngày cách nhau
+          const diffTime = now.getTime() - messageDate.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+          // Tính năm và tuần
+          const sameYear = now.getFullYear() === messageDate.getFullYear();
+          const sameWeek =
+            now.getFullYear() === messageDate.getFullYear() &&
+            getWeekNumber(now) === getWeekNumber(messageDate);
+
+          let displayTime;
+
+          if (diffDays === 0) {
+            // Hôm nay -> giờ phút
+            displayTime = messageDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          } else if (diffDays === 1) {
+            // Hôm qua
+            displayTime = "Yesterday";
+          } else if (sameWeek) {
+            // Trong tuần -> thứ
+            displayTime = messageDate.toLocaleDateString("en-US", {
+              weekday: "long",
+            });
+          } else if (sameYear) {
+            // Trong năm -> ngày/tháng
+            displayTime = messageDate.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+            });
+          } else {
+            // Năm trước -> ngày/tháng/năm
+            displayTime = messageDate.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+          }
+
+          // Hàm lấy số tuần trong năm
+          function getWeekNumber(date) {
+            const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+            const pastDaysOfYear =
+              (date -
+                firstDayOfYear +
+                (firstDayOfYear.getTimezoneOffset() -
+                  date.getTimezoneOffset()) *
+                  60000) /
+              86400000;
+            return Math.ceil(
+              (pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7
+            );
+          }
+
+          return {
+            id: message.chatId,
+            username: otherUserId,
+            name: otherUserName,
+            message: message.content,
+            senderId: message.senderId,
+            senderName: message.senderName,
+            contentType: message.contentType,
+            time: displayTime,
+            timestamp: message.timestamp,
+            avatarUrl,
+          };
+        })
+      );
+      messagesData.sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      setConversations(messagesData);
+      setFilteredConversations(messagesData);
+    } catch (error) {
+      console.log("Lỗi khi lấy conversations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.sub) {
+        fetchConversations();
       }
+    }, [])
+  );
 
-      setLoading(true);
-      try {
-        const response = await axiosInstance.get(`/conversations/${user.sub}`);
-        console.log("Dữ liệu conversations:", response.data);
-        const messagesData = await Promise.all(
-          response.data.map(async (message) => {
-            const otherUserId =
-              message.senderId === user.sub
-                ? message.recipientId
-                : message.senderId;
-            const otherUserName =
-              message.senderId === user.sub
-                ? message.recipientName
-                : message.senderName;
-            let avatarUrl = null;
-            try {
-              const userResponse = await axiosInstance.get(
-                `/users/${otherUserId}`
-              );
-              avatarUrl = userResponse.data?.avatarUrl || null;
-              console.log(`Avatar for ${otherUserId}:`, avatarUrl);
-            } catch (error) {
-              console.error(`Lỗi khi lấy dữ liệu người dùng ${otherUserId}:`, error);
-            }
-            return {
-              id: message.chatId,
-              username: otherUserId,
-              name: otherUserName,
-              message: message.content,
-              senderName: message.senderName,
-              time: new Date(message.timestamp).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              read: true,
-              avatarUrl, // Thêm avatarUrl
-            };
-          })
-        );
-        setConversations(messagesData);
-      } catch (error) {
-        console.error("Lỗi khi lấy conversations:", error);
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: "Không tải được danh sách trò chuyện",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConversations();
-  }, [user?.sub]);
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    if (text.trim() === "") {
+      // Nếu ô tìm kiếm trống, show full list
+      setFilteredConversations(conversations);
+    } else {
+      const filtered = conversations.filter((item) =>
+        item.name.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredConversations(filtered);
+    }
+  };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -100,19 +182,20 @@ const Chat = () => {
           contact: JSON.stringify({
             id: item.username,
             name: item.name,
-            avatarUrl: item.avatarUrl, // Use avatarUrl instead of avatar
+            avatarUrl: item.avatarUrl,
           }),
         })
       }
     >
-      <Image
-        source={{ uri: item.avatarUrl }}
-        style={styles.avatar}
-      />
+      <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
       <View style={styles.messageContent}>
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.message} numberOfLines={1} ellipsizeMode="tail">
-          {item.senderName}: {item.message}
+          {item.contentType === "image"
+            ? item.senderId === user.sub
+              ? t("youSentImage")
+              : t("chefSentImage")
+            : `${item.senderName}: ${item.message}`}
         </Text>
       </View>
       <Text style={styles.time}>{item.time}</Text>
@@ -121,7 +204,7 @@ const Chat = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={"Chat"} />
+      <Header title={t("chat")} />
       <View style={commonStyles.containerContent}>
         <View style={commonStyles.searchContainer}>
           <Icon
@@ -130,13 +213,18 @@ const Chat = () => {
             color="gray"
             style={commonStyles.searchIcon}
           />
-          <TextInput style={commonStyles.searchInput} placeholder="Tìm kiếm" />
+          <TextInput
+            style={commonStyles.searchInput}
+            placeholder={t("search")}
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
         </View>
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
           <FlatList
-            data={conversations}
+            data={filteredConversations}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
           />

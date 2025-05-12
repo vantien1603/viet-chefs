@@ -164,11 +164,11 @@ const WalletScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="My Wallet" onLeftPress={handleBack} />
+      <Header title={t("myWallet")} onLeftPress={handleBack} />
       <View style={styles.container}>
         <View style={styles.balanceContainer}>
           <View style={styles.balanceHeader}>
-            <Text style={styles.walletTitle}>VietChef Wallet</Text>
+            <Text style={styles.walletTitle}>{t("vietchefWallet")}</Text>
           </View>
           <View style={styles.balanceRow}>
             <View style={styles.balanceInfo}>
@@ -189,7 +189,7 @@ const WalletScreen = () => {
                 onPress={handleWithdrawal}
               >
                 <Ionicons name="remove-circle-outline" size={18} color="#fff" />
-                <Text style={styles.depositText}>Withdraw</Text>
+                <Text style={styles.depositText}>{t("withdraw")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -198,12 +198,12 @@ const WalletScreen = () => {
         {transactions.length > 0 ? (
           <View style={styles.transactionHistory}>
             <View style={styles.headerRow}>
-              <Text style={styles.monthYear}>All Transactions</Text>
+              <Text style={styles.monthYear}>{t("allTransactions")}</Text>
               <TouchableOpacity
                 onPress={handleStatistic}
                 style={styles.statisticButton}
               >
-                <Text style={styles.statisticText}>Statistic</Text>
+                <Text style={styles.statisticText}>{t("statistic")}</Text>
                 <Ionicons name="chevron-forward" size={18} color="#FF69B4" />
               </TouchableOpacity>
             </View>
@@ -216,12 +216,12 @@ const WalletScreen = () => {
               />
             ) : (
               <Text style={styles.noTransactions}>
-                No transactions available.
+                {t("noTransactions")}
               </Text>
             )}
           </View>
         ) : (
-          <Text style={styles.noTransactions}>No transactions available.</Text>
+          <Text style={styles.noTransactions}>{t("noTransactions")}</Text>
         )}
       </View>
     </SafeAreaView>

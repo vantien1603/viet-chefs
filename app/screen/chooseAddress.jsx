@@ -144,29 +144,14 @@ const ChooseAddressScreen = () => {
         setNewAddress({ title: "", address: "" });
         setSearchQuery("");
         setSuggestions([]);
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Địa chỉ đã được tạo",
-        });
       }
     } catch (error) {
       console.log("err", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tạo địa chỉ",
-      });
     }
   };
 
   const handleConfirm = async () => {
     if (selectedAddressIndex === null) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng chọn một địa chỉ",
-      });
       return;
     }
 
@@ -237,7 +222,7 @@ const ChooseAddressScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Choose Address" />
+      <Header title={t("chooseAddress")} />
 
       {/* Address Section */}
       <View style={styles.headerContainer}>
@@ -289,7 +274,7 @@ const ChooseAddressScreen = () => {
                       styles.titleButtonTextSelected,
                   ]}
                 >
-                  Home
+                  {t("home")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -306,7 +291,7 @@ const ChooseAddressScreen = () => {
                       styles.titleButtonTextSelected,
                   ]}
                 >
-                  Work
+                  {t("work")}
                 </Text>
               </TouchableOpacity>
             </View>

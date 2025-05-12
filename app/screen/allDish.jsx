@@ -6,42 +6,128 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import useAxios from "../../config/AXIOS_API";
-import { router } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
   const [filteredDishes, setFilteredDishes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [location, setLocation] = useState(null);
   const axiosInstance = useAxios();
+  const { chefId } = useLocalSearchParams();
+
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Quyền truy cập vị trí bị từ chối",
+          "Vui lòng cấp quyền để tìm kiếm món ăn gần bạn."
+        );
+        return null;
+      }
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      return {
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy vị trí:", error);
+      Alert.alert("Lỗi", "Không thể lấy vị trí hiện tại.");
+      return null;
+    }
+  };
+
+  const loadLocation = async () => {
+    setLoading(true);
+    try {
+      const savedAddress = await AsyncStorage.getItem("selectedAddress");
+      let newLocation = null;
+
+      if (savedAddress) {
+        const parsedAddress = JSON.parse(savedAddress);
+        if (parsedAddress.latitude && parsedAddress.longitude) {
+          newLocation = {
+            latitude: parsedAddress.latitude,
+            longitude: parsedAddress.longitude,
+          };
+        }
+      }
+
+      if (!newLocation) {
+        newLocation = await getCurrentLocation();
+      }
+
+      setLocation(newLocation);
+    } catch (error) {
+      console.error("Error loading address from AsyncStorage:", error);
+      setError("Không thể tải vị trí.");
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadLocation();
+    }, [])
+  );
 
   useEffect(() => {
     const fetchDishes = async () => {
+      if (!chefId && !location) {
+        setLoading(false);
+        return;
+      }
       try {
-        const response = await axiosInstance.get("/dishes");
+        let response;
+        if (chefId) {
+          response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
+        } else {
+          response = await axiosInstance.get("/dishes/nearby", {
+            params: {
+              customerLat: location.latitude,
+              customerLng: location.longitude,
+              distance: 30, // Adjust as needed
+            },
+          });
+        }
         setDishes(response.data.content);
         setFilteredDishes(response.data.content);
       } catch (error) {
-        console.log("Error dishes:", error);
+        console.error(
+          "Error fetching dishes:",
+          error?.response?.data || error.message
+        );
+        setError("Không thể tải danh sách món ăn.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchDishes();
-  }, []);
 
-  // Hàm xử lý tìm kiếm
+    if (chefId || location) {
+      fetchDishes();
+    }
+  }, [chefId, location]);
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setFilteredDishes(dishes); // Nếu không có từ khóa, hiển thị tất cả món
+      setFilteredDishes(dishes);
     } else {
       const filtered = dishes.filter((item) =>
         item.name.toLowerCase().includes(query.toLowerCase())
@@ -50,19 +136,58 @@ const AllDishScreen = () => {
     }
   };
 
-  // Hàm xử lý khi nhấn icon search
   const toggleSearch = () => {
     setIsSearching(!isSearching);
     if (isSearching) {
-      setSearchQuery(""); // Xóa từ khóa khi đóng tìm kiếm
-      setFilteredDishes(dishes); // Hiển thị lại tất cả món
+      setSearchQuery("");
+      setFilteredDishes(dishes);
     }
   };
 
-  // Chia danh sách món ăn thành nhóm 2 món mỗi hàng
   const groupedDishes = [];
   for (let i = 0; i < filteredDishes.length; i += 2) {
     groupedDishes.push(filteredDishes.slice(i, i + 2));
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={commonStyles.containerContent}>
+        <Header
+          title={t("allDishes")}
+          rightIcon={"search"}
+          onRightPress={toggleSearch}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A9411D" />
+          <Text style={styles.loadingText}>{t("loadingDishes")}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={commonStyles.containerContent}>
+        <Header
+          title={t("allDishes")}
+          rightIcon={"search"}
+          onRightPress={toggleSearch}
+        />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+              loadLocation();
+            }}
+          >
+            <Text style={styles.retryButtonText}>{t("tryAgain")}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -77,7 +202,7 @@ const AllDishScreen = () => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search dishes..."
+            placeholder="Tìm kiếm món ăn..."
             value={searchQuery}
             onChangeText={handleSearch}
             autoFocus={true}
@@ -114,15 +239,22 @@ const AllDishScreen = () => {
                     </View>
                     <Text style={styles.title}>{dish.name}</Text>
                     <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
-                    <Text style={{ color: "#FFF" }}>
-                      ~ {dish.cookTime} {t("minutes")}
+                    <Text style={{ color: "#FFF", fontSize: 12 }}>
+                      {t("timeCook")}: ~{dish.cookTime} {t("minutes")}
+                    </Text>
+                    <Text style={{ color: "#fff", fontSize: 12 }}>
+                      {t("distance")}: {dish.chef.distance.toFixed(2)} km
                     </Text>
                   </View>
                 </TouchableOpacity>
               </View>
             ))}
+            {item.length === 1 && <View style={styles.cardContainer} />}
           </View>
         )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>{t("noDishesFound")}</Text>
+        }
       />
     </SafeAreaView>
   );
@@ -203,7 +335,45 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 6,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#A9411D",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: "#A9411D",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    color: "#FFF",
+    fontWeight: "600",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
+  },
 });
-
 
 export default AllDishScreen;

@@ -19,8 +19,9 @@ import { Stomp } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import Toast from "react-native-toast-message";
 import * as ImagePicker from "expo-image-picker";
-import { AntDesign, Feather, Ionicons } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
+import { t } from "i18next";
 
 const Message = () => {
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,7 @@ const Message = () => {
   const CLOUDINARY_UPLOAD_PRESET = "vietchef_image";
 
   const contact = contactString ? JSON.parse(contactString) : {};
+  // const vietnamTime = moment().tz("Asia/Ho_Chi_Minh").format();
 
   useEffect(() => {
     const client = Stomp.over(() => new SockJS(WEB_SOCKET_ENDPOINT));
@@ -69,7 +71,7 @@ const Message = () => {
       receivedMessage.senderId === contact.id ||
       receivedMessage.senderId === user.sub
     ) {
-      setMessages((prev) => [receivedMessage, ...prev]);
+      setMessages((prev) => [...prev, receivedMessage]);
     }
   };
 
@@ -89,7 +91,12 @@ const Message = () => {
         const response = await axiosInstance.get(
           `/messages/${user.sub}/${contact.id}`
         );
-        setMessages(response.data);
+        const sortedMessages = response.data.sort((a, b) => {
+          const dateA = new Date(a.timestamp);
+          const dateB = new Date(b.timestamp);
+          return dateA - dateB;
+        });
+        setMessages(sortedMessages);
       } catch (error) {
         if (error.response && error.response.status === 500) {
           setMessages([]);
@@ -207,6 +214,9 @@ const Message = () => {
     setIsSending(true);
     let newMessage;
     try {
+      const now = new Date();
+      now.setHours(now.getHours() + 7);
+      const timestamp = now.toISOString().slice(0, -1);
       if (selectedImage) {
         const imageUrl = await uploadImageToCloudinary(selectedImage);
         newMessage = {
@@ -216,7 +226,7 @@ const Message = () => {
           recipientName: contact.name,
           content: imageUrl,
           contentType: "image",
-          timestamp: new Date().toISOString(),
+          timestamp: timestamp,
         };
       } else {
         newMessage = {
@@ -226,10 +236,11 @@ const Message = () => {
           recipientName: contact.name,
           content: inputText,
           contentType: "text",
-          timestamp: new Date().toISOString(),
+          timestamp: timestamp,
         };
+        console.log("Tin nhắn:", newMessage.timestamp);
       }
-      setMessages((prev) => [newMessage, ...prev]);
+      setMessages((prev) => [...prev, newMessage]);
       client.send("/app/chat", {}, JSON.stringify(newMessage));
       setSelectedImage(null);
       setInputText("");
@@ -250,6 +261,9 @@ const Message = () => {
       console.warn("No underlying stomp connection");
       return;
     }
+    const now = new Date();
+    now.setHours(now.getHours() + 7);
+    const timestamp = now.toISOString().slice(0, -1);
 
     const likeMessage = {
       senderId: user.sub,
@@ -258,44 +272,103 @@ const Message = () => {
       recipientName: contact.name,
       content: "👍",
       contentType: "text",
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp,
     };
 
-    setMessages((prev) => [likeMessage, ...prev]);
+    setMessages((prev) => [...prev, likeMessage]);
     client.send("/app/chat", {}, JSON.stringify(likeMessage));
   };
 
-  const renderMessage = ({ item }) => (
-    <View
-      style={[
-        styles.messageContainer,
-        item.senderId === user.sub ? styles.sender : styles.receiver,
-      ]}
-    >
-      {item.contentType === "text" ? (
-        <Text style={styles.messageText}>{item.content}</Text>
-      ) : (
-        <TouchableOpacity
-          onPress={() => {
-            setSelectedImageUri(item.content);
-            setModalVisible(true);
-          }}
-        >
-          <Image
-            source={{ uri: item.content }}
-            style={styles.messageImage}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
-      )}
-      <Text style={styles.messageTime}>
-        {new Date(item.timestamp).toLocaleTimeString(undefined, {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </Text>
-    </View>
-  );
+  const renderMessage = ({ item, index }) => {
+    const messageDate = new Date(item.timestamp);
+    const prevMessage = index > 0 ? messages[index - 1] : null;
+    const prevMessageDate = prevMessage
+      ? new Date(prevMessage.timestamp)
+      : null;
+
+    const showDate =
+      !prevMessage ||
+      messageDate.getDate() !== prevMessageDate.getDate() ||
+      messageDate.getMonth() !== prevMessageDate.getMonth() ||
+      messageDate.getFullYear() !== prevMessageDate.getFullYear();
+
+    if (item.contentType === "image") {
+      return (
+        <>
+          {showDate && (
+            <View style={styles.dateContainer}>
+              <Text style={styles.dateText}>
+                {messageDate.toLocaleDateString("en-US", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </Text>
+            </View>
+          )}
+          <View
+            style={[
+              styles.imageContainer,
+              item.senderId === user.sub
+                ? styles.senderAlign
+                : styles.receiverAlign,
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                setSelectedImageUri(item.content);
+                setModalVisible(true);
+              }}
+            >
+              <Image
+                source={{ uri: item.content }}
+                style={styles.messageImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            <Text style={styles.messageTime}>
+              {messageDate.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+          </View>
+        </>
+      );
+    } else {
+      // Tin nhắn dạng text như cũ
+      return (
+        <>
+          {showDate && (
+            <View style={styles.dateContainer}>
+              <Text style={styles.dateText}>
+                {messageDate.toLocaleDateString("en-US", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </Text>
+            </View>
+          )}
+          <View
+            style={[
+              styles.messageContainer,
+              item.senderId === user.sub ? styles.sender : styles.receiver,
+            ]}
+          >
+            <Text style={styles.messageText}>{item.content}</Text>
+            <Text style={styles.messageTime}>
+              {messageDate.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+          </View>
+        </>
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -303,7 +376,7 @@ const Message = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#68A7AD" />
-          <Text style={{ marginTop: 10 }}>Đang tải tin nhắn...</Text>
+          <Text style={{ marginTop: 10 }}>{t("loadingMessages")}</Text>
         </View>
       ) : (
         <FlatList
@@ -317,7 +390,7 @@ const Message = () => {
           }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           keyboardShouldPersistTaps="handled"
-          inverted
+          // inverted
         />
       )}
       <Modal
@@ -342,7 +415,7 @@ const Message = () => {
       </Modal>
       {selectedImage && (
         <View style={styles.imagePreviewContainer}>
-          <Text style={styles.imagePreviewText}>Ảnh đã chọn:</Text>
+          <Text style={styles.imagePreviewText}>{t("selectedPhoto")}:</Text>
           <View style={styles.imagePreviewWrapper}>
             <Image
               source={{ uri: selectedImage }}
@@ -368,7 +441,7 @@ const Message = () => {
         </TouchableOpacity>
         <TextInput
           style={styles.input}
-          placeholder="Nhập tin nhắn..."
+          placeholder={t("enterMessage")}
           value={inputText}
           onChangeText={setInputText}
         />
@@ -442,29 +515,48 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sender: {
-    marginRight: 20,
     alignSelf: "flex-end",
-    backgroundColor: "#D3CBC5",
+    backgroundColor: "#DCF8C6",
+    marginRight: 10,
   },
   receiver: {
-    marginLeft: 20,
     alignSelf: "flex-start",
-    backgroundColor: "#FFF8E7",
+    backgroundColor: "#FFFFFF",
+    marginLeft: 10,
   },
   messageText: {
-    fontSize: 18,
-    color: "#333",
-  },
-  messageImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
-    marginBottom: 5,
+    fontSize: 16,
   },
   messageTime: {
     fontSize: 12,
-    color: "#7F7F7F",
+    color: "gray",
+    marginTop: 5,
     alignSelf: "flex-end",
+  },
+  dateContainer: {
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  dateText: {
+    fontSize: 14,
+    color: "gray",
+  },
+  imageContainer: {
+    marginVertical: 5,
+    alignItems: "flex-start", // hoặc "flex-end" nếu sender
+  },
+  senderAlign: {
+    alignSelf: "flex-end",
+    marginRight: 10,
+  },
+  receiverAlign: {
+    alignSelf: "flex-start",
+    marginLeft: 10,
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
   },
   inputContainer: {
     flexDirection: "row",

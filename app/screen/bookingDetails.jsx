@@ -159,7 +159,7 @@ const BookingDetailScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title={t("bookingDetail")} />
+        <Header title={t("sessionDetail")} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#A64B2A" />
           <Text style={styles.loadingText}>{t("loading")}</Text>
@@ -171,7 +171,7 @@ const BookingDetailScreen = () => {
   if (!bookingDetail) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header title={t("bookingDetail")} />
+        <Header title={t("sessionDetail")} />
         <View style={styles.noDataContainer}>
           <MaterialIcons name="error-outline" size={40} color="#A64B2A" />
           <Text style={styles.noDataText}>{t("noBookingDetailAvailable")}</Text>

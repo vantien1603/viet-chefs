@@ -195,25 +195,12 @@ const ChooseFoodForLongterm = () => {
       Object.values(selectedDishes).filter(Boolean).length +
       Object.values(selectedExtraDishIds).filter(Boolean).length;
     if (selectedDishesCount > 0) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Bạn phải bỏ chọn tất cả món ăn trước khi chọn menu.",
-      });
       return;
     }
     setSelectedMenu((prev) => (prev === menuId ? null : menuId));
     setSelectedDishes({});
     setSelectedExtraDishIds({});
-    // Clear all dish notes when switching to a menu
     setDishNotes({});
-  };
-
-  const handleAddNote = (id, text) => {
-    setDishNotes((prev) => ({
-      ...prev,
-      [id]: text,
-    }));
   };
 
   const handleBack = () => {
@@ -254,11 +241,6 @@ const ChooseFoodForLongterm = () => {
       : dishes.filter((dish) => selectedDishes[dish.id]);
 
     if (!selectedMenuData && selectedDishesData.length === 0) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Vui lòng chọn ít nhất một menu hoặc món ăn.",
-      });
       return;
     }
 
