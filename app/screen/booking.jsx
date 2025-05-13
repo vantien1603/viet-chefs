@@ -507,7 +507,6 @@ const BookingScreen = () => {
   };
 
   const openModal = () => {
-    console.log("Opening modal");
     setTempDishNotes(dishNotes);
     modalizeRef.current?.open();
   };

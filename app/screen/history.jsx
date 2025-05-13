@@ -105,12 +105,6 @@ const OrderHistories = () => {
   };
 
   useEffect(() => {
-    if (!user?.roleName) {
-      console.warn("User or roleName is missing:", user);
-      showModal("Error", "Please log in to view bookings");
-      return;
-    }
-    // console.log("Fetching for role:", user.roleName, "tab:", routes[index].key);
     const currentStatus = statusMap[routes[index].key];
     setBookings([]);
     setPageNo(0);

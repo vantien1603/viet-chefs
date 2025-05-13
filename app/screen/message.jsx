@@ -127,20 +127,16 @@ const Message = () => {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false, // Chọn ảnh gốc
-        quality: 0.8, // Giảm chất lượng nhẹ để tối ưu tốc độ
+        mediaTypes: ['images'],
+        allowsEditing: true, // Chọn ảnh gốc
+        aspect: [4, 4], // Tỉ lệ ảnh
+        quality: 0.5, // Giảm chất lượng nhẹ để tối ưu tốc độ
       });
 
       if (!result.canceled) {
         const { uri, fileSize } = result.assets[0];
         console.log("Selected image URI:", uri); // Log để gỡ lỗi
         if (fileSize && fileSize > 10 * 1024 * 1024) {
-          Toast.show({
-            type: "error",
-            text1: "Ảnh quá lớn",
-            text2: "Vui lòng chọn ảnh có kích thước dưới 10MB.",
-          });
           setIsPickingImage(false);
           return;
         }
@@ -148,11 +144,6 @@ const Message = () => {
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi chọn ảnh",
-        text2: "Không thể chọn ảnh. Vui lòng thử lại.",
-      });
     } finally {
       setIsPickingImage(false);
     }
@@ -180,21 +171,11 @@ const Message = () => {
       const result = await response.json();
       if (result.error) {
         console.error("Cloudinary error:", result.error);
-        Toast.show({
-          type: "error",
-          text1: "Lỗi tải ảnh",
-          text2: result.error.message || "Không thể tải ảnh lên Cloudinary.",
-        });
         return null;
       }
       return result.secure_url;
     } catch (error) {
       console.error("Error uploading image:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi tải ảnh",
-        text2: "Không thể tải ảnh lên Cloudinary. Vui lòng thử lại.",
-      });
       return null;
     }
   };
@@ -203,11 +184,6 @@ const Message = () => {
     if (!inputText.trim() && !selectedImage) return;
     const client = stompClientRef.current;
     if (!client || !client.connected) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi kết nối",
-        text2: "Không thể kết nối đến WebSocket.",
-      });
       return;
     }
 
@@ -246,11 +222,6 @@ const Message = () => {
       setInputText("");
     } catch (error) {
       console.error("Error sending message:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi gửi tin nhắn",
-        text2: "Không thể gửi tin nhắn. Vui lòng thử lại.",
-      });
     }
     setIsSending(false);
   };
@@ -324,7 +295,7 @@ const Message = () => {
               <Image
                 source={{ uri: item.content }}
                 style={styles.messageImage}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             </TouchableOpacity>
             <Text style={styles.messageTime}>

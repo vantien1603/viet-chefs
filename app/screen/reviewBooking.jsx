@@ -369,12 +369,9 @@ const ReviewBookingScreen = () => {
           modalStyle={styles.modalStyle}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Phí áp dụng là gì?</Text>
+            <Text style={styles.modalTitle}>{t("applicationFeeTitle")}</Text>
             <Text style={styles.modalText}>
-              Phí áp dụng là khoản phí nhỏ được thu để hỗ trợ cải thiện và duy
-              trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.
-              Chúng tôi sử dụng phí này để nâng cấp tính năng, bảo trì hệ thống
-              và mang đến nhiều dịch vụ chất lượng hơn cho bạn.
+              {t("applicationFeeDescription")}
             </Text>
             <TouchableOpacity
               style={styles.modalButton}

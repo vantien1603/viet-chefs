@@ -17,6 +17,7 @@ import useAxios from "../../config/AXIOS_API";
 import { AntDesign } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { t } from "i18next";
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -141,8 +142,7 @@ const ReviewsChefScreen = () => {
         }
       );
       if (response.status === 200 || response.status === 201) {
-        const reaction =
-          response.data.reaction?.reactionType || newReaction;
+        const reaction = response.data.reaction?.reactionType || newReaction;
         await AsyncStorage.setItem(`@reaction_${reviewId}`, reaction);
         setReaction(reaction);
       }
@@ -204,7 +204,7 @@ const ReviewsChefScreen = () => {
         <View style={styles.reviewHeader}>
           <Image
             source={{
-              uri: review.userAvatar || "https://via.placeholder.com/50",
+              uri: review.userAvatar,
             }}
             style={styles.userAvatar}
           />
@@ -236,15 +236,15 @@ const ReviewsChefScreen = () => {
     1
   );
   const sortOptions = [
-    { label: "Newest", value: "newest" },
-    { label: "Oldest", value: "oldest" },
-    { label: "Highest Rating", value: "highest-rating" },
-    { label: "Lowest Rating", value: "lowest-rating" },
+    { key: "newest", value: "newest" },
+    { key: "oldest", value: "oldest" },
+    { key: "highestRating", value: "highest-rating" },
+    { key: "lowestRating", value: "lowest-rating" },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Reviews for" subtitle={`${chefName}`} />
+      <Header title={t("reviewsFor")} subtitle={`${chefName}`} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         onMomentumScrollEnd={({ nativeEvent }) => {
@@ -259,12 +259,12 @@ const ReviewsChefScreen = () => {
         }}
       >
         <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Overall Rating</Text>
+          <Text style={styles.summaryTitle}>{t("overallRating")}</Text>
           <View style={styles.averageRatingContainer}>
             <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
             <RatingStars rating={Math.round(averageRating)} />
           </View>
-          <Text style={styles.totalItems}>{totalReviews} reviews</Text>
+          <Text style={styles.totalItems}>{totalReviews} {t("review")}</Text>
           <View style={styles.ratingDistribution}>
             {[5, 4, 3, 2, 1].map((rating) => (
               <RatingDistributionBar
@@ -277,7 +277,7 @@ const ReviewsChefScreen = () => {
           </View>
         </View>
         <View style={styles.sortContainer}>
-          <Text style={styles.sortLabel}>Sort by:</Text>
+          <Text style={styles.sortLabel}>{t("sortBy")}:</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -303,7 +303,11 @@ const ReviewsChefScreen = () => {
                       sort === option.value && styles.sortButtonTextActive,
                     ]}
                   >
-                    {option.label}
+                    {options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {t(`${option.key}`)}
+                      </option>
+                    ))}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -319,7 +323,7 @@ const ReviewsChefScreen = () => {
             <ReviewCard key={review.id} review={review} />
           ))
         ) : (
-          <Text style={styles.noReviews}>No reviews yet for this chef</Text>
+          <Text style={styles.noReviews}>{t("noReviewsYet")}</Text>
         )}
       </ScrollView>
     </SafeAreaView>

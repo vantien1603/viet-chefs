@@ -1155,7 +1155,7 @@ const LongTermSelectBooking = () => {
                               <Text style={styles.label}>
                                 {selectedDates[date].chefBringIngredients
                                   ? t("chefBringIngredients")
-                                  : t("iWillPrepareIngredients")}
+                                  : t("customerBringIngredients")}
                               </Text>
                               <Switch
                                 value={selectedDates[date].chefBringIngredients}

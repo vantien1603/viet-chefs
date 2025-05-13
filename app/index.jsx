@@ -11,7 +11,8 @@ import * as Location from "expo-location";
 
 async function registerForPushNotificationsAsync() {
   try {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== "granted") {
@@ -58,40 +59,39 @@ export default function WelcomeScreen() {
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
-          shouldPlaySound: true,
+          shouldPlaySound: false,
           shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
         }),
       });
 
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        Notifications.removeNotificationSubscription(
+          notificationListener.current
+        );
       }
       if (responseListener.current) {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
 
-      notificationListener.current = Notifications.addNotificationReceivedListener(
-        (notification) => {
+      notificationListener.current =
+        Notifications.addNotificationReceivedListener((notification) => {
           setNotification(notification);
-          Alert.alert(
-            "Thông báo nhận được!",
-            notification.request.content.body || "Có thông báo mới"
-          );
-        }
-      );
+        });
 
-      responseListener.current = Notifications.addNotificationResponseReceivedListener(
-        (response) => {
+      responseListener.current =
+        Notifications.addNotificationResponseReceivedListener((response) => {
           console.log("Thông báo được nhấn:", response);
-        }
-      );
+        });
     } catch (error) {
       console.error("Lỗi thiết lập thông báo:", error);
     }
   };
 
   const setupLocationPermissions = async () => {
-    const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+    const { status: foregroundStatus } =
+      await Location.requestForegroundPermissionsAsync();
     if (foregroundStatus !== "granted") {
       Alert.alert(
         "Quyền truy cập vị trí bị từ chối",
@@ -118,7 +118,9 @@ export default function WelcomeScreen() {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        Notifications.removeNotificationSubscription(
+          notificationListener.current
+        );
       }
       if (responseListener.current) {
         Notifications.removeNotificationSubscription(responseListener.current);
@@ -214,9 +216,16 @@ export default function WelcomeScreen() {
       </View>
       <TouchableOpacity
         onPress={() => navigation.navigate("(tabs)", { screen: "home" })}
-        style={{ alignItems: "center", marginTop: 10, position: "absolute", bottom: 10 }}
+        style={{
+          alignItems: "center",
+          marginTop: 10,
+          position: "absolute",
+          bottom: 10,
+        }}
       >
-        <Text style={{ textDecorationLine: "underline" }}>Tiếp tục với tư cách khách</Text>
+        <Text style={{ textDecorationLine: "underline" }}>
+          Tiếp tục với tư cách khách
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

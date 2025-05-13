@@ -22,30 +22,43 @@ const StatisticScreen = () => {
 
   const transactions = useMemo(() => {
     const parsed = params?.transactions ? JSON.parse(params.transactions) : [];
-    console.log("Transactions:", parsed); // Debug log
+    console.log("Transactions:", parsed);
     return parsed;
-  }, [params?.transactions]);
+  }, []);
 
   const [selectedMode, setSelectedMode] = useState("Expense");
+  const [selectedMonth, setSelectedMonth] = useState(moment().format("MMM"));
   const [expenseData, setExpenseData] = useState([]);
   const [incomeData, setIncomeData] = useState([]);
   const [totalExpense, setTotalExpense] = useState(0);
   const [totalIncome, setTotalIncome] = useState(0);
   const [maxChartValue, setMaxChartValue] = useState(1);
+  const [filteredExpense, setFilteredExpense] = useState(0);
+  const [filteredIncome, setFilteredIncome] = useState(0);
 
   useEffect(() => {
     if (transactions.length === 0) {
-      // Dữ liệu mặc định khi không có giao dịch
       const defaultData = [
-        { value: 0, label: moment().subtract(2, "months").format("MMM"), frontColor: "#ADD8E6" },
-        { value: 0, label: moment().subtract(1, "months").format("MMM"), frontColor: "#ADD8E6" },
+        {
+          value: 0,
+          label: moment().subtract(2, "months").format("MMM"),
+          frontColor: "#ADD8E6",
+        },
+        {
+          value: 0,
+          label: moment().subtract(1, "months").format("MMM"),
+          frontColor: "#ADD8E6",
+        },
         { value: 0, label: "This month", frontColor: "#007AFF" },
       ];
       setExpenseData(defaultData);
       setIncomeData(defaultData);
       setTotalExpense(0);
       setTotalIncome(0);
-      setMaxChartValue(1); // Đảm bảo biểu đồ hiển thị
+      setMaxChartValue(1);
+      setFilteredExpense(0);
+      setFilteredIncome(0);
+      setSelectedMonth(null);
       return;
     }
 
@@ -69,13 +82,23 @@ const StatisticScreen = () => {
     const expenseChartData = months.map((month, index) => ({
       value: (groupedByMonth[month]?.expense || 0) / 100,
       label: index === 2 ? "This month" : month,
-      frontColor: index === 2 ? "#007AFF" : "#ADD8E6",
+      frontColor:
+        month === selectedMonth ||
+        (month === moment().format("MMM") && selectedMonth === "This month")
+          ? "#007AFF"
+          : "#ADD8E6",
+      monthKey: month,
     }));
 
     const incomeChartData = months.map((month, index) => ({
       value: (groupedByMonth[month]?.income || 0) / 100,
       label: index === 2 ? "This month" : month,
-      frontColor: index === 2 ? "#007AFF" : "#ADD8E6",
+      frontColor:
+        month === selectedMonth ||
+        (month === moment().format("MMM") && selectedMonth === "This month")
+          ? "#007AFF"
+          : "#ADD8E6",
+      monthKey: month,
     }));
 
     const totalExp = transactions
@@ -95,7 +118,53 @@ const StatisticScreen = () => {
     setTotalExpense(totalExp);
     setTotalIncome(totalInc);
     setMaxChartValue(maxValue);
-  }, [transactions]);
+
+    // Cập nhật filteredExpense và filteredIncome cho selectedMonth
+    if (selectedMonth) {
+      const targetMonth =
+        selectedMonth === "This month"
+          ? moment().format("MMM")
+          : selectedMonth;
+      const filtered = transactions.filter((t) =>
+        moment(t.date, "HH:mm - DD/MM/YYYY").isSame(
+          moment(targetMonth, "MMM"),
+          "month"
+        )
+      );
+      const expense = filtered
+        .filter((t) => !["DEPOSIT", "REFUND"].includes(t.transactionType))
+        .reduce((sum, t) => sum + t.amount, 0);
+      const income = filtered
+        .filter((t) => ["DEPOSIT", "REFUND"].includes(t.transactionType))
+        .reduce((sum, t) => sum + t.amount, 0);
+      setFilteredExpense(expense);
+      setFilteredIncome(income);
+    }
+  }, [transactions, selectedMonth]);
+
+  const handleMonthSelect = (month) => {
+    console.log("Selected month:", month);
+    setSelectedMonth(month);
+
+    const targetMonth =
+      month === "This month" ? moment().format("MMM") : month;
+    const filtered = transactions.filter((t) =>
+      moment(t.date, "HH:mm - DD/MM/YYYY").isSame(
+        moment(targetMonth, "MMM"),
+        "month"
+      )
+    );
+
+    const expense = filtered
+      .filter((t) => !["DEPOSIT", "REFUND"].includes(t.transactionType))
+      .reduce((sum, t) => sum + t.amount, 0);
+    const income = filtered
+      .filter((t) => ["DEPOSIT", "REFUND"].includes(t.transactionType))
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    setFilteredExpense(expense);
+    setFilteredIncome(income);
+  };
 
   const formatAmount = (amount) => {
     return amount.toLocaleString("en-US", {
@@ -128,7 +197,7 @@ const StatisticScreen = () => {
               <View style={styles.buttonTextContainer}>
                 <Text style={styles.buttonLabel}>{t("expenses")}</Text>
                 <Text style={styles.buttonValue}>
-                  {formatAmount(totalExpense)}
+                  {formatAmount(selectedMonth ? filteredExpense : totalExpense)}
                 </Text>
               </View>
               <Ionicons name="chevron-up" size={16} color="#FF9500" />
@@ -146,7 +215,7 @@ const StatisticScreen = () => {
               <View style={styles.buttonTextContainer}>
                 <Text style={styles.buttonLabel}>{t("income")}</Text>
                 <Text style={styles.buttonValue}>
-                  {formatAmount(totalIncome)}
+                  {formatAmount(selectedMonth ? filteredIncome : totalIncome)}
                 </Text>
               </View>
               <Ionicons name="chevron-up" size={16} color="#00CED1" />
@@ -174,20 +243,28 @@ const StatisticScreen = () => {
             yAxisThickness={0}
             xAxisThickness={0}
             yAxisTextStyle={{ color: "#000" }}
-            yAxisLabelSuffix={t("hundred")} // Reflect scaling in hundreds
             showFractionalValues={true}
-            stepValue={Math.max(maxChartValue / 4, 0.1)} // Dynamic step value
+            stepValue={Math.max(maxChartValue / 4, 0.1)}
             showLine={false}
             rulesColor="#E0E0E0"
             rulesType="solid"
             frontColor="#ADD8E6"
+            onPress={(item) => handleMonthSelect(item.label)}
             renderTooltip={(item) => (
-              <View style={{ alignItems: "center" }}>
+              <View
+                style={{
+                  alignItems: "center",
+                  top: -30,
+                  backgroundColor: "#fff",
+                  padding: 5,
+                  borderRadius: 5,
+                  borderWidth: 1,
+                  borderColor: "#CCCCCC",
+                  position: "absolute",
+                }}
+              >
                 <Text style={{ color: "#333", fontWeight: "bold" }}>
-                  {item.value}
-                </Text>
-                <Text style={{ fontSize: 12, color: "#888" }}>
-                  {t("hundred")}
+                  {formatAmount(item.value * 100)}
                 </Text>
               </View>
             )}
@@ -197,8 +274,6 @@ const StatisticScreen = () => {
     </SafeAreaView>
   );
 };
-
-// StyleSheet không thay đổi, giữ nguyên như code gốc
 
 const styles = StyleSheet.create({
   row: {

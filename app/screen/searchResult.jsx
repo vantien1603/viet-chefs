@@ -12,7 +12,13 @@ import {
   ActivityIndicator,
   BackHandler,
 } from "react-native";
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { commonStyles } from "../../style";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,8 +26,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useAxios from "../../config/AXIOS_API";
 import * as Location from "expo-location";
 import { Modalize } from "react-native-modalize";
-import { Dropdown } from "react-native-element-dropdown";
-import Toast from "react-native-toast-message";
 import axios from "axios";
 import { API_GEO_KEY } from "@env";
 
@@ -44,12 +48,14 @@ const SearchResultScreen = () => {
   const textInputRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [distance, setDistance] = useState(30);
-  const [tempDistance, setTempDistance] = useState(30);
-  const [priceRange, setPriceRange] = useState(null);
-  const [tempPriceRange, setTempPriceRange] = useState(null);
+  const [tempDistance, setTempDistance] = useState(null);
+  const [dishPriceRange, setDishPriceRange] = useState(null);
+  const [chefPriceRange, setChefPriceRange] = useState(null);
+  const [tempDishPriceRange, setTempDishPriceRange] = useState(null);
+  const [tempChefPriceRange, setTempChefPriceRange] = useState(null);
+
   const [rateRange, setRateRange] = useState(null);
-  const [tempRateRange, setTempRateRange] = useState(null); // Sửa từ tempRateRang
-  const [activeFilter, setActiveFilter] = useState(null);
+  const [tempRateRange, setTempRateRange] = useState(null);
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
@@ -65,36 +71,75 @@ const SearchResultScreen = () => {
   const [lastDishResults, setLastDishResults] = useState([]);
   const [lastChefResults, setLastChefResults] = useState([]);
 
-  const distanceOptions = [
-    { label: "1 km", value: 1 },
-    { label: "5 km", value: 5 },
-    { label: "10 km", value: 10 },
-    { label: "15 km", value: 15 },
-    { label: "20 km", value: 20 },
-    { label: "25 km", value: 25 },
-    { label: "30 km", value: 30 },
-  ];
+  const distanceOptions = useMemo(
+    () => [
+      { label: "1 km", value: 1 },
+      { label: "5 km", value: 5 },
+      { label: "10 km", value: 10 },
+      { label: "15 km", value: 15 },
+      { label: "20 km", value: 20 },
+      { label: "25 km", value: 25 },
+      { label: "30 km", value: 30 },
+    ],
+    []
+  );
 
-  const priceRangeOptions = [
-    { label: "Under $10", value: { min: 0, max: 10 } },
-    { label: "$10 - $100", value: { min: 10, max: 100 } },
-    { label: "$100 - $1000", value: { min: 100, max: 1000 } },
-    { label: "Over $1000", value: { min: 1000, max: Infinity } },
-  ];
+  const dishPriceRangeOptions = useMemo(
+    () => [
+      { label: "Under $10", value: { min: 0, max: 10 } },
+      { label: "$10 - $30", value: { min: 10, max: 30 } },
+      { label: "$30 - $50", value: { min: 30, max: 50 } },
+      { label: "Over $50", value: { min: 50, max: Infinity } },
+    ],
+    []
+  );
 
-  const rateRangeOptions = [
-    { label: "1 sao trở lên", value: { min: 1, max: 5 } },
-    { label: "2 sao trở lên", value: { min: 2, max: 5 } },
-    { label: "3 sao trở lên", value: { min: 3, max: 5 } },
-    { label: "4 sao trở lên", value: { min: 4, max: 5 } },
-    { label: "5 sao", value: { min: 5, max: 5 } },
-  ];
+  const chefPriceRangeOptions = useMemo(
+    () => [
+      { label: "Under $50/hr", value: { min: 0, max: 50 } },
+      { label: "$50 - $100/hr", value: { min: 50, max: 100 } },
+      { label: "$100 - $300/hr", value: { min: 100, max: 300 } },
+      { label: "Over $300/hr", value: { min: 300, max: Infinity } },
+    ],
+    []
+  );
 
-  const filterFields = [
-    { index: 0, name: "Distance", value: distance ? `${distance} km` : "All" },
-    { index: 1, name: "Price", value: priceRange ? priceRange.label : "All" },
-    { index: 2, name: "Rating", value: rateRange ? rateRange.label : "All" },
-  ];
+  const rateRangeOptions = useMemo(
+    () => [
+      { label: "1 sao trở lên", value: { min: 1, max: 5 } },
+      { label: "2 sao trở lên", value: { min: 2, max: 5 } },
+      { label: "3 sao trở lên", value: { min: 3, max: 5 } },
+      { label: "4 sao trở lên", value: { min: 4, max: 5 } },
+      { label: "5 sao", value: { min: 5, max: 5 } },
+    ],
+    []
+  );
+
+  const filterFields = useMemo(
+    () => [
+      {
+        index: 0,
+        name: "Distance",
+        value: distance ? `${distance} km` : "All",
+      },
+      {
+        index: 1,
+        name: "Dish Price",
+        value: dishPriceRange ? dishPriceRange.label : "All",
+      },
+      {
+        index: 2,
+        name: "Chef Price",
+        value: chefPriceRange ? chefPriceRange.label : "All",
+      },
+      {
+        index: 3,
+        name: "Rating",
+        value: rateRange ? rateRange.label : "All",
+      },
+    ],
+    [distance, dishPriceRange, chefPriceRange, rateRange]
+  );
 
   useEffect(() => {
     const backAction = () => {
@@ -165,11 +210,6 @@ const SearchResultScreen = () => {
       setAddresses(addressesWithCoords);
     } catch (error) {
       console.error("Error fetching addresses:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load address list",
-      });
     }
   };
 
@@ -179,26 +219,41 @@ const SearchResultScreen = () => {
       lat = location?.latitude,
       lng = location?.longitude,
       distance: dist = distance,
-      priceRange: pr = priceRange,
+      dishPriceRange: dpr = dishPriceRange,
+      chefPriceRange: cpr = chefPriceRange,
       rateRange: ra = rateRange,
       isSearch = false,
     } = params;
 
-    const apiParams = {
+    // Params for dish API call
+    const dishApiParams = {
       keyword,
       customerLat: lat,
       customerLng: lng,
       distance: dist,
-      ...(pr && { minPrice: pr.value.min, maxPrice: pr.value.max }),
+      ...(dpr && { minPrice: dpr.value.min, maxPrice: dpr.value.max }), // Chỉ áp dụng dpr cho món ăn
       ...(ra && { minRate: ra.value.min, maxRate: ra.value.max }),
     };
 
-    console.log("API Params:", apiParams);
+    // Params for chef API call
+    const chefApiParams = {
+      keyword,
+      customerLat: lat,
+      customerLng: lng,
+      distance: dist,
+      // Nếu API của bạn hỗ trợ lọc giá đầu bếp, bạn có thể thêm vào đây
+      ...(ra && { minRate: ra.value.min, maxRate: ra.value.max }),
+    };
+
+    console.log("Dish API Params:", dishApiParams);
+    console.log("Chef API Params:", chefApiParams);
 
     if (
       lastParams &&
       JSON.stringify({
-        ...apiParams,
+        ...dishApiParams,
+        ...chefApiParams,
+        chefPriceRange: cpr, // Thêm vào để phản ánh trạng thái lọc giá đầu bếp
       }) === JSON.stringify(lastParams)
     ) {
       setDishes(lastDishResults);
@@ -215,23 +270,33 @@ const SearchResultScreen = () => {
       setIsLoading(true);
 
       const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
-        params: {
-          ...apiParams,
-        },
+        params: dishApiParams,
       });
 
       const chefsResponse = await axiosInstance.get("/chefs/nearby/search", {
-        params: {
-          ...apiParams,
-        },
+        params: chefApiParams,
       });
 
       let chefsData = chefsResponse.data.content;
-      const dishesData = dishesResponse.data.content;
+      let dishesData = dishesResponse.data.content;
 
       console.log("Raw Chefs Data:", chefsData);
 
-      // Lọc chefs theo averageRating tại client-side (nếu API không lọc)
+      // Áp dụng lọc giá đầu bếp phía client
+      if (cpr) {
+        chefsData = chefsData.filter(
+          (chef) => chef.price >= cpr.value.min && chef.price <= cpr.value.max
+        );
+      }
+
+      // Áp dụng lọc giá món ăn phía client nếu cần
+      if (dpr) {
+        dishesData = dishesData.filter(
+          (dish) =>
+            dish.basePrice >= dpr.value.min && dish.basePrice <= dpr.value.max
+        );
+      }
+
       if (ra) {
         chefsData = chefsData.filter(
           (chef) =>
@@ -240,24 +305,17 @@ const SearchResultScreen = () => {
         );
       }
 
-      // Sắp xếp chefs theo averageRating (giảm dần)
       chefsData = chefsData.sort((a, b) => b.averageRating - a.averageRating);
-
-      console.log("Filtered and Sorted Chefs:", chefsData);
 
       setDishes(dishesData);
       setChefs(chefsData);
       setLastDishResults(dishesData);
       setLastChefResults(chefsData);
-      setLastParams({ ...apiParams });
-
-      if (chefsData.length === 0 && ra) {
-        Toast.show({
-          type: "info",
-          text1: "No Results",
-          text2: "No chefs found with the selected rating filter",
-        });
-      }
+      setLastParams({
+        ...dishApiParams,
+        ...chefApiParams,
+        chefPriceRange: cpr, // Thêm vào để phản ánh trạng thái lọc giá đầu bếp
+      });
 
       if (isSearch) {
         const isChefPriority =
@@ -335,40 +393,32 @@ const SearchResultScreen = () => {
       });
       setSelectedAddress(address);
       addressModalizeRef.current?.close();
-    } else {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Cannot retrieve coordinates for this address",
-      });
     }
   };
 
-  const openFilterModal = (filterName) => {
+  const openFilterModal = () => {
     Keyboard.dismiss();
-    setActiveFilter(filterName);
     setTempDistance(distance);
-    setTempPriceRange(priceRange);
-    setTempRateRange(rateRange); // Sửa từ tempRateRang
+    setTempDishPriceRange(dishPriceRange);
+    setTempChefPriceRange(chefPriceRange);
+    setTempRateRange(rateRange);
     modalizeRef.current?.open();
   };
 
   const applyFilter = async () => {
-    if (activeFilter === "Distance") {
-      setDistance(tempDistance);
-    } else if (activeFilter === "Price") {
-      setPriceRange(tempPriceRange);
-    } else if (activeFilter === "Rating") {
-      setRateRange(tempRateRange); // Sửa từ tempRateRang
-    }
+    setDistance(tempDistance);
+    setDishPriceRange(tempDishPriceRange);
+    setChefPriceRange(tempChefPriceRange);
+    setRateRange(tempRateRange);
 
     if (location) {
       await fetchData({
         lat: location.latitude,
         lng: location.longitude,
-        distance: activeFilter === "Distance" ? tempDistance : distance,
-        priceRange: activeFilter === "Price" ? tempPriceRange : priceRange,
-        rateRange: activeFilter === "Rating" ? tempRateRange : rateRange,
+        distance: tempDistance,
+        dishPriceRange: tempDishPriceRange,
+        chefPriceRange: tempChefPriceRange,
+        rateRange: tempRateRange,
       });
     }
     modalizeRef.current?.close();
@@ -451,7 +501,7 @@ const SearchResultScreen = () => {
       </TouchableOpacity>
 
       <View style={styles.filterContainer}>
-        <TouchableOpacity style={{ marginRight: 10 }}>
+        <TouchableOpacity onPress={openFilterModal} style={{ marginRight: 10 }}>
           <Icon name="filter" size={24} color="#4EA0B7" />
         </TouchableOpacity>
         <FlatList
@@ -461,7 +511,7 @@ const SearchResultScreen = () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.filterItem}
-              onPress={() => openFilterModal(item.name)}
+              onPress={openFilterModal}
             >
               <Text style={styles.filterText}>
                 {item.name}: {item.value}
@@ -517,7 +567,7 @@ const SearchResultScreen = () => {
     return text.substring(0, maxLength) + "...";
   };
 
-  const renderItem = ({ item }) => {
+  const RenderItem = ({ item }) => {
     switch (isSelected) {
       case 1: // Chefs
         return (
@@ -551,9 +601,10 @@ const SearchResultScreen = () => {
                   {truncateText(item.description)}
                 </Text>
                 <Text style={styles.address}>{truncateText(item.address)}</Text>
-                <Text style={styles.serving}>
+                <Text style={styles.label}>
                   Max Serving: {item.maxServingSize}
                 </Text>
+                <Text style={styles.label}>Price/hour: {item.price}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -589,10 +640,8 @@ const SearchResultScreen = () => {
                 <Text style={styles.cuisine}>
                   Cuisine: {truncateText(item.cuisineType)}
                 </Text>
-                <Text style={styles.cookTime}>
-                  Cook Time: {item.cookTime} min
-                </Text>
-                <Text style={styles.price}>Price: ${item.basePrice}</Text>
+                <Text style={styles.label}>Cook Time: {item.cookTime} min</Text>
+                <Text style={styles.label}>Price: ${item.basePrice}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -628,88 +677,182 @@ const SearchResultScreen = () => {
     return null;
   };
 
-  const renderFilterModal = () => (
-    <Modalize
-      ref={modalizeRef}
-      handlePosition="outside"
-      modalStyle={styles.modal}
-      handleStyle={styles.handle}
-      adjustToContentHeight={true}
-    >
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Filter Options</Text>
+  const renderFilterModal = () => {
+    const handleDistanceChange = useCallback((value) => {
+      setTempDistance((prev) => (prev === value ? null : value));
+    }, []);
 
-        {activeFilter === "Distance" && (
+    const handleRateChange = useCallback((value) => {
+      setTempRateRange((prev) =>
+        prev?.value.min === value.value.min &&
+        prev?.value.max === value.value.max
+          ? null
+          : value
+      );
+    }, []);
+
+    return (
+      <Modalize
+        ref={modalizeRef}
+        handlePosition="outside"
+        modalStyle={styles.modal}
+        handleStyle={styles.handle}
+        adjustToContentHeight={true}
+        useNativeDriver={true}
+        animationConfig={{ timing: { duration: 150 } }}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Filter Options</Text>
+
+          {/* Distance Filter */}
           <View style={styles.dropdownContainer}>
             <Text style={styles.dropdownLabel}>Distance</Text>
-            <Dropdown
-              style={styles.dropdown}
-              data={distanceOptions}
-              labelField="label"
-              valueField="value"
-              placeholder="Select distance"
-              value={tempDistance}
-              onChange={(item) => setTempDistance(item.value)}
-              selectedTextStyle={styles.selectedTextStyle}
-              placeholderStyle={styles.placeholderStyle}
-              itemTextStyle={styles.itemTextStyle}
-              containerStyle={styles.dropdownItemContainer}
-            />
+            <View style={styles.buttonGroup}>
+              {distanceOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempDistance === option.value &&
+                      styles.optionButtonSelected,
+                  ]}
+                  onPress={() => handleDistanceChange(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempDistance === option.value &&
+                        styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        )}
 
-        {activeFilter === "Price" && (
+          {/* Dish Price Filter */}
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownLabel}>Price Range</Text>
-            <Dropdown
-              style={styles.dropdown}
-              data={priceRangeOptions}
-              labelField="label"
-              valueField="value"
-              placeholder="Select price range"
-              value={tempPriceRange}
-              onChange={(item) => setTempPriceRange(item)}
-              selectedTextStyle={styles.selectedTextStyle}
-              placeholderStyle={styles.placeholderStyle}
-              itemTextStyle={styles.itemTextStyle}
-              containerStyle={styles.dropdownItemContainer}
-            />
+            <Text style={styles.dropdownLabel}>Dish Price Range</Text>
+            <View style={styles.buttonGroup}>
+              {dishPriceRangeOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempDishPriceRange?.value.min === option.value.min &&
+                      tempDishPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setTempDishPriceRange((prev) =>
+                      prev?.value.min === option.value.min &&
+                      prev?.value.max === option.value.max
+                        ? null
+                        : option
+                    );
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempDishPriceRange?.value.min === option.value.min &&
+                        tempDishPriceRange?.value.max === option.value.max &&
+                        styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        )}
 
-        {activeFilter === "Rating" && (
+          {/* Chef Price Filter */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>
+              Chef Price Range (per hour)
+            </Text>
+            <View style={styles.buttonGroup}>
+              {chefPriceRangeOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempChefPriceRange?.value.min === option.value.min &&
+                      tempChefPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setTempChefPriceRange((prev) =>
+                      prev?.value.min === option.value.min &&
+                      prev?.value.max === option.value.max
+                        ? null
+                        : option
+                    );
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempChefPriceRange?.value.min === option.value.min &&
+                        tempChefPriceRange?.value.max === option.value.max &&
+                        styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Rating Filter */}
           <View style={styles.dropdownContainer}>
             <Text style={styles.dropdownLabel}>Rating Range</Text>
-            <Dropdown
-              style={styles.dropdown}
-              data={rateRangeOptions}
-              labelField="label"
-              valueField="value"
-              placeholder="Select rating range"
-              value={tempRateRange}
-              onChange={(item) => setTempRateRange(item)}
-              selectedTextStyle={styles.selectedTextStyle}
-              placeholderStyle={styles.placeholderStyle}
-              itemTextStyle={styles.itemTextStyle}
-              containerStyle={styles.dropdownItemContainer}
-            />
+            <View style={styles.buttonGroup}>
+              {rateRangeOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempRateRange?.value.min === option.value.min &&
+                      tempRateRange?.value.max === option.value.max &&
+                      styles.optionButtonSelected,
+                  ]}
+                  onPress={() => handleRateChange(option)}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempRateRange?.value.min === option.value.min &&
+                        tempRateRange?.value.max === option.value.max &&
+                        styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        )}
 
-        <View style={styles.modalButtons}>
-          <TouchableOpacity
-            onPress={() => modalizeRef.current?.close()}
-            style={styles.cancelButton}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={applyFilter} style={styles.applyButton}>
-            <Text style={styles.applyButtonText}>Apply Filter</Text>
-          </TouchableOpacity>
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              onPress={() => modalizeRef.current?.close()}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={applyFilter} style={styles.applyButton}>
+              <Text style={styles.applyButtonText}>Apply Filter</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </Modalize>
-  );
+      </Modalize>
+    );
+  };
 
   const renderAddressModal = () => (
     <Modalize
@@ -756,11 +899,6 @@ const SearchResultScreen = () => {
               })
               .catch((error) => {
                 console.error("Error getting current location:", error);
-                Toast.show({
-                  type: "error",
-                  text1: "Error",
-                  text2: "Failed to get current location",
-                });
               })
               .finally(() => setLoading(false));
           }}
@@ -800,7 +938,7 @@ const SearchResultScreen = () => {
       ) : (
         <FlatList
           data={getData()}
-          renderItem={renderItem}
+          renderItem={RenderItem}
           keyExtractor={(item) => item.id.toString()}
           ListEmptyComponent={renderEmptyMessage}
           contentContainerStyle={styles.flatListContainer}
@@ -872,6 +1010,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 10,
     flexDirection: "row",
+    alignItems: "center",
   },
   filterList: {
     flexGrow: 0,
@@ -961,15 +1100,7 @@ const styles = StyleSheet.create({
     color: "#EBE5DD",
     marginBottom: 4,
   },
-  serving: {
-    fontSize: 12,
-    color: "#F8BF40",
-  },
-  cookTime: {
-    fontSize: 12,
-    color: "#F8BF40",
-  },
-  price: {
+  label: {
     fontSize: 12,
     color: "#F8BF40",
   },
@@ -1039,31 +1170,28 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 10,
   },
-  dropdown: {
-    height: 50,
-    borderColor: "#4EA0B7",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: "#EBE5DD",
+  buttonGroup: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    gap: 8,
   },
-  selectedTextStyle: {
-    fontSize: 16,
-    color: "#333",
+  optionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
   },
-  placeholderStyle: {
-    fontSize: 16,
-    color: "#4EA0B7",
+  optionButtonSelected: {
+    backgroundColor: "#00C2FF",
   },
-  itemTextStyle: {
-    fontSize: 16,
-    color: "#333",
+  optionButtonText: {
+    color: "#555",
+    fontWeight: "500",
   },
-  dropdownItemContainer: {
-    borderRadius: 8,
-    borderColor: "#4EA0B7",
-    borderWidth: 1,
-    maxHeight: 300,
+  optionButtonTextSelected: {
+    color: "white",
+    fontWeight: "bold",
   },
   modalButtons: {
     flexDirection: "row",

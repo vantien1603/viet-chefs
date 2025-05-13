@@ -186,9 +186,6 @@ const BookingDetailScreen = () => {
     >
       <Header title={t("sessionDetail")} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Log images for debugging */}
-        {/* {console.log("Booking Detail Images:", bookingDetail?.images)} */}
-
         {/* Booking Info */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
