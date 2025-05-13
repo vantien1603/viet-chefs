@@ -40,7 +40,6 @@ const CustomerSchedule = () => {
           }
         );
         setBookingDetails(response.data.content);
-        console.log("Booking Details:", response.data.content);
       } catch (error) {
         console.log("err", error);
       }

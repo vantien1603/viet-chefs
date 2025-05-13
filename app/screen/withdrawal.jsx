@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import React, { use, useEffect, useState } from "react";
+import React, { use, useContext, useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,7 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { MaterialIcons } from "@expo/vector-icons";
 import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
 
 const WithdrawalScreen = () => {
   const params = useLocalSearchParams();
@@ -24,6 +25,7 @@ const WithdrawalScreen = () => {
   const axiosInstance = useAxios();
   const [email, setEmail] = useState(paypalAccountEmail || "");
   const [isEditing, setIsEditing] = useState(false);
+  const { user } = useContext(AuthContext);
 
   const amo = parseFloat(withdrawAmount);
   const isWithdraw = !withdrawAmount || amo <= 0 || isNaN(amo) || amo > balance;
@@ -40,7 +42,10 @@ const WithdrawalScreen = () => {
 
     if (amount > balance) {
       setError("Withdrawal amount is over the wallet balance.");
-    } else {
+    } else if (amount < 2){
+      setError("Amount must be greater than 2");
+    }
+     else {
       setError("");
     }
   };
@@ -51,7 +56,7 @@ const WithdrawalScreen = () => {
 
   const handleWithdraw = () => {
     Alert.alert(
-      "Xác nhận rút tiền",
+      "Tạo yêu cầu rút tiền",
       `Bạn có chắc chắn muốn rút $${parseFloat(withdrawAmount).toFixed(
         2
       )} từ VietChef Wallet không?`,
@@ -63,17 +68,20 @@ const WithdrawalScreen = () => {
         {
           text: "Xác nhận",
           onPress: async () => {
+            const payload = {
+              userId: user.userId,
+              requestType: "WITHDRAWAL",
+              amount: parseFloat(withdrawAmount),
+              note: `Rút tiền từ ví VietChef`,
+            }
             try {
-              const response = await axiosInstance.post(
-                `payment/withdrawal?walletId=${walletId}&amount=${amo}`
-              );
+              const response = await axiosInstance.post("wallet-requests", payload);
               setWithdrawAmount("");
-              console.log("Rút tiền thành công!", response.data);
-              Alert.alert("Thành công", "Bạn đã rút tiền thành công");
+              console.log("Tạo yêu cầu thành công", response.data);
+              Alert.alert("Thành công", "Bạn đã tạo yêu cầu rút tiền thành công");
             } catch (error) {
               const errorMessage = error?.response?.data;
-              console.log("Err", errorMessage);
-              Alert.alert("Lỗi", errorMessage.message);
+              console.log("err", errorMessage);
             }
           },
         },
@@ -282,7 +290,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#fff",
     padding: 10,
-    marginHorizontal: 5
+    marginHorizontal: 5,
   },
   amountButton: {
     width: "30%",

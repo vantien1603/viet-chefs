@@ -29,7 +29,7 @@ const ReviewScreen = () => {
 
   useEffect(() => {
     const backAction = () => {
-      router.push("/(tabs)/history"); 
+      router.push("/screen/history"); 
       return true; 
     };
 
@@ -95,7 +95,7 @@ const ReviewScreen = () => {
       const response = await axiosInstance.post("/reviews", payload);
       console.log("Review Response:", response.data);
 
-      router.push("(tabs)/history");
+      router.push("/screen/history");
     } catch (error) {
       console.error("Error submitting review:", error?.response?.data);
     } finally {

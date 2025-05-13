@@ -21,7 +21,6 @@ const DishDetails = () => {
   const [chef, setChef] = useState(null);
   const axiosInstance = useAxios();
   const [selectedDishes, setSelectedDishes] = useState([]);
-  const [dishNotes, setDishNotes] = useState({});
 
   useEffect(() => {
     const fetchDishDetails = async () => {
@@ -51,23 +50,6 @@ const DishDetails = () => {
     fetchDishDetails();
   }, [dishId, dishName, menuId]);
 
-  useEffect(() => {
-    const fetchChefDetails = async () => {
-      const chefIdToFetch = dish.chef?.id || chefId;
-      if (chefIdToFetch) {
-        try {
-          const response = await axiosInstance.get(`/chefs/${chefIdToFetch}`);
-
-          setChef(response.data);
-          console.log("chef details", response.data);
-        } catch (error) {
-          console.error("Error fetching chef details:", error);
-        }
-      }
-    };
-    fetchChefDetails();
-  }, [dish.chefId, chefId]);
-
   const handleAddItem = () => {
     if (dish.id && !selectedDishes.some((item) => item.id === dish.id)) {
       setSelectedDishes((prev) => [
@@ -87,7 +69,6 @@ const DishDetails = () => {
       params: {
         chefId: dish.chef?.id || chefId,
         selectedDishes: JSON.stringify(selectedDishes),
-        dishNotes: JSON.stringify(dishNotes),
       },
     });
   };
@@ -147,33 +128,36 @@ const DishDetails = () => {
               {t("cookTime")}: {dish.cookTime} {t("minutes")}
             </Text>
           </View>
+          <View style={styles.detailItem}>
+            <Ionicons name="logo-usd" size={20} color="#555" />
+            <Text style={styles.detailText}>
+              {t("basePrice")}: ${dish.basePrice}
+            </Text>
+          </View>
         </View>
 
-        {chef && (
-          <View style={styles.chefContainer}>
-            <Text style={styles.sectionTitle}>{t("chef")}</Text>
-            <View style={styles.chefInfo}>
-              <Image
-                source={{
-                  uri:
-                    chef.user?.avatarUrl && chef.user.avatarUrl !== "default"
-                      ? chef.user.avatarUrl
-                      : "",
-                }}
-                style={styles.chefAvatar}
-                resizeMode="cover"
-              />
-              <View style={styles.chefText}>
-                <Text style={styles.chefName}>
-                  {chef.user?.fullName || t("chef")}
-                </Text>
-                <Text style={styles.chefBio} numberOfLines={2}>
-                  {chef.bio || t("noInformation")}
-                </Text>
-              </View>
+        {/* {chef && ( */}
+        <View style={styles.chefContainer}>
+          <Text style={styles.sectionTitle}>{t("chef")}</Text>
+          <View style={styles.chefInfo}>
+            <Image
+              source={{
+                uri: dish.chef?.user?.avatarUrl,
+              }}
+              style={styles.chefAvatar}
+              resizeMode="cover"
+            />
+            <View style={styles.chefText}>
+              <Text style={styles.chefName}>
+                {dish.chef?.user?.fullName || t("chef")}
+              </Text>
+              <Text style={styles.chefBio} numberOfLines={2}>
+                {dish.chef?.bio || t("noInformation")}
+              </Text>
             </View>
           </View>
-        )}
+        </View>
+        {/* )} */}
       </ScrollView>
 
       {!menuId && (

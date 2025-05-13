@@ -29,6 +29,9 @@ export default function Home() {
   const [chef, setChef] = useState([]);
   const [dishes, setDishes] = useState([]);
   const [chefFavorite, setChefFavorite] = useState([]);
+  const filteredChefFavorite = chefFavorite.filter((item) =>
+    item.chefName.toLowerCase().includes(query.toLowerCase())
+  );
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -413,9 +416,33 @@ export default function Home() {
           </View>
 
           {chefFavorite.length === 0 ? (
-            <View style={{ alignItems: "center", marginTop: 10 }}>
+            // Chưa thích ai
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 10,
+                backgroundColor: "#FFF8EF",
+                padding: 20,
+                borderRadius: 10,
+              }}
+            >
               <Text style={{ fontSize: 16, color: "#888" }}>
-                Không có đầu bếp nào gần bạn.
+                {t("noFavoriteChefs")}
+              </Text>
+            </View>
+          ) : filteredChefFavorite.length === 0 ? (
+            // Đã thích nhưng không ai gần
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 10,
+                backgroundColor: "#FFF8EF",
+                padding: 20,
+                borderRadius: 10,
+              }}
+            >
+              <Text style={{ fontSize: 16, color: "#888" }}>
+                {t("noFavoriteChefNearby")}
               </Text>
             </View>
           ) : (
@@ -424,7 +451,7 @@ export default function Home() {
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 30 }}
             >
-              {chefFavorite.map((item, index) => (
+              {filteredChefFavorite.map((item, index) => (
                 <View
                   key={index}
                   style={{
@@ -449,25 +476,41 @@ export default function Home() {
               </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {dishes.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 200,
-                  alignItems: "center",
-                  marginRight: 20,
-                  marginLeft: index === 0 ? 16 : 0,
-                }}
-              >
-                {renderDishItem({ item })}
-              </View>
-            ))}
-          </ScrollView>
+          {dishes.length === 0 ? (
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 10,
+                backgroundColor: "#FFF8EF",
+                padding: 20,
+                borderRadius: 10,
+              }}
+            >
+              <Text style={{ fontSize: 16, color: "#888" }}>
+                {t("noDishNearby")}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
+            >
+              {dishes.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderDishItem({ item })}
+                </View>
+              ))}
+            </ScrollView>
+          )}
 
           {/* đầu bếp gần đây */}
           <View style={styles.sectionHeader}>
@@ -478,25 +521,41 @@ export default function Home() {
               </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {chef.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 200,
-                  alignItems: "center",
-                  marginRight: 20,
-                  marginLeft: index === 0 ? 16 : 0,
-                }}
-              >
-                {renderChefItem({ item })}
-              </View>
-            ))}
-          </ScrollView>
+          {chef.length === 0 ? (
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 10,
+                backgroundColor: "#FFF8EF",
+                padding: 20,
+                borderRadius: 10,
+              }}
+            >
+              <Text style={{ fontSize: 16, color: "#888" }}>
+                {t("noChefNearby")}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
+            >
+              {chef.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderChefItem({ item })}
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
