@@ -20,8 +20,9 @@ const menuItems = [
   { id: "1", icon: "wallet", title: "vietPay" },
   { id: "2", icon: "lock-closed", title: "changePassword" },
   { id: "3", icon: "heart", title: "favoriteChef" },
-  { id: "4", icon: "briefcase", title: "createChefAccount" },
-  { id: "5", icon: "settings", title: "settings" },
+  { id: "4", icon: "star", title: "allReview" },
+  { id: "5", icon: "briefcase", title: "createChefAccount" },
+  { id: "6", icon: "settings", title: "settings" },
 ];
 
 const Profile = () => {
@@ -68,9 +69,12 @@ const Profile = () => {
         router.push("/screen/favorite");
         break;
       case "4":
-        router.push("/screen/createChef");
+        router.push("/screen/allReview");
         break;
       case "5":
+        router.push("/screen/createChef");
+        break;
+      case "6":
         router.push("/screen/setting");
         break;
       default:

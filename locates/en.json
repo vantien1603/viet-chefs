@@ -324,5 +324,11 @@
   "invalidPin": "Invalid PIN. Please try again.",
   "changePin": "Change pin",
   "enterOldPin": "Enter old pin",
-  "enterNewPin": "Enter new pin"
+  "enterNewPin": "Enter new pin",
+  "allReview": "My reviews",
+  "googleSignInFailed": "Google sign-in failed. Please try again.",
+  "failedToGetGoogleUrl": "Failed to get Google sign-in URL. Please check your connection.",
+  "signInWithGoogle": "Sign in With Google",
+  "usernameOrEmail": "Username or Email"
+  
 }

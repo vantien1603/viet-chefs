@@ -323,5 +323,10 @@
   "invalidPin": "Sai mã Pin. Vui lòng thử lại",
   "changePin": "Đổi mã pin",
   "enterOldPin": "Nhập mã pin cũ",
-  "enterNewPin": "Nhập mã pin mới"
+  "enterNewPin": "Nhập mã pin mới",
+  "allReview": "Đánh giá của tôi",
+  "googleSignInFailed": "Đăng nhập Google thất bại. Vui lòng thử lại.",
+  "failedToGetGoogleUrl": "Không thể lấy liên kết đăng nhập Google. Vui lòng kiểm tra kết nối mạng.",
+  "signInWithGoogle": "Đăng nhập với Google",
+  "usernameOrEmail": "Username hoặc Email"
 }

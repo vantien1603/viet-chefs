@@ -264,7 +264,9 @@ const ReviewsChefScreen = () => {
             <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
             <RatingStars rating={Math.round(averageRating)} />
           </View>
-          <Text style={styles.totalItems}>{totalReviews} {t("review")}</Text>
+          <Text style={styles.totalItems}>
+            {totalReviews} {t("review")}
+          </Text>
           <View style={styles.ratingDistribution}>
             {[5, 4, 3, 2, 1].map((rating) => (
               <RatingDistributionBar
@@ -303,11 +305,7 @@ const ReviewsChefScreen = () => {
                       sort === option.value && styles.sortButtonTextActive,
                     ]}
                   >
-                    {options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {t(`${option.key}`)}
-                      </option>
-                    ))}
+                    {t(`${option.key}`)}
                   </Text>
                 )}
               </TouchableOpacity>
