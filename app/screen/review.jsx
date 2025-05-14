@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   BackHandler,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -20,8 +21,7 @@ const ReviewScreen = () => {
   const params = useLocalSearchParams();
   const { bookingId, chefId } = params;
   const [criteria, setCriteria] = useState([]);
-  const [description, setDescription] = useState("");
-  // const [overallExperience, setOverallExperience] = useState("");
+  const [overallExperience, setOverallExperience] = useState("");
   const [criteriaRatings, setCriteriaRatings] = useState({});
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
@@ -86,10 +86,10 @@ const ReviewScreen = () => {
       const payload = {
         chefId: parseInt(chefId),
         bookingId: parseInt(bookingId),
-        description: description.trim() || "",
+        overallExperience: overallExperience.trim() || "",
         mainImage: null,
         additionalImages: [],
-        criteriaRatings: { ...criteriaRatings },
+        criteriaRatings: { ...criteriaRatings },  
       };
       console.log("Review Payload:", payload);
       const response = await axiosInstance.post("/reviews", payload);
@@ -97,7 +97,8 @@ const ReviewScreen = () => {
 
       router.push("/screen/history");
     } catch (error) {
-      console.error("Error submitting review:", error?.response?.data);
+      console.log("Error submitting review:", error?.response?.data);
+      Alert.alert("Loi", "Buổi này đã đánh giá rồi");
     } finally {
       setLoading(false);
     }
@@ -143,8 +144,8 @@ const ReviewScreen = () => {
         <Text style={styles.label}>{t("description")}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
+          value={overallExperience}
+          onChangeText={setOverallExperience}
           placeholder={t("enterReviewDescription")}
           multiline
         />

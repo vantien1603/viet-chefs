@@ -387,6 +387,18 @@ export default function RootLayout() {
                     headerShown: false,
                   }}
                 />
+                <Stack.Screen 
+                  name="screen/viewReview"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen 
+                  name="screen/allReview"
+                  options={{
+                    headerShown: false
+                  }}
+                />
               </Stack>
             </ModalNotiProvider>
           </ModalProvider>

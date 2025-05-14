@@ -7,7 +7,7 @@ const useAxios = () => {
     const { user } = useContext(AuthContext);
     // console.log("tokem",user?.token);
     const AXIOS_API = axios.create({
-        baseURL: "https://vietchef.ddns.net/api/v1",
+        baseURL: "https://vietchef-api.ddns.net/api/v1",
         // baseURL: "http://192.168.1.52:8080/api/v1",
         headers: {
             "Content-Type": "application/json",

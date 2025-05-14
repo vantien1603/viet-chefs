@@ -127,7 +127,7 @@ const BookingCard = ({
   onReview,
   onViewReview,
   refreshing,
-  reviewed,
+  hasReview
 }) => {
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
@@ -219,7 +219,7 @@ const BookingCard = ({
     }
 
     if (status === "COMPLETED") {
-      if (reviewed && onViewReview) {
+      if (hasReview && onViewReview) {
         buttons.push(
           <TouchableOpacity
             key="viewReview"
@@ -313,8 +313,32 @@ const BookingCard = ({
 };
 
 const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
-  const [reviewed, setReviewed] = useState(false);
   const { handleCancelBooking } = useBookingCancellation();
+  const axiosInstance = useAxios();
+  const [reviewStatus, setReviewStatus] = useState({});
+
+  useEffect(() => {
+    const fetchReviewStatus = async () => {
+      const statusMap = {};
+      for (const booking of bookings) {
+        if (booking.status !== "COMPLETED") {
+          statusMap[booking.id] = false; // Only COMPLETED bookings can have reviews
+          continue;
+        }
+        try {
+          const response = await axiosInstance.get(
+            `/reviews/booking/${booking.id}`
+          );
+          statusMap[booking.id] = response.data.hasReview === true;
+        } catch (error) {
+          statusMap[booking.id] = false;
+        }
+      }
+      setReviewStatus(statusMap);
+    };
+
+    fetchReviewStatus();
+  }, []);
 
   const handleReview = (bookingId, chefId) => {
     router.push({
@@ -343,7 +367,7 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
               }
               onReview={handleReview}
               onViewReview={handleViewReview}
-              reviewed={reviewed}
+              hasReview={reviewStatus[item.id] || false}
               refreshing={refreshing}
             />
           );

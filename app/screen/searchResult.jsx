@@ -40,9 +40,10 @@ const SearchResultScreen = () => {
   const router = useRouter();
   const axiosInstance = useAxios();
   const [searchQuery, setSearchQuery] = useState(query || "");
-  const [isSelected, setIsSelected] = useState(type === "chef" ? 1 : 0);
+  const [isSelected, setIsSelected] = useState(type === "chef" ? 1 : 0 ? 2 : 0);
   const [chefs, setChefs] = useState([]);
   const [dishes, setDishes] = useState([]);
+  const [menus, setMenus] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const textInputRef = useRef(null);
@@ -70,6 +71,7 @@ const SearchResultScreen = () => {
   const [lastParams, setLastParams] = useState(null);
   const [lastDishResults, setLastDishResults] = useState([]);
   const [lastChefResults, setLastChefResults] = useState([]);
+  const [lastMenuResults, setLastMenuResults] = useState([]);
 
   const distanceOptions = useMemo(
     () => [
@@ -134,7 +136,7 @@ const SearchResultScreen = () => {
       },
       {
         index: 3,
-        name: "Rating",
+        name: "Chef Rating",
         value: rateRange ? rateRange.label : "All",
       },
     ],
@@ -232,7 +234,6 @@ const SearchResultScreen = () => {
       customerLng: lng,
       distance: dist,
       ...(dpr && { minPrice: dpr.value.min, maxPrice: dpr.value.max }), // Chỉ áp dụng dpr cho món ăn
-      ...(ra && { minRate: ra.value.min, maxRate: ra.value.max }),
     };
 
     // Params for chef API call
@@ -245,19 +246,26 @@ const SearchResultScreen = () => {
       ...(ra && { minRate: ra.value.min, maxRate: ra.value.max }),
     };
 
-    console.log("Dish API Params:", dishApiParams);
-    console.log("Chef API Params:", chefApiParams);
+    //Params for menu API call
+    const menuApiParams = {
+      keyword,
+      customerLat: lat,
+      customerLng: lng,
+      distance: dist,
+    };
 
     if (
       lastParams &&
       JSON.stringify({
         ...dishApiParams,
         ...chefApiParams,
+        ...menuApiParams,
         chefPriceRange: cpr, // Thêm vào để phản ánh trạng thái lọc giá đầu bếp
       }) === JSON.stringify(lastParams)
     ) {
       setDishes(lastDishResults);
       setChefs(lastChefResults);
+      setMenus(lastMenuResults);
       if (isSearch) {
         const isChefPriority =
           type === "chef" || keyword.toLowerCase().includes("chef");
@@ -277,10 +285,15 @@ const SearchResultScreen = () => {
         params: chefApiParams,
       });
 
+      const menusResponse = await axiosInstance.get("/menus/nearby/search", {
+        params: menuApiParams,
+      });
+      console.log("dish", dishesResponse.data);
+      console.log("menu", menusResponse.data);
+
       let chefsData = chefsResponse.data.content;
       let dishesData = dishesResponse.data.content;
-
-      console.log("Raw Chefs Data:", chefsData);
+      const menusData = menusResponse.data;
 
       // Áp dụng lọc giá đầu bếp phía client
       if (cpr) {
@@ -309,11 +322,14 @@ const SearchResultScreen = () => {
 
       setDishes(dishesData);
       setChefs(chefsData);
+      setMenus(menusData);
       setLastDishResults(dishesData);
       setLastChefResults(chefsData);
+      setLastMenuResults(menusData);
       setLastParams({
         ...dishApiParams,
         ...chefApiParams,
+        ...menuApiParams,
         chefPriceRange: cpr, // Thêm vào để phản ánh trạng thái lọc giá đầu bếp
       });
 
@@ -323,11 +339,14 @@ const SearchResultScreen = () => {
         setIsSelected(isChefPriority && chefsData.length > 0 ? 1 : 0);
       } else if (type === "chef") {
         setIsSelected(1);
+      } else if (type === "menu") {
+        setIsSelected(2);
       }
     } catch (error) {
       console.log("Error fetching data:", error);
       setDishes([]);
       setChefs([]);
+      setMenus([]);
       if (isSearch) {
         setIsSelected(1);
       }
@@ -532,8 +551,9 @@ const SearchResultScreen = () => {
       <View style={styles.rowNgayGui}>
         <FlatList
           data={[
-            { index: 0, name: "Recommended" },
+            { index: 0, name: "Recommended (Dishes)" },
             { index: 1, name: "Chefs" },
+            { index: 2, name: "Menus" },
           ]}
           keyExtractor={(item) => item.index.toString()}
           horizontal
@@ -580,15 +600,15 @@ const SearchResultScreen = () => {
               })
             }
           >
-            <View style={styles.chefContainer}>
+            <View style={styles.container}>
               {item.user.avatarUrl && (
                 <Image
                   source={{ uri: item.user.avatarUrl }}
-                  style={styles.avatar}
+                  style={styles.image}
                   resizeMode="cover"
                 />
               )}
-              <View style={styles.chefInfo}>
+              <View style={styles.info}>
                 <View style={{ flexDirection: "row" }}>
                   <Text style={styles.title}>
                     {truncateText(item.user.fullName)}
@@ -609,6 +629,29 @@ const SearchResultScreen = () => {
             </View>
           </TouchableOpacity>
         );
+      case 2:
+        return (
+          <TouchableOpacity style={styles.card}>
+            <View style={styles.container}>
+              {item.imageUrl && (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              )}
+              <View style={styles.info}>
+                <Text style={styles.title}>{truncateText(item.name)}</Text>
+                <Text style={styles.subtitle}>
+                  By: {truncateText(item.chef.user.fullName)}
+                </Text>
+                <Text style={styles.description}>
+                  {truncateText(item.description)}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
       case 0: // Recommended (dishes)
       default:
         return (
@@ -621,15 +664,15 @@ const SearchResultScreen = () => {
               })
             }
           >
-            <View style={styles.dishContainer}>
+            <View style={styles.container}>
               {item.imageUrl && (
                 <Image
                   source={{ uri: item.imageUrl }}
-                  style={styles.dishImage}
+                  style={styles.image}
                   resizeMode="cover"
                 />
               )}
-              <View style={styles.dishInfo}>
+              <View style={styles.info}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
                 <Text style={styles.subtitle}>
                   By: {truncateText(item.chef.user.fullName)}
@@ -653,6 +696,8 @@ const SearchResultScreen = () => {
     switch (isSelected) {
       case 1:
         return chefs;
+      case 2:
+        return menus;
       case 0:
       default:
         return dishes;
@@ -671,6 +716,13 @@ const SearchResultScreen = () => {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No dishes found</Text>
+        </View>
+      );
+    }
+    if (isSelected === 2 && menus?.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No menus found</Text>
         </View>
       );
     }
@@ -810,7 +862,7 @@ const SearchResultScreen = () => {
 
           {/* Rating Filter */}
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownLabel}>Rating Range</Text>
+            <Text style={styles.dropdownLabel}>Chef Rating Range</Text>
             <View style={styles.buttonGroup}>
               {rateRangeOptions.map((option) => (
                 <TouchableOpacity
@@ -1042,31 +1094,18 @@ const styles = StyleSheet.create({
     height: 270,
     maxWidth: "48%",
   },
-  chefContainer: {
+  container: {
     flexDirection: "column",
     alignItems: "flex-start",
   },
-  avatar: {
+  info: {
+    alignItems: "flex-start",
+  },
+  image: {
     width: "100%",
     height: 120,
     borderRadius: 10,
     marginBottom: 8,
-  },
-  chefInfo: {
-    alignItems: "flex-start",
-  },
-  dishContainer: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-  },
-  dishImage: {
-    width: "100%",
-    height: 120,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  dishInfo: {
-    alignItems: "flex-start",
   },
   title: {
     fontSize: 16,
