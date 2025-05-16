@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password, expoToken) => {
     try {
-      console.log("expo", expoToken);
+      // console.log("expo", expoToken);
       const loginPayload = {
         usernameOrEmail: username,
         password: password,
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
         "https://vietchef-api.ddns.net/no-auth/login",
         loginPayload
       );
-      console.log(response);
+      // console.log(response);
       if (response.status === 200) {
         console.log("auth", response.data);
         const { access_token, refresh_token } = response.data;

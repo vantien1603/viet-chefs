@@ -9,29 +9,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert, Platform } from "react-native";
 import * as Location from "expo-location";
 
-async function registerForPushNotificationsAsync() {
-  try {
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== "granted") {
-      Alert.alert("Không thể lấy token thông báo đẩy!");
-      return null;
-    }
-
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
-    return token;
-  } catch (error) {
-    console.error("Lỗi khi đăng ký thông báo đẩy:", error);
-    return null;
-  }
-}
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+    // shouldShowBanner: true,
+    // shouldShowList: true,
+  }),
+});
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
@@ -44,27 +30,16 @@ export default function WelcomeScreen() {
 
   const setupNotifications = async () => {
     try {
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        setExpoPushToken(token);
-        await AsyncStorage.setItem("expoPushToken", token);
-        console.log("Expo Push Token:", token);
+      const expoToken = await registerForPushNotificationsAsync();
+      if (expoToken) {
+        setExpoPushToken(expoToken);
+        await AsyncStorage.setItem("expoPushToken", expoToken);
       }
 
       if (Platform.OS === "android") {
         const value = await Notifications.getNotificationChannelsAsync();
         setChannels(value ?? []);
       }
-
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: false,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
 
       if (notificationListener.current) {
         Notifications.removeNotificationSubscription(
@@ -78,12 +53,28 @@ export default function WelcomeScreen() {
       notificationListener.current =
         Notifications.addNotificationReceivedListener((notification) => {
           setNotification(notification);
+          Alert.alert(
+            "Thông báo nhận được",
+            notification?.request?.content?.body || "Không có nội dung"
+          );
         });
 
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener((response) => {
           console.log("Thông báo được nhấn:", response);
         });
+      return () => {
+        if (notificationListener.current) {
+          Notifications.removeNotificationSubscription(
+            notificationListener.current
+          );
+        }
+        if (responseListener.current) {
+          Notifications.removeNotificationSubscription(
+            responseListener.current
+          );
+        }
+      };
     } catch (error) {
       console.error("Lỗi thiết lập thông báo:", error);
     }
@@ -115,17 +106,6 @@ export default function WelcomeScreen() {
     };
 
     setupPermissions();
-
-    return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(
-          notificationListener.current
-        );
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -229,4 +209,29 @@ export default function WelcomeScreen() {
       </TouchableOpacity>
     </SafeAreaView>
   );
+}
+
+async function registerForPushNotificationsAsync() {
+  try {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      Alert.alert("Không thể lấy token thông báo đẩy!");
+      return null;
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log("Expo Push Token:", token);
+    return token;
+  } catch (error) {
+    console.error("Lỗi khi đăng ký thông báo đẩy:", error);
+    return null;
+  }
 }

@@ -328,5 +328,8 @@
   "googleSignInFailed": "Đăng nhập Google thất bại. Vui lòng thử lại.",
   "failedToGetGoogleUrl": "Không thể lấy liên kết đăng nhập Google. Vui lòng kiểm tra kết nối mạng.",
   "signInWithGoogle": "Đăng nhập với Google",
-  "usernameOrEmail": "Username hoặc Email"
+  "usernameOrEmail": "Username hoặc Email",
+  "general": "Tổng quát",
+  "support": "Hỗ trợ",
+  "helpCentre": "Trung tâm hỗ trợ"
 }

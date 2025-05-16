@@ -12,7 +12,6 @@ const SetPassword = () => {
 
     const [rePassword, setRePassword] = useState('');
     const [password, setPassword] = useState('');
-    const randomUsername = `user_${Date.now()}`;
 
     const router = useRouter();
     const handlePasswordChange = (value) => {

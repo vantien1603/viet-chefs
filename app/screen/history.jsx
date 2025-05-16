@@ -17,7 +17,7 @@ const OrderHistories = () => {
   const params = useLocalSearchParams();
   const { tab } = params;
 
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(2);
   const [routes] = useState([
     { key: "pending", title: "Pending" },
     { key: "paidDeposit", title: "Paid/Deposit" },

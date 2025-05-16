@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  FlatList,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,12 +16,13 @@ import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 
 const menuItems = [
-  { id: "1", icon: "wallet", title: "vietPay" },
-  { id: "2", icon: "lock-closed", title: "changePassword" },
-  { id: "3", icon: "heart", title: "favoriteChef" },
-  { id: "4", icon: "star", title: "allReview" },
-  { id: "5", icon: "briefcase", title: "createChefAccount" },
-  { id: "6", icon: "settings", title: "settings" },
+  { id: "1", icon: "wallet", title: "vietPay", section: "general" },
+  { id: "2", icon: "lock-closed", title: "changePassword", section: "general" },
+  { id: "3", icon: "heart", title: "favoriteChef", section: "general" },
+  { id: "4", icon: "star", title: "allReview", section: "general" },
+  { id: "5", icon: "briefcase", title: "createChefAccount", section: "general" },
+  { id: "6", icon: "settings", title: "settings", section: "general" },
+  { id: "7", icon: "help-circle", title: "helpCentre", section: "support" },
 ];
 
 const Profile = () => {
@@ -45,13 +45,12 @@ const Profile = () => {
   };
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       fetchProfile();
     }, [])
   );
 
   useEffect(() => {
-    // Redirect to login if user is null after loading
     if (!loading && !user) {
       router.push("/screen/login");
     }
@@ -77,6 +76,9 @@ const Profile = () => {
       case "6":
         router.push("/screen/setting");
         break;
+      case "7":
+        router.push("/screen/helpCentre");
+        break;
       default:
         router.push("/screen/profileDetail");
         break;
@@ -92,7 +94,6 @@ const Profile = () => {
   }
 
   if (!user) {
-    // Fallback UI while redirecting
     return (
       <View style={[commonStyles.containerContent, styles.centered]}>
         <Text style={styles.errorText}>Redirecting to login...</Text>
@@ -107,7 +108,7 @@ const Profile = () => {
           source={
             avatar && avatar.trim() !== ""
               ? { uri: avatar }
-              : require("../../assets/images/avatar.png") // Add a default avatar
+              : require("../../assets/images/avatar.png")
           }
           style={styles.avatar}
         />
@@ -121,22 +122,49 @@ const Profile = () => {
         </View>
       </View>
 
-      {menuItems.map((item) => (
-        <TouchableOpacity
-          key={item.id}
-          onPress={() => handleSetting(item.id)}
-          style={styles.menuItem}
-        >
-          <Ionicons
-            name={item.icon}
-            size={24}
-            color="black"
-            style={styles.menuIcon}
-          />
-          <Text style={styles.menuTitle}>{t(item.title)}</Text>
-          <Ionicons name="chevron-forward" size={20} color="gray" />
-        </TouchableOpacity>
-      ))}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionHeader}>{t("general")}</Text>
+        {menuItems
+          .filter((item) => item.section === "general")
+          .map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => handleSetting(item.id)}
+              style={styles.menuItem}
+            >
+              <Ionicons
+                name={item.icon}
+                size={24}
+                color="black"
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuTitle}>{t(item.title)}</Text>
+              <Ionicons name="chevron-forward" size={20} color="gray" />
+            </TouchableOpacity>
+          ))}
+      </View>
+
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionHeader}>{t("support")}</Text>
+        {menuItems
+          .filter((item) => item.section === "support")
+          .map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => handleSetting(item.id)}
+              style={styles.menuItem}
+            >
+              <Ionicons
+                name={item.icon}
+                size={24}
+                color="black"
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuTitle}>{t(item.title)}</Text>
+              <Ionicons name="chevron-forward" size={20} color="gray" />
+            </TouchableOpacity>
+          ))}
+      </View>
     </ScrollView>
   );
 };
@@ -175,10 +203,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
+  sectionContainer: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 20,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
   },
