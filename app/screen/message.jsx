@@ -44,7 +44,6 @@ const Message = () => {
   const CLOUDINARY_UPLOAD_PRESET = "vietchef_image";
 
   const contact = contactString ? JSON.parse(contactString) : {};
-  // const vietnamTime = moment().tz("Asia/Ho_Chi_Minh").format();
 
   useEffect(() => {
     const client = Stomp.over(() => new SockJS(WEB_SOCKET_ENDPOINT));
@@ -150,7 +149,7 @@ const Message = () => {
   };
   const generateFileName = () => {
     const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 8); // Chuỗi ngẫu nhiên 6 ký tự
+    const randomString = Math.random().toString(36).substring(2, 8);
     return `image_${timestamp}_${randomString}.jpg`;
   };
   const uploadImageToCloudinary = async (file) => {

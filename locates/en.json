@@ -329,6 +329,9 @@
   "googleSignInFailed": "Google sign-in failed. Please try again.",
   "failedToGetGoogleUrl": "Failed to get Google sign-in URL. Please check your connection.",
   "signInWithGoogle": "Sign in With Google",
-  "usernameOrEmail": "Username or Email"
+  "usernameOrEmail": "Username or Email",
+  "general": "General",
+  "support": "Support",
+  "helpCentre": "Help Centre"
   
 }

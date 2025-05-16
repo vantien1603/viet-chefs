@@ -31,12 +31,7 @@ const Chat = () => {
 
   const fetchConversations = async () => {
     if (!user?.sub) {
-      console.error("No username found");
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không tìm thấy username",
-      });
+      console.log("No username found");
       return;
     }
 
