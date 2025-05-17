@@ -31,7 +31,7 @@ const dayInWeek = [
 const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail, loading }) => {
   const renderItem = ({ item }) => {
     return (
-      <TouchableOpacity key={item.id} style={[styles.section, item.status === "IN_PROGRESS" && styles.highlighted]} onPress={() => onViewDetail(item.id)}>
+      <TouchableOpacity key={item.id} style={[styles.section, item.status === "IN_PROGRESS" && styles.highlighted, item.status === "WAITING_FOR_CONFIRMATION" && { borderWidth: 3, borderColor: 'green' }]} onPress={() => onViewDetail(item.id)}>
         <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
           <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
@@ -90,7 +90,6 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
 const Schedule = () => {
   const axiosInstance = useAxios();
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [schedules, setSchedules] = useState(() =>
     dayInWeek.reduce((acc, day) => {
       acc[day.full] = [];
@@ -111,7 +110,7 @@ const Schedule = () => {
     const day = new Date(date).getDay();
     return day === 0 ? 6 : day - 1;
   };
-  const statuses = ['SCHEDULED_COMPLETE', 'in_PROGRESS'];
+  const statuses = ['SCHEDULED', 'SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
 
   const fetchBookingDetails = async (pageNum, isRefresh = false) => {
     if (loading && !isRefresh) return;
@@ -123,7 +122,7 @@ const Schedule = () => {
             status,
             pageNo: pageNum,
             pageSize: PAGE_SIZE,
-            sortBy: 'sessionDate',
+            sortBy: 'id',
             sortDir: 'desc',
           },
         })
@@ -132,9 +131,6 @@ const Schedule = () => {
       const response = await Promise.all(requests);
       const mergedData = response.flatMap(res => res.data?.content || []);
 
-      // if (response.status === 200) {
-      // const data = response.data.content || [];
-      // setTotalPages(response.data.totalPages);
       const totalPages = Math.max(...response.map(res => res.data?.totalPages || 0));
       setTotalPages(totalPages);
 
@@ -151,16 +147,6 @@ const Schedule = () => {
         const dayName = dayInWeek[dayOfWeekId].full;
         categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
       });
-
-      // mergedData.forEach((booking) => {
-      //   const bookingDate = new Date(booking.sessionDate);
-      //   const currentDate = new Date();
-      //   // if (booking.status === 'SCHEDULED_COMPLETE' || booking.status === 'in_PROGRESS') {
-      //   const dayOfWeekId = getDayOfWeekId(booking.sessionDate);
-      //   const dayName = dayInWeek[dayOfWeekId].full;
-      //   categorizedSchedules[dayName] = [...(categorizedSchedules[dayName] || []), booking];
-      //   // }
-      // });
 
       setSchedules(categorizedSchedules);
       // }

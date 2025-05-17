@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,46 +7,29 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
-import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
   const { bookingId, chefId } = params;
   const [criteria, setCriteria] = useState([]);
   const [description, setDescription] = useState("");
-  // const [overallExperience, setOverallExperience] = useState("");
   const [criteriaRatings, setCriteriaRatings] = useState({});
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
 
-  useEffect(() => {
-    const backAction = () => {
-      router.push("/(tabs)/history");
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, []);
-
   const fetchCriteria = async () => {
     try {
       const response = await axiosInstance.get("/review-criteria");
       const criteriaList = response.data;
-
       const initialRatings = {};
       const initialComments = {};
       criteriaList.forEach((item) => {
@@ -80,21 +63,21 @@ const ReviewScreen = () => {
   };
 
   const handleSubmitReview = async () => {
+    setLoading(true);
     const hasAnyRating = Object.values(criteriaRatings).some(
       (rating) => rating > 0
     );
 
     if (!hasAnyRating) {
       showModal("Error", "Please rate at least one criterion.", "Failed");
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
     try {
       const payload = {
         chefId: parseInt(chefId),
         bookingId: parseInt(bookingId),
-        description: description.trim() || "",
+        overallExperience: description.trim() || "",
         mainImage: null,
         additionalImages: [],
         criteriaRatings: { ...criteriaRatings },
@@ -114,6 +97,7 @@ const ReviewScreen = () => {
         return;
       }
       showModal("Error", "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }

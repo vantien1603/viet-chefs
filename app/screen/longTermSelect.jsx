@@ -1,4 +1,3 @@
-import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -10,23 +9,23 @@ import {
   StyleSheet,
   TextInput,
   ActivityIndicator,
-  BackHandler,
   Image,
+  FlatList,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import Header from "../../components/header";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import useAxios from "../../config/AXIOS_API";
-import Toast from "react-native-toast-message";
 import moment from "moment";
 import { commonStyles } from "../../style";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
+import { router } from "expo-router";
+import { useSelectedItems } from "../../context/itemContext";
 
-// Utility Functions
 const generateTimeSlots = () => {
   const timeSlots = [];
   for (let hour = 8; hour <= 22; hour++) {
@@ -42,248 +41,179 @@ const generateTimeSlots = () => {
 
 const timeSlots = generateTimeSlots();
 
-// New Utility: Group dates by week
-const groupDatesByWeek = (dates, todayString) => {
+const groupDatesByWeek = (dates) => {
+  const sortedDates = dates.sort();
   const weeks = [];
-  const sortedDates = Object.keys(dates).sort();
-  let currentWeek = [];
-  let weekStart = null;
 
-  sortedDates.forEach((date, index) => {
-    const momentDate = moment(date);
-    if (!weekStart) {
-      weekStart = momentDate.clone().startOf("week");
-      currentWeek = [date];
-    } else if (momentDate.isSameOrBefore(weekStart.clone().endOf("week"))) {
-      currentWeek.push(date);
+  if (sortedDates.length === 0) return weeks;
+
+  let currentWeek = [];
+  let weekStart = moment(sortedDates[0]).startOf("week");
+  let weekEnd = weekStart.clone().endOf("week");
+
+  for (let i = 0; i < sortedDates.length; i++) {
+    const dateStr = sortedDates[i];
+    const date = moment(dateStr);
+
+    if (date.isBetween(weekStart, weekEnd, undefined, "[]")) {
+      currentWeek.push(dateStr);
     } else {
       weeks.push({
         start: weekStart.format("MMM D"),
-        end: weekStart.endOf("week").format("MMM D"),
+        end: weekEnd.format("MMM D"),
         dates: currentWeek,
       });
-      weekStart = momentDate.clone().startOf("week");
-      currentWeek = [date];
-    }
 
-    if (index === sortedDates.length - 1) {
-      weeks.push({
-        start: weekStart.format("MMM D"),
-        end: weekStart.endOf("week").format("MMM D"),
-        dates: currentWeek,
-      });
+      weekStart = date.clone().startOf("week");
+      weekEnd = weekStart.clone().endOf("week");
+      currentWeek = [dateStr];
     }
-  });
+  }
 
+  if (currentWeek.length > 0) {
+    weeks.push({
+      start: weekStart.format("MMM D"),
+      end: weekEnd.format("MMM D"),
+      dates: currentWeek,
+    });
+  }
   return weeks;
 };
 
 const LongTermSelectBooking = () => {
-  const axiosInstance = useAxios();
-  const params = useLocalSearchParams();
-  const selectedPackage = params.selectedPackage
-    ? JSON.parse(params.selectedPackage)
-    : null;
-  const chefId = params.chefId;
-  const numPeople = params.numPeople ? parseInt(params.numPeople) : null;
-  const address = params.address || "";
+  const { numPeople, address, chefId, selectedPackage, setIsLong,
+    selectedDay, setSelectedDay,
+    startTime, setStartTime,
+    ingredientPrep, setIngredientPrep,
+    dishNotes, setDishNotes,
+    selectedMenuLong, setSelectedMenuLong,
+    selectedDishes, setSelectedDishes,
+    extraDishIds, setExtraDishIds,
+    selectedDates, setSelectedDates,
+    isSelected, setIsSelected, } = useSelectedItems();
 
-  const [selectedDates, setSelectedDates] = useState(
-    params.selectedDates ? JSON.parse(params.selectedDates) : {}
-  );
-  const [menuItems, setMenuItems] = useState([]);
-  const [dishes, setDishes] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [infoModalVisible, setInfoModalVisible] = useState(false);
-  const [currentDishId, setCurrentDishId] = useState(null);
+  const axiosInstance = useAxios();
+  const [currentDish, setCurrentDish] = useState(null);
   const [currentDate, setCurrentDate] = useState(null);
-  const [noteText, setNoteText] = useState("");
   const [availability, setAvailability] = useState({});
-  const [isFetchingAvailability, setIsFetchingAvailability] = useState(false);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [selectedWeekdays, setSelectedWeekdays] = useState([]);
   const [expandedWeeks, setExpandedWeeks] = useState({});
   const modalizeRef = useRef(null);
   const infoModalizeRef = useRef(null);
-  const lastProcessedParams = useRef(null);
   const [unavailableDates, setUnavailableDates] = useState([]);
   const [activeDish, setActiveDish] = useState(null);
   const { showModal } = useCommonNoification();
   const todayString = moment().format("YYYY-MM-DD");
-
+  const [tempNote, setTempNote] = useState("");
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [isExpanedCalenda, setIsExpanedCalenda] = useState(true);
   const toggleDishActive = (date, dishId) => {
-    setActiveDish(
-      (prev) =>
-        prev?.date === date && prev?.dishId === dishId
-          ? null
-          : { date, dishId }
+    setActiveDish((prev) =>
+      prev?.date === date && prev?.dishId === dishId ? null : { date, dishId }
     );
   };
 
   useEffect(() => {
-    const backAction = () => {
-      router.push({
-        pathname: "/screen/longTermBooking",
-        params: { selectedPackage, numPeople, address, chefId },
-      });
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
+    fetchUnavailableDates();
   }, []);
 
   useEffect(() => {
-    handleMenu();
-    fetchDishes();
-  }, []);
-
-  useEffect(() => {
-    if (Object.keys(selectedDates).length > 0 && address && numPeople) {
+    if (selectedDates.length > 0 && address && numPeople) {
       fetchAvailability();
     }
-  }, [selectedDates, address, numPeople]);
+  }, [selectedDates]);
 
-  useEffect(() => {
-    const paramsString = JSON.stringify(params);
-    if (
-      params.date &&
-      (params.selectedMenu || params.selectedDishes) &&
-      paramsString !== lastProcessedParams.current
-    ) {
-      const date = params.date;
-      const selectedMenuData =
-        typeof params.selectedMenu === "string" &&
-          params.selectedMenu !== "null" &&
-          params.selectedMenu !== ""
-          ? JSON.parse(params.selectedMenu)
-          : null;
-      const selectedDishesData =
-        typeof params.selectedDishes === "string" &&
-          params.selectedDishes !== "null" &&
-          params.selectedDishes !== ""
-          ? JSON.parse(params.selectedDishes)
-          : [];
-      const newDishNotes =
-        typeof params.dishNotes === "string" &&
-          params.dishNotes !== "null" &&
-          params.dishNotes !== ""
-          ? JSON.parse(params.dishNotes)
-          : {};
-
-      if (params.isRepeatEnabled) {
-        setIsRepeatEnabled(JSON.parse(params.isRepeatEnabled));
+  const fetchUnavailableDates = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/bookings/unavailable-dates?chefId=${chefId}`
+      );
+      setUnavailableDates(response.data);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
       }
-      if (params.selectedWeekdays) {
-        setSelectedWeekdays(JSON.parse(params.selectedWeekdays));
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+    }
+  };
 
-      setSelectedDates((prev) => {
-        const existingDate = prev[date] || {
-          selected: true,
-          selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
-          showMenu: false,
-          startTime: "",
-          menuId: null,
-          extraDishIds: [],
-          menuDishNotes: {},
-          extraDishNotes: {},
-          chefBringIngredients: false,
-        };
-
+  const fetchAvailability = async () => {
+    try {
+      const requestBody = selectedDates.map((date) => {
+        const menuId = selectedMenuLong[date]?.id || null;
+        const extraDishId = Array.isArray(extraDishIds[date]) ? extraDishIds[date].map(dish => dish.id || dish.dishId) : [];
+        const singleDishId = !selectedMenuLong[date] && Array.isArray(selectedDishes[date]) ? selectedDishes[date].map(dish => dish.id || dish.dishId) : [];
+        const menuDishId = Array.isArray(selectedMenuLong[date]) ? selectedMenuLong[date].map(dish => dish.id || dish.dishId) : [];
+        const dishIds = [...new Set([...singleDishId, ...extraDishId, ...menuDishId,])];
         return {
-          ...prev,
-          [date]: {
-            ...existingDate,
-            showMenu: true,
-            menuId: selectedMenuData?.id || null,
-            extraDishIds: selectedDishesData.map((dish) => dish.id),
-            menuDishNotes: selectedMenuData
-              ? Object.fromEntries(
-                Object.entries(newDishNotes).filter(([dishId]) =>
-                  selectedMenuData?.menuItems?.some(
-                    (item) => item.dishId === parseInt(dishId)
-                  )
-                )
-              )
-              : {},
-            extraDishNotes:
-              selectedDishesData.length > 0
-                ? Object.fromEntries(
-                  Object.entries(newDishNotes).filter(([dishId]) =>
-                    selectedDishesData.some(
-                      (dish) => dish.id === parseInt(dishId)
-                    )
-                  )
-                )
-                : {},
-            chefBringIngredients: existingDate.chefBringIngredients ?? false,
-          },
+          sessionDate: date,
+          ...(menuId && { menuId }),
+          ...(dishIds.length > 0 && { dishIds }),
         };
       });
-
-      lastProcessedParams.current = paramsString;
+      const response = await axiosInstance.post(
+        `/availability/chef/${chefId}/multiple-dates`,
+        requestBody,
+        {
+          params: {
+            customerLocation: address.address,
+            guestCount: numPeople,
+            maxDishesPerMeal: selectedPackage.maxDishesPerMeal,
+          }
+        }
+      );
+      if (response.status === 200) setAvailability(response.data);
+    } catch (error) {
+      console.log("Error fetching availability:", error);
+      setAvailability({});
+    } finally {
     }
-  }, [params, isRepeatEnabled]);
-
+  };
   const handleRepeatSelection = () => {
     if (!isRepeatEnabled || selectedWeekdays.length === 0) {
-      showModal("Error", "Vui lòng chọn ít nhất một ngày trong tuần", "Error");
-      return;
-    }
-
-    const hasSelectedFood = Object.values(selectedDates).some(
-      (date) =>
-        date.menuId || (date.extraDishIds && date.extraDishIds.length > 0)
-    );
-    if (hasSelectedFood) {
-      showModal("Warning", "Bạn đã chọn món ăn. Vui lòng xóa các ngày hiện tại trước khi áp dụng lịch mới.", "Warning");
-
+      showModal("Error", t("selectAtLeastOneWeekday"), "Error");
       return;
     }
 
     const maxDays = selectedPackage.durationDays;
-    let newDates = {};
-    let currentDate = moment(todayString).add(1, "day");
-    let selectedCount = 0;
+    const resultDates = [];
 
-    while (selectedCount < maxDays) {
-      const dayOfWeek = currentDate.day();
+    let currentDate = moment(todayString).add(1, "day");
+    let loopSafetyLimit = 0;
+
+    while (resultDates.length < maxDays) {
       const dateString = currentDate.format("YYYY-MM-DD");
-      if (
+      const dayOfWeek = currentDate.day();
+
+      const isValid =
         selectedWeekdays.includes(dayOfWeek) &&
-        !unavailableDates.includes(dateString)
-      ) {
-        newDates[dateString] = {
-          selected: true,
-          selectedColor: "#FF9800",
-          showMenu: false,
-          startTime: "",
-          menuId: null,
-          extraDishIds: [],
-          menuDishNotes: {},
-          extraDishNotes: {},
-          chefBringIngredients: false,
-        };
-        selectedCount++;
+        !unavailableDates.includes(dateString);
+
+      if (isValid) {
+        resultDates.push(dateString);
       }
+
       currentDate.add(1, "day");
 
-      if (currentDate.isAfter(moment(todayString).add(1, "year"))) {
-        showModal("Error", "Không thể chọn đủ ngày với các ngày trong tuần đã chọn.", "Error");
-
+      loopSafetyLimit++;
+      if (loopSafetyLimit > 370) {
+        showModal("Error", t("cannotSelectEnoughDays"), "Error");
         return;
       }
     }
 
-    setSelectedDates(newDates);
-    showModal("Success", `Đã chọn ${selectedCount} ngày theo lịch lặp lại. Bạn có thể chỉnh sửa thủ công trên lịch.`, "Success");
-
+    setSelectedDates(resultDates);
+    showModal(
+      "Success",
+      t("datesSelectedWithRepeat", { count: resultDates.length }),
+      "Success"
+    );
   };
+
 
   const toggleWeekday = (day) => {
     setSelectedWeekdays((prev) =>
@@ -303,167 +233,15 @@ const LongTermSelectBooking = () => {
     infoModalizeRef.current?.open();
   };
 
-  const removeMenu = (date) => {
-    setSelectedDates((prev) => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        menuId: null,
-        menuDishNotes: {},
-      },
-    }));
-  };
-
-  const removeExtraDish = (date, dishId) => {
-    setSelectedDates((prev) => {
-      const updatedExtraDishIds = prev[date].extraDishIds.filter(
-        (id) => id !== dishId
-      );
-      const updatedExtraDishNotes = { ...prev[date].extraDishNotes };
-      delete updatedExtraDishNotes[dishId];
-      return {
-        ...prev,
-        [date]: {
-          ...prev[date],
-          extraDishIds: updatedExtraDishIds,
-          extraDishNotes: updatedExtraDishNotes,
-        },
-      };
-    });
-  };
-
-  const fetchDishes = async () => {
-    try {
-      const response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
-      setDishes(response.data.content || []);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn.", "Failed");
-    }
-  };
-
-  useEffect(() => {
-    const fetchUnavailableDates = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `/bookings/unavailable-dates?chefId=${chefId}`
-        );
-
-        setUnavailableDates(response.data);
-        console.log("Unavailable dates:", response.data);
-      } catch (error) {
-        if (error.response?.status === 401) {
-          return;
-        }
-        if (axios.isCancel(error)) {
-          return;
-        }
-        showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
-      }
-    };
-
-    fetchUnavailableDates();
-  }, [chefId]);
-
-  const fetchAvailability = async () => {
-    setIsFetchingAvailability(true);
-    try {
-      const requestBody = Object.keys(selectedDates).map((date) => {
-        const menuId = selectedDates[date].menuId;
-        const menu = menuItems.find((m) => m.id === menuId);
-        const menuDishIds = menu
-          ? menu.menuItems.map((item) => item.dishId)
-          : [];
-        const extraDishIds = selectedDates[date].extraDishIds || [];
-        const dishIds = [...new Set([...menuDishIds, ...extraDishIds])];
-
-        return {
-          sessionDate: date,
-          ...(menuId && { menuId }),
-          ...(dishIds.length > 0 && { dishIds }),
-        };
-      });
-      const response = await axiosInstance.post(
-        `/availability/chef/${chefId}/multiple-dates`,
-        requestBody,
-        {
-          params: {
-            customerLocation: address,
-            guestCount: numPeople,
-            maxDishesPerMeal: 6,
-          },
-          paramsSerializer: (params) => {
-            const searchParams = new URLSearchParams();
-            for (const [key, value] of Object.entries(params)) {
-              if (Array.isArray(value)) {
-                value.forEach((item) => searchParams.append(key, item));
-              } else if (value !== undefined && value !== null) {
-                searchParams.append(key, value);
-              }
-            }
-            return searchParams.toString();
-          },
-        }
-      );
-
-      let availabilityMap = {};
-      if (Array.isArray(response.data)) {
-        availabilityMap = response.data.reduce((acc, item) => {
-          const dateKey = item.date;
-          if (dateKey) {
-            acc[dateKey] = acc[dateKey] || [];
-            acc[dateKey].push({
-              startTime: item.startTime,
-              endTime: item.endTime,
-              chefId: item.chefId,
-              chefName: item.chefName,
-              durationMinutes: item.durationMinutes,
-              note: item.note,
-            });
-          } else {
-            console.warn("Missing date in response item:", item);
-          }
-          return acc;
-        }, {});
-      } else {
-        console.error("Unexpected response format:", response.data);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Unexpected availability response format.",
-        });
-      }
-      setAvailability(availabilityMap);
-    } catch (error) {
-      console.error(
-        "Error fetching availability:",
-        error?.response?.data || error.message
-      );
-      setAvailability({});
-    } finally {
-      setIsFetchingAvailability(false);
-    }
-  };
-
   const getAvailableTimeSlots = (date) => {
-    const dayAvailability = Array.isArray(availability[date])
-      ? availability[date]
+    const dayAvailability = Array.isArray(availability)
+      ? availability.filter((item) => item.date === date)
       : [];
 
-    if (!dayAvailability.length) {
-      return [];
-    }
-
     const availableSlots = new Set();
+
     dayAvailability.forEach(({ startTime: availStart, endTime: availEnd }) => {
-      if (!availStart || !availEnd) {
-        return;
-      }
+      if (!availStart || !availEnd) return;
 
       const startTimeClean = availStart.slice(0, 5);
       const endTimeClean = availEnd.slice(0, 5);
@@ -480,9 +258,7 @@ const LongTermSelectBooking = () => {
         if (isToday) {
           const now = moment();
           const currentTimeInMinutes = now.hour() * 60 + now.minute();
-          if (slotTimeInMinutes <= currentTimeInMinutes) {
-            return;
-          }
+          if (slotTimeInMinutes <= currentTimeInMinutes) return;
         }
 
         if (
@@ -493,767 +269,349 @@ const LongTermSelectBooking = () => {
         }
       });
     });
-
     return Array.from(availableSlots).sort();
   };
 
   const onDayPress = (day) => {
     const dateString = day.dateString;
-    if (moment(dateString).isSameOrBefore(todayString, "day")) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Cannot select past dates.",
-      });
-      return;
-    }
-
-    if (unavailableDates.includes(dateString)) {
-      Toast.show({
-        type: "error",
-        text1: "Unavailable",
-        text2: "This date is fully booked.",
-      });
-      return;
-    }
-
-    let newSelection = { ...selectedDates };
-    if (newSelection[dateString]) {
-      delete newSelection[dateString];
-    } else if (
-      Object.keys(newSelection).length < selectedPackage.durationDays
-    ) {
-      newSelection[dateString] = {
-        selected: true,
-        selectedColor: isRepeatEnabled ? "#FF9800" : "#6C63FF",
-        showMenu: false,
-        startTime: "",
-        menuId: null,
-        extraDishIds: [],
-        menuDishNotes: {},
-        extraDishNotes: {},
-        chefBringIngredients: false,
-      };
-    } else {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: `You can only select ${selectedPackage.durationDays} days.`,
-      });
-      return;
-    }
-    setSelectedDates(newSelection);
+    setSelectedDates((prev) => {
+      if (prev.includes(dateString)) {
+        // setIsSelected((prevIsSelected) => {
+        //   const updated = { ...prevIsSelected };
+        //   delete updated[dateString];
+        //   return updated;
+        // });
+        // setExtraDishIds((prevExtra) => {
+        //   const updated = { ...prevExtra };
+        //   delete updated[dateString];
+        //   return updated;
+        // });
+        // setSelectedDishes((prevDish) => {
+        //   const updated = { ...prevDish };
+        //   delete updated[dateString];
+        //   return updated;
+        // });
+        // setSelectedMenuLong((prevMenu) => {
+        //   const updated = { ...prevMenu };
+        //   delete updated[dateString];
+        //   return updated;
+        // });
+        return prev.filter((d) => d !== dateString);
+      }
+      else if (prev.length < selectedPackage.durationDays) {
+        // setIsSelected((prevIsSelected) => ({
+        //   ...prevIsSelected,
+        //   [dateString]: false,
+        // }));
+        return [...prev, dateString];
+      }
+      else {
+        return prev;
+      }
+    });
   };
 
   const removeDate = (date) => {
-    setSelectedDates((prev) => {
-      const newDates = { ...prev };
-      delete newDates[date];
-      return newDates;
-    });
+    setSelectedDates((prev) => prev.filter((d) => d !== date));
   };
 
-  const updateBookingDetail = (date, key, value) => {
-    setSelectedDates((prev) => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        [key]: value,
-      },
-    }));
-  };
-
-  const handleEditNote = (date, dishId, isMenuDish) => {
+  const handleEditNote = (date, dish) => {
     setCurrentDate(date);
-    setCurrentDishId(dishId);
-    const notes = isMenuDish
-      ? selectedDates[date].menuDishNotes[dishId]
-      : selectedDates[date].extraDishNotes[dishId];
-    setNoteText(notes || "");
-    setModalVisible(true);
+    setCurrentDish(dish);
+    const note = dishNotes[date]?.[dish.id || dish.dishId] || "";
+    setTempNote(note);
     modalizeRef.current?.open();
   };
 
-  const saveNote = () => {
-    if (!currentDate || !currentDishId) return;
-
-    setSelectedDates((prev) => {
-      const isMenuDish =
-        prev[currentDate].menuId &&
-        menuItems
-          .find((m) => m.id === prev[currentDate].menuId)
-          ?.menuItems.some((item) => item.dishId === currentDishId);
-
-      return {
-        ...prev,
-        [currentDate]: {
-          ...prev[currentDate],
-          menuDishNotes: isMenuDish
-            ? { ...prev[currentDate].menuDishNotes, [currentDishId]: noteText }
-            : prev[currentDate].menuDishNotes,
-          extraDishNotes: !isMenuDish
-            ? { ...prev[currentDate].extraDishNotes, [currentDishId]: noteText }
-            : prev[currentDate].extraDishNotes,
-        },
-      };
-    });
-    modalizeRef.current?.close();
-    setModalVisible(false);
-    setNoteText("");
-    setCurrentDishId(null);
-    setCurrentDate(null);
-  };
-
   const handleConfirm = async () => {
-    if (Object.keys(selectedDates).length !== selectedPackage.durationDays) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: `Please select exactly ${selectedPackage.durationDays} days.`,
-      });
-      return;
-    }
-
-    if (!numPeople || !address) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Guest count or address is invalid.",
-      });
-      return;
-    }
-
-    for (const date of Object.keys(selectedDates)) {
-      const selectedTime = selectedDates[date].startTime;
-      if (!selectedTime) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: `Please select a start time for ${date}.`,
-        });
-        return;
-      }
-      const availableSlots = getAvailableTimeSlots(date);
-      if (!availableSlots.includes(selectedTime)) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: `Selected time ${selectedTime} for ${date} is not available.`,
-        });
-        return;
-      }
-
-      // Kiểm tra bắt buộc chọn món khi showMenu = true
-      if (selectedDates[date].showMenu) {
-        if (
-          !selectedDates[date].menuId &&
-          (!selectedDates[date].extraDishIds ||
-            selectedDates[date].extraDishIds.length === 0)
-        ) {
-          Toast.show({
-            type: "error",
-            text1: "Error",
-            text2: `Please select a menu or extra dishes for ${date}.`,
-          });
+    for (const day of selectedDates) {
+      const isNearFutureDate = moment(day, 'YYYY-MM-DD').isBetween(
+        moment(todayString, 'YYYY-MM-DD').add(1, "day"),
+        moment(todayString, 'YYYY-MM-DD').add(3, "days"),
+        'day',
+        "[]"
+      );
+      console.log(isNearFutureDate);
+      if (isNearFutureDate) {
+        if (!isSelected[day] && !selectedMenuLong[day]?.id && !selectedDishes[day]) {
+          showModal("Error", t("selectDishesForAllDays"), "Failed");
           return;
         }
       }
 
-      // Kiểm tra chọn món trong vòng 4 ngày
-      const isWithinFourDays = moment(date).isBetween(
-        moment(todayString),
-        moment(todayString).add(4, "days"),
-        undefined,
-        "[]"
-      );
-      if (
-        isWithinFourDays &&
-        selectedDates[date].showMenu &&
-        !selectedDates[date].menuId &&
-        (!selectedDates[date].extraDishIds ||
-          selectedDates[date].extraDishIds.length === 0)
-      ) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: `Please select dishes for ${date} to allow the chef to prepare.`,
-        });
+      if (!startTime[day]) {
+        showModal("Error", t("selectStartTime"), "Failed");
+        return;
+      }
+
+      if (!getAvailableTimeSlots(day).includes(startTime[day])) {
+        showModal("Error", t("timeNotAvailable", { time: startTime[day], date: day }), "Failed");
         return;
       }
     }
 
-    const bookingDetails = Object.keys(selectedDates).map((date) => {
-      // Lấy danh sách món ăn từ menu (nếu có menuId)
-      const menuId = selectedDates[date].menuId;
-      const menu = menuItems.find((m) => m.id === menuId);
-      const menuDishes = menu
-        ? menu.menuItems.map((item) => ({
-          dishId: item.dishId,
-          name: item.dishName,
-          notes: selectedDates[date].menuDishNotes[item.dishId] || "",
-        }))
-        : [];
-
-      // Lấy danh sách món ăn bổ sung từ extraDishIds
-      const extraDishes = selectedDates[date].extraDishIds
-        ? selectedDates[date].extraDishIds.map((dishId) => {
-          const dish = dishes.find((d) => d.id === dishId);
-          return {
-            dishId,
-            name: dish ? dish.name : "Unknown Dish",
-            notes: selectedDates[date].extraDishNotes[dishId] || "",
-          };
-        })
-        : [];
-
-      // Kết hợp tất cả món ăn (menu + extra)
-      const allDishes = [...menuDishes, ...extraDishes];
-
-      return {
-        sessionDate: date,
-        startTime: `${selectedDates[date].startTime}:00`,
-        menuId: selectedDates[date].showMenu
-          ? selectedDates[date].menuId
-          : null,
-        extraDishIds:
-          selectedDates[date].showMenu &&
-            selectedDates[date].extraDishIds?.length > 0
-            ? selectedDates[date].extraDishIds
-            : null,
-        isDishSelected: selectedDates[date].showMenu,
-        dishes: allDishes.length > 0 ? allDishes : null,
-        chefBringIngredients: selectedDates[date].chefBringIngredients,
-      };
-    });
-
-    const payload = {
-      chefId: parseInt(chefId),
-      packageId: selectedPackage.id,
-      guestCount: numPeople,
-      location: address,
-      bookingDetails,
-    };
-
-    try {
-      const response = await axiosInstance.post(
-        "/bookings/calculate-long-term-booking",
-        payload
-      );
-      router.push({
-        pathname: "/screen/reviewBooking",
-        params: {
-          bookingData: JSON.stringify(response.data),
-          selectedPackage: JSON.stringify(selectedPackage),
-          chefId,
-          numPeople,
-          address,
-          selectedDates: JSON.stringify(selectedDates),
-        },
-      });
-    } catch (error) {
-      console.log("Error:", error.response?.data || error.message);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to calculate long-term booking.",
-      });
-    }
+    router.replace("/screen/reviewBooking");
   };
 
-  const handleMenu = async () => {
-    try {
-      const response = await axiosInstance.get(`/menus?chefId=${chefId}`);
-      if (response.status === 200) {
-        setMenuItems(response.data.content || response.data || []);
-      }
-    } catch (error) {
-      console.log("Error fetching menus:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Unable to fetch menus.",
-      });
-      setMenuItems([]);
-    }
-  };
-
-  const handleBack = () => {
-    router.push({
-      pathname: "/screen/longTermBooking",
-      params: {
-        selectedPackage: JSON.stringify(selectedPackage),
-        chefId,
-        numPeople,
-        address,
-        selectedDates: JSON.stringify(selectedDates),
-      },
-    });
-  };
 
   const navigateToSelectFood = (date) => {
-    router.push({
-      pathname: "/screen/chooseFoodForLongterm",
-      params: {
-        chefId,
-        date,
-        selectedPackage: JSON.stringify(selectedPackage),
-        selectedDates: JSON.stringify(selectedDates),
-        selectedMenu: selectedDates[date].menuId
-          ? JSON.stringify(
-            menuItems.find((item) => item.id === selectedDates[date].menuId)
-          )
-          : "",
-        selectedDishes:
-          selectedDates[date].extraDishIds?.length > 0
-            ? JSON.stringify(
-              selectedDates[date].extraDishIds.map((id) => ({ id }))
-            )
-            : "",
-        dishNotes: JSON.stringify({
-          ...selectedDates[date].menuDishNotes,
-          ...selectedDates[date].extraDishNotes,
-        }),
-        numPeople: numPeople || "",
-        address: address || "",
-        isRepeatEnabled: JSON.stringify(isRepeatEnabled),
-        selectedWeekdays: JSON.stringify(selectedWeekdays),
-      },
-    });
+    setSelectedDay(date);
+    router.replace("/screen/chooseFoodForLongterm");
   };
 
-  return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title={t("longTermBooking")} onLeftPress={handleBack} />
-      <View style={styles.container}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
-        >
-          <Text style={styles.title}>
-            {t("selectedDate")} (Cần chọn đúng{" "}
-            {selectedPackage?.durationDays || 0} ngày):
-          </Text>
-          <Text style={styles.summary}>
-            Đã chọn: {Object.keys(selectedDates).length}/
-            {selectedPackage?.durationDays || 0} ngày
-          </Text>
-
-          {selectedPackage?.durationDays >= 10 && (
-            <View style={styles.repeatContainer}>
-              <View style={styles.switchContainer}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.label}>{t("repeatSchedule")}: </Text>
-                  <TouchableOpacity
-                    style={styles.infoButton}
-                    onPress={showRepeatInfo}
-                  >
-                    <Text style={styles.infoButtonText}>{t("apply")}</Text>
-                  </TouchableOpacity>
-                </View>
-                <Switch
-                  value={isRepeatEnabled}
-                  onValueChange={(value) => {
-                    setIsRepeatEnabled(value);
-                    if (!value) {
-                      setSelectedWeekdays([]);
-                    }
-                  }}
-                  trackColor={{ false: "#767577", true: "#A64B2A" }}
-                  thumbColor={isRepeatEnabled ? "#A64B2A" : "#f4f3f4"}
-                />
-              </View>
-              {isRepeatEnabled && (
-                <View>
-                  <View style={styles.weekdayContainer}>
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                      (day, index) => (
-                        <TouchableOpacity
-                          key={day}
-                          style={[
-                            styles.weekdayButton,
-                            selectedWeekdays.includes(index) &&
-                            styles.weekdayButtonSelected,
-                          ]}
-                          onPress={() => toggleWeekday(index)}
-                        >
-                          <Text
-                            style={[
-                              styles.weekdayText,
-                              selectedWeekdays.includes(index) &&
-                              styles.weekdayTextSelected,
-                            ]}
-                          >
-                            {day}
-                          </Text>
-                        </TouchableOpacity>
-                      )
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.applyButton,
-                      selectedWeekdays.length === 0 && styles.disabledButton,
-                    ]}
-                    onPress={handleRepeatSelection}
-                    disabled={selectedWeekdays.length === 0}
-                  >
-                    <Text style={styles.applyButtonText}>Áp dụng</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+  const DishSection = React.memo(({ date, isSelected }) => {
+    if (!isSelected) return null;
+    return (
+      <View>
+        {selectedMenuLong[date] && (
+          <View>
+            <View style={styles.menuHeader}>
+              <Text style={styles.summaryText}>
+                {t("menu")}:{" "}
+                {
+                  selectedMenuLong[date].name
+                }
+              </Text>
             </View>
-          )}
+            {selectedMenuLong[date]?.menuItems.map((item) => (
+              <TouchableOpacity
+                key={item.dishId}
+                style={[
+                  styles.dishItem,
+                  activeDish?.date === date &&
+                  activeDish?.dishId === item.dishId &&
+                  styles.dishItemActive,
+                ]}
+              >
+                <Image
+                  source={{ uri: item.dishImageUrl }}
+                  style={styles.dishImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.dishText}>
+                  {item.dishName}{" "}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        {(extraDishIds[date] && selectedMenuLong[date]) && (
+          <>
+            <Text style={styles.subTitle}>
+              {selectedMenuLong[date] ? t("additionalDishes") : t("dishes")}
+            </Text>
+            {extraDishIds[date] && Object.values(extraDishIds[date]).map((dish) => (
+              <TouchableOpacity
+                key={dish.id}
+                style={[
+                  styles.dishItem,
+                  activeDish?.date === date &&
+                  activeDish?.dishId === dish.id &&
+                  styles.dishItemActive,
+                ]}
+                onPress={() =>
+                  toggleDishActive(date, dish.id)
+                }
+              >
+                <View style={{ flexDirection: 'row', width: '90%' }}>
+                  <Image
+                    source={{ uri: dish.imageUrl }}
+                    style={styles.dishImage}
+                    resizeMode="cover"
+                  />
+                  <View>
+                    <Text style={styles.dishText}>
+                      {dish?.name || "Unknown Dish"}{" "}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#666', width: '50%' }} numberOfLines={1} ellipsizeMode="tail" >
+                      {dishNotes?.[date]?.[dish.id] || ""}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )
+            )}
+          </>
+        )}
 
-          <Calendar
-            markedDates={{
-              ...Object.keys(selectedDates).reduce(
-                (acc, date) => ({
-                  ...acc,
-                  [date]: {
-                    selected: true,
-                    selectedColor: "#6C63FF",
-                  },
-                }),
-                {}
-              ),
-              ...unavailableDates.reduce(
-                (acc, date) => ({
-                  ...acc,
-                  [date]: {
-                    marked: true,
-                    dotColor: "#FF4D4D",
-                    disableTouchEvent: true,
-                  },
-                }),
-                {}
-              ),
-            }}
-            onDayPress={onDayPress}
-            style={styles.calendar}
-            theme={{
-              backgroundColor: "#F5F5F5",
-              calendarBackground: "#F5F5F5",
-              textDisabledColor: "#888888",
-              selectedDayBackgroundColor: "#6C63FF",
-              selectedDayTextColor: "#FFFFFF",
-            }}
-            minDate={moment().add(1, "day").format("YYYY-MM-DD")}
-            maxDate={moment().add(1, "year").format("YYYY-MM-DD")}
+        {selectedDishes[date] && (
+          <>
+            <Text style={styles.subTitle}>
+              {t("dishes")}
+            </Text>
+            {selectedDishes[date] && Object.values(selectedDishes[date]).map((dish) => (
+              <TouchableOpacity
+                key={dish.id}
+                style={[
+                  styles.dishItem,
+                  activeDish?.date === date &&
+                  activeDish?.dishId === dish.id &&
+                  styles.dishItemActive,
+                  { justifyContent: 'space-between' }
+                ]}
+                onPress={() => toggleDishActive(date, dish.id)}
+              >
+                <View style={{ flexDirection: 'row', width: '90%' }}>
+                  <Image
+                    source={{ uri: dish.imageUrl }}
+                    style={styles.dishImage}
+                    resizeMode="cover"
+                  />
+                  <View>
+                    <Text style={styles.dishText}>
+                      {dish?.name || "Unknown Dish"}{" "}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#666', width: '50%' }} numberOfLines={1} ellipsizeMode="tail" >
+                      {dishNotes?.[date]?.[dish.id] || ""}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.dishActions}>
+                  <TouchableOpacity onPress={() => handleEditNote(date, dish,)}>
+                    <Text style={styles.noteText}>
+                      {t("note")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            )
+            )}
+          </>
+        )}
+
+        <TouchableOpacity
+          onPress={() => navigateToSelectFood(date)}
+          style={{
+            borderColor: 'black',
+            borderWidth: 1,
+            borderStyle: 'dotted',
+            // padding: 5,
+            width: '60%',
+            borderRadius: 5,
+            alignItems: 'center',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            alignSelf: 'center'
+          }}
+        >
+          <Text style={styles.addItemsText}>
+            {selectedMenuLong[date]?.id || selectedDishes[date]?.length > 0
+              ? t("addItems")
+              : t("addMenuOrFood")}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.switchContainer}>
+          <Text style={styles.label}>
+            {t("note")}
+          </Text>
+
+        </View>
+
+        <View style={styles.switchContainer}>
+          <Text style={styles.label}>
+            {t("chefBringIngredients")}
+          </Text>
+          <Switch
+            value={ingredientPrep[date]}
+            onValueChange={() =>
+              setIngredientPrep((prev) => ({
+                ...prev,
+                [date]: !prev[date],
+              }))
+            }
+            trackColor={{ false: "#767577", true: "#A64B2A", }}
+            thumbColor={ingredientPrep[date] ? "#A64B2A" : "#f4f3f4"}
           />
 
-          {groupDatesByWeek(selectedDates, todayString).map((week, index) => (
-            <View key={index} style={styles.weekCard}>
-              <TouchableOpacity
-                style={styles.weekHeader}
-                onPress={() => toggleWeek(index)}
-              >
-                <Text style={styles.weekTitle}>
-                  {week.start} – {week.end}
-                </Text>
-                <MaterialIcons
-                  name={expandedWeeks[index] ? "expand-less" : "expand-more"}
-                  size={24}
-                  color="#555"
-                />
-              </TouchableOpacity>
-              {expandedWeeks[index] !== false && (
-                <View style={styles.weekContent}>
-                  {week.dates.map((date) => {
-                    const isWithinFourDays = moment(date).isBetween(
-                      moment(todayString),
-                      moment(todayString).add(4, "days"),
-                      undefined,
-                      "[]"
-                    );
-                    const needsMenuSelection =
-                      isWithinFourDays &&
-                      !selectedDates[date].showMenu &&
-                      !selectedDates[date].menuId &&
-                      (!selectedDates[date].extraDishIds ||
-                        selectedDates[date].extraDishIds.length === 0);
+        </View>
+      </View >
+    );
+  });
 
-                    return (
-                      <View
-                        key={date}
-                        style={[
-                          styles.dateCard,
-                          !selectedDates[date].startTime &&
-                          styles.incompleteCard,
-                          needsMenuSelection && styles.warningCard,
-                        ]}
-                      >
+
+
+  const handleBack = () => {
+    router.replace("/screen/longTermBooking")
+  }
+
+  return (
+    <GestureHandlerRootView style={commonStyles.container}>
+      <Header title={t("longTermBooking")} onLeftPress={() => handleBack()} />
+      <SafeAreaView style={commonStyles.containerContent}>
+        <View>
+          <FlatList
+            data={groupDatesByWeek(selectedDates)}
+            keyExtractor={(_, index) => `week-${index}`}
+            nestedScrollEnabled={true}
+            renderItem={({ item: week, index }) => (
+              <View style={styles.weekCard}>
+                <TouchableOpacity
+                  style={styles.weekHeader}
+                  onPress={() => toggleWeek(index)}
+                >
+                  <Text style={styles.weekTitle}>{week.start} - {week.end}</Text>
+                  <MaterialIcons
+                    name={expandedWeeks[index] ? "expand-less" : "expand-more"}
+                    size={24}
+                    color="#555"
+                  />
+                </TouchableOpacity>
+
+                {expandedWeeks[index] && (
+                  <FlatList
+                    data={week.dates}
+                    keyExtractor={(date) => date}
+                    nestedScrollEnabled={true}
+                    initialNumToRender={3}
+                    windowSize={5}
+                    renderItem={({ item: date }) => (
+                      <View style={styles.dateCard}>
                         <View style={styles.dateHeader}>
                           <Text style={styles.dateTitle}>{date}</Text>
                           <TouchableOpacity
                             style={styles.removeButton}
                             onPress={() => removeDate(date)}
                           >
-                            <MaterialIcons
-                              name="close"
-                              size={16}
-                              color="#FFFFFF"
-                            />
+                            <MaterialIcons name="close" size={16} color="#FFF" />
                           </TouchableOpacity>
                         </View>
-
-                        {needsMenuSelection && (
-                          <Text style={styles.warningText}>
-                            {t("selectDishesMessage")}
-                          </Text>
-                        )}
 
                         <View style={styles.switchContainer}>
                           <Text style={styles.label}>{t("selectDish")}:</Text>
                           <Switch
-                            value={selectedDates[date].showMenu}
-                            onValueChange={(value) =>
-                              updateBookingDetail(date, "showMenu", value)
+                            value={isSelected[date]}
+                            onValueChange={() =>
+                              setIsSelected((prev) => ({
+                                ...prev,
+                                [date]: !prev[date],
+                              }))
                             }
-                            trackColor={{ false: "#767577", true: "#81b0ff" }}
-                            thumbColor={
-                              selectedDates[date].showMenu
-                                ? "#f5dd4b"
-                                : "#f4f3f4"
-                            }
+                            trackColor={{ false: "#767577", true: "#A64B2A" }}
+                            thumbColor={isSelected[date] ? "#A64B2A" : "#f4f3f4"}
                           />
                         </View>
 
-                        {selectedDates[date].showMenu && (
-                          <>
-                            <TouchableOpacity
-                              onPress={() => navigateToSelectFood(date)}
-                            >
-                              <Text style={styles.addItemsText}>
-                                {selectedDates[date].menuId ||
-                                  selectedDates[date].extraDishIds?.length > 0
-                                  ? t("addItems")
-                                  : t("addMenuOrFood")}
-                              </Text>
-                            </TouchableOpacity>
-
-                            {selectedDates[date].menuId && (
-                              <>
-                                <View style={styles.menuHeader}>
-                                  <Text style={styles.summaryText}>
-                                    {t("menu")}:{" "}
-                                    {
-                                      menuItems.find(
-                                        (m) =>
-                                          m.id === selectedDates[date].menuId
-                                      )?.name
-                                    }
-                                  </Text>
-                                  <TouchableOpacity
-                                    style={styles.removeItemButton}
-                                    onPress={() => removeMenu(date)}
-                                  >
-                                    <MaterialIcons
-                                      name="close"
-                                      size={16}
-                                      color="#FFFFFF"
-                                    />
-                                  </TouchableOpacity>
-                                </View>
-                                <Text style={styles.subTitle}>
-                                  {t("dishesInMenus")}:
-                                </Text>
-                                {menuItems
-                                  .find(
-                                    (m) => m.id === selectedDates[date].menuId
-                                  )
-                                  ?.menuItems.map((item) => (
-                                    <TouchableOpacity
-                                      key={item.dishId}
-                                      style={[
-                                        styles.dishItem,
-                                        activeDish?.date === date &&
-                                        activeDish?.dishId === item.dishId &&
-                                        styles.dishItemActive,
-                                      ]}
-                                      onPress={() =>
-                                        toggleDishActive(date, item.dishId)
-                                      }
-                                    >
-                                      <Image
-                                        source={{ uri: item.dishImageUrl }}
-                                        style={styles.dishImage}
-                                        resizeMode="cover"
-                                        onError={(error) =>
-                                          console.log(
-                                            `Error loading image for dish ${item.dishId}:`,
-                                            error
-                                          )
-                                        }
-                                      />
-                                      <Text style={styles.dishText}>
-                                        {item.dishName}{" "}
-                                        {selectedDates[date].menuDishNotes[
-                                          item.dishId
-                                        ] &&
-                                          `(${t("note")}: ${selectedDates[date].menuDishNotes[
-                                          item.dishId
-                                          ]
-                                          })`}
-                                      </Text>
-                                      <View style={styles.dishActions}>
-                                        <Text
-                                          style={styles.noteText}
-                                          onPress={() =>
-                                            handleEditNote(
-                                              date,
-                                              item.dishId,
-                                              true
-                                            )
-                                          }
-                                        >
-                                          {t("note")}
-                                        </Text>
-                                        {activeDish?.date === date &&
-                                          activeDish?.dishId ===
-                                          item.dishId && (
-                                            <TouchableOpacity
-                                              style={styles.removeItemButton}
-                                              onPress={() => removeMenu(date)}
-                                            >
-                                              <MaterialIcons
-                                                name="close"
-                                                size={16}
-                                                color="#FFFFFF"
-                                              />
-                                            </TouchableOpacity>
-                                          )}
-                                      </View>
-                                    </TouchableOpacity>
-                                  ))}
-                              </>
-                            )}
-                            {selectedDates[date].extraDishIds?.length > 0 && (
-                              <>
-                                <Text style={styles.subTitle}>
-                                  {selectedDates[date].menuId
-                                    ? t("additionalDishes")
-                                    : t("dishes")}
-                                </Text>
-                                {selectedDates[date].extraDishIds.map(
-                                  (dishId) => {
-                                    const dish = dishes.find(
-                                      (d) => d.id === dishId
-                                    );
-                                    // console.log("dishdad", dish);
-                                    const imageUrl =
-                                      dish?.imageUrl ||
-                                      "https://via.placeholder.com/40";
-
-                                    return (
-                                      <TouchableOpacity
-                                        key={dishId}
-                                        style={[
-                                          styles.dishItem,
-                                          activeDish?.date === date &&
-                                          activeDish?.dishId === dishId &&
-                                          styles.dishItemActive,
-                                        ]}
-                                        onPress={() =>
-                                          toggleDishActive(date, dishId)
-                                        }
-                                      >
-                                        <Image
-                                          source={{ uri: imageUrl }}
-                                          style={styles.dishImage}
-                                          resizeMode="cover"
-                                        />
-                                        <Text style={styles.dishText}>
-                                          {dish?.name || "Unknown Dish"}{" "}
-                                          {selectedDates[date].extraDishNotes[
-                                            dishId
-                                          ] &&
-                                            `(Ghi chú: ${selectedDates[date].extraDishNotes[dishId]})`}
-                                        </Text>
-                                        <View style={styles.dishActions}>
-                                          <Text
-                                            style={styles.noteText}
-                                            onPress={() =>
-                                              handleEditNote(
-                                                date,
-                                                dishId,
-                                                false
-                                              )
-                                            }
-                                          >
-                                            {t("note")}
-                                          </Text>
-                                          {activeDish?.date === date &&
-                                            activeDish?.dishId === dishId && (
-                                              <TouchableOpacity
-                                                style={styles.removeItemButton}
-                                                onPress={() =>
-                                                  removeExtraDish(date, dishId)
-                                                }
-                                              >
-                                                <MaterialIcons
-                                                  name="close"
-                                                  size={16}
-                                                  color="#FFFFFF"
-                                                />
-                                              </TouchableOpacity>
-                                            )}
-                                        </View>
-                                      </TouchableOpacity>
-                                    );
-                                  }
-                                )}
-                              </>
-                            )}
-                            <View style={styles.switchContainer}>
-                              <Text style={styles.label}>
-                                {selectedDates[date].chefBringIngredients
-                                  ? "Chef Bring Ingredients"
-                                  : "I will prepare Ingredients"}
-                              </Text>
-                              <Switch
-                                value={selectedDates[date].chefBringIngredients}
-                                onValueChange={(value) =>
-                                  updateBookingDetail(
-                                    date,
-                                    "chefBringIngredients",
-                                    value
-                                  )
-                                }
-                                trackColor={{
-                                  false: "#767577",
-                                  true: "#A64B2A",
-                                }}
-                                thumbColor={
-                                  selectedDates[date].chefBringIngredients
-                                    ? "#A64B2A"
-                                    : "#f4f3f4"
-                                }
-                              />
-                            </View>
-                          </>
-                        )}
-
+                        {isSelected[date] && (<DishSection date={date} isSelected={true} />)}
                         <Text style={styles.label}>{t("startTime")}:</Text>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                        >
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
                           {getAvailableTimeSlots(date).length > 0 ? (
                             getAvailableTimeSlots(date).map((time) => (
                               <TouchableOpacity
                                 key={`start-${time}`}
                                 style={[
                                   styles.timeButton,
-                                  selectedDates[date].startTime === time &&
-                                  styles.timeButtonSelected,
+                                  startTime[date] === time && styles.timeButtonSelected,
                                 ]}
                                 onPress={() =>
-                                  updateBookingDetail(date, "startTime", time)
+                                  setStartTime((prev) => ({ ...prev, [date]: time }))
                                 }
                               >
                                 <Text
                                   style={
-                                    selectedDates[date].startTime === time
+                                    startTime[date] === time
                                       ? styles.timeButtonTextSelected
                                       : styles.timeButtonText
                                   }
@@ -1269,14 +627,139 @@ const LongTermSelectBooking = () => {
                           )}
                         </ScrollView>
                       </View>
-                    );
-                  })}
+                    )}
+                  />
+                )}
+              </View>
+            )}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            ListHeaderComponent={
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={styles.title}>
+                    {t("needToSelect")} {selectedPackage?.durationDays || 0} days
+                  </Text>
+                  <TouchableOpacity onPress={() => setIsExpanedCalenda(!isExpanedCalenda)}>
+                    <Ionicons
+                      name={isExpanedCalenda ? "chevron-up" : "chevron-down"}
+                      size={24}
+                      color="#333"
+                    />
+                  </TouchableOpacity>
                 </View>
-              )}
-            </View>
-          ))}
-          <View style={styles.spacer} />
-        </ScrollView>
+
+                {isExpanedCalenda && (
+                  <>
+                    {selectedPackage?.durationDays >= 10 && (
+                      <View style={styles.repeatContainer}>
+                        <View style={styles.switchContainer}>
+                          <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <Text style={styles.label}>{t("repeatSchedule")}: </Text>
+                            <TouchableOpacity
+                              style={styles.infoButton}
+                              onPress={showRepeatInfo}
+                            >
+                              <Ionicons
+                                name="information-circle-outline"
+                                size={20}
+                                color="black"
+                              />
+                            </TouchableOpacity>
+                          </View>
+                          <Switch
+                            value={isRepeatEnabled}
+                            onValueChange={(value) => {
+                              setIsRepeatEnabled(value);
+                              if (!value) {
+                                setSelectedWeekdays([]);
+                              }
+                            }}
+                            trackColor={{ false: "#767577", true: "#A64B2A" }}
+                            thumbColor={isRepeatEnabled ? "#A64B2A" : "#f4f3f4"}
+                          />
+                        </View>
+                        {isRepeatEnabled && (
+                          <View>
+                            <View style={styles.weekdayContainer}>
+                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                                (day, index) => (
+                                  <TouchableOpacity
+                                    key={day}
+                                    style={[
+                                      styles.weekdayButton,
+                                      selectedWeekdays.includes(index) &&
+                                      styles.weekdayButtonSelected,
+                                    ]}
+                                    onPress={() => toggleWeekday(index)}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.weekdayText,
+                                        selectedWeekdays.includes(index) &&
+                                        styles.weekdayTextSelected,
+                                      ]}
+                                    >
+                                      {day}
+                                    </Text>
+                                  </TouchableOpacity>
+                                )
+                              )}
+                            </View>
+                            <TouchableOpacity
+                              style={[
+                                styles.applyButton,
+                                selectedWeekdays.length === 0 && styles.disabledButton,
+                              ]}
+                              onPress={handleRepeatSelection}
+                              disabled={selectedWeekdays.length === 0}
+                            >
+                              <Text style={styles.applyButtonText}>{t("apply")}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    <Calendar
+                      markedDates={{
+                        ...selectedDates.reduce((acc, date) => ({
+                          ...acc, [date]: {
+                            selected: true,
+                            selectedColor: "#6C63FF",
+                          },
+                        }),
+                          {}
+                        ),
+                        ...unavailableDates.reduce(
+                          (acc, date) => ({
+                            ...acc, [date]: {
+                              marked: true,
+                              dotColor: "#FF4D4D",
+                              disableTouchEvent: true,
+                            },
+                          }),
+                          {}
+                        ),
+                      }}
+                      onDayPress={onDayPress}
+                      style={styles.calendar}
+                      theme={{
+                        backgroundColor: "#F5F5F5",
+                        calendarBackground: "#F5F5F5",
+                        textDisabledColor: "#888888",
+                        selectedDayBackgroundColor: "#6C63FF",
+                        selectedDayTextColor: "#FFFFFF",
+                      }}
+                      minDate={moment().add(1, "day").format("YYYY-MM-DD")}
+                      maxDate={moment().add(1, "year").format("YYYY-MM-DD")}
+                    />
+                  </>
+                )}
+              </View>
+            }
+          />
+        </View>
+        <View style={styles.spacer} />
         <View style={styles.buttonArea}>
           <TouchableOpacity
             style={[
@@ -1293,40 +776,108 @@ const LongTermSelectBooking = () => {
             <Text style={styles.buttonText}>{t("confirmBooking")}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView >
 
-      {/* Note Modal */}
-      <Modalize
-        ref={modalizeRef}
-        adjustToContentHeight={true}
-        handlePosition="outside"
-        modalStyle={styles.modalContent}
-        onClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalInner}>
-          <Text style={styles.modalTitle}>{t("note")}</Text>
-          <TextInput
-            style={styles.modalInput}
-            value={noteText}
-            onChangeText={setNoteText}
-            placeholder={t("enterNoteForDish")}
-            multiline
-          />
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => modalizeRef.current?.close()}
-            >
-              <Text style={styles.modalButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalButton} onPress={saveNote}>
-              <Text style={styles.modalButtonText}>{t("save")}</Text>
-            </TouchableOpacity>
-          </View>
+      <Modalize ref={modalizeRef} adjustToContentHeight>
+        <View
+          style={{
+            padding: 20,
+            backgroundColor: "#fff",
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+          }}
+        >
+          {currentDate && currentDish ? (
+            <>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginBottom: 12,
+                  color: "#333",
+                }}
+              >
+                {currentDish.name}
+              </Text>
+
+              <TextInput
+                value={tempNote}
+                onChangeText={setTempNote}
+                placeholder={t("addNote")}
+                multiline
+                style={{
+                  height: 100,
+                  borderColor: "#ddd",
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 16,
+                  textAlignVertical: "top",
+                  fontSize: 16,
+                }}
+              />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#ccc",
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    marginRight: 8,
+                  }}
+                  onPress={() => {
+                    modalizeRef.current?.close();
+                    setTempNote("");
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+                    {t("cancel")}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#4CAF50",
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    marginLeft: 8,
+                  }}
+                  onPress={() => {
+                    setDishNotes((prev) => ({
+                      ...prev,
+                      [currentDate]: {
+                        ...(prev[currentDate] || {}),
+                        [currentDish.id || currentDish.dishId]: tempNote,
+                      },
+                    }));
+                    modalizeRef.current?.close();
+                    setTempNote("");
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+                    {t("save")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <Text style={{ fontSize: 16, color: "#777" }}>{t("noDishSelected")}</Text>
+          )}
         </View>
       </Modalize>
 
-      {/* Repeat Info Modal */}
+
+
+
       <Modalize
         ref={infoModalizeRef}
         adjustToContentHeight={true}
@@ -1356,14 +907,12 @@ const LongTermSelectBooking = () => {
           </TouchableOpacity>
         </View>
       </Modalize>
-    </GestureHandlerRootView>
+    </GestureHandlerRootView >
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  scrollViewContent: { padding: 16, paddingBottom: 100 },
+  scrollViewContent: { paddingBottom: 100, flexGrow: 1 },
   title: {
     fontSize: 20,
     fontWeight: "600",
@@ -1425,7 +974,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#555",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
@@ -1488,8 +1036,11 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   removeButton: {
-    width: 24,
-    height: 24,
+    position: 'absolute',
+    right: -20,
+    top: -20,
+    width: 20,
+    height: 20,
     borderRadius: 12,
     backgroundColor: "#FF4D4D",
     justifyContent: "center",
@@ -1508,7 +1059,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   addItemsText: {
-    color: "#1E90FF",
+    color: "#222222",
     fontSize: 14,
     fontWeight: "600",
     marginVertical: 8,
@@ -1521,6 +1072,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
+    fontWeight: 'bold',
     color: "#333",
     marginVertical: 4,
   },

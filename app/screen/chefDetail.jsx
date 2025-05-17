@@ -7,12 +7,10 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  BackHandler,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useSegments } from "expo-router";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useAxios from "../../config/AXIOS_API";
@@ -25,6 +23,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { useSelectedItems } from "../../context/itemContext";
+import * as SecureStore from "expo-secure-store";
 
 
 const ChefDetail = () => {
@@ -39,7 +38,11 @@ const ChefDetail = () => {
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
   const navigation = useNavigation();
-  const { setChefId, clearSelection } = useSelectedItems();
+  const { setChefId, setRouteBefore, clearSelection } = useSelectedItems();
+  const [modalKey, setModalKey] = useState(1);
+  const segment = useSegments();
+
+
 
   useEffect(() => {
     fetchDishes();
@@ -83,10 +86,11 @@ const ChefDetail = () => {
     }
   };
 
-
-
   const onOpenModal = () => {
-    modalizeRef.current?.open();
+    setModalKey(modalKey + 1);
+    setTimeout(() => {
+      modalizeRef.current?.open();
+    }, 100)
   };
   const toggleBio = () => setExpandedBio(!expandedBio);
   const toggleDesc = () => setExpandedDesc(!expandedDesc);
@@ -95,8 +99,8 @@ const ChefDetail = () => {
   const DishCard = React.memo(({ dish, onPress }) => (
     <TouchableOpacity style={styles.dishCard} onPress={onPress}>
       <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
-      <Text style={styles.dishName}>{dish.name}</Text>
-      <Text style={styles.dishDescription}>{dish.description}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.dishName}>{dish.name}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.dishDescription}>{dish.description}</Text>
     </TouchableOpacity>
   ));
 
@@ -140,25 +144,38 @@ const ChefDetail = () => {
                       <Text style={styles.specialty}>
                         {chefs?.specialization}
                       </Text>
-                      <View style={styles.starContainer}>
-                        {Array(5).fill().map((_, i) => (
-                          <Icon
-                            key={i}
-                            name="star"
-                            size={20}
-                            color={
-                              i < Math.floor(chefs?.averageRating || 0)
-                                ? "#f5a623"
-                                : "#ccc"
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={styles.starContainer}>
+                          {Array(5).fill().map((_, i) => {
+                            const rating = chefs?.averageRating || 0;
+                            let iconName = "star";
+                            let color = "#ccc";
+
+                            if (i < Math.floor(rating)) {
+                              color = "#f5a623";
+                            } else if (i < rating) {
+                              iconName = "star-half-full"; // Hoặc "star-half-o" tùy font
+                              color = "#f5a623";
                             }
-                          />
-                        ))}
+
+                            return (
+                              <Icon
+                                key={i}
+                                name={iconName}
+                                size={20}
+                                color={color}
+                              />
+                            );
+                          })}
+
+                        </View>
+                        <Text style={[styles.value, { color: 'orange' }]}>${chefs?.price}/hour</Text>
                       </View>
+
                     </View>
                   </View>
 
                   <View style={styles.section}>
-                    {/* <Text style={styles.label}>{t("bio")}:</Text> */}
                     <Text
                       style={styles.value}
                       numberOfLines={expandedBio ? undefined : 3}
@@ -193,48 +210,42 @@ const ChefDetail = () => {
 
                   {showMoreDetails && (
                     <>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("address")}:</Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("address")}: </Text>
                         <Text style={styles.value}>{chefs?.address}</Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>Email:</Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>Email: </Text>
                         <Text style={styles.value}>{chefs?.user?.email}</Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("phone")}:</Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("phone")}: </Text>
                         <Text style={styles.value}>{chefs?.user?.phone}</Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("gender")}:</Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("gender")}: </Text>
                         <Text style={styles.value}>{chefs?.user?.gender}</Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("dob")}:</Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("dob")}: </Text>
                         <Text style={styles.value}>{chefs?.user?.dob}</Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("country")}:</Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("country")}: </Text>
                         <Text style={styles.value}>{chefs?.country}</Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>
-                          {t("experienceYears")}:
-                        </Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("experienceYears")}: </Text>
                         <Text style={styles.value}>
                           {chefs?.yearsOfExperience || t("noInformation")}
                         </Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("maxServingSize")}:</Text>
+                      </Text>
+                      <Text style={styles.section}>
+                        <Text style={styles.label}>{t("maxServingSize")}: </Text>
                         <Text style={styles.value}>
                           {chefs?.maxServingSize} {t("people")}
                         </Text>
-                      </View>
-                      <View style={styles.section}>
-                        <Text style={styles.label}>{t("pricePerMeal")}:</Text>
-                        <Text style={styles.value}>${chefs?.price}</Text>
-                      </View>
+                      </Text>
                     </>
                   )}
 
@@ -313,6 +324,7 @@ const ChefDetail = () => {
         adjustToContentHeight
         modalStyle={styles.modalStyle}
         handleStyle={styles.handleStyle}
+        key={modalKey}
       >
         <View style={styles.modalContainer}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
@@ -364,7 +376,9 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               clearSelection();
               setChefId(chefId);
-              router.push("/screen/selectFood");
+              setRouteBefore(segment);
+              SecureStore.setItem("firstChef", chefId);
+              router.replace("/screen/selectFood");
             }}
           >
             <View>
@@ -378,10 +392,11 @@ const ChefDetail = () => {
             style={styles.modalButton}
             onPress={() => {
               modalizeRef.current?.close();
-              router.push({
-                pathname: "/screen/longTermBooking",
-                params: { chefId: chefId },
-              });
+              clearSelection();
+              setChefId(chefId);
+              // setRouteBefore(segment);
+              SecureStore.setItem("firstChef", chefId);
+              router.replace("/screen/longTermBooking")
             }}
           >
             <View>

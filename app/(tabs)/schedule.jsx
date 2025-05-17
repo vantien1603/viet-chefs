@@ -5,7 +5,6 @@ import {
   Text,
   View,
   TouchableOpacity,
-  Dimensions,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
@@ -74,14 +73,19 @@ const CustomerSchedule = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const todayDetails = bookingDetails.filter(
+  // Filter booking details to only include SCHEDULED or COMPLETED statuses
+  const filteredBookingDetails = bookingDetails.filter(
+    (detail) => detail.status === "SCHEDULED" || detail.status === "COMPLETED"
+  );
+
+  const todayDetails = filteredBookingDetails.filter(
     (detail) =>
       new Date(detail.sessionDate).toDateString() === today.toDateString()
   );
-  const upcomingDetails = bookingDetails.filter(
+  const upcomingDetails = filteredBookingDetails.filter(
     (detail) => new Date(detail.sessionDate) > today
   );
-  const pastDetails = bookingDetails.filter(
+  const pastDetails = filteredBookingDetails.filter(
     (detail) => new Date(detail.sessionDate) < today
   );
 
@@ -118,10 +122,8 @@ const CustomerSchedule = () => {
                     detail.status === "COMPLETED"
                       ? "green"
                       : detail.status === "SCHEDULED"
-                        ? "orange"
-                        : detail.status === "LOCKED" || detail.status === "CANCELED"
-                          ? "red"
-                          : "black",
+                      ? "orange"
+                      : "black",
                 },
               ]}
             >

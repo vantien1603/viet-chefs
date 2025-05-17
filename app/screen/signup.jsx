@@ -6,6 +6,7 @@ import Header from '../../components/header';
 import axios from 'axios';
 import useActionCheckNetwork from '../../hooks/useAction';
 import { useCommonNoification } from '../../context/commonNoti';
+import useAxiosBase from '../../config/AXIOS_BASE';
 export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
     const [mail, setMail] = useState('');
@@ -14,6 +15,7 @@ export default function SignUpScreen() {
     const router = useRouter();
     const { showModal } = useCommonNoification();
     const [agreeTerms, setAgreeTerms] = useState(false);
+    const axiosInstanceBase = useAxiosBase();
 
     const handleSignUp = async () => {
         try {
@@ -22,16 +24,12 @@ export default function SignUpScreen() {
                 email: mail,
                 fullName: fullName,
                 dob: "1999-01-01",
-                gender: "male",
+                gender: "Male",
                 phone: phone
             };
             console.log(signUpPayload);
 
-            const response = await axios.post('https://vietchef.ddns.net/no-auth/register', signUpPayload,
-                {
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            console.log(response.data);
+            const response = await axiosInstanceBase.post('/register', signUpPayload);
             if (response.status === 201) {
                 router.push({
                     pathname: "screen/verify",
@@ -43,7 +41,8 @@ export default function SignUpScreen() {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal("Error", "Có lỗi xảy ra trong quá trình đăng ký.", "Failed");
+            // showModal("Error", "Có lỗi xảy ra trong quá trình đăng ký.", "Failed");
+            showModal("Error", error.response.data.message, "Failed");
         }
     };
 
@@ -73,7 +72,6 @@ export default function SignUpScreen() {
                 <TextInput
                     style={commonStyles.input}
                     placeholder="03730xxxxx"
-                    // placeholderTextColor="#968B7B"
                     keyboardType="numeric"
                     value={phone}
                     onChangeText={setPhone}
@@ -82,7 +80,6 @@ export default function SignUpScreen() {
                 <TextInput
                     style={commonStyles.input}
                     placeholder="xxx@gmail.com"
-                    // placeholderTextColor="#968B7B"
                     keyboardType="email-address"
                     value={mail}
                     onChangeText={setMail}
@@ -121,8 +118,7 @@ export default function SignUpScreen() {
                 </View>
 
                 <View style={{ flex: 1, alignItems: 'center' }}>
-
-                    <TouchableOpacity onPress={() => handleSignUp} style={{
+                    <TouchableOpacity onPress={() => handleSignUp()} style={{
                         padding: 13,
                         marginTop: 10,
                         borderWidth: 1,

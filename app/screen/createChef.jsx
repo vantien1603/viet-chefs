@@ -9,8 +9,6 @@ import {
   Switch,
   BackHandler,
   Keyboard,
-  Platform,
-  KeyboardAvoidingView,
 } from "react-native";
 import { router } from "expo-router"; // Import router for navigation
 import Toast from "react-native-toast-message"; // Import Toast for notifications
@@ -114,10 +112,6 @@ const CreateChefScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
       <SafeAreaView style={commonStyles.container}>
         <Header title="Register Chef" />
         <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }}>
@@ -240,7 +234,6 @@ const CreateChefScreen = () => {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-    </KeyboardAvoidingView>
   );
 };
 

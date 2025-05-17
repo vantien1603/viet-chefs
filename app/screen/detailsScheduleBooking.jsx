@@ -11,6 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import useAxiosFormData from '../../config/AXIOS_API_FORM'
 import { useCommonNoification } from '../../context/commonNoti'
 import axios from 'axios'
+import * as Location from "expo-location";
 
 
 const DetailsBooking = () => {
@@ -131,8 +132,27 @@ const DetailsBooking = () => {
             });
         });
         try {
-            console.log("form", formData);
-            const response = await axiosInstanceForm.put(`/bookings/booking-details/${detail.id}/complete-chef`, formData);
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== "granted") {
+                Alert.alert(
+                    "Quyền truy cập vị trí bị từ chối",
+                    "Vui lòng cấp quyền để hoafn tat thu tuc checkout."
+                );
+                return null;
+            }
+            let currentLocation = await Location.getCurrentPositionAsync({});
+            // const response = await axiosInstanceForm.put(`/bookings/booking-details/${detail.id}/complete-chef`, formData);
+            const response = await axiosInstanceForm.put(
+                `/bookings/booking-details/${detail.id}/complete-chef`,
+                formData,
+                {
+                    params: {
+                        chefLat: currentLocation.coords.latitude,
+                        chefLng: currentLocation.coords.longitude
+                    }
+                }
+            );
+
             console.log(response.status);
             if (response.status === 200 || response.status === 204) {
                 showModal("Success", "Checkout successfully");

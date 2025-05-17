@@ -6,12 +6,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
-import { Platform } from 'react-native';
-
-
 
 async function registerForPushNotificationsAsync() {
   try {
@@ -58,10 +54,8 @@ export default function WelcomeScreen() {
         console.log('Expo Push Token:', token);
       }
 
-      if (Platform.OS === 'android') {
-        const value = await Notifications.getNotificationChannelsAsync();
-        setChannels(value ?? []);
-      }
+      const value = await Notifications.getNotificationChannelsAsync();
+      setChannels(value ?? []);
 
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -80,7 +74,7 @@ export default function WelcomeScreen() {
 
       notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
         setNotification(notification);
-        
+
       });
 
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {

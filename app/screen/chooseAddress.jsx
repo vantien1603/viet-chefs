@@ -22,9 +22,9 @@ import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useSelectedItems } from "../../context/itemContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
 
 const ChooseAddressScreen = () => {
-  const params = useLocalSearchParams();
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
   const axiosInstance = useAxios();
   const [addresses, setAddresses] = useState([]);
@@ -33,8 +33,15 @@ const ChooseAddressScreen = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const { showModal } = useCommonNoification();
-  const { address, setAddress } = useSelectedItems();
+  const { address, setAddress, isLong } = useSelectedItems();
+  const isFocused = useIsFocused();
 
+  useEffect(() => {
+    if (!isFocused) {
+      console.log("chooseAddress");
+      return
+    };
+  }, [])
   useEffect(() => {
     const fetchAddress = async () => {
       try {
@@ -161,20 +168,18 @@ const ChooseAddressScreen = () => {
     const selectedAddress = addresses[selectedAddressIndex];
     setAddress(selectedAddress.address);
     await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
-    router.replace("/screen/booking");
+    isLong ? router.replace("/screen/longTermBooking") : router.replace("/screen/booking")
   };
 
 
   useEffect(() => {
     console.log(address);
     if (address && addresses.length > 0) {
-      console.log("do")
       const index = addresses.findIndex(
         (item) =>
           item.address === address?.address &&
           item.title === address?.title
       );
-      console.log("inde", index);
       if (index !== -1) {
         setSelectedAddressIndex(index);
       }
@@ -202,7 +207,7 @@ const ChooseAddressScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Choose Address" onLeftPress={() => router.replace("/screen/booking")} />
+      <Header title="Choose Address" onLeftPress={() => isLong ? router.replace("/screen/longTermBooking") : router.replace("/screen/booking")} />
       <View style={styles.headerContainer}>
         <Text style={styles.sectionTitle}>{t("address")}</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>

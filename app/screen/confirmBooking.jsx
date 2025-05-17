@@ -7,13 +7,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
@@ -36,7 +33,6 @@ const ConfirmBookingScreen = () => {
     ...(selectedMenu ? Object.values(extraDishIds || {}) : Object.values(selectedDishes || {})),
   ];
 
-
   useEffect(() => {
     fetchCalculatorBooking();
   }, [])
@@ -48,12 +44,13 @@ const ConfirmBookingScreen = () => {
         chefId: parseInt(chefId),
         guestCount: numPeople,
         bookingDetail: {
-          sessionDate: selectedDay.format("YYYY-MM-DD"),
+          sessionDate: selectedDay && selectedDay.format("YYYY-MM-DD"),
           startTime: `${startTime}:00`,
           location: address?.address,
           menuId: selectedMenu ? selectedMenu.id : null,
           extraDishIds:
-            Object.keys(extraDishIds).length > 0
+            // Object.keys(extraDishIds).length > 0
+            selectedMenu
               ? Object.keys(extraDishIds).map((key) => extraDishIds[key].id)
               : Object.keys(selectedDishes).map((key) => selectedDishes[key].id),
           dishes: null,
@@ -61,7 +58,8 @@ const ConfirmBookingScreen = () => {
         },
       };
       const response = await axiosInstance.post("/bookings/calculate-single-booking", payload);
-      if (response.status === 200) setCalcuResult(response.data);
+      console.log("response conculator", response.data);
+      setCalcuResult(response.data)
     } catch (error) {
       if (axios.isCancel(error) || error.response.status === 401) {
         return;
@@ -74,8 +72,9 @@ const ConfirmBookingScreen = () => {
   const handleKeepBooking = async () => {
     setLoading(true);
     try {
-      const selectedDishIds = allDishes.map((dish) => dish.id || dish.dishId);
-      console.log(selectedDishIds);
+      const selectedDishIds = allDishes.map((dish) => dish.id || dish.dishId); console.log("measd", selectedMenu);
+
+
       const payload = {
         customerId: user?.userId,
         chefId: parseInt(chefId),
@@ -83,7 +82,7 @@ const ConfirmBookingScreen = () => {
         guestCount: numPeople,
         bookingDetails: [
           {
-            sessionDate: selectedDay.format("YYYY-MM-DD"),
+            sessionDate: selectedDay && selectedDay.format("YYYY-MM-DD"),
             startTime: `${startTime}:00`,
             location: address?.address,
             totalPrice: calcuResult.totalPrice || 0,
@@ -96,7 +95,7 @@ const ConfirmBookingScreen = () => {
             totalChefFeePrice: calcuResult.totalChefFeePrice || 0,
             totalCookTime: (calcuResult.cookTimeMinutes || 0) / 60,
             isUpdated: false,
-            menuId: selectedMenu.id,
+            menuId: selectedMenu?.id || null,
             dishes: selectedDishIds.map((dishId) => ({
               dishId: dishId,
               notes: dishNotes[dishId] || null,
@@ -110,7 +109,7 @@ const ConfirmBookingScreen = () => {
         showModal("Success", "Booking confirmed successfully!", "Success");
       }
       setTotalPrice(calcuResult.totalPrice)
-      router.push({
+      router.replace({
         pathname: "/screen/paymentBooking",
         params: {
           bookingId: response.data.id,
@@ -126,9 +125,13 @@ const ConfirmBookingScreen = () => {
     }
   };
 
+  const handleBack = () => {
+    router.replace("/screen/booking");
+  }
+
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("confirmAndPayment")} />
+      <Header title={t("confirmAndPayment")} onLeftPress={() => handleBack()} />
       <ScrollView
         style={commonStyles.containerContent}
         contentContainerStyle={{ paddingBottom: 170 }}
@@ -167,7 +170,7 @@ const ConfirmBookingScreen = () => {
             <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
-              <Text style={styles.details}>{selectedDay.format("YYYY-MM-DD")}</Text>
+              <Text style={styles.details}>{selectedDay && selectedDay.format("YYYY-MM-DD")}</Text>
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
@@ -219,22 +222,24 @@ const ConfirmBookingScreen = () => {
                 )}
               </View>
             )}
-            <View>
-              <View style={styles.row}>
-                <Text style={{ fontSize: 14, flex: 1 }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
+            <View style={{ flexDirection: 'row', padding: 5, justifyContent: 'space-evenly' }}>
+              {/* <View style={styles.row}> */}
+              <Text style={{ fontSize: 14, flex: 1 }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
+              {/* </View> */}
+              <View>
+                {selectedMenu ? (
+                  Object.keys(extraDishIds).map((key, idx) => (
+                    <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                      <Text style={styles.dishName}>{extraDishIds[key].name}</Text>
+                    </View>
+                  ))) : (
+                  Object.keys(selectedDishes).map((key, idx) => (
+                    <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                      <Text style={styles.dishName}>{selectedDishes[key].name}</Text>
+                    </View>
+                  )))
+                }
               </View>
-              {selectedMenu ? (
-                Object.keys(extraDishIds).map((key, idx) => (
-                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                    <Text style={styles.dishName}>{extraDishIds[key].name}</Text>
-                  </View>
-                ))) : (
-                Object.keys(selectedDishes).map((key, idx) => (
-                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                    <Text style={styles.dishName}>{selectedDishes[key].name}</Text>
-                  </View>
-                )))
-              }
             </View>
 
             <View style={styles.row}>
@@ -278,7 +283,7 @@ const ConfirmBookingScreen = () => {
               {t("total")}:
             </Text>
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-              {calcuResult.totalPrice?.toLocaleString("en-US", {
+              {calcuResult.totalPrice && calcuResult.totalPrice?.toLocaleString("en-US", {
                 style: "currency",
                 currency: "USD",
               }) || "$0"}

@@ -46,7 +46,7 @@ export const commonStyles = StyleSheet.create({
   labelInput: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginTop: 10
+    marginTop: 5
   },
   input: {
     height: 50,

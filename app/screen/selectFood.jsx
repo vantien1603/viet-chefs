@@ -8,7 +8,7 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
@@ -19,6 +19,7 @@ import axios from "axios";
 import { Modalize } from 'react-native-modalize';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSelectedItems } from "../../context/itemContext";
+import * as SecureStore from "expo-secure-store";
 
 const DishCard = ({ item, selectedList, onToggle, note, viewDetails }) => (
   <View style={[styles.dishCard, { flexDirection: 'row', alignItems: 'center', paddingRight: 50 }, selectedList[item.id] && styles.selectedDishes,]}>
@@ -74,7 +75,19 @@ const SelectFood = () => {
   const menuDetailModalRef = useRef(null);
   const [selectedMenuDetail, setSelectedMenuDetail] = useState(null);
   const [modalKey, setModalKey] = useState(0);
-  const { selectedMenu, setSelectedMenu, selectedDishes, setSelectedDishes, extraDishIds, setExtraDishIds, chefId, setIsLoop } = useSelectedItems();
+  const { selectedMenu, setSelectedMenu, selectedDishes, setSelectedDishes, extraDishIds, setExtraDishIds, chefId, setIsLoop, routeBefore, setRouteBefore } = useSelectedItems();
+  const startDish = SecureStore.getItem("firstDish");
+  const startChef = SecureStore.getItem("firstChef");
+
+  useEffect(() => {
+    fetchMenus();
+  }, [])
+
+  useEffect(() => {
+    fetchDishes();
+  }, [selectedMenu]);
+
+
   const handleViewMenuDetails = (menu) => {
     setSelectedMenuDetail(menu);
     setModalKey(prev => prev + 1);
@@ -83,12 +96,7 @@ const SelectFood = () => {
     }, 100);
   };
 
-  useEffect(() => {
-    fetchMenus();
-  }, [chefId]);
-  useEffect(() => {
-    fetchDishes();
-  }, [selectedMenu]);
+
 
   const fetchMenus = async () => {
     setLoading(true);
@@ -182,7 +190,9 @@ const SelectFood = () => {
       showModal("Error", "Vui lòng chọn ít nhất một menu hoặc món ăn.", "Failed");
       return;
     }
-    router.push("/screen/booking");
+    // router.push("/screen/booking");
+    // setRouteBefore(segment);
+    router.replace("/screen/booking");
   };
 
   const handleViewDetails = (id) => {
@@ -193,6 +203,27 @@ const SelectFood = () => {
         dishId: id
       }
     })
+  }
+
+  const handleBack = () => {
+    if (routeBefore[1] === "dishDetails") {
+      router.replace({
+        pathname: `${routeBefore[0]}/${routeBefore[1]}`,
+        params: {
+          dishId: startDish
+        }
+      })
+
+    } else if (routeBefore[1] === "chefDetail") {
+      router.replace({
+        pathname: `${routeBefore[0]}/${routeBefore[1]}`,
+        params: {
+          chefId: startChef
+        }
+      })
+    } else {
+      router.replace(`${routeBefore[0]}/${routeBefore[1]}`);
+    }
   }
 
   const renderDish = ({ item }) => {
@@ -220,7 +251,7 @@ const SelectFood = () => {
   return (
     <GestureHandlerRootView >
       <SafeAreaView style={commonStyles.container}>
-        <Header title={t("selectDish")} />
+        <Header title={t("selectDish")} onLeftPress={() => handleBack()} />
         <View style={commonStyles.containerContent}>
           <Text style={styles.sectionTitle}>{t("selectAvailableMenu")}:</Text>
           <View>
@@ -348,19 +379,6 @@ const styles = StyleSheet.create({
     elevation: 10,
     transform: [{ scale: 1.03 }],
   },
-
-  checkbox: (selected) => ({
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: selected ? "#F8BF40" : "#fff",
-    borderWidth: 2,
-    borderColor: selected ? "#F8BF40" : "#CCCCCC",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    marginTop: 6,
-  }),
   image: {
     width: 80,
     height: 80,
@@ -381,24 +399,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 6,
   },
-  note: {
-    marginTop: 8,
-    fontStyle: "italic",
-    color: "#E76F51",
-    fontSize: 15,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 16,
-    marginTop: 6,
-    marginLeft: 44,
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-  },
+
   button: {
     position: "absolute",
     bottom: 16,

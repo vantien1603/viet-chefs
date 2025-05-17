@@ -156,18 +156,6 @@ export default function RootLayout() {
                         }}
                       />
                       <Stack.Screen
-                        name="screen/historyBooking"
-                        options={{
-                          headerShown: false,
-                        }}
-                      />
-                      <Stack.Screen
-                        name="screen/Cart/cart"
-                        options={{
-                          headerShown: false,
-                        }}
-                      />
-                      <Stack.Screen
                         name="screen/searchResult"
                         options={{
                           headerShown: false,
@@ -187,12 +175,6 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="screen/editAddress"
-                        options={{
-                          headerShown: false,
-                        }}
-                      />
-                      <Stack.Screen
-                        name="screen/calendar"
                         options={{
                           headerShown: false,
                         }}
@@ -259,12 +241,6 @@ export default function RootLayout() {
                         }}
                       />
                       <Stack.Screen
-                        name="screen/reviewFeedback"
-                        options={{
-                          headerShown: false,
-                        }}
-                      />
-                      <Stack.Screen
                         name="screen/reviewsChef"
                         options={{
                           headerShown: false,
@@ -314,12 +290,6 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="screen/dishDetails"
-                        options={{
-                          headerShown: false,
-                        }}
-                      />
-                      <Stack.Screen
-                        name="screen/dishNote"
                         options={{
                           headerShown: false,
                         }}

@@ -9,6 +9,7 @@ import { commonStyles } from '../../style'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCommonNoification } from '../../context/commonNoti'
 import axios from 'axios'
+import { useConfirmModal } from '../../context/commonConfirm'
 const DetailsBooking = () => {
     const [loading, setLoading] = useState(false);
     const axiosInstance = useAxios();
@@ -17,7 +18,7 @@ const DetailsBooking = () => {
     const { bookingId } = route.params;
     const [booking, setBooking] = useState({});
     const { showModal } = useCommonNoification();
-
+    const { showConfirm } = useConfirmModal();
 
     useEffect(() => {
         fetchBooking();
@@ -91,14 +92,14 @@ const DetailsBooking = () => {
 
 
 
-    const handleReject = (id) => {
+    const handleReject = async (id) => {
         try {
             setLoading(true);
-            const response = axiosInstance.put(`/bookings/${id}/reject`);
+            const response = await axiosInstance.put(`/bookings/${id}/reject`);
             if (response.status === 200) {
                 showModal("Success", "Reject successfully");
             }
-            fetchBooking()
+            await fetchBooking()
 
         } catch (error) {
             if (error.response?.status === 401) {
@@ -113,16 +114,16 @@ const DetailsBooking = () => {
         }
     }
 
-    const handleAccept = (id) => {
+    const handleAccept = async (id) => {
         try {
             console.log("Toi se acept cai nafy", id);
             setLoading(true);
-            const response = axiosInstance.put(`/bookings/${id}/confirm`);
+            const response = await axiosInstance.put(`/bookings/${id}/confirm`);
             if (response.status === 200) {
                 showModal("Success", "Confirmed successfully");
 
             }
-            fetchBooking();
+            await fetchBooking();
         } catch (error) {
             if (error.response?.status === 401) {
                 return;
@@ -134,6 +135,29 @@ const DetailsBooking = () => {
         } finally {
             setLoading(false);
         }
+    }
+
+    const handleCancel = async (id) => {
+        showConfirm("Warming", "Cancelling a booking will affect the customer experience and trust in the app. The money will be refunded to the customer and you will be subject to the corresponding penalty. Are you sure you want to cancel?", async () => {
+            setLoading(true);
+            try {
+                const response = booking.bookingType === "single" ? await axiosInstance.put(`/bookings/single/cancel-chef/${id}`) : await axiosInstance.put(`/bookings/long-term/cancel-chef/${id}`);
+                if (response.status === 200) {
+                    showModal("Success", "Cancel successfully");
+                }
+            } catch (error) {
+                if (error.response?.status === 401) {
+                    return;
+                }
+                if (axios.isCancel(error)) {
+                    return;
+                }
+                showModal("Error", "Có lỗi xảy ra trong quá trình chấp nhận.", "Failed");
+            } finally {
+                setLoading(false);
+            }
+        })
+
     }
 
 
@@ -331,6 +355,7 @@ const DetailsBooking = () => {
                             alignItems: "center",
                             elevation: 5,
                         }}
+                        onPress={() => handleCancel(booking.id)}
                     >
                         {loading ? (
                             <ActivityIndicator size="small" color="white" />

@@ -8,9 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  BackHandler,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -36,14 +33,6 @@ export default function Home() {
   const [location, setLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => true
-    );
-    return () => backHandler.remove();
-  }, []);
-
 
   useFocusEffect(
     useCallback(() => {
@@ -258,7 +247,7 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
-      <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail"  style={{ color: "#F8BF40" }}>{item.description}</Text>
     </TouchableOpacity>
   );
 
@@ -335,129 +324,125 @@ export default function Home() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 10 }}
       >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 10 }}
-        >
-          <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
-            <Image
-              source={require("../../assets/images/promo.png")}
-              style={{ width: "100%", height: 150, borderRadius: 30 }}
-              resizeMode="cover"
-            />
-          </View>
+        <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
+          <Image
+            source={require("../../assets/images/promo.png")}
+            style={{ width: "100%", height: 150, borderRadius: 30 }}
+            resizeMode="cover"
+          />
+        </View>
 
-          <View style={styles.searchContainer}>
-            <TextInput
-              placeholder="Search..."
-              style={styles.searchInput}
-              value={query}
-              onChangeText={setQuery}
-              onSubmitEditing={() => {
-                const searchQuery = String(query || "").trim();
-                router.push({
-                  pathname: "/screen/search",
-                  params: {
-                    query: searchQuery,
-                    selectedAddress: selectedAddress
-                      ? JSON.stringify(selectedAddress)
-                      : null,
-                  },
-                });
-              }}
-              onFocus={() => {
-                router.push({
-                  pathname: "/screen/search",
-                  params: {
-                    query: String(query || "").trim(),
-                    selectedAddress: selectedAddress
-                      ? JSON.stringify(selectedAddress)
-                      : null,
-                  },
-                });
-              }}
-              returnKeyType="search"
-            />
-            <TouchableOpacity
-              onPress={handleSearchIconPress}
-              style={styles.searchIcon}
-            >
-              <Icon name="search" size={24} color="#4EA0B7" />
-            </TouchableOpacity>
-          </View>
+        <View style={styles.searchContainer}>
+          <TextInput
+            placeholder="Search..."
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={() => {
+              const searchQuery = String(query || "").trim();
+              router.push({
+                pathname: "/screen/search",
+                params: {
+                  query: searchQuery,
+                  selectedAddress: selectedAddress
+                    ? JSON.stringify(selectedAddress)
+                    : null,
+                },
+              });
+            }}
+            onFocus={() => {
+              router.push({
+                pathname: "/screen/search",
+                params: {
+                  query: String(query || "").trim(),
+                  selectedAddress: selectedAddress
+                    ? JSON.stringify(selectedAddress)
+                    : null,
+                },
+              });
+            }}
+            returnKeyType="search"
+          />
+          <TouchableOpacity
+            onPress={handleSearchIconPress}
+            style={styles.searchIcon}
+          >
+            <Icon name="search" size={24} color="#4EA0B7" />
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
-            <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                {t("seeAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {loading ? (
-            <ActivityIndicator size={'large'} color={'white'} />
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 30 }}
-            >
-              {dishes.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderDishItem({ item })}
-                </View>
-              ))}
-            </ScrollView>
-          )}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
+          <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
+            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+              {t("seeAll")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator size={'large'} color={'white'} />
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {dishes.map((item, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 200,
+                  alignItems: "center",
+                  marginRight: 20,
+                  marginLeft: index === 0 ? 16 : 0,
+                }}
+              >
+                {renderDishItem({ item })}
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
-            <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                {t("seeAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {loading ? (
-            <ActivityIndicator size={'large'} color={'white'} />
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 30 }}
-            >
-              {chef.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderChefItem({ item })}
-                </View>
-              ))}
-            </ScrollView>
-          )}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
+          <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
+            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+              {t("seeAll")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator size={'large'} color={'white'} />
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {chef.map((item, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 200,
+                  alignItems: "center",
+                  marginRight: 20,
+                  marginLeft: index === 0 ? 16 : 0,
+                }}
+              >
+                {renderChefItem({ item })}
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }

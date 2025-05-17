@@ -5,19 +5,18 @@ import {
   ScrollView,
   StyleSheet,
   Image,
-  BackHandler,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
-import { AntDesign } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
+import { useCommonNoification } from "../../context/commonNoti";
+import { FlatList } from "react-native";
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -33,29 +32,19 @@ const ReviewsChefScreen = () => {
   const { user } = useContext(AuthContext);
   const [pageNo, setPageNo] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
   const PAGE_SIZE = 10;
   const [totalReviews, setTotalReviews] = useState(0);
   const [sort, setSort] = useState("newest");
+  const [refresh, setRefresh] = useState(false);
+  const [totalPage, setTotalPage] = useState(0);
+  const [replyTexts, setReplyTexts] = useState({});
+  const { showModal } = useCommonNoification();
 
-  useEffect(() => {
-    const backAction = () => {
-      router.push({ pathname: "/screen/chefDetail", params: { chefId } });
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, []);
-
-  const fetchReviewChef = async (page = 0, sortOption = sort) => {
-    if (isLoading) return;
-    setIsLoading(true);
+  const fetchReviewChef = async (page = 0, sortOption = sort, isRefresh = false) => {
+    if (loading && !isRefresh) return;
+    setLoading(true);
     try {
       const chefIdToFetch = chefId || user.chefId;
       const response = await axiosInstance.get(`/reviews/chef/${chefIdToFetch}`, {
@@ -65,97 +54,74 @@ const ReviewsChefScreen = () => {
           sort: sortOption,
         },
       });
-      const data = response.data;
-      const ids = data.reviews.map((r) => r.id);
-      const uniqueIds = new Set(ids);
-      if (ids.length !== uniqueIds.size) {
-        console.warn("Duplicate review IDs detected:", ids);
-      }
-      // Load reactions from AsyncStorage for each review
-      const reviewsWithReactions = await Promise.all(
-        data.reviews.map(async (review) => {
-          const storedReaction = await AsyncStorage.getItem(
-            `@reaction_${review.id}`
-          );
-          return {
-            ...review,
-            reactionType: storedReaction || "not_helpful",
-          };
-        })
+      // setReviews((prev) => {
+      //   const existingIds = new Set(prev.map((r) => r.id));
+      //   const newReviews = response.data.reviews.filter((r) => !existingIds.has(r.id));
+      //   return page === 0 ? response.data.reviews : [...prev, ...newReviews];
+      // });
+
+      setReviews((prev) =>
+        isRefresh ? response.data.reviews : [...prev, ...response.data.reviews]
       );
-      setReviews((prev) => {
-        const existingIds = new Set(prev.map((r) => r.id));
-        const newReviews = reviewsWithReactions.filter(
-          (r) => !existingIds.has(r.id)
-        );
-        return page === 0 ? reviewsWithReactions : [...prev, ...newReviews];
-      });
-      const calculatedAvg =
-        data.reviews.length > 0
-          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) /
-          data.reviews.length
-          : 0;
-      setAverageRating(data.averageRating || calculatedAvg);
-      setRatingDistribution(data.ratingDistribution || {});
-      setTotalPages(data.totalPages || 1);
+
+
+      const calculatedAvg = response.data.reviews.length > 0
+        ? response.data.reviews.reduce((sum, r) => sum + r.rating, 0) / response.data.reviews.length : 0;
+
+      setAverageRating(response.data.averageRating || calculatedAvg);
+      setRatingDistribution(response.data.ratingDistribution || {});
+      setTotalPages(response.data.totalPages || 1);
       setPageNo(page);
-      setTotalReviews(data.totalReviews || 0);
+      setTotalReviews(response.data.totalReviews || 0);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch reviews",
-        visibilityTime: 4000,
-      });
+      // showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal("Error", error.response.data.nessage, "Failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setRefresh(false);
     }
   };
+
 
   useEffect(() => {
-    fetchReviewChef(0);
+    fetchReviewChef(0, sort, true);
   }, [chefId]);
 
-  const handleLoadMore = () => {
-    if (pageNo < totalPages - 1 && !isLoading) {
-      fetchReviewChef(pageNo + 1);
-    }
-  };
-
   const handleSortChange = (sortOption) => {
-    if (isLoading) return;
+    if (loading) return;
     setSort(sortOption);
     setReviews([]);
     setPageNo(0);
-    fetchReviewChef(0, sortOption);
+    fetchReviewChef(0, sortOption, true);
   };
 
-  const handleReaction = async (reviewId, currentReaction, setReaction) => {
-    const newReaction =
-      currentReaction === "helpful" ? "not_helpful" : "helpful";
-    try {
-      setReaction(newReaction);
-      await AsyncStorage.setItem(`@reaction_${reviewId}`, newReaction);
-      const response = await axiosInstance.post(
-        `/reviews/${reviewId}/reaction`,
-        {
-          reactionType: newReaction,
-        }
-      );
-      if (response.status === 200 || response.status === 201) {
-        const reaction =
-          response.data.reaction?.reactionType || newReaction;
-        await AsyncStorage.setItem(`@reaction_${reviewId}`, reaction);
-        setReaction(reaction);
-      }
-    } catch (error) {
-      console.log("Error updating reaction:", error);
-      // Revert UI and AsyncStorage on error
-      setReaction(currentReaction);
-      await AsyncStorage.setItem(`@reaction_${reviewId}`, currentReaction);
+  const loadMoreData = async () => {
+    if (!loading && pageNo + 1 <= totalPage - 1) {
+      console.log("cal load more");
+      const nextPage = pageNo + 1;
+      setPageNo(nextPage);
+      await fetchReviewChef(nextPage, sort);
     }
   };
+
+  const handleRefresh = async () => {
+    setRefresh(true);
+    setPageNo(0);
+    await fetchReviewChef(0, sort, true);
+  };
+
+  const handleReply = async (id) => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post(`reviews/${id}/reply`, replyTexts[id]);
+      console.log(response.data);
+    } catch (error) {
+      showModal("Error", error.response.data.message, "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
 
   const RatingStars = ({ rating }) => (
     <View style={styles.starsContainer}>
@@ -188,48 +154,48 @@ const ReviewsChefScreen = () => {
     );
   };
 
-  const ReviewCard = ({ review }) => {
-    const [reaction, setReaction] = useState(
-      review.reactionType || "not_helpful"
-    );
-
+  const renderItem = ({ item: review }) => {
     const timeAgo = (date) => {
       const now = new Date();
       const diff = Math.floor((now - new Date(date)) / 1000);
-      if (diff < 60) return `${diff} seconds ago`;
-      if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-      return `${Math.floor(diff / 86400)} days ago`;
+      if (diff < 60) return `${diff} giây trước`;
+      if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+      return `${Math.floor(diff / 86400)} ngày trước`;
     };
 
     return (
-      <View style={styles.reviewCard}>
-        <View style={styles.reviewHeader}>
+      <View style={styles.reviewItem}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
-            source={{
-              uri: review.userAvatar || "https://via.placeholder.com/50",
-            }}
-            style={styles.userAvatar}
+            source={{ uri: review.userAvatar || "https://via.placeholder.com/50" }}
+            style={styles.avatar}
           />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>
-              {review.userName || "Anonymous"}
-            </Text>
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
             <RatingStars rating={review.rating} />
           </View>
-          <TouchableOpacity
-            onPress={() => handleReaction(review.id, reaction, setReaction)}
-            style={styles.likeButton}
-          >
-            <AntDesign
-              name={reaction === "helpful" ? "like1" : "like2"}
-              size={20}
-              color={reaction === "helpful" ? "#A64B2A" : "#333"}
-            />
-          </TouchableOpacity>
         </View>
-        <Text style={styles.reviewText}>{review.description}</Text>
+        <Text style={styles.reviewText}>{review.overallExperience}</Text>
         <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
+        {user.roleName === "ROLE_CHEF" && (
+          <>
+            <TextInput
+              placeholder="Reply to this review..."
+              value={replyTexts[review.id] || ""}
+              onChangeText={(text) =>
+                setReplyTexts((prev) => ({ ...prev, [review.id]: text }))
+              }
+              style={[styles.replyInput, { textAlignVertical: 'top' }]}
+              multiline
+              numberOfLines={4}
+            />
+
+            <TouchableOpacity onPress={() => handleReply(review.id)}>
+              <Text style={styles.replyButton}>Gửi phản hồi</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     );
   };
@@ -248,95 +214,101 @@ const ReviewsChefScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Header title="Reviews for" subtitle={`${chefName}`} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        onMomentumScrollEnd={({ nativeEvent }) => {
-          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
-          if (
-            contentOffset.y + layoutMeasurement.height >=
-            contentSize.height - 20 &&
-            !isLoading
-          ) {
-            handleLoadMore();
+      <View>
+        <FlatList
+          contentContainerStyle={{ padding: 20 }}
+          data={reviews}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          ListHeaderComponent={
+            <>
+              <View style={styles.summaryContainer}>
+                <Text style={styles.summaryTitle}>Overall Rating</Text>
+                <View style={styles.averageRatingContainer}>
+                  <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
+                  <RatingStars rating={Math.round(averageRating)} />
+                </View>
+                <Text style={styles.totalItems}>{totalReviews} reviews</Text>
+                <View style={styles.ratingDistribution}>
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <RatingDistributionBar
+                      key={rating}
+                      rating={rating}
+                      count={ratingDistribution[`${rating}-star`] || 0}
+                      maxCount={maxCount}
+                    />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.sortContainer}>
+                <Text style={styles.sortLabel}>Sort by:</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.sortButtons}
+                >
+                  {sortOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.sortButton,
+                        sort === option.value && styles.sortButtonActive,
+                        loading && styles.sortButtonDisabled,
+                      ]}
+                      onPress={() => handleSortChange(option.value)}
+                      disabled={loading}
+                    >
+                      {loading && sort === option.value ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text
+                          style={[
+                            styles.sortButtonText,
+                            sort === option.value && styles.sortButtonTextActive,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </>
           }
-        }}
-      >
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Overall Rating</Text>
-          <View style={styles.averageRatingContainer}>
-            <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
-            <RatingStars rating={Math.round(averageRating)} />
-          </View>
-          <Text style={styles.totalItems}>{totalReviews} reviews</Text>
-          <View style={styles.ratingDistribution}>
-            {[5, 4, 3, 2, 1].map((rating) => (
-              <RatingDistributionBar
-                key={rating}
-                rating={rating}
-                count={ratingDistribution[`${rating}-star`] || 0}
-                maxCount={maxCount}
-              />
-            ))}
-          </View>
-        </View>
-        <View style={styles.sortContainer}>
-          <Text style={styles.sortLabel}>Sort by:</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.sortButtons}
-          >
-            {sortOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.sortButton,
-                  sort === option.value && styles.sortButtonActive,
-                  isLoading && styles.sortButtonDisabled,
-                ]}
-                onPress={() => handleSortChange(option.value)}
-                disabled={isLoading}
-              >
-                {isLoading && sort === option.value ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text
-                    style={[
-                      styles.sortButtonText,
-                      sort === option.value && styles.sortButtonTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        {isLoading && reviews.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#A64B2A" />
-          </View>
-        ) : reviews.length > 0 ? (
-          reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))
-        ) : (
-          <Text style={styles.noReviews}>No reviews yet for this chef</Text>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+          ListFooterComponent={
+            loading && !refresh ? (
+              <ActivityIndicator size="large" color="#A64B2A" style={{ marginVertical: 20 }} />
+            ) : null
+          }
+          onEndReached={loadMoreData}
+          onEndReachedThreshold={0.5}
+          refreshing={refresh}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            !loading && (
+              <Text style={{ textAlign: "center", marginTop: 30 }}>Chưa có đánh giá nào</Text>
+            )
+          }
+        />
+      </View>
+    </SafeAreaView >
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#EBE5DD",
+  replyInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 8,
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+  replyButton: {
+    alignSelf: 'flex-end',
+    marginTop: 5,
+    color: "#A64B2A",
+    fontWeight: "bold",
   },
   sortContainer: {
     marginBottom: 20,

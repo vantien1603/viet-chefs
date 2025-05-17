@@ -9,6 +9,7 @@ import { AuthContext } from '../../config/AuthContext'
 import { useNavigation } from '@react-navigation/native'
 import { useCommonNoification } from '../../context/commonNoti'
 import axios from 'axios'
+import { useConfirmModal } from '../../context/commonConfirm'
 
 
 const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject, onCancel, onViewDetail }) => {
@@ -126,9 +127,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
 };
 
 const Histories = () => {
-  const { user } = useContext(AuthContext);
   const axiosInstance = useAxios();
-  // const [bookings, setBookings] = useState([]);
   const [bookings, setBookings] = useState({
     PAID: [],
     CONFIRMED: [],
@@ -156,6 +155,7 @@ const Histories = () => {
   ]);
 
   const { showModal } = useCommonNoification();
+  const { showConfirm } = useConfirmModal();
 
   useEffect(() => {
     fetchRequestBooking(0, 'PAID', true);
@@ -328,12 +328,6 @@ const Histories = () => {
       await fetchRequestBooking(0, 'CANCELED', true);
     }
     setRefresh(false);
-
-    // setPage(0);
-    // setNewBooking([]);
-    // setConfirmBooking([]);
-    // setCancelBooking([]);
-    // await fetchRequestBooking(0, true);
   };
 
 
@@ -389,26 +383,30 @@ const Histories = () => {
   }
 
   const handleCancel = async (id, type) => {
-    console.log("asdasdasd");
-    setLoading(true);
-    try {
-      const response = type = "single" ? await axiosInstance.put(`/bookings/single/cancel/${id}`) : await axiosInstance.put(`/bookings/long-term/cancel/${id}`);
-      if (response.status === 200) {
-        showModal("Success", "Cancel successfully");
-        fetchRequestBooking(0, true)
+    showConfirm("Warming", "Cancelling a booking will affect the customer experience and trust in the app. The money will be refunded to the customer and you will be subject to the corresponding penalty. Are you sure you want to cancel?", async () => {
+      setLoading(true);
+      try {
+        console.log(type, id);
+        const response = type === "single" ? await axiosInstance.put(`/bookings/single/cancel-chef/${id}`) : await axiosInstance.put(`/bookings/long-term/cancel-chef/${id}`);
+        if (response.status === 200) {
+          showModal("Success", "Cancel successfully");
+          // fetchRequestBooking(0, 'CONFIRMED', true);
+          setBookings(prev => ({ ...prev, CONFIRMED: prev.CONFIRMED.filter(item => item.id !== id) }));
+        }
+      } catch (error) {
+        const mes = error.response.data?.message;
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal("Error", mes, "Failed")
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      if (error.response) {
-        const mes = error.response.data.message;
-        console.log(mes);
-        showModal("Error", mes);
-      }
-      else {
-        console.error(error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
+    });
+
   }
 
 
@@ -417,42 +415,6 @@ const Histories = () => {
     navigation.navigate("screen/detailsBooking", { bookingId: id });
   }, []);
 
-
-
-
-  // const renderScene = SceneMap({
-  //   new: () => (
-  //     <BookingHistories
-  //       bookings={newBooking}
-  //       onLoadMore={loadMoreData}
-  //       refreshing={refresh}
-  //       onRefresh={handleRefresh}
-  //       onAccept={handleAccept}
-  //       onReject={handleReject}
-  //       onViewDetail={viewDetail}
-  //     />
-  //   ),
-  //   confirmed: () => (
-  //     <BookingHistories
-  //       bookings={confirmBooking}
-  //       onLoadMore={loadMoreData}
-  //       refreshing={refresh}
-  //       onRefresh={handleRefresh}
-  //       onCancel={handleRefresh}
-  //       onViewDetail={viewDetail}
-  //     />
-  //   ),
-
-  //   canceled: () => (
-  //     <BookingHistories
-  //       bookings={cancelBooking}
-  //       onLoadMore={loadMoreData}
-  //       refreshing={refresh}
-  //       onRefresh={handleRefresh}
-  //       onViewDetail={viewDetail}
-  //     />
-  //   ),
-  // });
 
   const renderScene = ({ route }) => {
     switch (route.key) {

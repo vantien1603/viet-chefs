@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useRef, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,71 +11,50 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
-import Toast from "react-native-toast-message";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
+import { useSelectedItems } from "../../context/itemContext";
+import { commonStyles } from "../../style";
 
 const PaymentLongterm = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
   const axiosInstance = useAxios();
-  const { user } = useContext(AuthContext);
-
   const bookingId = params.bookingId;
-  const bookingData = JSON.parse(params.bookingData || "{}");
-  const totalPrice = bookingData.totalPrice || 0;
+  const platformFeeModalRef = useRef(null);
+  const { location, totalPrice, selectedDates } = useSelectedItems();
   const depositAmount = totalPrice * 0.05;
   const { showModal } = useCommonNoification();
+  const [isPaySuccess, setIsPaySuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const handleConfirmDeposit = async () => {
+    setLoading(true);
     try {
-      if (!bookingId) {
-        throw new Error("Không tìm thấy ID đặt chỗ.");
-      }
-
-      const response = await axiosInstance.post(
-        `/bookings/${bookingId}/deposit`
-      );
-
+      const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
       if (response.status === 200 || response.status === 201) {
         showModal("Success", "Đặt cọc đã được xác nhận!", "Success");
-        router.push("(tabs)/home");
+        setIsPaySuccess(true);
       }
     } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
+      if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
       showModal("Error", "Có lỗi xảy ra trong quá trình đặt cọc.", "Failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // const handleBackPress = () => {
-  //   Toast.show({
-  //     type: "info",
-  //     text1: "Quay lại",
-  //     text2: "Đã quay lại màn hình xác nhận đặt chỗ.",
-  //     visibilityTime: 2000,
-  //   });
-  //   router.push({
-  //     pathname: "/screen/reviewBooking",
-  //     params: {
-  //       bookingData: JSON.stringify(bookingData),
-  //       chefId: params.chefId,
-  //       selectedPackage: params.selectedPackage,
-  //       numPeople: params.numPeople,
-  //       selectedDates: params.selectedDates,
-  //     },
-  //   });
-  // };
+  const handleBack = () => {
+    router.replace('/screen/reviewBooking');
+  }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Header title="Thanh toán đặt cọc" />
-      <ScrollView style={styles.container}>
+    <SafeAreaView style={commonStyles.container}>
+      <Header title="Thanh toán đặt cọc" onLeftPress={() => handleBack()} />
+      <ScrollView style={commonStyles.containerContent}>
         <Text style={styles.title}>Xác nhận đặt cọc</Text>
-
         <View style={styles.summaryContainer}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tổng tiền đặt chỗ:</Text>
@@ -98,10 +77,10 @@ const PaymentLongterm = () => {
         <View style={styles.infoContainer}>
           <Text style={styles.infoLabel}>Thông tin đặt chỗ:</Text>
           <Text style={styles.infoValue}>
-            Địa điểm: {bookingData.bookingDetails?.[0]?.location || "N/A"}
+            Địa điểm: {location || "N/A"}
           </Text>
           <Text style={styles.infoValue}>
-            Số ngày: {bookingData.bookingDetails?.length || 0}
+            Số ngày: {selectedDates?.length || 0}
           </Text>
         </View>
 
@@ -111,13 +90,14 @@ const PaymentLongterm = () => {
       <View style={styles.buttonArea}>
         <TouchableOpacity
           style={styles.confirmButton}
-          onPress={() => router.push("/(tabs)/home")}
+          onPress={() => router.replace("/(tabs)/home")}
         >
           <Text style={styles.confirmButtonText}>Quay về trang chủ</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.confirmButton}
           onPress={handleConfirmDeposit}
+          disabled={loading || isPaySuccess}
         >
           <Text style={styles.confirmButtonText}>Xác nhận đặt cọc</Text>
         </TouchableOpacity>

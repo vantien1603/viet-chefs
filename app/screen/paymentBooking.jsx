@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
@@ -28,7 +28,8 @@ const PaymentBookingScreen = () => {
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
   const { showModal } = useCommonNoification();
-  const { totalPrice } = useSelectedItems();
+  const { totalPrice, clearSelection } = useSelectedItems();
+  const router = useRouter();
 
   const handleCompletePayment = async () => {
     console.log("press nef")
@@ -42,9 +43,8 @@ const PaymentBookingScreen = () => {
       if (response.status === 200) {
         showModal("Success", "Payment successfully", "Success");
         setIsPaySuccess(true);
+        // clearSelection();
       }
-
-      // router.push("(tabs)/home");
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -59,7 +59,7 @@ const PaymentBookingScreen = () => {
   };
 
   const handleBackHome = () => {
-    router.push("(tabs)/home");
+    router.replace("(tabs)/home");
   };
 
   const confirmPayment = () => {
@@ -67,15 +67,19 @@ const PaymentBookingScreen = () => {
     handleCompletePayment();
   };
 
+  const handleBack = () => {
+    router.replace("/screen/confirmBooking");
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={t("confirmAndPayment")} />
+      <Header title={t("confirmAndPayment")} onLeftPress={() => handleBack()} />
       <View style={styles.content}>
         <Text style={styles.title}>{t("bookingPayment")}</Text>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>{t("totalAmount")}:</Text>
           <Text style={styles.priceValue}>
-            {totalPrice.toLocaleString("en-US", {
+            {totalPrice && totalPrice.toLocaleString("en-US", {
               style: "currency",
               currency: "USD",
             })}
@@ -117,7 +121,7 @@ const PaymentBookingScreen = () => {
             <Text style={styles.modalTitle}>{t("confirmPayment")}</Text>
             <Text style={styles.modalText}>
               {t("confirmPaymentWithAmount", {
-                amount: totalPrice.toLocaleString("en-US", {
+                amount: totalPrice && totalPrice.toLocaleString("en-US", {
                   style: "currency",
                   currency: "USD",
                 }),
@@ -154,8 +158,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    paddingTop: 40, 
-    justifyContent: "flex-start", 
+    paddingTop: 40,
+    justifyContent: "flex-start",
     alignItems: "center",
   },
   title: {

@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useSegments } from "expo-router";
 import { commonStyles } from "../../style";
 import moment from "moment";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -25,6 +25,7 @@ import axios from "axios";
 import { useSelectedItems } from "../../context/itemContext";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useCommonNoification } from "../../context/commonNoti";
+import { useIsFocused } from "@react-navigation/native";
 
 const generateTimeSlots = () => {
   const timeSlots = [];
@@ -89,6 +90,9 @@ const BookingScreen = () => {
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
   const [errors, setErrors] = useState({});
   const { showModal } = useCommonNoification();
+  const segment = useSegments();
+
+
   useEffect(() => {
     fetchUnavailableDates();
   }, [chefId]);
@@ -255,11 +259,13 @@ const BookingScreen = () => {
 
   const openAddressModal = () => {
     setErrors((prev) => ({ ...prev, address: false }));
+    // setRouteBefore(segment);
     router.replace("/screen/chooseAddress");
   };
 
   const handleAddItems = () => {
-    router.back();
+    // router.back();
+    router.replace("/screen/selectFood");
   };
 
   const handleConfirmBooking = async () => {
@@ -278,12 +284,11 @@ const BookingScreen = () => {
       showModal("Thiếu thông tin", "Vui lòng điền đầy đủ thông tin cần thiết.", "Failed");
       return;
     }
-    router.push("screen/confirmBooking");
+    // setRouteBefore(segment);
+    router.replace("screen/confirmBooking");
   };
-  console.log(errors);
 
   const openModal = () => {
-    console.log("Opening modal");
     setTempDishNotes(dishNotes);
     setModalKey((prev) => prev + 1);
     setTimeout(() => {
@@ -337,7 +342,7 @@ const BookingScreen = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title="Booking" />
+      <Header title="Booking" onLeftPress={() => handleAddItems()} />
       <ScrollView
         style={{ flex: 1, paddingHorizontal: 10 }}
         contentContainerStyle={{ paddingBottom: 100 }}

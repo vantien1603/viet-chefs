@@ -21,6 +21,8 @@ import { useCommonNoification } from "../../context/commonNoti";
 import * as ImagePicker from "expo-image-picker";
 import { TabBar, TabView } from "react-native-tab-view";
 import axios from "axios";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import moment from 'moment';
 
 const ProfileDetail = () => {
   const [loading, setLoading] = useState();
@@ -39,7 +41,8 @@ const ProfileDetail = () => {
     { key: 'chef', title: 'Thông tin đầu bếp' },
   ]
   );
-
+  const [errors, setErrors] = useState({ name: false, phone: false, dob: false });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
 
 
@@ -133,7 +136,33 @@ const ProfileDetail = () => {
   };
 
   const handleSaveProfile = async () => {
-    console.log("preaasdasd");
+    const phoneRegex = /^\d{10}$/;
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    console.log(updateData.dob);
+    const localErrors = {
+      name: false,
+      phone: false,
+      dob: false,
+    };
+
+    if (!updateData.phone || !phoneRegex.test(updateData.phone)) {
+      localErrors.phone = true;
+    }
+    if (!updateData.dob || !dobRegex.test(updateData.dob)) {
+      localErrors.dob = true;
+    }
+    if (!updateData.fullName || !nameRegex.test(updateData.fullName)) {
+      localErrors.name = true;
+    }
+
+    setErrors(localErrors);
+    const hasAnyError = Object.values(localErrors).some((v) => v === true);
+    if (hasAnyError) {
+      showModal("Error", "Invalid data", "Failed");
+      return;
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
@@ -178,6 +207,21 @@ const ProfileDetail = () => {
       setLoading(false);
     }
   }
+
+
+  const handleDateChange = (event, selectedDate) => {
+    if (event.type === "dismissed") {
+      setShowDatePicker(false);
+      return;
+    }
+    if (selectedDate) {
+      const formattedDate = selectedDate.toISOString().split("T")[0];
+      setUpdateData((prev) => ({ ...prev, dob: formattedDate }));
+    }
+    setErrors((prev) => ({ ...prev, dob: false }))
+    setShowDatePicker(false);
+  };
+
 
   const handleSaveChefProfile = async () => {
     setLoading(true);
@@ -251,7 +295,10 @@ const ProfileDetail = () => {
 
       <Text style={styles.label}>Họ và tên</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateData.fullName} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, fullName: text }))} />
+        <TextInput style={[styles.input, errors.name && styles.errorInput]} value={updateData.fullName} onChangeText={(text) => {
+          setUpdateData((prev) => ({ ...prev, fullName: text }));
+          setErrors((prev) => ({ ...prev, name: false, }))
+        }} />
       ) : (
         <Text style={styles.text}>{updateData.fullName}</Text>
       )}
@@ -265,16 +312,31 @@ const ProfileDetail = () => {
 
       <Text style={styles.label}>Số điện thoại</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateData.phone} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, phone: text }))} keyboardType="phone-pad" />
+        <TextInput style={[styles.input, errors.phone && styles.errorInput]} value={updateData.phone} onChangeText={(text) => {
+          setUpdateData((prev) => ({ ...prev, phone: text }));
+          setErrors((prev) => ({ ...prev, phone: false, }))
+        }}
+          keyboardType="phone-pad" />
       ) : (
         <Text style={styles.text}>{updateData.phone}</Text>
       )}
 
       <Text style={styles.label}>Ngày sinh</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateData.dob} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, dob: text }))} />
+        <TouchableOpacity onPress={() => setShowDatePicker(true)} disabled={loading}>
+          <TextInput style={[styles.input, errors.dob && styles.errorInput]} value={updateData.dob} editable={false} />
+        </TouchableOpacity>
       ) : (
         <Text style={styles.text}>{updateData.dob}</Text>
+      )}
+      {showDatePicker && (
+        <DateTimePicker
+          value={updateData.dob ? new Date(updateData.dob) : new Date()}
+          mode="date"
+          maximumDate={new Date()}
+          onChange={handleDateChange}
+          locale="vi-VN"
+        />
       )}
 
       <Text style={styles.label}>Giới tính</Text>
@@ -285,7 +347,7 @@ const ProfileDetail = () => {
               styles.genderButton,
               mapGenderToDisplay(updateData.gender) === "Nam" && styles.genderSelected,
             ]}
-            onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Nam" }))}
+            onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Male" }))}
           >
             <Text
               style={
@@ -300,7 +362,7 @@ const ProfileDetail = () => {
               styles.genderButton,
               mapGenderToDisplay(updateData.gender) === "Nữ" && styles.genderSelected,
             ]}
-            onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Nữ" }))}
+            onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Female" }))}
           >
             <Text
               style={
@@ -515,7 +577,7 @@ const ProfileDetail = () => {
 
           <Text style={styles.label}>Họ và tên</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={updateData.fullName} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, fullName: text }))} />
+            <TextInput style={[styles.input, errors.name && styles.errorInput]} value={updateData.fullName} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, fullName: text }))} />
           ) : (
             <Text style={styles.text}>{updateData.fullName}</Text>
           )}
@@ -529,14 +591,14 @@ const ProfileDetail = () => {
 
           <Text style={styles.label}>Số điện thoại</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={updateData.phone} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, phone: text }))} keyboardType="phone-pad" />
+            <TextInput style={[styles.input, errors.phone && styles.errorInput]} value={updateData.phone} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, phone: text }))} keyboardType="phone-pad" />
           ) : (
             <Text style={styles.text}>{updateData.phone}</Text>
           )}
 
           <Text style={styles.label}>Ngày sinh</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={updateData.dob} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, dob: text }))} />
+            <TextInput style={[styles.input, errors.dob && styles.errorInput]} value={updateData.dob} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, dob: text }))} />
           ) : (
             <Text style={styles.text}>{updateData.dob}</Text>
           )}
@@ -549,7 +611,7 @@ const ProfileDetail = () => {
                   styles.genderButton,
                   mapGenderToDisplay(updateData.gender) === "Nam" && styles.genderSelected,
                 ]}
-                onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Nam" }))}
+                onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Male" }))}
               >
                 <Text
                   style={
@@ -564,7 +626,12 @@ const ProfileDetail = () => {
                   styles.genderButton,
                   mapGenderToDisplay(updateData.gender) === "Nữ" && styles.genderSelected,
                 ]}
-                onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Nữ" }))}
+                onPress={() => {
+                  setUpdateData((prev) => ({ ...prev, gender: "Female" }));
+                  console.log(updateData.gender);
+                  console.log(mapGenderToDisplay(updateData.gender))
+                }
+                }
               >
                 <Text
                   style={
@@ -647,6 +714,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     color: '#333',
+  },
+  errorInput: {
+    borderColor: 'red'
   },
   textArea: {
     borderColor: "#ccc",

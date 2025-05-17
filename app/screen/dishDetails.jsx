@@ -11,12 +11,11 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
 import useAxios from "../../config/AXIOS_API";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams, useSegments } from "expo-router";
 import { t } from "i18next";
 import { AuthContext } from "../../config/AuthContext";
-import { Dropdown, MultiSelect } from "react-native-element-dropdown";
+import { MultiSelect } from "react-native-element-dropdown";
 import * as ImagePicker from "expo-image-picker";
 import { commonStyles } from "../../style";
 import { useCommonNoification } from "../../context/commonNoti";
@@ -25,10 +24,17 @@ import { useConfirmModal } from "../../context/commonConfirm";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import axios from "axios";
 import { useSelectedItems } from "../../context/itemContext";
+import * as SecureStore from "expo-secure-store";
 
 const DishDetails = () => {
   const { dishId } = useLocalSearchParams();
-  const { selectedDishes, setSelectedDishes, setChefId, isLoop, setIsLoop, clearSelection } = useSelectedItems();
+  const {
+    extraDishIds, selectedDishes, selectedMenu, setSelectedDishes, selectedDay, setExtraDishIds,
+    setChefId, isLoop, setIsLoop, clearSelection,
+    isLong,
+    setRouteBefore
+  } = useSelectedItems();
+
   const [dishesName, setDishesName] = useState("");
   const [dish, setDish] = useState({});
   const [oldDish, setOldDish] = useState({});
@@ -43,6 +49,9 @@ const DishDetails = () => {
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
   const axiosInstanceForm = useAxiosFormData();
+  const segment = useSegments();
+
+  console.log(dishId);
 
   useFocusEffect(
     useCallback(() => {
@@ -128,8 +137,9 @@ const DishDetails = () => {
 
   const handleBack = () => {
     if (isLoop) {
+      console.log("roi vo day", isLoop);
       setIsLoop(false);
-      router.replace("/screen/selectFood");
+      isLong ? router.replace("/screen/chooseFoodForLongterm") : router.replace("/screen/selectFood");
     } else {
       setIsLoop(false);
       router.back();
@@ -138,21 +148,100 @@ const DishDetails = () => {
 
   const handleBooking = () => {
     setChefId(dish.chef?.id);
-    if (!Object.values(selectedDishes).some((item) => item.id === dish.id)) {
-      setSelectedDishes((prev) => ({
-        ...prev,
-        [dish.id]: {
-          id: dish.id,
-          name: dish.name,
-          imageUrl: dish.imageUrl,
-          description: dish.description
-        },
-      }));
-    }
-    if (!isLoop) {
-      router.push("/screen/selectFood");
+    // if (!selectedMenu) {
+    //   if (!Object.values(selectedDishes).some((item) => item.id === dish.id)) {
+    //     console.log("khong trung")
+    //     setSelectedDishes((prev) => ({
+    //       ...prev,
+    //       [dish.id]: {
+    //         id: dish.id,
+    //         name: dish.name,
+    //         imageUrl: dish.imageUrl,
+    //         description: dish.description
+    //       },
+    //     }));
+    //   }
+    // } else {
+    //   if (!Object.values(extraDishIds).some((item) => item.id === dish.id)) {
+    //     setExtraDishIds((prev) => ({
+    //       ...prev,
+    //       [dish.id]: {
+    //         id: dish.id,
+    //         name: dish.name,
+    //         imageUrl: dish.imageUrl,
+    //         description: dish.description
+    //       },
+    //     }));
+    //   }
+    // }
+
+    if (!isLong) {
+      if (!selectedMenu) {
+        if (!Object.values(selectedDishes).some((item) => item.id === dish.id)) {
+          setSelectedDishes((prev) => ({
+            ...prev,
+            [dish.id]: {
+              id: dish.id,
+              name: dish.name,
+              imageUrl: dish.imageUrl,
+              description: dish.description
+            },
+          }));
+        }
+      } else {
+        if (!Object.values(extraDishIds).some((item) => item.id === dish.id)) {
+          setExtraDishIds((prev) => ({
+            ...prev,
+            [dish.id]: {
+              id: dish.id,
+              name: dish.name,
+              imageUrl: dish.imageUrl,
+              description: dish.description
+            },
+          }));
+        }
+      }
     } else {
+      if (!selectedMenu) {
+        if (!Object.values(selectedDishes[selectedDay] || {}).some((item) => item.id === dish.id)) {
+          setSelectedDishes((prev) => ({
+            ...prev,
+            [selectedDay]: {
+              ...(prev[selectedDay] || {}),
+              [dish.id]: {
+                id: dish.id,
+                name: dish.name,
+                imageUrl: dish.imageUrl,
+                description: dish.description
+              },
+            }
+          }));
+        }
+      } else {
+        if (!Object.values(extraDishIds[selectedDay] || {}).some((item) => item.id === dish.id)) {
+          setExtraDishIds((prev) => ({
+            ...prev,
+            [selectedDay]: {
+              ...(prev[selectedDay] || {}),
+              [dish.id]: {
+                id: dish.id,
+                name: dish.name,
+                imageUrl: dish.imageUrl,
+                description: dish.description
+              },
+            }
+          }));
+        }
+      }
+    }
+
+    setRouteBefore(segment);
+    if (!isLoop) {
+      SecureStore.setItem("firstDish", dishId);
       router.replace("/screen/selectFood");
+    } else {
+      setIsLoop(false);
+      isLong ? router.replace("/screen/chooseFoodForLongterm") : router.replace("/screen/selectFood");
     }
   };
 

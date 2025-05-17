@@ -7,8 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Platform,
-  Dimensions,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,13 +14,12 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+import { TabView, TabBar } from 'react-native-tab-view';
 import useAxios from "../../config/AXIOS_API";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useCommonNoification } from "../../context/commonNoti";
-import FloatingDraggableButton from "../../components/FloatingButton";
 import { useRouter } from "expo-router";
 import { t } from "i18next";
 import axios from "axios";
@@ -46,7 +43,6 @@ export default function ChefScheduleScreen() {
   const axiosInstance = useAxios();
   const modalizeRef = React.useRef(null);
   const modalizeAddRef = React.useRef(null);
-  const modalizeSet = useRef(null);
   const [selectedSlot, setSelectedSlot] = useState({});
   const [showPicker, setShowPicker] = useState(false);
   const [currentField, setCurrentField] = useState(null);
@@ -54,8 +50,6 @@ export default function ChefScheduleScreen() {
   const { showModal } = useCommonNoification();
   const [addModalKey, setAddModalKey] = useState(0);
   const [updateModalKey, setUpdateModalKey] = useState(0);
-  const [settingModalKey, setSettingModalKey] = useState(0);
-  const [settings, setSettings] = useState({});
   const route = useRouter();
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
@@ -71,18 +65,11 @@ export default function ChefScheduleScreen() {
   };
 
   const openModalAdd = () => {
+    setAddModalKey(prev => prev + 1);
     setTimeout(() => {
-      setAddModalKey(prev => prev + 1);
       modalizeAddRef.current?.open();
     }, 100);
   }
-
-  const openModalSetting = () => {
-    setSettingModalKey(prev => prev + 1);
-    setTimeout(() => {
-      modalizeSet.current?.open();
-    }, 100);
-  };
 
   const toggleDay = (dayId) => {
     setSelectedDays((prev) => {
@@ -338,114 +325,8 @@ export default function ChefScheduleScreen() {
     }
   };
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get('/chef-time-settings/me');
-      setSettings(response.data);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải cài đặt lịch làm việc", "Failed");
-      // showModal("Error", error.response.data.message, "Failed");
-      console.log(error.response.data);
-
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetSetting = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.post('/chef-time-settings/reset');
-      if (response.status === 200) {
-        showModal("Success", "Reset time setting successfully", "Success");
-        modalizeSet.current.close();
-      }
-    } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", "Có lỗi xảy ra trong quá trình đặt lại cài đặt thời gian", "Failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  const handleUpdateSettings = async () => {
-    try {
-      const updateData = {
-        standardPrepTime: parseInt(settings.standardPrepTime),
-        standardCleanupTime: parseInt(settings.standardCleanupTime),
-        travelBufferPercentage: parseInt(settings.travelBufferPercentage),
-        cookingEfficiencyFactor: parseFloat(settings.cookingEfficiencyFactor),
-        minBookingNoticeHours: parseInt(settings.minBookingNoticeHours),
-        maxBookingDaysAhead: parseInt(settings.maxBookingDaysAhead),
-        maxDishesPerSession: parseInt(settings.maxDishesPerSession),
-        maxGuestsPerSession: parseInt(settings.maxGuestsPerSession),
-        serviceRadiusKm: parseInt(settings.serviceRadiusKm),
-        maxSessionsPerDay: parseInt(settings.maxSessionsPerDay),
-      };
-
-      // const formattedData = Object.fromEntries(
-      //   Object.entries({
-      //     ...defaultSettings,
-      //     ...settings
-      //   })
-      //     .filter(([key]) => key !== 'settingId')
-      //     .map(([key, value]) => [key, Number(value)])
-      // );
-
-
-      const response = await axiosInstance.put('/chef-time-settings/me', updateData);
-      if (response.status === 200) {
-        showModal("Success", "Update time setting successfully", "Success");
-        modalizeSet.current.close();
-      }
-    } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      console.log(error)
-      showModal("Error", "Có lỗi xảy ra trong quá trình đặt lại cập nhật cài đặt thời gian", "Failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-
-
-  const settingsConfig = [
-    { key: 'standardPrepTime', label: 'Thời gian chuẩn bị (phút)' },
-    { key: 'standardCleanupTime', label: 'Thời gian dọn dẹp (phút)' },
-    { key: 'travelBufferPercentage', label: 'Tỷ lệ di chuyển (%)' },
-    { key: 'cookingEfficiencyFactor', label: 'Hiệu suất nấu ăn' },
-    { key: 'minBookingNoticeHours', label: 'Thông báo trước (giờ)' },
-    { key: 'maxBookingDaysAhead', label: 'Đặt trước tối đa (ngày)' },
-    { key: 'maxDishesPerSession', label: 'Số món mỗi buổi' },
-    { key: 'maxGuestsPerSession', label: 'Số khách mỗi buổi' },
-    { key: 'serviceRadiusKm', label: 'Bán kính phục vụ (km)' },
-    { key: 'maxSessionsPerDay', label: 'Số buổi mỗi ngày' },
-  ];
-
-
-
   useEffect(() => {
     fetchSchedule();
-    fetchSettings();
   }, []);
 
   const renderScene = ({ route }) => {
@@ -532,70 +413,8 @@ export default function ChefScheduleScreen() {
             <MaterialIcons name="event-busy" size={30} color="red" />
             <Text>Busy date</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.floatingButton, { backgroundColor: "#E0E0E0", flexDirection: 'row', alignItems: 'center' }]} onPress={() => openModalSetting()}>
-            <MaterialIcons name="settings" size={24} color="black" />
-            <Text>Time setting</Text>
-          </TouchableOpacity>
         </View>
 
-        <Modalize ref={modalizeSet} adjustToContentHeight key={`setting-${settingModalKey}`}>
-          <View style={styles.modalContent}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>Cài đặt phiên làm việc</Text>
-
-            <View
-              style={{
-                marginTop: 20,
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-              }}
-            >
-              {settingsConfig.map(({ key, label }) => (
-                <View
-                  key={key}
-                  style={{
-                    width: '48%',
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: '#333', marginBottom: 4 }}>
-                    {label}
-                  </Text>
-                  <TextInput
-                    keyboardType="number-pad"
-                    value={String(settings[key])}
-                    onChangeText={(text) =>
-                      setSettings((prev) => ({ ...prev, [key]: text }))
-                    }
-                    style={{
-                      borderWidth: 1,
-                      borderColor: '#ccc',
-                      borderRadius: 8,
-                      padding: 8,
-                      width: '100%',
-                    }}
-                  />
-                </View>
-              ))}
-            </View>
-
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginTop: 12 }}>
-              <TouchableOpacity
-                style={styles.updateButton}
-                onPress={() => requireAuthAndNetWork(() => handleUpdateSettings())}
-              >
-                <Text style={styles.buttonText}>{t("save")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => showConfirm("Reset confirm", "Are you sure want to reset time setting", () => requireAuthAndNetWork(() => handleRemoveSlot()))}
-              >
-                <Text style={styles.buttonText}>Reset</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modalize>
 
         <Modalize ref={modalizeRef} adjustToContentHeight key={`update-${updateModalKey}`}>
           <View style={styles.modalContent}>
@@ -671,12 +490,9 @@ export default function ChefScheduleScreen() {
               display="spinner"
               onChange={handleTimeChange}
               is24Hour={false}
-
             />
-
           )}
         </Modalize>
-
 
         <Modalize ref={modalizeAddRef} adjustToContentHeight key={`add-${addModalKey}`} >
           <View style={styles.modalContentAdd}>

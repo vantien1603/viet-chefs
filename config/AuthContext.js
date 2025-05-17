@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const bootstrapAsync = async () => {
       const refresh_token = await SecureStore.getItemAsync('refreshToken');
-      // console.log("refresh token", refresh_token);
+      console.log("refresh token", refresh_token);
 
       if (refresh_token) {
         try {
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
 
           if (response.status === 200) {
 
-            // console.log("Duoc roif neennnnn", response.data)
+            console.log("Duoc roif neennnnn", response.data)
             const { access_token } = response.data;
             const decoded = jwtDecode(access_token);
             setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
       setLoading(false);
+      console.log("user", user);
     };
 
     bootstrapAsync();

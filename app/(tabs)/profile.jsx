@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -60,7 +60,7 @@ const Profile = () => {
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
             source={{
-              uri: user?.avatar ||
+              uri: user?.avatarUrl ||
                 "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
             }}
             style={styles.avatar}
