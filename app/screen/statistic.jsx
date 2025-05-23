@@ -22,7 +22,7 @@ const StatisticScreen = () => {
 
   const transactions = useMemo(() => {
     const parsed = params?.transactions ? JSON.parse(params.transactions) : [];
-    console.log("Transactions:", parsed);
+    console.log("Transactions:", parsed); 
     return parsed;
   }, []);
 

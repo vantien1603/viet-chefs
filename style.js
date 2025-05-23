@@ -9,7 +9,7 @@ export const commonStyles = StyleSheet.create({
   containerContent: {
     flex: 1,
     padding: 10,
-    paddingBottom:0,
+    paddingBottom: 0,
     paddingTop: 10,
     backgroundColor: '#EBE5DD',
     // fontFamily: 'nunito-medium',
@@ -43,34 +43,34 @@ export const commonStyles = StyleSheet.create({
     width: 40,
     height: 40,
   },
-  labelInput:{
-    fontWeight:'bold',
-    fontSize:16,
-    marginTop:10
+  labelInput: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 5
   },
   input: {
     height: 50,
     borderRadius: 10,
     marginBottom: 15,
-    marginTop:10,
+    marginTop: 10,
     paddingLeft: 20,
     paddingRight: 20,
     backgroundColor: '#FFF8EF',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#968B7B'
   },
-  // input: {
-  //   height: 50,
-  //   borderWidth: 1,
-  //   borderColor: '#ccc',
-  //   borderRadius: 30,
-  //   marginBottom: 15,
-  //   paddingLeft: 20,
-  //   paddingRight: 20,
-  //   backgroundColor: '#FFF8EF',
-  //   borderWidth: 2,
-  //   borderColor: '#383737'
-  // },
+  inputDes: {
+    borderRadius: 10,
+    marginBottom: 15,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFF8EF',
+    borderWidth: 1,
+    borderColor: '#968B7B',
+    height: 100,
+
+  },
   subButton: {
     textAlign: 'center',
     color: '#A9411D',
@@ -119,7 +119,7 @@ export const commonStyles = StyleSheet.create({
     marginLeft: 10,
   },
   searchContainer: {
-    flexDirection: 'row', 
+    flexDirection: 'row',
     backgroundColor: '#F2F2F2',
     borderRadius: 25,
     margin: 10,

@@ -211,7 +211,7 @@ const AllReview = () => {
                     style={[
                       styles.reasonButton,
                       selectedReasons.includes(reason) &&
-                        styles.reasonButtonSelected,
+                      styles.reasonButtonSelected,
                     ]}
                     onPress={() => handleReasonSelect(reason)}
                   >
@@ -219,7 +219,7 @@ const AllReview = () => {
                       style={[
                         styles.reasonButtonText,
                         selectedReasons.includes(reason) &&
-                          styles.reasonButtonTextSelected,
+                        styles.reasonButtonTextSelected,
                       ]}
                     >
                       {reason}

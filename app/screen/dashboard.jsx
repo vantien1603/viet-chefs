@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,15 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
+// import { LineChart } from "react-native-gifted-charts";
 import { Ionicons } from "@expo/vector-icons";
 import { Dropdown } from "react-native-element-dropdown";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../../config/AuthContext";
+import Header from "../../components/header";
 
 const DashboardScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("Daily");
-
-  const fullName = AsyncStorage.getItem("@fullName");
-
+  const {user} = useContext(AuthContext);
   const dailyData = [
     { value: 204, label: "10AM" },
     { value: 255, label: "11AM" },
@@ -79,8 +78,8 @@ const DashboardScreen = () => {
 
   return (
     <ScrollView style={styles.scrollContainer}>
+      <Header title={'Statistical'}/>
       <View style={styles.container}>
-        {/* Phần header */}
         <View
           style={{
             flexDirection: "row",
@@ -109,7 +108,7 @@ const DashboardScreen = () => {
                 <Text
                   style={{ fontSize: 24, color: "#383838", fontWeight: "bold" }}
                 >
-                  {fullName}
+                  {user?.fullName}
                 </Text>
               </View>
             </View>
@@ -166,7 +165,7 @@ const DashboardScreen = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 10, minWidth: 500 }}
           >
-            <LineChart
+            {/*<LineChart
               areaChart
               curved
               data={chartData}
@@ -210,7 +209,7 @@ const DashboardScreen = () => {
                   </View>
                 ),
               }}
-            />
+            />*/}
           </ScrollView>
         </View>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,45 +7,30 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  BackHandler,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
-import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 import { t } from "i18next";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
   const { bookingId, chefId } = params;
   const [criteria, setCriteria] = useState([]);
-  const [overallExperience, setOverallExperience] = useState("");
+  const [description, setDescription] = useState("");
   const [criteriaRatings, setCriteriaRatings] = useState({});
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
-
-  useEffect(() => {
-    const backAction = () => {
-      router.push("/screen/history"); 
-      return true; 
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove(); 
-  }, []);
+  const { showModal } = useCommonNoification();
 
   const fetchCriteria = async () => {
     try {
       const response = await axiosInstance.get("/review-criteria");
       const criteriaList = response.data;
-
       const initialRatings = {};
       const initialComments = {};
       criteriaList.forEach((item) => {
@@ -57,7 +42,13 @@ const ReviewScreen = () => {
       setCriteriaRatings(initialRatings);
       setCriteriaComments(initialComments);
     } catch (error) {
-      console.error("Error fetching review criteria:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     }
   };
 
@@ -68,43 +59,48 @@ const ReviewScreen = () => {
   const handleRating = (criteriaId, rating) => {
     setCriteriaRatings((prev) => ({
       ...prev,
-      [criteriaId]: prev[criteriaId] === rating ? 0 : rating, 
+      [criteriaId]: prev[criteriaId] === rating ? 0 : rating,
     }));
   };
 
   const handleSubmitReview = async () => {
+    setLoading(true);
     const hasAnyRating = Object.values(criteriaRatings).some(
       (rating) => rating > 0
     );
 
     if (!hasAnyRating) {
+      showModal("Error", "Please rate at least one criterion.", "Failed");
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
     try {
       const payload = {
         chefId: parseInt(chefId),
         bookingId: parseInt(bookingId),
-        overallExperience: overallExperience.trim() || "",
+        overallExperience: description.trim() || "",
         mainImage: null,
         additionalImages: [],
-        criteriaRatings: { ...criteriaRatings },  
+        criteriaRatings: { ...criteriaRatings },
       };
-      console.log("Review Payload:", payload);
       const response = await axiosInstance.post("/reviews", payload);
-      console.log("Review Response:", response.data);
-
-      router.push("/screen/history");
+      if (response.status === 200)
+        showModal("Success", "Review submitted successfully!", "Success");
+      fetchCriteria();
     } catch (error) {
-      console.log("Error submitting review:", error?.response?.data);
-      Alert.alert("Loi", "Buổi này đã đánh giá rồi");
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      // showModal("Error", "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Component hiển thị sao cho từng tiêu chí
   const StarRating = ({ criteriaId, rating }) => {
     return (
       <View style={styles.starContainer}>

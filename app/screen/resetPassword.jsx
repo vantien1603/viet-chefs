@@ -11,7 +11,8 @@ import {
 import Header from "../../components/header";
 import { router, useLocalSearchParams } from "expo-router";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
-import { t } from "i18next";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const ResetPasswordScreen = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -19,7 +20,7 @@ const ResetPasswordScreen = () => {
   const [code, setCode] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
   const { email } = useLocalSearchParams();
-
+  const { showModal } = useCommonNoification();
   const handleInputChange = (value, index) => {
     if (/^\d?$/.test(value)) {
       const newCode = [...code];
@@ -40,19 +41,21 @@ const ResetPasswordScreen = () => {
 
   const handleReset = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert("Error", "Please enter and confirm your new password.");
+      showModal("Error", "Please enter and confirm your new password.", "Failed")
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
+      showModal("Error", "Passwords do not match.", "Failed")
+
       return;
     }
 
     const token = code.join("");
 
     if (token.length !== 4) {
-      Alert.alert("Error", "Please enter the 4-digit token.");
+      showModal("Error", "Please enter the 4-digit token.", "Failed")
+
       return;
     }
     console.log("Sending data:", { email, newPassword, token });
@@ -65,11 +68,18 @@ const ResetPasswordScreen = () => {
         token,
       });
       if (response.status === 200) {
-        Alert.alert("Success", "Password reset successfully!");
+        showModal("Success", "Password reset successfully!", "Success")
+
         router.push("/screen/login");
       }
     } catch (error) {
-      console.log("Error:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình đặt lại mật khẩu.", "Failed");
     }
   };
 

@@ -64,13 +64,37 @@ const Message = () => {
     };
   }, []);
 
+  const formatDate = (timestampArray) => {
+    const [year, month, day, hour, minute] = timestampArray;
+    const date = new Date(year, month - 1, day, hour, minute);
+    const formattedYear = date.getFullYear();
+    const formattedMonth = String(date.getMonth() + 1).padStart(2, "0");
+    const formattedDay = String(date.getDate()).padStart(2, "0");
+    const formattedHour = String(date.getHours()).padStart(2, "0");
+    const formattedMinute = String(date.getMinutes()).padStart(2, "0");
+    return `${formattedYear}-${formattedMonth}-${formattedDay} ${formattedHour}:${formattedMinute}`;
+  };
+
   const onMessageReceived = (payload) => {
     const receivedMessage = JSON.parse(payload.body);
     if (
       receivedMessage.senderId === contact.id ||
       receivedMessage.senderId === user.sub
     ) {
-      setMessages((prev) => [...prev, receivedMessage]);
+      const timestamp = formatDate(receivedMessage.timestamp);
+      console.log("time", timestamp);
+      const message = {
+        chatId: receivedMessage.chatId,
+        content: receivedMessage.content,
+        contentType: receivedMessage.contentType,
+        id: receivedMessage.id,
+        recipientId: receivedMessage.recipientId,
+        recipientName: receivedMessage.recipientName,
+        senderId: receivedMessage.senderId,
+        senderName: receivedMessage.senderName,
+        timestamp: timestamp,
+      };
+      setMessages((prev) => [...prev, message]);
     }
   };
 
@@ -126,7 +150,7 @@ const Message = () => {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true, // Chọn ảnh gốc
         aspect: [4, 4], // Tỉ lệ ảnh
         quality: 0.5, // Giảm chất lượng nhẹ để tối ưu tốc độ
@@ -307,7 +331,6 @@ const Message = () => {
         </>
       );
     } else {
-      // Tin nhắn dạng text như cũ
       return (
         <>
           {showDate && (
@@ -416,7 +439,7 @@ const Message = () => {
           onChangeText={setInputText}
         />
         {inputText.trim() || selectedImage ? (
-          <TouchableOpacity onPress={sendMessage}>
+          <TouchableOpacity onPress={sendMessage} disabled={isSending}>
             {isSending ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (

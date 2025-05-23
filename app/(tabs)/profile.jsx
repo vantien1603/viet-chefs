@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import {
   View,
   Text,
@@ -6,77 +6,43 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
-import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 
-const menuItems = [
-  { id: "1", icon: "wallet", title: "vietPay", section: "general" },
-  { id: "2", icon: "lock-closed", title: "changePassword", section: "general" },
-  { id: "3", icon: "heart", title: "favoriteChef", section: "general" },
-  { id: "4", icon: "star", title: "allReview", section: "general" },
-  { id: "5", icon: "briefcase", title: "createChefAccount", section: "general" },
-  { id: "6", icon: "settings", title: "settings", section: "general" },
-  { id: "7", icon: "help-circle", title: "helpCentre", section: "support" },
-];
 
 const Profile = () => {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
-  const [avatar, setAvatar] = useState("");
-  const [loading, setLoading] = useState(true);
-  const axiosInstance = useAxios();
-
-  const fetchProfile = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get("/users/profile");
-      setAvatar(response.data.avatarUrl || "");
-    } catch (error) {
-      console.log("Error fetching avatar:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchProfile();
-    }, [])
-  );
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/screen/login");
-    }
-  }, [user, loading]);
-
+  const { user, isGuest } = useContext(AuthContext);
   const handleSetting = (id) => {
+    if (isGuest) {
+      if (id === "viewProfile") router.replace("/")
+      if (id === "1") router.push("/screen/setting");
+      return;
+    }
     switch (id) {
       case "1":
         router.push("/screen/wallet");
         break;
-      case "2":
+      case "4":
         router.push("/screen/changePassword");
         break;
       case "3":
         router.push("/screen/favorite");
         break;
-      case "4":
-        router.push("/screen/allReview");
-        break;
-      case "5":
+      case "2":
         router.push("/screen/createChef");
         break;
-      case "6":
+      case "7":
         router.push("/screen/setting");
         break;
-      case "7":
+      case "5":
+        router.push("/screen/allReview");
+        break;
+      case "6":
         router.push("/screen/helpCentre");
         break;
       default:
@@ -85,148 +51,108 @@ const Profile = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={[commonStyles.containerContent, styles.centered]}>
-        <ActivityIndicator size="large" color="#A9411D" />
-      </View>
-    );
-  }
-
-  if (!user) {
-    return (
-      <View style={[commonStyles.containerContent, styles.centered]}>
-        <Text style={styles.errorText}>Redirecting to login...</Text>
-      </View>
-    );
-  }
-
+  const menuItems = isGuest ? [
+    { id: "1", icon: "settings", title: "Setting" },
+  ] : [
+    { id: "1", icon: "wallet", title: "VietPay" },
+    { id: "2", icon: "briefcase", title: "Create chef account" },
+    { id: "3", icon: "heart", title: "Favorite chef" },
+    { id: "4", icon: "lock-closed", title: "Change password" },
+    { id: "5", icon: "star", title: "allReview" },
+    { id: "6", icon: "help-circle", title: "helpCentre" },
+    { id: "7", icon: "settings", title: "Setting" },
+  ];;
   return (
-    <ScrollView style={commonStyles.containerContent}>
-      <View style={styles.profileHeader}>
-        <Image
-          source={
-            avatar && avatar.trim() !== ""
-              ? { uri: avatar }
-              : require("../../assets/images/avatar.png")
-          }
-          style={styles.avatar}
-        />
-        <View>
-          <Text style={styles.fullName}>{user.fullName || "Guest"}</Text>
-          <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
-            <Text style={styles.viewProfileText}>
-              {t("viewProfile")} {">"}
-            </Text>
-          </TouchableOpacity>
+    <ScrollView style={[commonStyles.container,]}>
+      <View style={styles.card}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Image
+            source={{
+              uri: user?.avatarUrl ||
+                "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
+            }}
+            style={styles.avatar}
+          />
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={styles.userName}>{user?.fullName || "Guest"}</Text>
+            <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
+              <Text style={styles.viewProfile}> {isGuest ? 'Login/Sign up' : 'Xem hồ sơ'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionHeader}>{t("general")}</Text>
-        {menuItems
-          .filter((item) => item.section === "general")
-          .map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => handleSetting(item.id)}
-              style={styles.menuItem}
-            >
-              <Ionicons
-                name={item.icon}
-                size={24}
-                color="black"
-                style={styles.menuIcon}
-              />
-              <Text style={styles.menuTitle}>{t(item.title)}</Text>
-              <Ionicons name="chevron-forward" size={20} color="gray" />
-            </TouchableOpacity>
-          ))}
-      </View>
-
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionHeader}>{t("support")}</Text>
-        {menuItems
-          .filter((item) => item.section === "support")
-          .map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => handleSetting(item.id)}
-              style={styles.menuItem}
-            >
-              <Ionicons
-                name={item.icon}
-                size={24}
-                color="black"
-                style={styles.menuIcon}
-              />
-              <Text style={styles.menuTitle}>{t(item.title)}</Text>
-              <Ionicons name="chevron-forward" size={20} color="gray" />
-            </TouchableOpacity>
-          ))}
+      <View style={styles.menuCard}>
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={item.id}
+            onPress={() => handleSetting(item.id)}
+            style={[
+              styles.menuItem,
+              index === menuItems.length - 1 && { borderBottomWidth: 0 },
+            ]}
+          >
+            <View style={styles.iconWrapper}>
+              <Ionicons name={item.icon} size={22} color="#A9411D" />
+            </View>
+            <Text style={styles.menuText}>{item.title}</Text>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+        ))}
       </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#A9411D",
-  },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    padding: 10,
-    borderBottomColor: "#ddd",
-    borderBottomWidth: 1,
+  card: {
+    backgroundColor: "#F9F5F0",
+    padding: 16,
+    margin: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#ddd",
   },
-  fullName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  viewProfileText: {
-    color: "#A9411D",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  sectionContainer: {
-    marginBottom: 16,
-  },
-  sectionHeader: {
+  userName: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    fontWeight: "600",
+  },
+  viewProfile: {
+    color: "#A9411D",
+    marginTop: 4,
+    fontWeight: "500",
+  },
+  menuCard: {
+    backgroundColor: "#F9F5F0",
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 12,
+    overflow: "hidden",
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 10,
+    padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "#eee",
   },
-  menuIcon: {
-    marginRight: 16,
+  iconWrapper: {
+    width: 32,
+    alignItems: "center",
+    marginRight: 12,
   },
-  menuTitle: {
-    flex: 1,
+  menuText: {
     fontSize: 16,
+    flex: 1,
     color: "#333",
   },
 });

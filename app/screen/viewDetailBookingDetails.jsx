@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  ActivityIndicator,
   Modal,
   Image,
 } from "react-native";
@@ -19,6 +20,7 @@ import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
 import { t } from "i18next";
+import axios from "axios";
 
 const ViewDetailBookingDetails = () => {
   const { bookingDetailsId } = useLocalSearchParams();
@@ -127,94 +129,114 @@ const ViewDetailBookingDetails = () => {
           setBookingDetails(updatedResponse.data);
           setIsReported(updatedResponse.data.reported || true);
         } catch (fetchError) {
-          console.log("Error fetching updated booking details:", fetchError);
           setBookingDetails({ ...bookingDetails, status: "REPORTED" });
           setIsReported(true);
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(fetchError)) {
+            return;
+          }
+          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
         }
 
         closeReportModal();
         router.replace("(tabs)/schedule");
       }
     } catch (error) {
-      console.log("Error submitting report:", error?.response?.data?.message);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error?.response?.data?.message || "Failed to submit report",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Failed to submit report", "Failed");
     }
   };
 
   if (!bookingDetails) {
     return (
-      <SafeAreaView style={commonStyles.containerContent}>
-        <Header />
+      <SafeAreaView style={commonStyles.container}>
+        <Header title={"Booking detail"} />
         <View style={styles.container}>
-          <Text style={styles.noData}>Đang tải...</Text>
+          <ActivityIndicator size={'large'} color={'white'} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header />
-      <View style={styles.mainContainer}>
+    <GestureHandlerRootView style={commonStyles.container}>
+      <Header title={"Booking detail"} />
+      <View style={commonStyles.containerContent}>
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Thông tin đặt chỗ</Text>
-            <Text style={styles.label}>
-              Đầu bếp: {bookingDetails.booking?.chef?.user?.fullName || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Ngày: {bookingDetails.sessionDate || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Giờ bắt đầu: {bookingDetails.startTime || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Địa chỉ: {bookingDetails.location || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Tổng giá:{" "}
-              {bookingDetails.totalPrice
-                ? `${bookingDetails.totalPrice.toFixed(2)}`
-                : "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Trạng thái: {bookingDetails.status || "N/A"}
-            </Text>
+            <View style={{ marginLeft: 10 }}>
+              <Text>
+                <Text style={styles.detailLabel}>Đầu bếp: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.booking?.chef?.user?.fullName || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Ngày: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.sessionDate || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Giờ bắt đầu: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.startTime || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Địa chỉ: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.location || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Tổng giá: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.totalPrice ? `${bookingDetails.totalPrice.toFixed(2)}` : "N/A"}</Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Trạng thái: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.status || "N/A"}
+                </Text>
+              </Text>
+            </View>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Chi tiết giá</Text>
-            <Text style={styles.label}>
-              Phí nấu:{" "}
-              {bookingDetails.chefCookingFee
-                ? `${bookingDetails.chefCookingFee.toFixed(2)}`
-                : "0"}
-            </Text>
-            <Text style={styles.label}>
-              Giá món ăn:{" "}
-              {bookingDetails.priceOfDishes
-                ? `${bookingDetails.priceOfDishes.toFixed(2)}`
-                : "0"}
-            </Text>
-            <Text style={styles.label}>
-              Phí áp dụng:{" "}
-              {bookingDetails.platformFee
-                ? `${bookingDetails.platformFee.toFixed(2)}`
-                : "0"}
-            </Text>
-            <Text style={styles.label}>
-              Giảm giá:{" "}
-              {bookingDetails.discountAmout
-                ? `${bookingDetails.discountAmout.toFixed(2)}`
-                : "0"}
-            </Text>
+            <View style={{ marginLeft: 10 }}>
+              <Text>
+                <Text style={styles.detailLabel}>Phí nấu: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.chefCookingFee ? `$${bookingDetails.chefCookingFee.toFixed(2)}` : "$0"}</Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Giá món ăn: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.priceOfDishes ? `$${bookingDetails.priceOfDishes.toFixed(2)}` : "$0"}</Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Phí áp dụng: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.platformFee ? `$${bookingDetails.platformFee.toFixed(2)}` : "$0"}</Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Giảm giá: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.discountAmout ? `$${bookingDetails.discountAmout.toFixed(2)}` : "$0"}</Text>
+              </Text>
+            </View>
+
           </View>
 
           <View style={styles.section}>
@@ -222,9 +244,8 @@ const ViewDetailBookingDetails = () => {
             {bookingDetails.dishes?.length > 0 ? (
               bookingDetails.dishes.map((dish) => (
                 <View key={dish.id} style={styles.dishItem}>
-                  <Text style={styles.label}>
-                    - {dish.dish?.name || "N/A"} (Ghi chú:{" "}
-                    {dish.notes || "N/A"})
+                  <Text style={styles.detailLabel}>
+                    {dish.dish?.name || ""} {dish.notes && `(Ghi chú: ${dish.notes || ""})`}
                   </Text>
                 </View>
               ))
@@ -235,19 +256,32 @@ const ViewDetailBookingDetails = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Thông tin bổ sung</Text>
-            <Text style={styles.label}>
-              Loại đặt chỗ: {bookingDetails.booking?.bookingType || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Trạng thái booking: {bookingDetails.booking?.status || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Thời gian bắt đầu nấu: {bookingDetails.timeBeginCook || "N/A"}
-            </Text>
-            <Text style={styles.label}>
-              Thời gian bắt đầu di chuyển:{" "}
-              {bookingDetails.timeBeginTravel || "N/A"}
-            </Text>
+            <View style={{ marginLeft: 10 }}>
+              <Text>
+                <Text style={styles.detailLabel}>Loại đặt chỗ: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.booking?.bookingType || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Trạng thái booking: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.booking?.status || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Thời gian bắt đầu nấu: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.timeBeginCook || "N/A"}
+                </Text>
+              </Text>
+              <Text>
+                <Text style={styles.detailLabel}>Thời gian bắt đầu di chuyển: </Text>
+                <Text style={styles.detailValue}>
+                  {bookingDetails.timeBeginTravel || "N/A"}
+                </Text>
+              </Text>
+            </View>
           </View>
           {/* Images Section */}
           <View style={styles.card}>
@@ -390,16 +424,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   scrollContent: {
-    padding: 15,
-    paddingBottom: 20,
+    // padding: 15,
+    paddingBottom: 80,
   },
   section: {
-    marginBottom: 20,
-    backgroundColor: "#fff",
+    marginBottom: 15,
+    backgroundColor: "#F9F5F0",
     borderRadius: 10,
     padding: 15,
     borderWidth: 1,
-    borderColor: "#CCCCCC",
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -431,9 +470,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     marginVertical: 5,
     color: "#333",
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#666",
+    flex: 1,
   },
   dishItem: {
     marginLeft: 10,

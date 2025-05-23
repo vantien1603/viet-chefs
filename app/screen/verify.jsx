@@ -12,12 +12,14 @@ import { commonStyles } from "../../style";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import Header from "../../components/header";
+import useAxiosBase from "../../config/AXIOS_BASE";
 
 const VerifyScreen = () => {
   const router = useRouter();
   const { username, fullName, phone, mail, mode } = useLocalSearchParams();
   const [code, setCode] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
+  const axiosInstanceBase = useAxiosBase();
 
 
   if (mode == "register") {
@@ -45,7 +47,7 @@ const VerifyScreen = () => {
   const handleVerify = async () => {
     const verificationCode = code.join("");
     try {
-      const response = await AXIOS_BASE.post(
+      const response = await axiosInstanceBase.post(
         `/verify-code?email=${encodeURIComponent(
           mail
         )}&code=${encodeURIComponent(verificationCode)}`
@@ -58,12 +60,10 @@ const VerifyScreen = () => {
         // }
       }
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (axios.isCancel(error)) {
+        return;
       }
-      else {
-        console.error(error.message);
-      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xác mình.", "Failed");
     }
   };
 
@@ -73,7 +73,8 @@ const VerifyScreen = () => {
         `/resend-code?email=${encodeURIComponent(mail)}`
       );
       if (response.status === 200) {
-        Alert.alert("Success", "Resend code. Please check your email");
+        showModal("Success", "Resend code. Please check your email.", "Success");
+
       }
     } catch (error) {
       const message = error.response.data.message;
@@ -121,7 +122,7 @@ const VerifyScreen = () => {
         </TouchableOpacity>
         <View style={commonStyles.mainButtonContainer}>
           <TouchableOpacity
-            onPress={handleVerify}
+            onPress={() => handleVerify()}
             style={commonStyles.mainButton}
           >
             <Text style={commonStyles.textMainButton}>VERIFY</Text>

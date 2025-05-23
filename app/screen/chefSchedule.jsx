@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Platform,
-  Dimensions,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,14 +14,16 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+import { TabView, TabBar } from 'react-native-tab-view';
 import useAxios from "../../config/AXIOS_API";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Ionicons from '@expo/vector-icons/Ionicons';
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useCommonNoification } from "../../context/commonNoti";
+import { useRouter } from "expo-router";
 import { t } from "i18next";
+import axios from "axios";
+import { useConfirmModal } from "../../context/commonConfirm";
 
 
 const dayInWeek = [
@@ -43,24 +43,32 @@ export default function ChefScheduleScreen() {
   const axiosInstance = useAxios();
   const modalizeRef = React.useRef(null);
   const modalizeAddRef = React.useRef(null);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState({});
   const [showPicker, setShowPicker] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [pickerState, setPickerState] = useState({ show: false, mode: "start", dayId: null, index: null });
   const { showModal } = useCommonNoification();
-
-
+  const [addModalKey, setAddModalKey] = useState(0);
+  const [updateModalKey, setUpdateModalKey] = useState(0);
+  const route = useRouter();
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
-
+  const { showConfirm } = useConfirmModal();
 
   const openModal = (slot) => {
+    setUpdateModalKey(prev => prev + 1);
     setSelectedSlot(slot);
-    console.log("slecslot", selectedSlot);
-    modalizeRef.current?.open();
+    setShowPicker(false);
+    setTimeout(() => {
+      modalizeRef.current?.open();
+    }, 100);
+
   };
 
   const openModalAdd = () => {
-    modalizeAddRef.current?.open();
+    setAddModalKey(prev => prev + 1);
+    setTimeout(() => {
+      modalizeAddRef.current?.open();
+    }, 100);
   }
 
   const toggleDay = (dayId) => {
@@ -121,28 +129,6 @@ export default function ChefScheduleScreen() {
     setPickerState({ ...pickerState, show: false });
   };
 
-
-
-  const onTimeChange = (event, selectedDate) => {
-    if (event.type === "dismissed") {
-      setPickerState({ ...pickerState, show: false });
-      return;
-    }
-
-    const { slotId, timeType } = pickerState;
-    const updatedSlots = [...slots[slotId]];
-
-    updatedSlots[timeType === "start" ? "startTime" : "endTime"] = selectedDate;
-
-    setSlots((prev) => ({
-      ...prev,
-      [slotId]: updatedSlots,
-    }));
-
-    setPickerState({ ...pickerState, show: false });
-  };
-
-
   const formatTime = (date) =>
     date.toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -150,8 +136,6 @@ export default function ChefScheduleScreen() {
       seconds: "2-digit",
       hour12: true,
     });
-
-
 
   const handleOpenPicker = (field) => {
     setCurrentField(field);
@@ -163,19 +147,25 @@ export default function ChefScheduleScreen() {
       setShowPicker(false);
       return;
     }
-    if (event.type === 'set' && selectedDate) {
-      const hours = selectedDate.getHours().toString().padStart(2, '0');
-      const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-      const seconds = selectedDate.getSeconds().toString().padStart(2, '0');
-      const newTime = `${hours}:${minutes}:${seconds}`;
+
+    if (event.type === "set" && selectedDate) {
+      const newTime = selectedDate.toLocaleTimeString("en-GB", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
       setSelectedSlot((prev) => ({
         ...prev,
         [currentField]: newTime,
       }));
     }
+
     setShowPicker(false);
     setCurrentField(null);
   };
+
 
   const convertToPayload = (slott) => {
     const result = [];
@@ -222,33 +212,30 @@ export default function ChefScheduleScreen() {
         fetchSchedule();
         if (result.status === "fulfilled") {
           successCount++;
-          console.log(`✅ Slot ${index + 1} thành công`, result.value.data);
+          console.log(` Slot ${index + 1} thành công`, result.value.data);
           showModal("Success", "Success")
         } else {
           errorCount++;
-          console.error(`❌ Tạo slot ở ${dayName} thất bại`, result.reason);
+          console.error(` Tạo slot ở ${dayName} thất bại`, result.reason);
         }
       });
 
       if (successCount === results.length) {
-        showModal("Success", "All slot created successfully.");
+        showModal("Success", "All slot created successfully.", "Success");
       } else if (errorCount === results.length) {
-        showModal("Error", "All slot created failed.");
+        showModal("Error", "All slot created failed.", "Failed");
       } else {
-        showModal("Warning", `Some slot created failed. Number of slot success: ${successCount}, TNumber of slot failed: ${errorCount}`);
+        showModal("Warning", `Some slot created failed. Number of slot success: ${successCount}, TNumber of slot failed: ${errorCount}`, "Warning");
       }
 
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
-        showModal("Error", error.response.data)
-
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
-        showModal("Error", error.message)
-
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", error.response.data, "Failed");
     } finally {
       setLoading(false);
     }
@@ -269,16 +256,18 @@ export default function ChefScheduleScreen() {
         setShowPicker(false);
         setSelectedSlot(null);
         modalizeRef.current?.close();
+        showModal("Success", "Cập nhật lịch làm việc thành công.", "Success");
         fetchSchedule();
       }
 
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật lịch làm việc", "Failed");
     } finally {
       setLoading(false);
     }
@@ -296,21 +285,20 @@ export default function ChefScheduleScreen() {
         fetchSchedule();
       }
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
+      if (axios.isCancel(error)) {
+        return;
       }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xóa lịch làm việc", "Failed");
     } finally {
       setLoading(false);
     }
   }
 
-
-
   const [schedules, setSchedules] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [index, setIndex] = useState(0);
   const [routes] = useState(
     dayInWeek.map((day) => ({ key: day.full, title: day.full }))
@@ -319,16 +307,19 @@ export default function ChefScheduleScreen() {
 
 
   const fetchSchedule = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get("/chef-schedules/me");
       setSchedules(response.data);
     } catch (error) {
-      if (error.response) {
-        console.error(`Lỗi ${error.response.status}:`, error.response.data);
+      if (error.response?.status === 401) {
+        return;
       }
-      else {
-        console.error(error.message);
+      if (axios.isCancel(error)) {
+        return;
       }
+      // showModal("Error", "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -341,7 +332,9 @@ export default function ChefScheduleScreen() {
   const renderScene = ({ route }) => {
     const day = dayInWeek.find((d) => d.full === route.title);
     const dayId = day?.id;
-    const slots = schedules.filter(slot => slot.dayOfWeek === dayId) || [];
+    const slots = (Array.isArray(schedules) ? schedules : []).filter(
+      slot => slot.dayOfWeek === dayId
+    );
 
     return (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -371,6 +364,8 @@ export default function ChefScheduleScreen() {
               </TouchableOpacity>
             ))
           ))}
+
+
       </ScrollView>
     );
   };
@@ -386,28 +381,42 @@ export default function ChefScheduleScreen() {
   return (
     <GestureHandlerRootView >
       <SafeAreaView style={commonStyles.container}>
-        <Header title={t("schedule")} rightIcon={"add"} onRightPress={() => openModalAdd()} />
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: Dimensions.get("window").width }}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              scrollEnabled
-              inactiveColor="gray"
-              activeColor="#9C583F"
-              indicatorStyle={{ backgroundColor: "#A9411D" }}
-              style={{ backgroundColor: '#EBE5DD', elevation: 0, shadowOpacity: 0, borderBottomWidth: 0 }}
-              labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
-              tabStyle={{ paddingVertical: 0, width: 130 }}
+        <Header title={"Schedule"} rightIcon={"add"} onRightPress={() => openModalAdd()} />
+        {loading ? (
+          <ActivityIndicator size="large" color="#A9411D" style={{ marginTop: 20 }} />
+        ) : (
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            onIndexChange={setIndex}
+            renderTabBar={(props) => (
+              <TabBar
+                {...props}
+                scrollEnabled
+                inactiveColor="gray"
+                activeColor="#9C583F"
+                indicatorStyle={{ backgroundColor: "#A9411D" }}
+                style={{
+                  backgroundColor: '#EBE5DD',
+                  elevation: 0,
+                  shadowOpacity: 0,
+                  borderBottomWidth: 0
+                }}
+                labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
+                tabStyle={{ paddingVertical: 0, width: 130 }}
+              />
+            )}
+          />
+        )}
+        <View style={styles.floatingActions}>
+          <TouchableOpacity style={[styles.floatingButton, { backgroundColor: "#FFCDD2", flexDirection: 'row', alignItems: 'center' }]} onPress={() => route.push("/screen/scheduleBlocked")}>
+            <MaterialIcons name="event-busy" size={30} color="red" />
+            <Text>Busy date</Text>
+          </TouchableOpacity>
+        </View>
 
-            />
-          )}
-        />
 
-        <Modalize ref={modalizeRef} adjustToContentHeight>
+        <Modalize ref={modalizeRef} adjustToContentHeight key={`update-${updateModalKey}`}>
           <View style={styles.modalContent}>
             {selectedSlot ? (
               <>
@@ -445,19 +454,20 @@ export default function ChefScheduleScreen() {
                         value={selectedSlot.endTime}
                         editable={false}
                       />
+
                     </TouchableOpacity>
                   </View>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}>
                     <TouchableOpacity
                       style={styles.updateButton}
-                      onPress={() => handleUpdateSlot()}
+                      onPress={() => requireAuthAndNetWork(() => handleUpdateSlot())}
                     >
                       <Text style={styles.buttonText}>{t("save")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.deleteButton}
-                      onPress={() => handleDeleteSlot()}
+                      onPress={() => showConfirm("Confirm delete", "Are you sure want to delete this slot", () => requireAuthAndNetWork(() => handleDeleteSlot()))}
                     >
                       <Text style={styles.buttonText}>{t("delete")}</Text>
                     </TouchableOpacity>
@@ -480,17 +490,13 @@ export default function ChefScheduleScreen() {
               display="spinner"
               onChange={handleTimeChange}
               is24Hour={false}
-
             />
-
           )}
         </Modalize>
 
-
-        <Modalize ref={modalizeAddRef} adjustToContentHeight >
+        <Modalize ref={modalizeAddRef} adjustToContentHeight key={`add-${addModalKey}`} >
           <View style={styles.modalContentAdd}>
-            <ScrollView style={{ padding: 10 }} contentContainerStyle={{ paddingBottom: 100 }}
-            >
+            <ScrollView style={{ padding: 10 }} contentContainerStyle={{ paddingBottom: 100 }}>
               <View style={{ marginBottom: 20 }}>
                 <View style={styles.daySelector}>
                   {dayInWeek.map((day) => (
@@ -512,7 +518,7 @@ export default function ChefScheduleScreen() {
 
               {selectedDays.map((dayId) => {
                 const dayLabel = dayInWeek.find((d) => d.id === dayId)?.full;
-                const oldSlots = schedules.filter(c => c.dayOfWeek === dayId) || [];
+                const oldSlots = schedules?.filter(c => c.dayOfWeek === dayId) || [];
 
                 return (
                   <View key={dayId} style={styles.section2}>
@@ -631,10 +637,7 @@ export default function ChefScheduleScreen() {
               )}
             </TouchableOpacity>
           </View>
-
-
         </Modalize>
-
       </SafeAreaView>
     </GestureHandlerRootView>
 
@@ -761,6 +764,32 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
+    fontWeight: "bold",
+  },
+  floatingActions: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    zIndex: 999,
+    gap: 10,
+  },
+
+  floatingButton: {
+    backgroundColor: "#FFF9C4",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+    alignItems: 'center'
+  },
+
+  floatingText: {
+    fontSize: 16,
+    color: "#333",
     fontWeight: "bold",
   },
 });

@@ -1,96 +1,115 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import {
   SafeAreaView,
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
-import { router } from "expo-router";
+import { TabView, TabBar } from "react-native-tab-view";
+import { useRouter, useSegments } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { t } from "i18next";
+import axios from "axios";
+import { AuthContext } from "../../config/AuthContext";
+import { useSelectedItems } from "../../context/itemContext";
 
 const CustomerSchedule = () => {
   const axiosInstance = useAxios();
+  const { user, isGuest } = useContext(AuthContext);
+  const router = useRouter();
+  const segment = useSegments();
   const [bookingDetails, setBookingDetails] = useState([]);
   const [index, setIndex] = useState(0);
-  const [routes] = useState([
+  const [loading, setLoading] = useState(false);
+  const { setChefId, setRouteBefore } = useSelectedItems();
+  const routes = useMemo(() => [
     { key: "today", title: "Today" },
     { key: "upcoming", title: "Upcoming" },
     { key: "past", title: "Past" },
-  ]);
+  ], []);
 
   useEffect(() => {
-    const fetchBookingDetails = async () => {
-      try {
-        const response = await axiosInstance.get(
-          "/bookings/booking-details/user",
-          {
-            params: {
-              pageNo: 0,
-              pageSize: 1000,
-              sortBy: "sessionDate",
-              sortDir: "desc",
-            },
-          }
-        );
-        setBookingDetails(response.data.content);
-      } catch (error) {
-        console.log("err", error);
-      }
-    };
+    if (isGuest) return;
     fetchBookingDetails();
-  }, []);
+  }, [isGuest]);
 
-  const handlePressDetail = (id) => {
-    router.push({
-      pathname: "/screen/viewDetailBookingDetails",
-      params: {
-        bookingDetailsId: id,
-      },
-    });
+  const fetchBookingDetails = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/bookings/booking-details/user", {
+        params: {
+          pageNo: 0,
+          pageSize: 1000,
+          sortBy: "sessionDate",
+          sortDir: "desc",
+        },
+      });
+      setBookingDetails(response.data.content);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRebook = (bookingDetail) => {
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const filteredBookingDetails = useMemo(() =>
+    bookingDetails.filter((d) =>
+      ["SCHEDULED", "COMPLETED", "SCHEDULED_COMPLETE", "WAITING_FOR_CONFIRMATION"].includes(d.status)
+    ), [bookingDetails]);
+
+  const todayDetails = useMemo(() =>
+    filteredBookingDetails.filter((d) =>
+      new Date(d.sessionDate).toDateString() === today.toDateString()
+    ), [filteredBookingDetails, today]);
+
+  const upcomingDetails = useMemo(() =>
+    filteredBookingDetails.filter((d) => new Date(d.sessionDate) > today), [filteredBookingDetails, today]);
+
+  const pastDetails = useMemo(() =>
+    filteredBookingDetails.filter((d) => new Date(d.sessionDate) < today), [filteredBookingDetails, today]);
+
+  const handlePressDetail = useCallback((id) => {
+    router.push({
+      pathname: "/screen/viewDetailBookingDetails",
+      params: { bookingDetailsId: id },
+    });
+  }, []);
+
+  const handleRebook = useCallback((bookingDetail) => {
     if (bookingDetail.status !== "COMPLETED") {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Rebook is only allowed when status is COMPLETED",
-      });
+      showModal("Error", "Rebook is only allowed when status is COMPLETED", "Failed");
       return;
     }
-  
-    let selectedMenu = null;
-    if (bookingDetail.menuId) {
-      selectedMenu = {
-        id: bookingDetail.menuId,
-        name: `Menu ${bookingDetail.menuId}`,
-        menuItems: [],
-      };
-    }
-  
+
+    const selectedMenu = bookingDetail.menuId
+      ? { id: bookingDetail.menuId, name: `Menu ${bookingDetail.menuId}`, menuItems: [] }
+      : null;
+
     const selectDishes = bookingDetail.dishes.map(({ dish }) => ({
       id: dish.id,
       name: dish.name,
-      imageUrl: dish?.imageUrl,
+      imageUrl: dish.imageUrl,
     }));
-  
+
     const dishNotes = {};
-    if (bookingDetail.dishes && bookingDetail.dishes.length > 0) {
-      bookingDetail.dishes.forEach(({ dish, notes }) => {
-        dishNotes[dish.id] = notes || "";
-      });
-    }
-  
-    console.log("Rebook Data:", { selectedMenu, selectDishes, dishNotes });
-    console.log("length", selectDishes.length)
-  
+    bookingDetail.dishes.forEach(({ dish, notes }) => {
+      dishNotes[dish.id] = notes || "";
+    });
+    setChefId(bookingDetail.booking?.chef?.id);
+    setRouteBefore(segment);
     router.push({
       pathname: "/screen/booking",
       params: {
@@ -101,97 +120,74 @@ const CustomerSchedule = () => {
         address: bookingDetail.location,
       },
     });
+  }, []);
+
+  const renderBookingItem = useCallback(({ item: detail }) => (
+    <View style={styles.bookingItem}>
+      <TouchableOpacity onPress={() => handlePressDetail(detail.id)} style={styles.touchableArea}>
+        <View style={styles.row}>
+          <Text style={styles.label1}>{detail.booking?.chef?.user?.fullName || "N/A"}</Text>
+          <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
+        </View>
+        <Text style={styles.label}>{t("time")}: {detail.startTime || "N/A"}</Text>
+        <Text style={styles.label}>{t("address")}: {detail.location || "N/A"}</Text>
+        <Text style={styles.label}>
+          {t("totalPrice")}: {detail.totalPrice ? `${detail.totalPrice.toFixed(2)}` : "N/A"}
+        </Text>
+        <View style={styles.statusContainer}>
+          <Text style={[
+            styles.labelStatus,
+            {
+              color: detail.status === "COMPLETED"
+                ? "green"
+                : ["SCHEDULED", "SCHEDULED_COMPLETE"].includes(detail.status)
+                  ? "orange"
+                  : "black"
+            }
+          ]}>
+            {detail.status.replace("_", " ")}
+            {detail.status === "COMPLETED" && (
+              <Ionicons name="checkmark-done" size={20} color="green" />
+            )}
+          </Text>
+          {detail.status === "COMPLETED" && (
+            <TouchableOpacity style={styles.rebookButton} onPress={() => handleRebook(detail)}>
+              <Text style={styles.rebookText}>{t("rebook")}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    </View>
+  ), [handlePressDetail, handleRebook]);
+
+  const renderBookingList = (details) => {
+    if (loading) {
+      return <ActivityIndicator size="large" color="white" style={{ marginTop: 20 }} />;
+    }
+
+    return (
+      <FlatList
+        data={details}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderBookingItem}
+        ListEmptyComponent={<Text style={styles.noData}>{t("noBookings")}</Text>}
+        contentContainerStyle={{ padding: 10 }}
+      />
+    );
   };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const filteredBookingDetails = bookingDetails.filter(
-    (detail) => detail.status === "SCHEDULED" || detail.status === "COMPLETED" || detail.status === "SCHEDULED_COMPLETE" || detail.status === "WAITING_FOR_CONFIRMATION"
-  );
-
-  const todayDetails = filteredBookingDetails.filter(
-    (detail) =>
-      new Date(detail.sessionDate).toDateString() === today.toDateString()
-  );
-  const upcomingDetails = filteredBookingDetails.filter(
-    (detail) => new Date(detail.sessionDate) > today
-  );
-  const pastDetails = filteredBookingDetails.filter(
-    (detail) => new Date(detail.sessionDate) < today
-  );
-
-  const renderBookingList = (details) => (
-    <ScrollView style={styles.container}>
-      {details.length > 0 ? (
-        details.map((detail) => (
-          <View key={detail.id} style={styles.bookingItem}>
-            <TouchableOpacity
-              onPress={() => handlePressDetail(detail.id)}
-              style={styles.touchableArea}
-            >
-              <View style={styles.row}>
-                <Text style={styles.label1}>
-                  {detail.booking?.chef?.user?.fullName || "N/A"}
-                </Text>
-                <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
-              </View>
-              <Text style={styles.label}>{t("time")}: {detail.startTime || "N/A"}</Text>
-              <Text style={styles.label}>
-                {t("address")}: {detail.location || "N/A"}
-              </Text>
-              <Text style={styles.label}>
-                {t("totalPrice")}:{" "}
-                {detail.totalPrice
-                  ? `${detail.totalPrice.toFixed(2)}`
-                  : "N/A"}
-              </Text>
-              <View style={styles.statusContainer}>
-                <Text
-                  style={[
-                    styles.labelStatus,
-                    {
-                      color:
-                        detail.status === "COMPLETED"
-                          ? "green"
-                          : detail.status === "SCHEDULED" || detail.status === "SCHEDULED_COMPLETE"
-                          ? "orange"
-                          : "black",
-                    },
-                  ]}
-                >
-                  {detail.status.replace("_", " ")}
-                  {detail.status === "COMPLETED" && (
-                    <Ionicons name="checkmark-done" size={24} color="green" />
-                  )}
-                </Text>
-                {detail.status === "COMPLETED" && (
-                  <TouchableOpacity
-                    style={styles.rebookButton}
-                    onPress={() => handleRebook(detail)}
-                  >
-                    <Text style={styles.rebookText}>{t("rebook")}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableOpacity>
-          </View>
-        ))
-      ) : (
-        <Text style={styles.noData}>{t("noBookings")}</Text>
-      )}
-    </ScrollView>
-  );
-
-  const TodayRoute = () => renderBookingList(todayDetails);
-  const UpcomingRoute = () => renderBookingList(upcomingDetails);
-  const PastRoute = () => renderBookingList(pastDetails);
-
-  const renderScene = SceneMap({
-    today: TodayRoute,
-    upcoming: UpcomingRoute,
-    past: PastRoute,
-  });
+  const renderScene = ({ route }) => {
+    switch (route.key) {
+      case "today":
+        return renderBookingList(todayDetails);
+      case "upcoming":
+        return renderBookingList(upcomingDetails);
+      case "past":
+        return renderBookingList(pastDetails);
+      default:
+        return null;
+    }
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
@@ -207,14 +203,9 @@ const CustomerSchedule = () => {
         renderTabBar={(props) => (
           <TabBar
             {...props}
-            scrollEnabled={true}
+            scrollEnabled
             indicatorStyle={{ backgroundColor: "#9C583F", height: 3 }}
-            style={{
-              backgroundColor: "#EBE5DD",
-              elevation: 0,
-              shadowOpacity: 0,
-              borderBottomWidth: 0,
-            }}
+            style={{ backgroundColor: "#EBE5DD" }}
             activeColor="#9C583F"
             inactiveColor="gray"
             labelStyle={{ fontWeight: "bold" }}
@@ -233,7 +224,7 @@ const styles = StyleSheet.create({
   bookingItem: {
     borderWidth: 1,
     borderColor: "#CCCCCC",
-    backgroundColor: "#fff",
+    backgroundColor: "#F9F5F0",
     borderRadius: 10,
     padding: 20,
     marginBottom: 10,
@@ -259,18 +250,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  tabBar: {
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#CCCCCC",
-  },
-  tabLabel: {
-    color: "#333",
-    fontWeight: "bold",
-  },
-  indicator: {
-    backgroundColor: "#007AFF",
-  },
   statusContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -278,8 +257,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   labelStatus: {
-    textAlign: "right",
-    color: "green",
     fontWeight: "bold",
   },
   rebookButton: {
@@ -287,7 +264,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 5,
-    alignItems: "center",
   },
   rebookText: {
     color: "#fff",

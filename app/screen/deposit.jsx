@@ -17,6 +17,8 @@ import WebView from "react-native-webview";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 
 const DepositScreen = () => {
   const [amount, setAmount] = useState("");
@@ -27,10 +29,12 @@ const DepositScreen = () => {
   const walletId = params.id;
   const balance = params.balance;
   const axiosInstance = useAxios();
+  const { showModal } = useCommonNoification();
   const predefinedAmounts = [5, 10, 20, 50, 100, 500];
 
   const handleDeposit = async () => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      showModal("Error", "Vui lòng nhập số tiền hợp lệ!", "Failed")
       return;
     }
 
@@ -44,10 +48,17 @@ const DepositScreen = () => {
         setPaymentUrl(response.data);
         setShowWebView(true);
       } else {
-        throw new Error("Không nhận được URL thanh toán từ server");
+        showModal("Error", "Không nhận được URL thanh toán từ server", "Failed")
+        return;
       }
     } catch (error) {
-      console.log("Error creating PayPal deposit:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Không thể tạo giao dịch PayPal", "Failed");
     } finally {
       setLoading(false);
     }
@@ -56,8 +67,9 @@ const DepositScreen = () => {
   const onNavigationStateChange = (navState) => {
     const { url } = navState;
     if (url.includes("success")) {
+      showModal("Success", "Nạp tiền thành công!", "Success");
       setShowWebView(false);
-      router.push({
+      router.replace({
         pathname: "/screen/wallet",
         params: {
           depositAmount: amount,
@@ -65,6 +77,8 @@ const DepositScreen = () => {
         },
       });
     } else if (url.includes("cancel")) {
+      showModal("Error", "Giao dịch đã bị hủy.", "Failed");
+
       setShowWebView(false);
     }
   };
@@ -74,13 +88,13 @@ const DepositScreen = () => {
     setAmount(text); // Cập nhật amount thay vì depositAmount
   };
 
-  const handleBack = async () => {
-    router.push("/screen/wallet");
-  };
+  const handleBack = () => {
+    router.replace("/screen/wallet");
+  }
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("topUp")} onLeftPress={handleBack} />
+      <Header title={t("topUp")} onLeftPress={() => handleBack()} />
       <View style={styles.balanceContainer}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <Text style={styles.sectionTitle}>{t("currentBalance")}</Text>

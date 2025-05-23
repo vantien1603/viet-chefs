@@ -18,6 +18,7 @@ import React, {
   useRef,
   useCallback,
   useMemo,
+  useContext,
 } from "react";
 import { commonStyles } from "../../style";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -27,7 +28,9 @@ import useAxios from "../../config/AXIOS_API";
 import * as Location from "expo-location";
 import { Modalize } from "react-native-modalize";
 import axios from "axios";
-import { API_GEO_KEY } from "@env";
+import { AuthContext } from "../../config/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -60,6 +63,7 @@ const SearchResultScreen = () => {
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
+  const { isGuest } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(() => {
     try {
       return selectedAddressParam ? JSON.parse(selectedAddressParam) : null;
@@ -168,6 +172,7 @@ const SearchResultScreen = () => {
 
   const fetchAddresses = async () => {
     try {
+      if (isGuest) return;
       const response = await axiosInstance.get("/address/my-addresses");
       const fetchedAddresses = response.data;
 
@@ -179,7 +184,7 @@ const SearchResultScreen = () => {
             {
               params: {
                 address: addr.address,
-                key: API_GEO_KEY,
+                key: process.env.API_GEO_KEY,
                 language: "vi",
               },
             }
@@ -275,7 +280,7 @@ const SearchResultScreen = () => {
     }
 
     try {
-      setIsLoading(true);
+      setLoading(true);
 
       const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
         params: dishApiParams,
@@ -350,8 +355,12 @@ const SearchResultScreen = () => {
       if (isSearch) {
         setIsSelected(1);
       }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -609,23 +618,21 @@ const SearchResultScreen = () => {
                 />
               )}
               <View style={styles.info}>
-                <View style={{ flexDirection: "row" }}>
-                  <Text style={styles.title}>
-                    {truncateText(item.user.fullName)}
-                  </Text>
-                  <Text style={styles.rating}>
-                    {item.averageRating.toFixed(1)} ⭐
-                  </Text>
-                </View>
-                <Text style={styles.description}>
+                <Text style={styles.title}>
+                  {truncateText(item.user.fullName)}
+                </Text>
+                <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">
                   {truncateText(item.description)}
                 </Text>
-                <Text style={styles.address}>{truncateText(item.address)}</Text>
-                <Text style={styles.label}>
+                <Text style={styles.address} numberOfLines={1} ellipsizeMode="tail">{truncateText(item.address)}</Text>
+                <Text style={styles.description}>
                   Max Serving: {item.maxServingSize}
                 </Text>
-                <Text style={styles.label}>Price/hour: {item.price}</Text>
+                <Text style={styles.description}>Price/hour: {item.price}</Text>
               </View>
+              <Text style={styles.rating}>
+                ⭐{item.averageRating.toFixed(1)}
+              </Text>
             </View>
           </TouchableOpacity>
         );
@@ -643,7 +650,7 @@ const SearchResultScreen = () => {
               <View style={styles.info}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
                 <Text style={styles.subtitle}>
-                  By: {truncateText(item.chef.user.fullName)}
+                  Chef: {truncateText(item.chef.user.fullName)}
                 </Text>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
@@ -675,7 +682,7 @@ const SearchResultScreen = () => {
               <View style={styles.info}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
                 <Text style={styles.subtitle}>
-                  By: {truncateText(item.chef.user.fullName)}
+                  Chef: {truncateText(item.chef.user.fullName)}
                 </Text>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
@@ -737,7 +744,7 @@ const SearchResultScreen = () => {
     const handleRateChange = useCallback((value) => {
       setTempRateRange((prev) =>
         prev?.value.min === value.value.min &&
-        prev?.value.max === value.value.max
+          prev?.value.max === value.value.max
           ? null
           : value
       );
@@ -766,7 +773,7 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempDistance === option.value &&
-                      styles.optionButtonSelected,
+                    styles.optionButtonSelected,
                   ]}
                   onPress={() => handleDistanceChange(option.value)}
                 >
@@ -774,7 +781,7 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempDistance === option.value &&
-                        styles.optionButtonTextSelected,
+                      styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -794,13 +801,13 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempDishPriceRange?.value.min === option.value.min &&
-                      tempDishPriceRange?.value.max === option.value.max &&
-                      styles.optionButtonSelected,
+                    tempDishPriceRange?.value.max === option.value.max &&
+                    styles.optionButtonSelected,
                   ]}
                   onPress={() => {
                     setTempDishPriceRange((prev) =>
                       prev?.value.min === option.value.min &&
-                      prev?.value.max === option.value.max
+                        prev?.value.max === option.value.max
                         ? null
                         : option
                     );
@@ -810,8 +817,8 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempDishPriceRange?.value.min === option.value.min &&
-                        tempDishPriceRange?.value.max === option.value.max &&
-                        styles.optionButtonTextSelected,
+                      tempDishPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -833,13 +840,13 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempChefPriceRange?.value.min === option.value.min &&
-                      tempChefPriceRange?.value.max === option.value.max &&
-                      styles.optionButtonSelected,
+                    tempChefPriceRange?.value.max === option.value.max &&
+                    styles.optionButtonSelected,
                   ]}
                   onPress={() => {
                     setTempChefPriceRange((prev) =>
                       prev?.value.min === option.value.min &&
-                      prev?.value.max === option.value.max
+                        prev?.value.max === option.value.max
                         ? null
                         : option
                     );
@@ -849,8 +856,8 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempChefPriceRange?.value.min === option.value.min &&
-                        tempChefPriceRange?.value.max === option.value.max &&
-                        styles.optionButtonTextSelected,
+                      tempChefPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -870,8 +877,8 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempRateRange?.value.min === option.value.min &&
-                      tempRateRange?.value.max === option.value.max &&
-                      styles.optionButtonSelected,
+                    tempRateRange?.value.max === option.value.max &&
+                    styles.optionButtonSelected,
                   ]}
                   onPress={() => handleRateChange(option)}
                 >
@@ -879,8 +886,8 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempRateRange?.value.min === option.value.min &&
-                        tempRateRange?.value.max === option.value.max &&
-                        styles.optionButtonTextSelected,
+                      tempRateRange?.value.max === option.value.max &&
+                      styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -1067,7 +1074,8 @@ const styles = StyleSheet.create({
   filterList: {
     flexGrow: 0,
   },
-  filterItem: {
+
+  ilterItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 15,
@@ -1088,15 +1096,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#A9411D",
     borderRadius: 16,
     padding: 10,
-    margin: 5,
-    flex: 1,
-    width: screenWidth * 0.45,
-    height: 270,
-    maxWidth: "48%",
+    // paddingTop: 50,
+    // alignItems: "center",
+    // ,
+
+
+    width: 200,
+    marginTop: 20,
   },
   container: {
-    flexDirection: "column",
-    alignItems: "flex-start",
+    // flexDirection: "column",
+    // alignItems: "flex-start",
   },
   info: {
     alignItems: "flex-start",
@@ -1112,22 +1122,22 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFF",
     marginBottom: 4,
+    alignSelf: 'center'
   },
   subtitle: {
-    fontSize: 12,
-    color: "#F8BF40",
+    fontSize: 14,
+    color: "#EBE5DD",
     marginBottom: 4,
   },
   description: {
     fontSize: 12,
-    color: "#FFF",
+    color: "#EBE5DD",
     marginBottom: 4,
   },
   rating: {
     fontSize: 14,
     color: "#FFF",
     marginBottom: 4,
-    marginLeft: 20,
   },
   address: {
     fontSize: 10,
@@ -1141,7 +1151,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: "#F8BF40",
+    color: "#EBE5DD",
   },
   rowNgayGui: {
     marginTop: 10,
@@ -1260,6 +1270,7 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
+
   },
   addressItem: {
     paddingVertical: 10,

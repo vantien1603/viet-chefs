@@ -11,7 +11,6 @@ import {
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
@@ -19,8 +18,9 @@ import { t } from "i18next";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
-// Hàm chuyển đổi status có dấu "_" thành dạng dễ đọc
 const formatStatus = (status) => {
   if (!status) return "";
   return status
@@ -33,11 +33,12 @@ const LongTermDetailsScreen = () => {
   const { bookingId, chefId } = useLocalSearchParams();
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { showModal } = useCommonNoification();
   const [bookingStatus, setBookingStatus] = useState(null);
   const axiosInstance = useAxios();
   const [pinValues, setPinValues] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
-  const [hasPassword, setHasPassword] = useState(true); // Giả sử ví đã có mật khẩu
+  const [hasPassword, setHasPassword] = useState(true);
   const [selectedPaymentCycleId, setSelectedPaymentCycleId] = useState(null);
   const modalizeRef = useRef(null);
   const pinInputRefs = useRef([
@@ -46,28 +47,21 @@ const LongTermDetailsScreen = () => {
     React.createRef(),
     React.createRef(),
   ]).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
 
   const pin = pinValues.join("");
 
+
   useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.3,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [blinkAnim]);
+    if (bookingId) {
+      fetchLongTermDetails();
+    }
+  }, [bookingId]);
+
+  useEffect(() => {
+    if (pin.length === 4) {
+      accessWallet();
+    }
+  }, [pin]);
 
   const fetchLongTermDetails = async () => {
     setLoading(true);
@@ -80,12 +74,13 @@ const LongTermDetailsScreen = () => {
       const bookingResponse = await axiosInstance.get(`/bookings/${bookingId}`);
       setBookingStatus(bookingResponse.data.status);
     } catch (error) {
-      console.error("Error fetching payment cycles:", error);
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("failedToLoadPaymentCycles"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -93,9 +88,10 @@ const LongTermDetailsScreen = () => {
 
   const accessWallet = async () => {
     if (pin.length !== 4) {
-      setError("PIN must be 4 digits");
+      showModal("Error", "PIN must be 4 digits", "Failed");
       return;
     }
+    setLoading(true);
     try {
       const response = await axiosInstance.post(
         `/users/profile/my-wallet/access?password=${pin}`
@@ -105,10 +101,15 @@ const LongTermDetailsScreen = () => {
       modalizeRef.current?.close();
       await handlePayment(selectedPaymentCycleId);
     } catch (error) {
-      console.error("Error accessing wallet:", error.response?.data);
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal("Error", error.response?.data.message, "Failed");
       setError("Invalid PIN");
+      // pinInputRefs[0].current?.focus();
+
+    }
+    finally {
+      setLoading(false);
       setPinValues(["", "", "", ""]);
-      pinInputRefs[0].current?.focus();
     }
   };
 
@@ -123,26 +124,20 @@ const LongTermDetailsScreen = () => {
         response.status === 200 || response.data?.status === "PAID";
 
       if (paymentSuccessful) {
-        Toast.show({
-          type: "success",
-          text1: t("success"),
-          text2: t("paymentSuccessful"),
-        });
+        showModal("Success", "Thanh toán thành công", "Success");
         await fetchLongTermDetails();
-        router.push("/screen/history");
+        // router.push("/screen/history");
       } else {
-        Toast.show({
-          type: "error",
-          text1: t("error"),
-          text2: t("paymentFailed"),
-        });
+        showModal("Error", "Thanh toán thất bại", "Failed");
       }
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: error.response?.data?.message || t("failedToProcessPayment"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình xử lí thanh toán.", "Failed");
     } finally {
       setLoading(false);
       setSelectedPaymentCycleId(null);
@@ -158,16 +153,13 @@ const LongTermDetailsScreen = () => {
   const handlePinChange = (text, index) => {
     const firstEmptyIndex = pinValues.findIndex((val) => val === "");
     const validIndex = firstEmptyIndex === -1 ? 3 : firstEmptyIndex;
-
     if (index !== validIndex) {
       pinInputRefs[validIndex].current?.focus();
       return;
     }
-
     const newPinValues = [...pinValues];
     newPinValues[index] = text.replace(/[^0-9]/g, "").slice(0, 1);
     setPinValues(newPinValues);
-
     if (text && index < 3) {
       pinInputRefs[index + 1].current?.focus();
     }
@@ -188,19 +180,13 @@ const LongTermDetailsScreen = () => {
     }
   };
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchLongTermDetails();
-    }
-  }, [bookingId]);
-
-  useEffect(() => {
-    if (pin.length === 4) {
-      accessWallet();
-    }
-  }, [pin]);
 
   const renderCycleItem = (cycle) => {
+    const sortedBookingDetails = [...cycle.bookingDetails].sort((a, b) => {
+      const dateA = new Date(a.sessionDate);
+      const dateB = new Date(b.sessionDate);
+      return dateA - dateB;
+    });
     return (
       <View key={cycle.id} style={styles.cycleCard}>
         <Text style={styles.cycleTitle}>
@@ -216,8 +202,8 @@ const LongTermDetailsScreen = () => {
                     ? "#2ECC71"
                     : cycle.status === "CONFIRMED" ||
                       cycle.status === "PENDING_FIRST_CYCLE"
-                    ? "#A64B2A"
-                    : "#E74C3C",
+                      ? "#A64B2A"
+                      : "#E74C3C",
               },
             ]}
           >
@@ -237,7 +223,7 @@ const LongTermDetailsScreen = () => {
 
         <View style={styles.bookingDetailsContainer}>
           <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
-          {cycle.bookingDetails.map((detail) => (
+          {sortedBookingDetails.map((detail) => (
             <TouchableOpacity
               key={detail.id}
               style={styles.detailItem}
@@ -260,8 +246,8 @@ const LongTermDetailsScreen = () => {
                         detail.status === "COMPLETED"
                           ? "#2ECC71"
                           : detail.status === "PENDING"
-                          ? "#A64B2A"
-                          : "#E74C3C",
+                            ? "#A64B2A"
+                            : "#E74C3C",
                     },
                   ]}
                 >
@@ -282,28 +268,28 @@ const LongTermDetailsScreen = () => {
         </View>
         {(bookingStatus === "PENDING_FIRST_CYCLE" ||
           bookingStatus === "CONFIRMED") && (
-          <TouchableOpacity
-            style={[styles.paymentButton, loading && styles.disabledButton]}
-            onPress={() => handleOpenPinModal(cycle.id)}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <View style={styles.paymentButtonContent}>
-                <MaterialIcons name="payment" size={16} color="#FFF" />
-                <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
+            <TouchableOpacity
+              style={[styles.paymentButton, loading && styles.disabledButton]}
+              onPress={() => handleOpenPinModal(cycle.id)}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <View style={styles.paymentButtonContent}>
+                  <MaterialIcons name="payment" size={16} color="#FFF" />
+                  <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
       </View>
     );
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={commonStyles.containerContent}>
+    <GestureHandlerRootView >
+      <SafeAreaView style={commonStyles.container} >
         <Header title={t("paymentCycles")} />
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -311,7 +297,7 @@ const LongTermDetailsScreen = () => {
             <Text style={styles.loadingText}>{t("loading")}</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContainer}>
             {longTermDetails.length > 0 ? (
               <>{longTermDetails.map(renderCycleItem)}</>
             ) : (
@@ -355,16 +341,7 @@ const LongTermDetailsScreen = () => {
             <Text style={styles.modalSubtitle}>{t("pleaseEnter4DigitPin")}</Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.pinBox,
-                    pinValues[index] === "" &&
-                    index === pinValues.join("").length
-                      ? { opacity: blinkAnim }
-                      : {},
-                  ]}
-                >
+                <View style={styles.pinBox} key={index}>
                   <TextInput
                     ref={pinInputRefs[index]}
                     style={styles.pinInput}
@@ -377,7 +354,8 @@ const LongTermDetailsScreen = () => {
                     textAlign="center"
                     selectionColor="transparent"
                   />
-                </Animated.View>
+                </View>
+
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}

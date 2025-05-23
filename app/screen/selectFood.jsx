@@ -6,304 +6,312 @@ import {
   View,
   TouchableOpacity,
   FlatList,
-  TextInput,
-  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
+import { useRouter } from "expo-router";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
+import { Modalize } from 'react-native-modalize';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSelectedItems } from "../../context/itemContext";
+import * as SecureStore from "expo-secure-store";
 
-const DishCard = ({ item, isSelected, onToggle }) => (
-  <TouchableOpacity style={styles.dishCard} onPress={onToggle}>
-    <View style={styles.checkbox(isSelected)}>
-      {isSelected && <MaterialIcons name="check" size={22} color="#fff" />}
-    </View>
-    <Image
-      source={{ uri: item.imageUrl }}
-      style={styles.image}
-      resizeMode="cover"
-    />
-    <View style={styles.cardContent}>
-      <Text style={styles.title}>{item.name}</Text>
-      <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
-    </View>
-  </TouchableOpacity>
+const DishCard = ({ item, selectedList, onToggle, note, viewDetails }) => (
+  <View style={[styles.dishCard, { flexDirection: 'row', alignItems: 'center', paddingRight: 50 }, selectedList[item.id] && styles.selectedDishes,]}>
+    <TouchableOpacity onPress={() => onToggle()} style={{ flexDirection: 'row' }}>
+      <Image
+        source={{ uri: item.imageUrl || "https://via.placeholder.com/80" }}
+        style={styles.image}
+        resizeMode="cover"
+      />
+      <View style={styles.cardContent}>
+        <Text style={styles.title}>{item.name}</Text>
+        <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
+        {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
+      </View>
+    </TouchableOpacity>
+    <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={() => viewDetails(item.id)}>
+      <Ionicons name="information-circle-outline" size={24} color="black" />
+    </TouchableOpacity>
+  </View>
 );
 
-const MenuCard = ({ item, isSelected, onSelect }) => (
-  <TouchableOpacity
-    style={[
-      styles.menuCard,
-      {
-        borderColor: isSelected ? "#F8BF40" : "transparent",
-      },
-    ]}
-    onPress={onSelect}
-  >
-    <Image
-      source={{
-        uri: item?.imageUrl,
-      }}
-      style={styles.menuImage}
-      resizeMode="cover"
-    />
-    <View style={styles.cardContent}>
-      <Text style={styles.title}>{item.name}</Text>
-      <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
-    </View>
-  </TouchableOpacity>
+
+const MenuCard = ({ item, isSelected, onSelect, onViewDetails }) => (
+  <View >
+    <TouchableOpacity style={[styles.menuCard, isSelected && styles.selectedMenu]} onPress={onSelect} >
+      <Image
+        source={{
+          uri: item?.imageUrl,
+        }}
+        style={styles.image}
+        resizeMode="cover"
+      />
+      <View style={styles.cardContent}>
+        <Text style={styles.title}>{item.name}</Text>
+        <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
+      </View>
+    </TouchableOpacity>
+    <TouchableOpacity style={{ position: 'absolute', top: 5, right: 20 }} onPress={() => onViewDetails(item)}>
+      <Ionicons name="information-circle-outline" size={24} color="black" />
+    </TouchableOpacity>
+  </View>
 );
 
 const SelectFood = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const {
-    chefId,
-    selectedMenu: selectedMenuParam,
-    selectedDishes: selectedDishesParam,
-    dishNotes: dishNotesParam,
-  } = params;
-
-  const [selectedMenu, setSelectedMenu] = useState(null);
-  const [selectedDishes, setSelectedDishes] = useState({});
-  const [extraDishIds, setExtraDishIds] = useState({});
-  const [dishNotes, setDishNotes] = useState({});
+  const { showModal } = useCommonNoification();
   const [menus, setMenus] = useState([]);
   const [dishes, setDishes] = useState([]);
   const axiosInstance = useAxios();
-
+  const [loading, setLoading] = useState(false);
   const menuFlatListRef = useRef(null);
   const dishesFlatListRef = useRef(null);
+  const menuDetailModalRef = useRef(null);
+  const [selectedMenuDetail, setSelectedMenuDetail] = useState(null);
+  const [modalKey, setModalKey] = useState(0);
+  const { selectedMenu, setSelectedMenu, selectedDishes, setSelectedDishes, extraDishIds, setExtraDishIds, chefId, setIsLoop, routeBefore, setRouteBefore } = useSelectedItems();
+  const startDish = SecureStore.getItem("firstDish");
+  const startChef = SecureStore.getItem("firstChef");
 
-  // Đồng bộ hóa state với params khi params thay đổi
   useEffect(() => {
-    // Đồng bộ selectedMenu
-    if (selectedMenuParam && selectedMenuParam !== "") {
-      const parsedMenu = JSON.parse(selectedMenuParam);
-      setSelectedMenu(parsedMenu?.id || null);
-    } else {
-      setSelectedMenu(null);
-    }
-
-    // Đồng bộ selectedDishes và extraDishIds
-    if (selectedDishesParam && selectedDishesParam !== "") {
-      const parsedDishes = JSON.parse(selectedDishesParam);
-      const dishState = parsedDishes.reduce((acc, dish) => {
-        acc[dish.id] = true;
-        return acc;
-      }, {});
-
-      if (selectedMenu) {
-        // Nếu đã có selectedMenu, chuyển dữ liệu sang extraDishIds
-        setExtraDishIds(dishState);
-        setSelectedDishes({}); // Reset selectedDishes
-      } else {
-        setSelectedDishes(dishState);
-        setExtraDishIds({}); // Reset extraDishIds
-      }
-    } else {
-      setSelectedDishes({});
-      setExtraDishIds({});
-    }
-
-    // Đồng bộ dishNotes
-    if (dishNotesParam && dishNotesParam !== "") {
-      setDishNotes(JSON.parse(dishNotesParam));
-    } else {
-      setDishNotes({});
-    }
-  }, [selectedMenuParam, selectedDishesParam, dishNotesParam]);
-
-  // Fetch menus
-  useEffect(() => {
-    const fetchMenus = async () => {
-      try {
-        const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
-        setMenus(menuResponse.data.content || []);
-      } catch (error) {
-        console.warn("Error fetching menus:", error);
-      }
-    };
     fetchMenus();
-  }, [chefId]);
+  }, [])
 
-  // Fetch dishes
   useEffect(() => {
-    const fetchDishes = async () => {
-      try {
-        let dishesResponse;
-        if (selectedMenu) {
-          // Gọi API để lấy các món ngoài menu
-          dishesResponse = await axiosInstance.get(
-            `/dishes/not-in-menu?menuId=${selectedMenu}`
-          );
-        } else {
-          // Gọi API để lấy tất cả món ăn của chef
-          dishesResponse = await axiosInstance.get(`/dishes?chefId=${chefId}`);
-        }
-        setDishes(dishesResponse.data.content || []);
-      } catch (error) {
-        console.error("Error fetching dishes:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to fetch dishes.",
-        });
-        setDishes([]);
-      }
-    };
     fetchDishes();
-  }, [selectedMenu, chefId]); // Thêm chefId vào dependencies để đảm bảo fetch lại nếu cần
+  }, [selectedMenu]);
 
-  // Handle physical back button
-  useEffect(() => {
-    const backAction = () => {
-      router.push({
-        pathname: "/screen/chefDetail",
-        params: { chefId: chefId },
-      });
-      return true;
-    };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+  const handleViewMenuDetails = (menu) => {
+    setSelectedMenuDetail(menu);
+    setModalKey(prev => prev + 1);
+    setTimeout(() => {
+      menuDetailModalRef.current?.open();
+    }, 100);
+  };
 
-    return () => backHandler.remove();
-  }, [chefId, selectedMenu, selectedDishes, extraDishIds, dishNotes]);
 
-  const toggleDish = (id) => {
+
+  const fetchMenus = async () => {
+    setLoading(true);
+    try {
+      const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
+      setMenus(menuResponse.data.content || []);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách menu", "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchDishes = async () => {
+    setLoading(true);
+    try {
+      let dishesResponse;
+      if (selectedMenu) {
+        dishesResponse = await axiosInstance.get(
+          `/dishes/not-in-menu?menuId=${selectedMenu.id}`
+        );
+      } else {
+        dishesResponse = await axiosInstance.get(`/dishes?chefId=${chefId}`);
+      }
+      setDishes(
+        (dishesResponse.data.content || []).map(({ id, name, imageUrl, description }) => ({
+          id,
+          name,
+          description,
+          imageUrl,
+        }))
+      );
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
+      setDishes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleDish = (item) => {
+    const id = item.id;
     if (selectedMenu) {
       setExtraDishIds((prev) => {
-        const newState = { ...prev, [id]: !prev[id] }; // Giữ nguyên các món khác, chỉ toggle món hiện tại
+        const newState = { ...prev };
+        if (newState[id]) {
+          delete newState[id];
+        } else {
+          newState[id] = item;
+        }
         return newState;
-      });
+      })
     } else {
       setSelectedDishes((prev) => {
-        const newState = { ...prev, [id]: !prev[id] }; // Giữ nguyên các món khác, chỉ toggle món hiện tại
+        const newState = { ...prev };
+        if (newState[id]) {
+          delete newState[id];
+        } else {
+          newState[id] = item;
+        }
         return newState;
-      });
+      })
     }
   };
 
-  const handleSelectMenu = (menuId) => {
-    const selectedDishesCount = Object.values(selectedDishes).filter(Boolean).length;
+  const handleSelectMenu = (menu) => {
+    const selectedDishesCount =
+      Object.values(selectedDishes).filter(Boolean).length;
     if (selectedDishesCount > 0) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Bạn phải bỏ chọn tất cả món ăn trước khi chọn menu.",
-      });
+      showModal("Error", "Bạn phải bỏ chọn tất cả món ăn trước khi chọn menu.", "Failed");
       return;
     }
-    setSelectedMenu((prev) => (prev === menuId ? null : menuId));
+    setSelectedMenu((prev) => (prev?.id === menu.id ? null : menu));
     setSelectedDishes({});
     setExtraDishIds({});
-    setDishNotes({});
-  };
-
-  const handleBack = () => {
-    router.push({
-      pathname: "/screen/chefDetail",
-      params: { chefId },
-    });
   };
 
   const handleContinue = () => {
-    const selectedMenuData = selectedMenu
-      ? menus.find((item) => item.id === selectedMenu)
-      : null;
-    const selectedDishesData = selectedMenu
-      ? dishes.filter((dish) => extraDishIds[dish.id])
-      : dishes.filter((dish) => selectedDishes[dish.id]);
-
-    if (!selectedMenuData && selectedDishesData.length === 0) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Vui lòng chọn ít nhất một menu hoặc món ăn.",
-      });
+    if (!selectedMenu && selectedDishes.length === 0) {
+      showModal("Error", "Vui lòng chọn ít nhất một menu hoặc món ăn.", "Failed");
       return;
     }
-
-    console.log("Selected dishes data in handleContinue:", selectedDishesData);
-
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        selectedMenu: selectedMenuData ? JSON.stringify(selectedMenuData) : "",
-        selectedDishes:
-          selectedDishesData.length > 0
-            ? JSON.stringify(selectedDishesData)
-            : "",
-        chefId,
-        dishNotes: JSON.stringify(dishNotes),
-      },
-    });
+    // router.push("/screen/booking");
+    // setRouteBefore(segment);
+    router.replace("/screen/booking");
   };
 
+  const handleViewDetails = (id) => {
+    setIsLoop(true);
+    router.replace({
+      pathname: "/screen/dishDetails",
+      params: {
+        dishId: id
+      }
+    })
+  }
+
+  const handleBack = () => {
+    if (routeBefore[1] === "dishDetails") {
+      router.replace({
+        pathname: `${routeBefore[0]}/${routeBefore[1]}`,
+        params: {
+          dishId: startDish
+        }
+      })
+
+    } else if (routeBefore[1] === "chefDetail") {
+      router.replace({
+        pathname: `${routeBefore[0]}/${routeBefore[1]}`,
+        params: {
+          chefId: startChef
+        }
+      })
+    } else {
+      router.replace(`${routeBefore[0]}/${routeBefore[1]}`);
+    }
+  }
+
   const renderDish = ({ item }) => {
-    const isSelected = selectedMenu
-      ? extraDishIds[item.id] || false
-      : selectedDishes[item.id] || false;
     return (
-      <DishCard
-        item={item}
-        isSelected={isSelected}
-        onToggle={() => toggleDish(item.id)}
-      />
+      <View style={{ marginBottom: 12 }}>
+        <DishCard
+          item={item}
+          selectedList={selectedMenu ? extraDishIds : selectedDishes}
+          onToggle={() => toggleDish(item)}
+          viewDetails={handleViewDetails}
+        />
+      </View>
     );
   };
 
   const renderMenu = ({ item }) => (
     <MenuCard
       item={item}
-      isSelected={selectedMenu === item.id}
-      onSelect={() => handleSelectMenu(item.id)}
+      isSelected={selectedMenu?.id === item.id}
+      onSelect={() => handleSelectMenu(item)}
+      onViewDetails={handleViewMenuDetails}
     />
   );
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("selectDish")} onLeftPress={handleBack} />
-      <Text style={styles.sectionTitle}>{t("selectAvailableMenu")}:</Text>
-      <FlatList
-        ref={menuFlatListRef}
-        data={menus}
-        horizontal
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderMenu}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>{t("noMenuAvailable")}</Text>
-        }
-      />
-      <Text style={styles.sectionTitle}>
-        {selectedMenu ? t("chooseMoreDishes") : t("selectDishesManually")}
-      </Text>
-      <FlatList
-        ref={dishesFlatListRef}
-        data={dishes}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderDish}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>{t("noDishesAvailable")}</Text>
-        }
-      />
-      {(selectedMenu ||
-        Object.values(selectedDishes).some((val) => val) ||
-        Object.values(extraDishIds).some((val) => val)) && (
-        <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>{t("confirmDishSelection")}</Text>
-        </TouchableOpacity>
-      )}
-    </SafeAreaView>
+    <GestureHandlerRootView >
+      <SafeAreaView style={commonStyles.container}>
+        <Header title={t("selectDish")} onLeftPress={() => handleBack()} />
+        <View style={commonStyles.containerContent}>
+          <Text style={styles.sectionTitle}>{t("selectAvailableMenu")}:</Text>
+          <View>
+            <FlatList
+              ref={menuFlatListRef}
+              data={menus}
+              horizontal
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderMenu}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>{t("noMenuAvailable")}</Text>
+              }
+            />
+          </View>
+          <Text style={styles.sectionTitle}>
+            {selectedMenu ? t("chooseMoreDishes") : t("selectDishesManually")}
+          </Text>
+          <FlatList
+            ref={dishesFlatListRef}
+            data={dishes}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderDish}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 10, marginTop: 5 }}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>{t("noDishesAvailable")}</Text>
+            }
+          />
+          {(selectedMenu ||
+            Object.values(selectedDishes).some((val) => val) ||
+            Object.values(extraDishIds).some((val) => val)) && (
+              <TouchableOpacity style={styles.button} onPress={handleContinue}>
+                <Text style={styles.buttonText}>{t("confirmDishSelection")}</Text>
+              </TouchableOpacity>
+            )}
+        </View>
+        <Modalize ref={menuDetailModalRef} key={modalKey} adjustToContentHeight>
+          <View style={{ padding: 20 }}>
+            {selectedMenuDetail ? (
+              <>
+                <Image source={{ uri: selectedMenuDetail.imageUrl }} style={{ width: '100%', height: 300, borderRadius: 10 }} resizeMode="cover" />
+                <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 15 }}>{selectedMenuDetail.name}</Text>
+                <Text style={{ marginTop: 10 }}>{selectedMenuDetail.description || t("noInformation")}</Text>
+                <Text>
+                  <Text>Dishes: </Text>
+                  <Text style={[styles.itemContent]}>
+                    {selectedMenuDetail.menuItems.map((dish) => dish.dishName).join(", ")}
+                  </Text>
+                </Text>
+
+              </>
+            ) : (
+              <Text>{t("noInformation")}</Text>
+            )}
+          </View>
+        </Modalize>
+
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
@@ -311,6 +319,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  selectedMenu: {
+    borderWidth: 2,
+    borderColor: "#F8BF40",
   },
   headerContainer: {
     flexDirection: "row",
@@ -334,22 +346,16 @@ const styles = StyleSheet.create({
   menuCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 12,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    elevation: 3,
     marginRight: 16,
     marginBottom: 50,
     width: 340,
-    height: 100,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  menuImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-    marginRight: 12,
-    backgroundColor: "#f0f0f0",
+    overflow: "hidden",
   },
   dishCard: {
     flexDirection: "row",
@@ -358,22 +364,21 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     elevation: 3,
-    marginBottom: 12,
+    marginBottom: 5,
     width: "100%",
     overflow: "hidden",
   },
-  checkbox: (selected) => ({
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: selected ? "#F8BF40" : "#fff",
-    borderWidth: 2,
-    borderColor: selected ? "#F8BF40" : "#CCCCCC",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    marginTop: 6,
-  }),
+  selectedDishes: {
+    borderWidth: 3,
+    borderColor: "#F8BF40",
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10,
+    transform: [{ scale: 1.03 }],
+  },
   image: {
     width: 80,
     height: 80,
@@ -394,24 +399,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 6,
   },
-  note: {
-    marginTop: 8,
-    fontStyle: "italic",
-    color: "#E76F51",
-    fontSize: 15,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 16,
-    marginTop: 6,
-    marginLeft: 44,
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-  },
+
   button: {
     position: "absolute",
     bottom: 16,

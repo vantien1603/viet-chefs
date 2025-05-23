@@ -1,87 +1,53 @@
-import {
-  View,
-  Text,
-  TextInput,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-  Modal,
-} from "react-native";
+import { View, Text, TextInput, Image, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PasswordInput } from "../../components/PasswordInput/passwordInput";
+import { PasswordInput } from "../../components/PasswordInput/passwordInput"; // Ensure correct path
 import { commonStyles } from "../../style";
 import * as WebBrowser from "expo-web-browser";
 import { AuthContext } from "../../config/AuthContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Ionicons } from "@expo/vector-icons";
-import useActionCheckNetwork from "../../hooks/useAction";
+import { Modalize } from "react-native-modalize";
+import { Ionicons } from '@expo/vector-icons';
 import { t } from "i18next";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AXIOS_BASE from "../../config/AXIOS_BASE";
+import { WebView } from "react-native-webview";
+import { Modal } from "react-native";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
-import * as Notifications from "expo-notifications";
-import WebView from "react-native-webview";
+import useActionCheckNetwork from "../../hooks/useAction";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [oauthUrl, setOauthUrl] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const navigation = useNavigation();
-  const { user, login, setUser, setIsGuest } = useContext(AuthContext);
-  const requireNetwork = useActionCheckNetwork();
-  const [expoToken, setExpoToken] = useState(null);
+  const { user, login, loading, setUser, setIsGuest } = useContext(AuthContext);
+  const modalRef = useRef(null);
+  const [loadingA, setLoadingA] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
   const webViewRef = useRef(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [oauthUrl, setOauthUrl] = useState(null);
+  const requireNetwork = useActionCheckNetwork();
 
-  // Lấy Expo Push Token từ AsyncStorage hoặc làm mới nếu cần
-  const getExpoToken = async () => {
-    try {
-      let token = await AsyncStorage.getItem("expoPushToken");
-      if (!token) {
-        const { status: existingStatus } =
-          await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-
-        if (existingStatus !== "granted") {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-
-        if (finalStatus !== "granted") {
-          console.log("Notification permissions not granted");
-          return null;
-        }
-
-        token = (await Notifications.getExpoPushTokenAsync()).data;
-        await AsyncStorage.setItem("expoPushToken", token);
+  useEffect(() => {
+    if (user?.token !== undefined && !hasNavigated && !loading) {
+      if (user?.roleName === "ROLE_CHEF") {
+        console.log("????")
+        navigation.navigate("(chef)", { screen: "home" })
       }
-      setExpoToken(token);
-      return token;
-    } catch (error) {
-      console.error("Error getting Expo Push Token:", error);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    getExpoToken();
-  }, []);
-
-  // Chuyển hướng nếu đã đăng nhập
-  useEffect(() => {
-    if (user?.token) {
+    } else if (user?.roleName === "ROLE_CUSTOMER") {
       navigation.navigate("(tabs)", { screen: "home" });
     }
-  }, [user]);
+    setHasNavigated(true);
 
-  // Hàm gửi token đến máy chủ
+  }, [user, hasNavigated, loading])
+
+
   const saveDeviceToken = async (email, token) => {
     if (!email || !token) return;
     try {
@@ -102,20 +68,33 @@ export default function LoginScreen() {
     }
   };
 
-  // Hàm đăng nhập thông thường
+
+
   const handleLogin = async () => {
     if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
-      setErrorMessage(t("checkAccountOrPassword"));
+      modalRef.current.open();
       return;
     }
-    setLoading(true);
-    const result = await login(usernameOrEmail, password, expoToken);
-    if (result === true) {
-      navigation.navigate("(tabs)", { screen: "home" });
-    } else {
-      setErrorMessage(t("checkAccountOrPassword"));
+    setLoadingA(true);
+    const token = await SecureStore.getItemAsync('expoPushToken');
+    const result = await login(usernameOrEmail, password, token);
+    console.log("asdasd", result)
+    if (result != null) {
+      if (result?.roleName === "ROLE_CHEF") {
+        navigation.navigate("(chef)", { screen: "home" })
+      }
+      else if (result?.roleName === "ROLE_CUSTOMER") {
+        navigation.navigate("(tabs)", { screen: "home" });
+      }
+      console.log("roi voday")
     }
-    setLoading(false);
+    else {
+      console.log("roi xuong day1")
+      if (modalRef.current) {
+        modalRef.current.open();
+      }
+    }
+    setLoadingA(false);
   };
 
   const signinWithGoogle = async () => {
@@ -131,13 +110,10 @@ export default function LoginScreen() {
       const url = response.data.url;
       if (url) {
         setOauthUrl(url);
-        setErrorMessage(null);
-      } else {
-        setErrorMessage(t("failedToGetGoogleUrl"));
       }
     } catch (error) {
       console.error("Lỗi khi gọi API OAuth:", error?.response);
-      setErrorMessage(t("googleSignInFailed"));
+      showModal("Error", "Login google failed", "Failed");
     } finally {
       setGoogleLoading(false);
     }
@@ -145,7 +121,6 @@ export default function LoginScreen() {
 
   const closeWebView = () => {
     setOauthUrl(null);
-    setErrorMessage(null);
   };
 
   const handleNavigationStateChange = async (navState) => {
@@ -156,27 +131,19 @@ export default function LoginScreen() {
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
       const fullName = params.get("full_name");
-
       if (access_token && refresh_token) {
         SecureStore.setItemAsync("refreshToken", refresh_token);
-
         const decoded = jwtDecode(access_token);
         const decodedFullName = fullName
           ? decodeURIComponent(fullName)
           : "Unknown";
-
-        // Cập nhật user state
         setUser({
           fullName: decodedFullName,
           token: access_token,
           ...decoded,
         });
-
-        const newToken = await getExpoToken();
-        if (newToken) {
-          await saveDeviceToken(decoded?.sub, newToken);
-        }
-
+        const token = await SecureStore.getItemAsync('expoPushToken');
+        await saveDeviceToken(decoded?.sub, token);
         setOauthUrl(null);
         setIsGuest(false);
         navigation.navigate("(tabs)", { screen: "home" });
@@ -187,18 +154,29 @@ export default function LoginScreen() {
   };
 
   return (
-    <GestureHandlerRootView style={commonStyles.containerContent}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <Text style={commonStyles.subTitleText}>{t("loginToUse")}</Text>
-        <View style={{ alignItems: "center" }}>
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={{ width: 400, height: 250 }}
-            resizeMode="cover"
-          />
-        </View>
+    <GestureHandlerRootView style={commonStyles.container}>
+      <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 50 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('index')}>
+          <View style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            justifyContent: "center",
+            alignItems: "center",
+          }}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </View>
+        </TouchableOpacity>
 
-        <Text style={commonStyles.titleText}>VIET CHEFS</Text>
+        <Text style={commonStyles.subTitleText}>
+          Login to your account to use...
+        </Text>
+        <Image
+          source={require("../../assets/images/logo.png")}
+          style={{ width: 400, height: 250 }}
+          resizeMode="cover"
+        />
+        <Text style={commonStyles.titleText}>VIET CHEF</Text>
         <TextInput
           style={commonStyles.input}
           placeholder={t("usernameOrEmail")}
@@ -206,42 +184,12 @@ export default function LoginScreen() {
           value={usernameOrEmail}
           onChangeText={setUsernameOrEmail}
         />
-        <PasswordInput placeholder={t("password")} onPasswordChange={setPassword} />
-        <View
-          style={{
-            marginBottom: 10,
-            marginTop: -5,
-            alignItems: "flex-end",
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => navigation.navigate("screen/forgot")}
-          >
-            <Text style={{ color: "#968B7B" }}>{t("forgot")}</Text>
+        <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
+        <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
+          <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
+            <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
-        {errorMessage && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              marginVertical: 10,
-            }}
-          >
-            <Ionicons name="close-circle" size={30} color="red" />
-            <Text
-              style={{
-                fontSize: 16,
-                color: "red",
-                marginLeft: 10,
-                textAlign: "center",
-              }}
-            >
-              {errorMessage}
-            </Text>
-          </View>
-        )}
         <View style={{ alignItems: "center" }}>
           <TouchableOpacity
             onPress={() => requireNetwork(() => handleLogin())}
@@ -254,23 +202,18 @@ export default function LoginScreen() {
               borderRadius: 50,
               width: 300,
             }}
-            disabled={loading || googleLoading}
+            disabled={loadingA}
           >
-            {loading ? (
+            {loadingA ? (
               <ActivityIndicator size="large" color="#fff" />
             ) : (
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontSize: 18,
-                  color: "#fff",
-                  fontFamily: "nunito-bold",
-                }}
-              >
-                {t("login")}
+              <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
+                Login
               </Text>
             )}
+
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => requireNetwork(() => signinWithGoogle())}
             style={{
@@ -310,8 +253,34 @@ export default function LoginScreen() {
               </>
             )}
           </TouchableOpacity>
+
         </View>
-      </SafeAreaView>
+      </ScrollView>
+
+      <Modalize ref={modalRef} adjustToContentHeight>
+        <View style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: "bold", textAlign: 'center' }}>Login failed</Text>
+          <Ionicons name="close-circle" size={60} color="red" />
+          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: 'center' }}>Please check your account or password again.</Text>
+          <TouchableOpacity
+            style={{
+              padding: 5,
+              marginTop: 10,
+              borderWidth: 1,
+              backgroundColor: "#383737",
+              borderColor: "#383737",
+              borderRadius: 50,
+              width: '50%',
+            }}
+            onPress={() => modalRef.current?.close()}
+          >
+            <Text style={{ textAlign: "center", fontSize: 16, color: "#fff" }}>
+              Try again
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modalize>
+
       <Modal
         visible={!!oauthUrl}
         animationType="slide"
@@ -342,12 +311,12 @@ export default function LoginScreen() {
             onError={(syntheticEvent) => {
               const { nativeEvent } = syntheticEvent;
               console.warn("WebView error: ", nativeEvent);
-              setErrorMessage(t("webviewError"));
               setOauthUrl(null);
             }}
           />
         </View>
       </Modal>
+
     </GestureHandlerRootView>
   );
 }

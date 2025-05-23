@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -6,29 +6,29 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
-import { AuthContext } from "../../config/AuthContext";
-import Toast from "react-native-toast-message";
-import { t } from "i18next";
-import { Modalize } from "react-native-modalize";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
+import { useSelectedItems } from "../../context/itemContext";
+import { commonStyles } from "../../style";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Ionicons } from "@expo/vector-icons";
+import { Modalize } from "react-native-modalize";
 
 const PaymentLongterm = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
   const axiosInstance = useAxios();
-  const { user } = useContext(AuthContext);
-
   const bookingId = params.bookingId;
-  const bookingData = JSON.parse(params.bookingData || "{}");
-  const totalPrice = bookingData.totalPrice || 0;
+  const platformFeeModalRef = useRef(null);
+  const { location, totalPrice, selectedDates } = useSelectedItems();
   const depositAmount = totalPrice * 0.05;
+  const { showModal } = useCommonNoification();
+  const [isPaySuccess, setIsPaySuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
   const [pinValues, setPinValues] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
@@ -40,41 +40,35 @@ const PaymentLongterm = () => {
     React.createRef(),
     React.createRef(),
   ]).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-
-  const pin = pinValues.join("");
 
   useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.3,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [blinkAnim]);
+    checkWalletPassword();
+    fetchBalanceInWallet();
+  }, []);
 
-  const fetchBalanceInWallet = async () => {
+  const checkWalletPassword = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get("/users/profile/my-wallet");
-      console.log("Wallet Balance:", response.data);
+      setHasPassword(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const fetchBalanceInWallet = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/users/profile/my-wallet");
       const wallet = response.data;
       setBalance(wallet.balance);
     } catch (error) {
-      console.error("Error fetching wallet balance:", error);
-      Toast.show({
-        type: "error",
-        text1: t("errorFetchingBalance"),
-      });
+      if (axios.isCancel(error) || error.response.status === 401) return;
+      showModal("Error", t("errorFetchingBalance"), "Failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,65 +81,18 @@ const PaymentLongterm = () => {
       const response = await axiosInstance.post(
         `/users/profile/my-wallet/access?password=${pin}`
       );
-      console.log("Access wallet response:", response.data);
       setError("");
       modalizeRef.current?.close();
-      await handleConfirmDeposit();
+      if (response.status === 200) await handleConfirmDeposit();
     } catch (error) {
-      console.error("Error accessing wallet:", error.response?.data);
       setError(t("invalidPin"));
       setPinValues(["", "", "", ""]);
       pinInputRefs[0].current?.focus();
     }
   };
 
-  const handleConfirmDeposit = async () => {
-    try {
-      if (!user) {
-        throw new Error("Vui lòng đăng nhập để tiếp tục.");
-      }
-      if (!bookingId) {
-        throw new Error("Không tìm thấy ID đặt chỗ.");
-      }
-
-      const response = await axiosInstance.post(
-        `/bookings/${bookingId}/deposit`
-      );
-
-      if (response.status === 200 || response.status === 201) {
-        Toast.show({
-          type: "success",
-          text1: t("depositSuccess"),
-        });
-        router.push("(tabs)/home");
-      }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "Có lỗi khi xác nhận đặt cọc. Vui lòng thử lại.";
-      console.log("Error confirming deposit:", errorMessage);
-      if (balance < depositAmount) {
-        Toast.show({
-          type: "error",
-          text1: t("notEnoughBalance"),
-        });
-      } else {
-        Toast.show({
-          type: "error",
-          text1: errorMessage,
-        });
-      }
-    }
-  };
 
   const handleOpenPinModal = () => {
-    if (balance < depositAmount) {
-      Toast.show({
-        type: "error",
-        text1: t("notEnoughBalance"),
-      });
-      return;
-    }
     modalizeRef.current?.open();
     setTimeout(() => pinInputRefs[0].current?.focus(), 100);
   };
@@ -183,42 +130,79 @@ const PaymentLongterm = () => {
     }
   };
 
-  useEffect(() => {
-    fetchBalanceInWallet();
-  }, []);
+  const handleConfirmDeposit = async () => {
 
-  useEffect(() => {
-    if (pin.length === 4) {
-      accessWallet();
+    if (balance < totalPrice) {
+      showModal("Error", t("notEnoughBalance"), "Failed", null,
+        [
+          {
+            label: "Cancel",
+            onPress: () => console.log("Cancel pressed"),
+            style: { backgroundColor: "#ccc", borderColor: "#ccc" }
+          },
+          {
+            label: "Deposit",
+            onPress: () => router.push("/screen/wallet"),
+            style: { backgroundColor: "#383737", borderColor: "#383737" }
+          }
+        ]);
+      return;
     }
-  }, [pin]);
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
+      if (response.status === 200 || response.status === 201) {
+        showModal("Success", "Đặt cọc đã được xác nhận!", "Success");
+        setIsPaySuccess(true);
+      }
+    } catch (error) {
+      if (error.response?.status === 401 || axios.isCancel(error)) {
+        return;
+      }
+      if (error.response.data.message === "Insufficient balance in the wallet.") {
+        showModal(t("error"), error.response?.data.message, "Failed", null, [
+          {
+            label: "Cancel",
+            onPress: () => console.log("Cancel pressed"),
+            style: { backgroundColor: "#ccc" }
+          },
+          {
+            label: "Top up",
+            onPress: () => router.push("/screen/wallet"),
+            style: { backgroundColor: "#A64B2A" }
+          }
+        ])
+      } else {
+        showModal(t("error"), error.response?.data.message, "Failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    router.replace('/screen/reviewBooking');
+  }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.safeArea}>
-        <Header title={t("depositPayment")} />
-        <ScrollView style={styles.container}>
-          <Text style={styles.title}>{t("depositConfirmation")}</Text>
-
+    <GestureHandlerRootView>
+      <SafeAreaView style={commonStyles.container}>
+        <Header title="Thanh toán đặt cọc" onLeftPress={() => handleBack()} />
+        <ScrollView style={commonStyles.containerContent}>
+          <Text style={styles.title}>Xác nhận đặt cọc</Text>
           <View style={styles.summaryContainer}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{t("walletBalance")}:</Text>
-              <Text style={styles.summaryValue}>${balance.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{t("totalDeposit")}:</Text>
+              <Text style={styles.summaryLabel}>Tổng tiền đặt chỗ:</Text>
               <Text style={styles.summaryValue}>${totalPrice.toFixed(2)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>
-                {t("depositAmount")} (5%):
-              </Text>
+              <Text style={styles.summaryLabel}>Số tiền đặt cọc (5%):</Text>
               <Text style={[styles.summaryValue, styles.depositValue]}>
                 ${depositAmount.toFixed(2)}
               </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{t("remainingAmount")}:</Text>
+              <Text style={styles.summaryLabel}>Số tiền còn lại:</Text>
               <Text style={styles.summaryValue}>
                 ${(totalPrice - depositAmount).toFixed(2)}
               </Text>
@@ -226,13 +210,12 @@ const PaymentLongterm = () => {
           </View>
 
           <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>{t("infor")}:</Text>
+            <Text style={styles.infoLabel}>Thông tin đặt chỗ:</Text>
             <Text style={styles.infoValue}>
-              {t("location")}:{" "}
-              {bookingData.bookingDetails?.[0]?.location || "N/A"}
+              Địa điểm: {location || "N/A"}
             </Text>
             <Text style={styles.infoValue}>
-              {t("numberOfDays")}: {bookingData.bookingDetails?.length || 0}
+              Số ngày: {selectedDates?.length || 0}
             </Text>
           </View>
 
@@ -242,21 +225,22 @@ const PaymentLongterm = () => {
         <View style={styles.buttonArea}>
           <TouchableOpacity
             style={styles.confirmButton}
-            onPress={() => router.push("(tabs)/home")}
+            onPress={() => router.replace("/(tabs)/home")}
           >
-            <Text style={styles.confirmButtonText}>{t("backHome")}</Text>
+            <Text style={styles.confirmButtonText}>Quay về trang chủ</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.confirmButton}
-            onPress={handleOpenPinModal}
+            // onPress={handleConfirmDeposit}
+            onPress={() =>
+              showConfirm("Complete payment", "Are you sure you want to pay?", () => hasPassword ? handleOpenPinModal() : handleConfirmDeposit())
+            }
+            disabled={loading || isPaySuccess}
           >
-            <Text style={styles.confirmButtonText}>
-              {t("depositConfirmation")}
-            </Text>
+            <Text style={styles.confirmButtonText}>Xác nhận đặt cọc</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Modal nhập PIN */}
         <Modalize
           ref={modalizeRef}
           adjustToContentHeight={true}
@@ -286,16 +270,7 @@ const PaymentLongterm = () => {
             <Text style={styles.modalSubtitle}>{t("enter4DigitPin")}</Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.pinBox,
-                    pinValues[index] === "" &&
-                    index === pinValues.join("").length
-                      ? { opacity: blinkAnim }
-                      : {},
-                  ]}
-                >
+                <View key={index} style={styles.pinBox}>
                   <TextInput
                     ref={pinInputRefs[index]}
                     style={styles.pinInput}
@@ -308,10 +283,13 @@ const PaymentLongterm = () => {
                     textAlign="center"
                     selectionColor="transparent"
                   />
-                </Animated.View>
+                </View>
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#A64B2A', borderRadius: 20 }} onPress={() => accessWallet()}>
+              <Text style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}>Thanh toán</Text>
+            </TouchableOpacity>
           </View>
         </Modalize>
       </SafeAreaView>

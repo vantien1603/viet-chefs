@@ -1,25 +1,35 @@
 // context/SocketContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import Toast from 'react-native-toast-message';
 import { AuthContext } from './AuthContext';
 
-const SocketContext = createContext();
+export const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
   const WEB_SOCKET_ENDPOINT = 'https://vietchef-api.ddns.net/ws';
   const [client, setClient] = useState(null);
   const { user } = useContext(AuthContext);
+  const [notificationCallbacks, setNotificationCallbacks] = useState([]);
+  const callbackRef = useRef([]);
+
+  const registerNotificationCallback = (callback) => {
+    callbackRef.current.push(callback);
+
+    return () => {
+      callbackRef.current = callbackRef.current.filter((cb) => cb !== callback);
+    };
+  };
+
 
   useEffect(() => {
-    if (!user || !user.sub) {
+    if (!user || !user?.sub) {
       console.log('No user, skipping STOMP connection');
       return;
     }
 
-    console.log('User:', user); // Log user object to verify sub
-    console.log('Subscribing to queue:', `/user/${user.sub}/queue/notifications`);
+    console.log('User:', user);
+    console.log('Subscribing to queue:', `/user/${user?.sub}/queue/notifications`);
 
     const socket = new SockJS(WEB_SOCKET_ENDPOINT);
     const stompClient = Stomp.over(socket);
@@ -32,16 +42,13 @@ export const SocketProvider = ({ children }) => {
         console.log('STOMP connected');
 
         const subscription = stompClient.subscribe(
-          `/user/${user.sub}/queue/notifications`,
+          `/user/${user?.sub}/queue/notifications`,
           (message) => {
             try {
               const data = JSON.parse(message.body);
               console.log("data", data);
-              Toast.show({
-                type: data.notiType,
-                text1: data.title,
-                text2: data.message,
-              });
+              //notificationCallbacks.forEach((callback) => callback(data));
+              callbackRef.current.forEach((cb) => cb(data));
             } catch (error) {
               console.error('Error parsing message:', error);
             }
@@ -66,11 +73,12 @@ export const SocketProvider = ({ children }) => {
           console.log('STOMP disconnected');
         });
       }
+      setNotificationCallbacks([]);
     };
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ client }}>
+    <SocketContext.Provider value={{ client, registerNotificationCallback }}>
       {children}
     </SocketContext.Provider>
   );

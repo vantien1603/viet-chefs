@@ -168,8 +168,8 @@ const BookingCard = ({
         status === "PENDING"
           ? "/screen/viewBookingDetails"
           : status === "DEPOSITED" || booking.bookingType === "LONG_TERM"
-          ? "/screen/longTermDetails"
-          : "/screen/viewBookingDetails",
+            ? "/screen/longTermDetails"
+            : "/screen/viewBookingDetails",
       params: {
         bookingId: booking.id,
         chefId: booking.chef.id,
@@ -340,6 +340,71 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
     fetchReviewStatus();
   }, []);
 
+  const handleRebook = async (booking) => {
+    setLoadingBookingId(booking.id);
+    try {
+      const bookingDetailId = booking.bookingDetails?.[0]?.id;
+      if (!bookingDetailId) {
+        throw new Error("Booking detail ID not found");
+      }
+      const response = await axiosInstance.get(
+        `/bookings/booking-details/${bookingDetailId}`
+      );
+      const bookingDetails = response.data;
+
+      let selectedMenu = null;
+      if (bookingDetails.menuId) {
+        const allowedDishIds = bookingDetails.dishes.map(({ dish }) => dish.id);
+
+        const menuValidationResponse = await axiosInstance.post(
+          `/menus/${bookingDetails.menuId}/validate`,
+          allowedDishIds
+        );
+        const isMenuValid = menuValidationResponse.data.success;
+        if (!isMenuValid) {
+          throw new Error(
+            menuValidationResponse.data.message ||
+            "Selected menu has changed or is no longer valid"
+          );
+        }
+
+        selectedMenu = {
+          id: bookingDetails.menuId,
+          name: `Menu ${bookingDetails.menuId}`,
+          menuItems: [],
+        };
+      }
+
+      const selectedDishes = bookingDetails.dishes.map(({ dish }) => ({
+        id: dish.id,
+        name: dish.name,
+        imageUrl: dish.imageUrl || null,
+      }));
+
+      const dishNotes = {};
+      bookingDetails.dishes.forEach(({ dish, notes }) => {
+        dishNotes[dish.id] = notes || "";
+      });
+
+      router.push({
+        pathname: "/screen/booking",
+        params: {
+          chefId: booking.chef.id,
+          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
+          selectedDishes:
+            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
+          dishNotes: JSON.stringify(dishNotes),
+          numPeople: booking.guestCount.toString(),
+          address: bookingDetails.location || null,
+        },
+      });
+    } catch (error) {
+      showModal("Error", "Failed to initiate rebooking.", "Failed");
+    } finally {
+      setLoadingBookingId(null);
+    }
+  };
+
   const handleReview = (bookingId, chefId) => {
     router.push({
       pathname: "/screen/review",
@@ -397,7 +462,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -475,13 +540,13 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   primaryButton: {
-    backgroundColor: "#2dd4bf",
+    backgroundColor: "orange",
   },
   secondaryButton: {
-    backgroundColor: "#6366f1",
+    backgroundColor: "#666",
   },
   cancelButton: {
-    backgroundColor: "#fb7185",
+    backgroundColor: "red",
   },
   emptyContainer: {
     alignItems: "center",
