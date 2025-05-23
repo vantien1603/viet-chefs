@@ -35,28 +35,11 @@ const CreateChefScreen = () => {
   });
   const [yearsOfExperience, setYearsOfExperience] = useState("");
   const [hasCertificate, setHasCertificate] = useState(null);
-  const [certification, setCertification] = useState(""); // URL for the certificate image
+  const [certification, setCertification] = useState("");
 
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
   const { showModal } = useCommonNoification();
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
-  useEffect(() => {
-    const backAction = () => {
-      router.push("/(tabs)/profile");
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, []);
 
   const toggleSpecialty = (region) => {
     setSpecialties((prev) => ({
@@ -112,128 +95,128 @@ const CreateChefScreen = () => {
   };
 
   return (
-      <SafeAreaView style={commonStyles.container}>
-        <Header title="Register Chef" />
-        <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }}>
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder={t("bioS")}
-              value={bio}
-              onChangeText={setBio}
-              multiline
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t("descriptionS")}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t("address")}
-              value={address}
-              onChangeText={setAddress}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t("country")}
-              value={country}
-              onChangeText={setCountry}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t("price")}
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t("maxServingSizes")}
-              value={maxServingSize}
-              onChangeText={setMaxServingSize}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t("experienceYears")}
-              value={yearsOfExperience}
-              onChangeText={setYearsOfExperience}
-              keyboardType="numeric"
-            />
+    <SafeAreaView style={commonStyles.container}>
+      <Header title={t("registerChef")} />
+      <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }}>
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder={t("bioS")}
+            value={bio}
+            onChangeText={setBio}
+            multiline
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("descriptionS")}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("address")}
+            value={address}
+            onChangeText={setAddress}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("country")}
+            value={country}
+            onChangeText={setCountry}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("price")}
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="numeric"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("maxServingSizes")}
+            value={maxServingSize}
+            onChangeText={setMaxServingSize}
+            keyboardType="numeric"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("experienceYears")}
+            value={yearsOfExperience}
+            onChangeText={setYearsOfExperience}
+            keyboardType="numeric"
+          />
 
-            <View style={styles.specialtySection}>
-              <Text style={styles.sectionTitle}>{t("specialty")}</Text>
-              <View style={styles.specialtyButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.specialtyButton,
-                    specialties.north && styles.selectedButton,
-                  ]}
-                  onPress={() => toggleSpecialty("north")}
-                >
-                  <Text style={[styles.buttonText, { color: specialties.north && 'white' }]}>{t("northern")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.specialtyButton,
-                    specialties.center && styles.selectedButton,
-                  ]}
-                  onPress={() => toggleSpecialty("center")}
-                >
-                  <Text style={[styles.buttonText, { color: specialties.center && 'white' }]}>{t("central")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.specialtyButton,
-                    specialties.south && styles.selectedButton,
-                  ]}
-                  onPress={() => toggleSpecialty("south")}
-                >
-                  <Text style={[styles.buttonText, { color: specialties.south && 'white' }]}>{t("southern")}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.certificateSection}>
-              <Text style={styles.sectionTitle}>
-                {t("haveCertificateQuestion")}
-              </Text>
-              <View style={styles.switchContainer}>
-                <Text style={styles.switchLabel}>{t("haveCertificate")}</Text>
-                <Switch
-                  value={hasCertificate === true}
-                  onValueChange={(value) => setHasCertificate(value)}
-                  trackColor={{ false: "#CCCCCC", true: "#A9411D" }}
-                  thumbColor={hasCertificate ? "#fff" : "#fff"}
-                />
-              </View>
-
-              {hasCertificate === true && (
-                <View style={styles.uploadSection}>
-                  <Text style={styles.uploadTitle}>
-                    {t("certificateImageUrl")}
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={t("enterCertificateUrl")}
-                    value={certification}
-                    onChangeText={setCertification}
-                  />
-                </View>
-              )}
+          <View style={styles.specialtySection}>
+            <Text style={styles.sectionTitle}>{t("specialty")}</Text>
+            <View style={styles.specialtyButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.specialtyButton,
+                  specialties.north && styles.selectedButton,
+                ]}
+                onPress={() => toggleSpecialty("north")}
+              >
+                <Text style={[styles.buttonText, { color: specialties.north && 'white' }]}>{t("northern")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.specialtyButton,
+                  specialties.center && styles.selectedButton,
+                ]}
+                onPress={() => toggleSpecialty("center")}
+              >
+                <Text style={[styles.buttonText, { color: specialties.center && 'white' }]}>{t("central")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.specialtyButton,
+                  specialties.south && styles.selectedButton,
+                ]}
+                onPress={() => toggleSpecialty("south")}
+              >
+                <Text style={[styles.buttonText, { color: specialties.south && 'white' }]}>{t("southern")}</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
 
-        <View style={styles.submitContainer}>
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>{t("submit")}</Text>
-          </TouchableOpacity>
+          <View style={styles.certificateSection}>
+            <Text style={styles.sectionTitle}>
+              {t("haveCertificateQuestion")}
+            </Text>
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>{t("haveCertificate")}</Text>
+              <Switch
+                value={hasCertificate === true}
+                onValueChange={(value) => setHasCertificate(value)}
+                trackColor={{ false: "#CCCCCC", true: "#A9411D" }}
+                thumbColor={hasCertificate ? "#fff" : "#fff"}
+              />
+            </View>
+
+            {hasCertificate === true && (
+              <View style={styles.uploadSection}>
+                <Text style={styles.uploadTitle}>
+                  {t("certificateImageUrl")}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={t("enterCertificateUrl")}
+                  value={certification}
+                  onChangeText={setCertification}
+                />
+              </View>
+            )}
+          </View>
         </View>
-      </SafeAreaView>
+      </ScrollView>
+
+      <View style={styles.submitContainer}>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>{t("submit")}</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 

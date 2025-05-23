@@ -33,6 +33,7 @@ export default function LoginScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [oauthUrl, setOauthUrl] = useState(null);
   const requireNetwork = useActionCheckNetwork();
+
   useEffect(() => {
     if (user?.token !== undefined && !hasNavigated && !loading) {
       if (user?.roleName === "ROLE_CHEF") {
@@ -52,7 +53,7 @@ export default function LoginScreen() {
     try {
       const encodedToken = encodeURIComponent(token);
       await axios.put(
-        "https://vietchef.ddns.net/no-auth/save-device-token",
+        "https://vietchef-api.ddns.net/no-auth/save-device-token",
         null,
         {
           params: {
@@ -100,7 +101,7 @@ export default function LoginScreen() {
     try {
       setGoogleLoading(true);
       const response = await axios.get(
-        "https://vietchef.ddns.net/no-auth/oauth-url",
+        "https://vietchef-api.ddns.net/no-auth/oauth-url",
         {
           params: { provider: "google" },
         }
@@ -125,7 +126,7 @@ export default function LoginScreen() {
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
 
-    if (url.startsWith("https://vietchef.ddns.net/no-auth/oauth-redirect")) {
+    if (url.startsWith("https://vietchef-api.ddns.net/no-auth/oauth-redirect")) {
       const params = new URLSearchParams(url.split("?")[1]);
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
@@ -141,13 +142,8 @@ export default function LoginScreen() {
           token: access_token,
           ...decoded,
         });
-        console.log('6');
         const token = await SecureStore.getItemAsync('expoPushToken');
-
-        const encodedToken = encodeURIComponent(token);
-
-        await saveDeviceToken(decoded?.sub, newToken);
-
+        await saveDeviceToken(decoded?.sub, token);
         setOauthUrl(null);
         setIsGuest(false);
         navigation.navigate("(tabs)", { screen: "home" });
@@ -183,7 +179,7 @@ export default function LoginScreen() {
         <Text style={commonStyles.titleText}>VIET CHEF</Text>
         <TextInput
           style={commonStyles.input}
-          placeholder="Username or Email"
+          placeholder={t("usernameOrEmail")}
           placeholderTextColor="#968B7B"
           value={usernameOrEmail}
           onChangeText={setUsernameOrEmail}
@@ -252,7 +248,7 @@ export default function LoginScreen() {
                     fontFamily: "nunito-bold",
                   }}
                 >
-                  Sign in With Google
+                  {t("signInWithGoogle")}
                 </Text>
               </>
             )}

@@ -1,9 +1,41 @@
-import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 
 function CustomTabBar({ state, descriptors, navigation }) {
+    const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+    const axiosInstance = useAxios();
+    let interval;
+
+    useEffect(() => {
+        interval = setInterval(() => {
+            fetchUnreadMessageCount();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchUnreadMessageCount = async () => {
+        try {
+            const response = await axiosInstance.get("/notifications/my/count");
+            const count = response.data.chatNoti ?? 0;
+            setUnreadMessageCount(count);
+            if (count === 0 && interval) {
+                clearInterval(interval);
+            }
+        } catch (error) {
+            console.error("Error fetching unread message count:", error);
+        }
+    };
+
+    const handleUpdate = async () => {
+        try {
+            await axiosInstance.put("/notifications/my-chat");
+            fetchUnreadMessageCount();
+        } catch (error) {
+            console.error("Error fetching unread message count:", error);
+        }
+    }
     return (
         <View style={styles.container}>
             <LinearGradient
@@ -27,6 +59,9 @@ function CustomTabBar({ state, descriptors, navigation }) {
                         if (!isFocused && !event.defaultPrevented) {
                             navigation.navigate(route.name);
                         }
+                        if (route.name === "chat") {
+                            handleUpdate();
+                        }
                     };
 
                     return (
@@ -40,13 +75,20 @@ function CustomTabBar({ state, descriptors, navigation }) {
                                                 ? "chatbubble-outline"
                                                 : route.name === "history"
                                                     ? "time-outline" :
-                                                    route.name==="schedule"
-                                                    ? "calendar-outline"
-                                                    : "person-outline"
+                                                    route.name === "schedule"
+                                                        ? "calendar-outline"
+                                                        : "person-outline"
                                     }
-                                    size={route.name === "schedule" ? 40 : 24} 
+                                    size={route.name === "schedule" ? 40 : 24}
                                     color={isFocused ? "#FF6600" : "#B0BEC5"}
                                 />
+                                {route.name === "chat" && unreadMessageCount > 0 && (
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>
+                                            {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                                        </Text>
+                                    </View>
+                                )}
                             </TouchableOpacity>
                         </View>
                     );
@@ -59,6 +101,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
 
 // Tabs Layout
 import { Tabs } from "expo-router";
+import useAxios from "../../config/AXIOS_API";
 
 export default function TabLayout() {
     return (
@@ -128,5 +171,21 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "#121212",
+    },
+    badge: {
+        position: "absolute",
+        right: -8,
+        top: -8,
+        backgroundColor: "#A9411D",
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    badgeText: {
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: "bold",
     },
 });

@@ -177,13 +177,17 @@ const ConfirmBookingScreen = () => {
               <Text style={styles.details}>{`${startTime}`}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginTravel")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("timeBeginTravel")}
+              </Text>
               <Text style={styles.details}>
                 {calcuResult.timeBeginTravel || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("timeBeginCook")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("timeBeginCook")}
+              </Text>
               <Text style={styles.details}>
                 {calcuResult.timeBeginCook || "N/A"}
               </Text>
@@ -191,9 +195,7 @@ const ConfirmBookingScreen = () => {
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("cookTime")}</Text>
               <Text style={styles.details}>
-                {calcuResult.cookTimeMinutes
-                  ? `${calcuResult.cookTimeMinutes} ${t("minutes")}`
-                  : "N/A"}
+                {`${calcuResult.cookTimeMinutes} ${t("minutes")}` || "N/A"}
               </Text>
             </View>
 
@@ -201,7 +203,9 @@ const ConfirmBookingScreen = () => {
               {t("jobDetails")}
             </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("numberOfPeople")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("numberOfPeople")}
+              </Text>
               <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
@@ -247,6 +251,25 @@ const ConfirmBookingScreen = () => {
               <Text style={styles.details}>
                 {ingredientPrep === "customer" ? t("IWillPrepareIngredients") : t("chefWillPrepareIngredients")}
               </Text>
+            </View>
+            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+              {t("feeDetails")}
+            </Text>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("chefCookingFee")}</Text>
+              <Text style={styles.details}>${calcuResult.chefCookingFee}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("priceOfDishes")}</Text>
+              <Text style={styles.details}>${calcuResult.priceOfDishes}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("arrivalFee")} ({calcuResult.distanceKm} km)</Text>
+              <Text style={styles.details}>${calcuResult.arrivalFee}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={{ fontSize: 14, flex: 1 }}>{t("platformFee")}</Text>
+              <Text style={styles.details}>${calcuResult.platformFee}</Text>
             </View>
             <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
               {t("specialRequest")}
@@ -311,7 +334,6 @@ const ConfirmBookingScreen = () => {
           )}
         </TouchableOpacity>
       </View>
-      <Toast />
     </SafeAreaView>
   );
 };

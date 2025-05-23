@@ -136,10 +136,10 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#fff",
     padding: 16,
     marginBottom: 16,
     position: "relative",

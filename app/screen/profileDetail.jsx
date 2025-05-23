@@ -22,7 +22,7 @@ import * as ImagePicker from "expo-image-picker";
 import { TabBar, TabView } from "react-native-tab-view";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import moment from 'moment';
+import { t } from "i18next";
 
 const ProfileDetail = () => {
   const [loading, setLoading] = useState();
@@ -37,7 +37,7 @@ const ProfileDetail = () => {
   const { showModal } = useCommonNoification();
   const [index, setIndex] = useState(0);
   const [routes] = useState([
-    { key: 'profile', title: 'Thông tin cá nhân' },
+    { key: 'profile', title: t("personalInformation") },
     { key: 'chef', title: 'Thông tin đầu bếp' },
   ]
   );
@@ -286,14 +286,14 @@ const ProfileDetail = () => {
           />
         </View>)}
 
-      <Text style={styles.label}>Username</Text>
+      <Text style={styles.label}>{t("username")}</Text>
       {isEditing ? (
         <TextInput style={styles.input} value={updateData.username} editable={false} />
       ) : (
         <Text style={styles.text}>{updateData.username}</Text>
       )}
 
-      <Text style={styles.label}>Họ và tên</Text>
+      <Text style={styles.label}>{t("fullName")}</Text>
       {isEditing ? (
         <TextInput style={[styles.input, errors.name && styles.errorInput]} value={updateData.fullName} onChangeText={(text) => {
           setUpdateData((prev) => ({ ...prev, fullName: text }));
@@ -303,14 +303,14 @@ const ProfileDetail = () => {
         <Text style={styles.text}>{updateData.fullName}</Text>
       )}
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={styles.label}>{t("email")}</Text>
       {isEditing ? (
         <TextInput style={styles.input} value={updateData.email} editable={false} />
       ) : (
         <Text style={styles.text}>{updateData.email}</Text>
       )}
 
-      <Text style={styles.label}>Số điện thoại</Text>
+      <Text style={styles.label}>{t("phone")}</Text>
       {isEditing ? (
         <TextInput style={[styles.input, errors.phone && styles.errorInput]} value={updateData.phone} onChangeText={(text) => {
           setUpdateData((prev) => ({ ...prev, phone: text }));
@@ -321,7 +321,7 @@ const ProfileDetail = () => {
         <Text style={styles.text}>{updateData.phone}</Text>
       )}
 
-      <Text style={styles.label}>Ngày sinh</Text>
+      <Text style={styles.label}>{t("dob")}</Text>
       {isEditing ? (
         <TouchableOpacity onPress={() => setShowDatePicker(true)} disabled={loading}>
           <TextInput style={[styles.input, errors.dob && styles.errorInput]} value={updateData.dob} editable={false} />
@@ -339,7 +339,7 @@ const ProfileDetail = () => {
         />
       )}
 
-      <Text style={styles.label}>Giới tính</Text>
+      <Text style={styles.label}>{t("gender")}</Text>
       {isEditing ? (
         <View style={styles.genderContainer}>
           <TouchableOpacity
@@ -402,7 +402,7 @@ const ProfileDetail = () => {
 
         ) : (
           <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
-            <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
+            <Text style={styles.editButtonText}>{t("editProfile")}</Text>
           </TouchableOpacity>
         )}
 

@@ -14,6 +14,7 @@ import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
+import { t } from "i18next";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
@@ -82,13 +83,10 @@ const ReviewScreen = () => {
         additionalImages: [],
         criteriaRatings: { ...criteriaRatings },
       };
-      console.log("Review Payload:", payload);
       const response = await axiosInstance.post("/reviews", payload);
-      console.log("Review Response:", response.data);
-      showModal("Success", "Review submitted successfully!", "Success");
-
-
-      router.push("(tabs)/history");
+      if (response.status === 200)
+        showModal("Success", "Review submitted successfully!", "Success");
+      fetchCriteria();
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -96,7 +94,7 @@ const ReviewScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
+      // showModal("Error", "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
       showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
@@ -122,12 +120,12 @@ const ReviewScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Review Booking" />
+      <Header title={t("reviewBooking")} />
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
-        <Text style={styles.label}>Rating Criteria</Text>
+        <Text style={styles.label}>{t("ratingCriteria")}</Text>
         {criteria.map((criterion) => (
           <View key={criterion.criteriaId} style={styles.criterionContainer}>
             <View style={styles.criterionRow}>
@@ -139,12 +137,12 @@ const ReviewScreen = () => {
             </View>
           </View>
         ))}
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t("description")}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Enter your review description (optional)"
+          value={overallExperience}
+          onChangeText={setOverallExperience}
+          placeholder={t("enterReviewDescription")}
           multiline
         />
       </ScrollView>
@@ -158,7 +156,7 @@ const ReviewScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>Submit Review</Text>
+            <Text style={styles.submitButtonText}>{t("submitReview")}</Text>
           )}
         </TouchableOpacity>
       </View>

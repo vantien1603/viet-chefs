@@ -136,10 +136,10 @@ const AddMenu = () => {
         });
 
         try {
-            const response = await axiosInstanceForm("/menus", formData);
+            const response = await axiosInstanceForm.post("/menus", formData);
             console.log(formData)
             console.log("res", response.data);
-            if (response.status === 200) {
+            if (response.status === 200 || response.status === 201) {
                 console.log('1111')
                 showModal("Success", "Tạo menu hành công", "Success");
                 setTimeout(() => {
@@ -231,7 +231,7 @@ const AddMenu = () => {
                                 backgroundColor: '#FFF8EF',
                             }}
                         >
-                            <Text style={{ fontSize: 14 , fontWeight: '600', color: '#333', marginBottom: 4 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 }}>
                                 Dishes (Tap to Edit)
                             </Text>
                             <Text style={{ fontSize: 14, color: '#666' }}>

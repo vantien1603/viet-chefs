@@ -20,6 +20,7 @@
     "@react-native-google-signin/google-signin": "^13.2.0",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/native": "^7.1.8",
+    "@stomp/stompjs": "^7.1.1",
     "axios": "^1.8.4",
     "expo": "~52.0.46",
     "expo-device": "^7.0.3",
@@ -62,7 +63,8 @@
     "react-native-tab-view": "^4.0.10",
     "react-native-toast-message": "^2.3.0",
     "react-native-web": "~0.19.13",
-    "react-native-webview": "^13.13.5"
+    "react-native-webview": "^13.13.5",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

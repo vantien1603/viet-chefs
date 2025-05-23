@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
-    TextInput, // Add TextInput for search
+    TextInput,
 } from "react-native";
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,7 +26,7 @@ const ChefDishes = () => {
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedDishes, setSelectedDishes] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(""); // State to manage search input
+    const [searchQuery, setSearchQuery] = useState("");
     const router = useRouter();
     const axiosInstance = useAxios();
     const { user } = useContext(AuthContext);
@@ -47,7 +47,7 @@ const ChefDishes = () => {
                 params: { chefId: user.chefId }
             });
             setDishes(response.data.content);
-            setFilteredDishes(response.data.content); // Initialize filtered dishes
+            setFilteredDishes(response.data.content);
         } catch (error) {
             if (error.response?.status === 401) {
                 return;
@@ -64,7 +64,7 @@ const ChefDishes = () => {
     const filterDishes = (query) => {
         setSearchQuery(query);
         if (query === "") {
-            setFilteredDishes(dishes); // Show all dishes when the search bar is empty
+            setFilteredDishes(dishes);
         } else {
             const filtered = dishes.filter(dish =>
                 dish.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -139,7 +139,7 @@ const ChefDishes = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Header title="All dishes" rightIcon={"add"} onRightPress={() => router.push("/screen/addFood")} />
+            <Header title="All dishes" rightIcon={user.roleName === "ROLE_CHEF" && "add"} onRightPress={() => user.roleName === "ROLE_CHEF" && router.push("/screen/addFood")} />
 
             <View style={styles.searchBarContainer}>
                 <TextInput
@@ -150,7 +150,7 @@ const ChefDishes = () => {
                 />
             </View>
 
-            {selectionMode && (
+            {(selectionMode && user.roleName === "ROLE_CHEF") && (
                 <View style={styles.floatingActions}>
                     <TouchableOpacity style={[styles.floatingButton, { flexDirection: 'row', alignItems: 'center' }]} onPress={selectAll}>
                         <Text style={[styles.floatingText, { color: "grey" }]}>All ({selectedDishes.length})</Text>
@@ -180,7 +180,7 @@ const ChefDishes = () => {
                 renderItem={({ item: dish }) => (
                     <TouchableOpacity
                         style={[styles.cardContainer, selectedDishes.includes(dish.id) && styles.selectedCard]}
-                        onLongPress={() => handleLongPress(dish.id)}
+                        onLongPress={() => user.roleName === "ROLE_CHEF" && handleLongPress(dish.id)}
                         onPress={() => {
                             if (selectionMode) {
                                 toggleSelection(dish.id);

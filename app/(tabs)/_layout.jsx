@@ -1,12 +1,48 @@
-import React, { useContext, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 
 function CustomTabBar({ state, descriptors, navigation }) {
-  const { isGuest } = useContext(AuthContext);
   const { showModalLogin } = useModalLogin();
+  const { isGuest } = useContext(AuthContext);
+  const { showModal } = useGlobalModal();
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const axiosInstance = useAxios();
 
+  let interval;
+  useEffect(() => {
+    if (!isGuest) {
+      interval = setInterval(() => {
+        fetchUnreadMessageCount();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+
+  }, []);
+
+  const fetchUnreadMessageCount = async () => {
+    try {
+      const response = await axiosInstance.get("/notifications/my/count");
+      const count = response.data.chatNoti ?? 0;
+      setUnreadMessageCount(count);
+      if (count === 0 && interval) {
+        clearInterval(interval);
+      }
+    } catch (error) {
+      console.error("Error fetching unread message count:", error);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (isGuest) return;
+    try {
+      await axiosInstance.put("/notifications/my-chat");
+      fetchUnreadMessageCount();
+    } catch (error) {
+      console.error("Error fetching unread message count:", error);
+    }
+  }
 
   useEffect(() => {
     const restrictedScreens = ["chat", "history"];
@@ -19,7 +55,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['rgba(24, 24, 24, 1)', 'rgba(42, 42, 40, 1)']}
+        colors={["rgba(24, 24, 24, 1)", "rgba(42, 42, 40, 1)"]}
         start={{ x: 0, y: 1 }}
         end={{ x: 0, y: 0 }}
         locations={[0, 0.8]}
@@ -39,22 +75,13 @@ function CustomTabBar({ state, descriptors, navigation }) {
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
+            if (route.name === "chat") {
+              handleUpdate();
+            }
           };
 
           return (
             <View key={route.key} style={styles.tabItem}>
-              {/* {index === 2 ? (
-                                // Center Icon
-                                <View style={styles.centerIcon}>
-                                    <Ionicons
-                                        name="grid"
-                                        size={28}
-                                        color="white"
-                                        onPress={onPress}
-                                    />
-                                </View>
-                            ) :  */}
-              {/* ( */}
               <TouchableOpacity style={{ padding: 10 }} onPress={onPress}>
                 <Ionicons
                   name={
@@ -64,19 +91,22 @@ function CustomTabBar({ state, descriptors, navigation }) {
                         ? "chatbubble-outline"
                         : route.name === "schedule"
                           ? "calendar-outline"
-                          : route.name === "history"
-                            ? "time-outline"
-                            : route.name === "bag"
-                              ? "briefcase-outline"
-                              : "person-outline"
+                          : route.name === "bag"
+                            ? "briefcase-outline"
+                            : "person-outline"
                   }
                   size={24}
                   color={isFocused ? "white" : "#B0BEC5"}
                 />
-              </TouchableOpacity>
+                {route.name === "chat" && unreadMessageCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                    </Text>
+                  </View>
+                )}
 
-              {/* ) */}
-              {/* } */}
+              </TouchableOpacity>
             </View>
           );
         })}
@@ -84,10 +114,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
     </View>
   );
 }
-import { Tabs } from "expo-router";
-import { AuthContext, AuthProvider } from "../../config/AuthContext";
-import { ModalProvider, useGlobalModal } from "../../context/modalContext";
+import { Tabs, } from "expo-router";
+import { AuthContext } from "../../config/AuthContext";
+import { useGlobalModal } from "../../context/modalContext";
 import { useModalLogin } from "../../context/modalLoginContext";
+import useAxios from "../../config/AXIOS_API";
 
 export default function TabLayout() {
   return (
@@ -98,9 +129,8 @@ export default function TabLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home" />
-      <Tabs.Screen name="chat" />
       <Tabs.Screen name="schedule" />
-      <Tabs.Screen name="history" />
+      <Tabs.Screen name="chat" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );
@@ -112,7 +142,6 @@ const styles = StyleSheet.create({
     // justifyContent: "flex-end",
     // backgroundColor: "#EBE5DD",
     backgroundColor: "transparent",
-
   },
   gradientBackground: {
     borderTopLeftRadius: 50,
@@ -122,10 +151,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 80,
-
   },
   tabBar: {
-    overflow: 'hidden',
+    overflow: "hidden",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
@@ -136,7 +164,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flex: 1,
-
   },
   centerIcon: {
     width: 70,
@@ -157,5 +184,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#121212",
+  },
+  badge: {
+    position: "absolute",
+    right: -8,
+    top: -8,
+    backgroundColor: "#A9411D",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
 });

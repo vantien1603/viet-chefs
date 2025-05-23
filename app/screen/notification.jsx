@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,33 +12,24 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { router } from "expo-router";
-import { AuthContext } from "../../config/AuthContext";
-import axios from "axios";
-import { useCommonNoification } from "../../context/commonNoti";
+import { t } from "i18next";
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const axiosInstance = useAxios();
-  const { isGuest } = useContext(AuthContext);
-  const {showModal} = useCommonNoification();
+
   const fetchNotification = async () => {
     try {
-      if (isGuest) return;
       const response = await axiosInstance.get("/notifications/my");
       if (response.status === 200) {
+        // Sort notifications by createdAt descending
         const sortedNotifications = response.data.content.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
         setNotifications(sortedNotifications);
       }
     } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông báo.", "Failed");
+      console.log("Error", error);
     }
   };
 
@@ -62,13 +53,7 @@ const NotificationScreen = () => {
         }))
       );
     } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông báo.", "Failed");
+      console.log("err", error);
     }
   };
 
@@ -83,13 +68,7 @@ const NotificationScreen = () => {
         )
       );
     } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông báo.", "Failed");
+      console.log("err", error);
     }
   };
 
@@ -107,43 +86,43 @@ const NotificationScreen = () => {
     switch (title) {
       case "Booking Confirmed":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "confirm", ...params },
         });
         break;
       case "Booking Expired":
         router.push({
-          pathname: "(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "cancel", ...params },
         });
         break;
       case "Please Confirm Your Booking with a Deposit":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "pending", ...params },
         });
         break;
       case "Booking Created Successfully":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/(screen/history",
           params: { tab: "", ...params },
         });
         break;
       case "Deposit Successful":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "paidDeposit", ...params },
         });
         break;
       case "Payment Successful":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "paidDeposit", ...params },
         });
         break;
       case "Booking Overdue & Refunded":
         router.push({
-          pathname: "/(tabs)/history",
+          pathname: "/screen/history",
           params: { tab: "cancel", ...params },
         });
         break;
@@ -173,16 +152,16 @@ const NotificationScreen = () => {
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>Không có thông báo nào</Text>
+      <Text style={styles.emptyText}>{t("noNotifications")}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Thông báo" />
+      <Header title={t("notifications")} />
       <View style={styles.headerActions}>
         <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
-          <Text style={styles.markAllText}>Đánh dấu tất cả đã đọc</Text>
+          <Text style={styles.markAllText}>{t("markAllAsRead")}</Text>
         </TouchableOpacity>
       </View>
       <FlatList

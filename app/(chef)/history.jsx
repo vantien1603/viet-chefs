@@ -188,70 +188,10 @@ const Histories = () => {
           ...prev,
           [status]: response.data.totalPages
         }));
-
-        // setBookings(prev => {
-        //   const newData = isRefresh ? bookingData : [...prev, ...bookingData];
-        //   const uniqueData = Array.from(new Map(newData.map(item => [item.id, item])).values());
-        //   return uniqueData;
-        // });
-
-        // const updatedList = (isRefresh ? bookingData : [...bookings, ...bookingData]);
-        // const uniqueData = Array.from(new Map(updatedList.map(item => [item.id, item])).values());
-
-        // console.log("kasd", updatedList.length)
-        // setBookings((prevList) => {
-        //   return isRefresh ? bookingData : [...prevList, ...bookingData];
-        // });
-
-        // setBookings(isRefresh ? bookingData : (pre) => [...pre, ...bookingData]);
         setBookings(prev => ({
           ...prev,
           [status]: isRefresh ? bookingData : [...prev[status], ...bookingData]
         }));
-
-        //   // if (isRefresh) {
-        //   //   setNewBooking(bookingData.filter((booking) =>
-        //   //     booking.status === "PAID" ||
-        //   //     booking.status === "DEPOSITED" ||
-        //   //     booking.status === "PAID_FIRST_CYCLE"
-        //   //   ));
-        //   //   setConfirmBooking(bookingData.filter((booking) =>
-        //   //     booking.status === "CONFIRMED" ||
-        //   //     booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-        //   //     booking.status === "CONFIRMED_PAID"
-        //   //   ));
-        //   //   setCancelBooking(bookingData.filter((booking) =>
-        //   //     booking.status === "CANCELLED" ||
-        //   //     booking.status === "OVERDUE"
-        //   //   ));
-        //   // } else {
-        //   //   setNewBooking((pre) => [
-        //   //     ...pre,
-        //   //     ...bookingData.filter((booking) =>
-        //   //       booking.status === "PAID" ||
-        //   //       booking.status === "DEPOSITED" ||
-        //   //       booking.status === "PAID_FIRST_CYCLE"
-        //   //     ),
-        //   //   ]);
-
-        //   //   setConfirmBooking((pre) => [
-        //   //     ...pre,
-        //   //     ...bookingData.filter((booking) =>
-        //   //       booking.status === "CONFIRMED" ||
-        //   //       booking.status === "CONFIRMED_PARTIALLY_PAID" ||
-        //   //       booking.status === "CONFIRMED_PAID"
-        //   //     ),
-        //   //   ]);
-
-        //   //   setCancelBooking((pre) => [
-        //   //     ...pre,
-        //   //     ...bookingData.filter((booking) =>
-        //   //       booking.status === "CANCELED" ||
-        //   //       booking.status === "OVERDUE"
-        //   //     ),
-        //   //   ]);
-        // }
-
       }
     } catch (error) {
       if (error.response?.status === 401) {

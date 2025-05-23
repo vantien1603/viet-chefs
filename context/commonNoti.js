@@ -11,15 +11,17 @@ export const ModalNotiProvider = ({ children }) => {
     title: '',
     message: '',
     status: 'Success',
-    onPress: null
+    onPress: null,
+    buttons: null
   });
 
-  const showModal = useCallback((title, message, status = 'Success', onPress) => {
+  const showModal = useCallback((title, message, status = 'Success', onPress = null, buttons = null) => {
     setModalContent({
       title: title || '',
       message: message || '',
       status: status || 'Success',
-      onPress: typeof onPress === 'function' ? onPress : null
+      onPress: typeof onPress === 'function' ? onPress : null,
+      buttons: Array.isArray(buttons) ? buttons : null
     });
 
     setIsVisible(true);
@@ -75,14 +77,23 @@ export const ModalNotiProvider = ({ children }) => {
           </View>
           <Text style={[styles.title, { color }]}>{modalContent.title}</Text>
           <Text style={styles.message}>{modalContent.message}</Text>
-          {modalContent.onPress && (
-            <TouchableOpacity
-              style={styles.button}
-              activeOpacity={0.7}
-              onPress={handleButtonPress}
-            >
-              <Text style={styles.buttonText}>Retry</Text>
-            </TouchableOpacity>
+          {(modalContent.buttons && modalContent.buttons.length > 0) && (
+            <View style={styles.buttonGroup}>
+              {modalContent.buttons.map((btn, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.button, btn.style || {}]}
+                  onPress={() => {
+                    setIsVisible(false);
+                    setTimeout(() => {
+                      if (btn.onPress) btn.onPress();
+                    }, 300);
+                  }}
+                >
+                  <Text style={styles.buttonText}>{btn.label || 'OK'}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
         </View>
       </Modal>
@@ -128,18 +139,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    padding: 8,
-    marginTop: 12,
+    padding: 5,
+    // marginTop: 12,
     borderWidth: 1,
     backgroundColor: "#383737",
     borderColor: "#383737",
     borderRadius: 50,
-    width: 200,
+    width: 150,
   },
   buttonText: {
     textAlign: "center",
     fontSize: 18,
     color: "#fff",
     fontFamily: "nunito-bold"
-  }
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+
 });

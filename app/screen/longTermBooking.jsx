@@ -120,7 +120,7 @@ const LongTermBookingScreen = () => {
 
             <View style={{ marginVertical: 10 }}>
               <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
-                {t("selectServicePackage")}:
+                {t("selectServicePackage")}
               </Text>
               {packages.length > 0 ? (
                 packages.map((pkg) => (

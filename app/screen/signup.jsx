@@ -16,19 +16,41 @@ export default function SignUpScreen() {
     const { showModal } = useCommonNoification();
     const [agreeTerms, setAgreeTerms] = useState(false);
     const axiosInstanceBase = useAxiosBase();
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
+
 
     const handleSignUp = async () => {
+        const currentErrors = {};
+        if (!signUpPayload.username)
+            currentErrors.username = "Username is required";
+        if (!signUpPayload.fullName)
+            currentErrors.fullName = "Full name is required";
+        if (!signUpPayload.phone) {
+            currentErrors.phone = "Phone is required";
+        } else if (!/^0\d{9}$/.test(signUpPayload.phone)) {
+            currentErrors.phone =
+                "Phone must start with 0 and be exactly 10 digits";
+        }
+        if (!signUpPayload.email) {
+            currentErrors.email = "Email is required";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signUpPayload.email)) {
+            currentErrors.email = "Invalid email format";
+        }
+        if (Object.keys(currentErrors).length > 0) {
+            setErrors(currentErrors);
+            return;
+        }
+        setLoading(true);
         try {
             const signUpPayload = {
-                username: username,
-                email: mail,
-                fullName: fullName,
+                username: username.trim(),
+                email: mail.trim(),
+                fullName: fullName.trim(),
                 dob: "1999-01-01",
                 gender: "Male",
-                phone: phone
+                phone: phone.trim(),
             };
-            console.log(signUpPayload);
-
             const response = await axiosInstanceBase.post('/register', signUpPayload);
             if (response.status === 201) {
                 router.push({
@@ -59,31 +81,62 @@ export default function SignUpScreen() {
                     style={commonStyles.input}
                     placeholder='User name'
                     value={username}
-                    onChangeText={setUsername}
-                />
+                    onChangeText={(text) => {
+                        setUsername(text);
+                        if (errors.username && text.trim() !== "") {
+                            setErrors((prev) => ({ ...prev, username: null }));
+                        }
+                    }} />
+                {errors.username && (
+                    <Text style={{ color: "red", fontSize: 12 }}>{errors.username}</Text>
+                )}
                 <Text style={commonStyles.labelInput}>First and last name</Text>
                 <TextInput
                     style={commonStyles.input}
                     placeholder='Full name'
                     value={fullName}
-                    onChangeText={setFullName}
+                    onChangeText={(text) => {
+                        setFullName(text);
+                        if (errors.fullName && text.trim() !== "") {
+                            setErrors((prev) => ({ ...prev, fullName: null }));
+                        }
+                    }}
                 />
+                {errors.fullName && (
+                    <Text style={{ color: "red", fontSize: 12 }}>{errors.fullName}</Text>
+                )}
                 <Text style={commonStyles.labelInput}>Phone number</Text>
                 <TextInput
                     style={commonStyles.input}
                     placeholder="03730xxxxx"
                     keyboardType="numeric"
                     value={phone}
-                    onChangeText={setPhone}
+                    onChangeText={(text) => {
+                        setPhone(text);
+                        if (errors.phone && text.trim() !== "") {
+                            setErrors((prev) => ({ ...prev, phone: null }));
+                        }
+                    }}
                 />
+                {errors.phone && (
+                    <Text style={{ color: "red", fontSize: 12 }}>{errors.phone}</Text>
+                )}
                 <Text style={commonStyles.labelInput}>Mail address</Text>
                 <TextInput
                     style={commonStyles.input}
                     placeholder="xxx@gmail.com"
                     keyboardType="email-address"
                     value={mail}
-                    onChangeText={setMail}
+                    onChangeText={(text) => {
+                        setMail(text);
+                        if (errors.email && text.trim() !== "") {
+                            setErrors((prev) => ({ ...prev, mail: null }));
+                        }
+                    }}
                 />
+                {errors.email && (
+                    <Text style={{ color: "red", fontSize: 12 }}>{errors.email}</Text>
+                )}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
                     <TouchableOpacity onPress={() => setAgreeTerms(!agreeTerms)} style={{
                         width: 24,

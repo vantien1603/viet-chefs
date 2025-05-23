@@ -30,7 +30,7 @@ const DishCard = ({ item, selectedList, onToggle, note, viewDetails }) => (
       />
       <View style={styles.cardContent}>
         <Text style={styles.title}>{item.name}</Text>
-        <Text numberOfLines={1} ellipsizeMode="tail"  style={styles.desc}>{item.description || t("noInformation")}</Text>
+        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.desc}>{item.description || t("noInformation")}</Text>
         {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
       </View>
     </TouchableOpacity>
@@ -52,7 +52,7 @@ const MenuCard = ({ item, isSelected, onSelect, onViewDetails }) => (
       />
       <View style={styles.cardContent}>
         <Text style={styles.title}>{item.name}</Text>
-        <Text numberOfLines={1} ellipsizeMode="tail"  style={styles.desc}>{item.description || t("noInformation")}</Text>
+        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.desc}>{item.description || t("noInformation")}</Text>
       </View>
     </TouchableOpacity>
     <TouchableOpacity style={{ position: 'absolute', top: 5, right: 20 }} onPress={() => onViewDetails(item)}>
@@ -78,37 +78,49 @@ const ChooseFoodForLongterm = () => {
   const [modalKey, setModalKey] = useState(0);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
-  useEffect(() => {
-    const fetchMenus = async () => {
-      try {
-        const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
-        setMenus(menuResponse.data.content || []);
+  const [loading, setLoading] = useState(false);
 
-      } catch (error) {
-        if (!axios.isCancel(error) && error.response?.status !== 401) {
-          showModal("Error", "Có lỗi khi tải menu.", "Failed");
-        }
-      }
-    };
+  console.log("selectted day", selectedDay);
+
+
+  useEffect(() => {
     fetchMenus();
   }, [chefId]);
 
   useEffect(() => {
-    const fetchDishes = async () => {
-      try {
-        const res = selectedMenuLong[selectedDay]
-          ? await axiosInstance.get(`/dishes/not-in-menu?menuId=${selectedMenuLong[selectedDay].id}`)
-          : await axiosInstance.get(`/dishes?chefId=${chefId}`);
-        setDishes(res.data.content || []);
-      } catch (error) {
-        if (!axios.isCancel(error) && error.response?.status !== 401) {
-          showModal("Error", "Có lỗi khi tải món ăn.", "Failed");
-        }
-        setDishes([]);
-      }
-    };
     fetchDishes();
-  }, [chefId, selectedMenuLong, selectedDay]);
+  }, [chefId, selectedMenuLong]);
+
+  const fetchMenus = async () => {
+    setLoading(true);
+    try {
+      const menuResponse = await axiosInstance.get(`/menus?chefId=${chefId}`);
+      setMenus(menuResponse.data.content || []);
+
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status !== 401) return
+      showModal("Error", "Có lỗi khi tải menu.", "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  const fetchDishes = async () => {
+    setLoading(true);
+    try {
+      const res = selectedMenuLong[selectedDay]
+        ? await axiosInstance.get(`/dishes/not-in-menu?menuId=${selectedMenuLong[selectedDay].id}`)
+        : await axiosInstance.get(`/dishes?chefId=${chefId}`);
+      setDishes(res.data.content || []);
+    } catch (error) {
+      if (!axios.isCancel(error) && error.response?.status !== 401) return;
+      showModal("Error", "Có lỗi khi tải món ăn.", "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectMenu = useCallback((menu) => {
     const dishCount = selectedDishes[selectedDay] ? Object.keys(selectedDishes[selectedDay])?.length : 0;

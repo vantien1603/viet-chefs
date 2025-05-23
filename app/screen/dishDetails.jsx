@@ -506,6 +506,25 @@ const DishDetails = () => {
               </>
             )}
           </View>
+          {/* thieu cai base price, ti qua chef them vo  */}
+
+          <View style={styles.detailItem}>
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={dish.basePrice.toString()}
+                // value={dish.cookTime}
+                onChangeText={(text) => setDish(prev => ({ ...prev, basePrice: text }))}
+              />
+            ) : (
+              <>
+                <Feather name="dollar-sign" size={24} color="black" />
+                <Text style={styles.detailText}>
+                  Base price: ${dish.basePrice}
+                </Text>
+              </>
+            )}
+          </View>
           {user?.roleName != "ROLE_CHEF" && (
             chef && (
               <View style={styles.chefContainer}>

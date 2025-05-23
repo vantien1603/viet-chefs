@@ -12,7 +12,7 @@ import Header from "../../components/header";
 import { useRouter } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { t } from "i18next";
@@ -38,7 +38,10 @@ const ReviewBookingScreen = () => {
     isSelected, setTotalPrice, setLocation } = useSelectedItems();
 
   const [loading, setLoading] = useState(false);
-  const [calcuResult, setCalcuResult] = useState({});
+  const [calcuResult, setCalcuResult] = useState(null);
+  const [error, setError] = useState("");
+  const [isError, setIsError] = useState(false);
+  // Fetch menu details
   useEffect(() => {
     calculatorLong();
   }, []);
@@ -64,7 +67,7 @@ const ReviewBookingScreen = () => {
         console.log("extra", extraDishIds[date]);
         console.log("dishes", selectedDishes[date]);
 
-        console.log("vo calcu 1");
+
         return {
           sessionDate: date,
           startTime: `${startTime[date]}:00`,
@@ -87,22 +90,23 @@ const ReviewBookingScreen = () => {
         location: address.address,
         bookingDetails,
       };
-      console.log("vo calcu 3");
-      console.log("payload 3", payload);
 
       const response = await axiosInstance.post("/bookings/calculate-long-term-booking", payload);
-      console.log("répóne 4", response.data);
+      console.log("répóne 4", response.status);
       setCalcuResult(response.data);
     } catch (error) {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal("Error", error.response.data.message, "Failed");
+      if (!error.response?.status === 403 && !error.response.data.message === "Chef không đủ uy tín để nhận booking.") {
+        showModal("Error", error.response.data.message, "Failed");
+      }
+      setError(error.response.data.message);
     } finally {
       setLoading(false);
     }
   }
-
+  console.log("cauaciiacs", calcuResult);
 
   const openPlatformFeeModal = () => {
     platformFeeModalRef.current?.open();
@@ -168,6 +172,8 @@ const ReviewBookingScreen = () => {
         return;
       }
       showModal("Error", error.response.data.message || "Có lỗi xảy ra trong quá trình đặt chổ.", "Failed");
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -181,169 +187,200 @@ const ReviewBookingScreen = () => {
         <Header title={t("confirmBooking")} onLeftPress={() => handleBack()} />
         {loading ? (<ActivityIndicator size={'large'} color={'white'} />) : (
           <>
-            <ScrollView style={styles.container}>
-              <Text style={styles.title}>{t("longTermBookingDetails")}</Text>
-              <View style={styles.infoContainer}>
-                <Text style={styles.infoLabel}>{t("location")}:</Text>
-                <Text style={styles.infoValue}>
-                  {calcuResult.bookingDetails?.[0]?.location || "N/A"}
-                </Text>
-              </View>
-              {calcuResult.bookingDetails?.map((detail, index) => (
-                <View key={index} style={styles.dateContainer}>
-                  <Text style={styles.dateTitle}>{detail.sessionDate}</Text>
-                  <View style={styles.detailCard}>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("time")}:</Text>
-                      <Text style={styles.detailValue}>
-                        {detail.startTime.slice(0, 5)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("travelFee")}:</Text>
-                      <Text style={styles.detailValue}>
-                        ${(detail.arrivalFee || 0).toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("cookingFee")}:</Text>
-                      <Text style={styles.detailValue}>
-                        ${(detail.chefCookingFee || 0).toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("dishFee")}:</Text>
-                      <Text style={styles.detailValue}>
-                        ${(detail.priceOfDishes || 0).toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("discount")}:</Text>
-                      <Text style={styles.detailValue}>
-                        -${(detail.discountAmout || 0).toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>
-                        {t("totalCookTime")}:
-                      </Text>
-                      <Text style={styles.detailValue}>
-                        {detail.totalCookTime} {t("minutes")}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("ingredients")}:</Text>
-                      <Text style={styles.detailValue}>
-                        {ingredientPrep[detail.sessionDate]
-                          ? t("chefBringIngredients")
-                          : t("customerBringIngredients")}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <View style={styles.labelWithIcon}>
-                        <Text style={styles.detailLabel}>
-                          {t("platformFee")}:
-                        </Text>
-                        <TouchableOpacity onPress={openPlatformFeeModal}>
-                          <Ionicons
-                            name="information-circle-outline"
-                            size={16}
-                            color="#666"
-                            style={styles.labelIcon}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.valueWithIcon}>
-                        <Text style={styles.detailValue}>
-                          ${(detail.platformFee || 0).toFixed(2)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.dishSection}>
-                      {selectedMenuLong[detail.sessionDate] && (
-                        <View>
-                          <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>{t("menu")}:</Text>
+            {!calcuResult ? (
+              <>
+                <MaterialIcons style={{ alignSelf: 'center' }} name={'error'} size={48} color={'red'} />
+                <Text style={{ alignSelf: 'center', color: 'red', fontSize: 15 }}>{error}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 }}>
+                  <TouchableOpacity style={{ borderRadius: 10, backgroundColor: "#6C757D", paddingVertical: 10, paddingHorizontal: 20 }} onPress={() => router.replace("/(tabs)/home")}>
+                    <Text style={{ color: 'white' }}>
+                      Ve trang chu
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ borderRadius: 10, backgroundColor: "#A64B2A", paddingVertical: 10, paddingHorizontal: 20 }} onPress={() => router.replace("/screen/allChef")}>
+                    <Text style={{ color: 'white' }}>
+                      Xem dau bep khac
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+                  <Text style={styles.title}>{t("longTermBookingDetails")}</Text>
+                  <View style={styles.infoContainer}>
+                    <Text style={styles.infoLabel}>{t("location")}:</Text>
+                    <Text style={styles.infoValue}>
+                      {calcuResult.bookingDetails?.[0]?.location || "N/A"}
+                    </Text>
+                  </View>
+                  {calcuResult.bookingDetails?.map((detail, index) => (
+                    <View key={index} style={styles.dateContainer}>
+                      <Text style={styles.dateTitle}>{detail.sessionDate}</Text>
+                      <View style={styles.detailCard}>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{t("time")}:</Text>
+                          <Text style={styles.detailValue}>
+                            {detail.startTime.slice(0, 5)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{t("travelFee")}:</Text>
+                          <Text style={styles.detailValue}>
+                            ${(detail.arrivalFee || 0).toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{t("cookingFee")}:</Text>
+                          <Text style={styles.detailValue}>
+                            ${(detail.chefCookingFee || 0).toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{t("dishFee")}:</Text>
+                          <Text style={styles.detailValue}>
+                            ${(detail.priceOfDishes || 0).toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{t("discount")}:</Text>
+                          <Text style={styles.detailValue}>
+                            -${(detail.discountAmout || 0).toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>
+                            {t("totalCookTime")}:
+                          </Text>
+                          <Text style={styles.detailValue}>
+                            {detail.totalCookTime} {t("minutes")}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{t("ingredients")}:</Text>
+                          <Text style={styles.detailValue}>
+                            {ingredientPrep[detail.sessionDate]
+                              ? t("chefBringIngredients")
+                              : t("customerBringIngredients")}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <View style={styles.labelWithIcon}>
+                            <Text style={styles.detailLabel}>
+                              {t("platformFee")}:
+                            </Text>
+                            <TouchableOpacity onPress={openPlatformFeeModal}>
+                              <Ionicons
+                                name="information-circle-outline"
+                                size={16}
+                                color="#666"
+                                style={styles.labelIcon}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                          <View style={styles.valueWithIcon}>
                             <Text style={styles.detailValue}>
-                              {selectedMenuLong[detail.sessionDate].name}
+                              ${(detail.platformFee || 0).toFixed(2)}
                             </Text>
                           </View>
-                          {selectedMenuLong[detail.sessionDate].menuItems.map((dish, idx) => (
-                            <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
-                              <Text style={styles.dishName}>{dish.dishName}</Text>
+                        </View>
+                        <View style={styles.dishSection}>
+                          {selectedMenuLong[detail.sessionDate] && (
+                            <View>
+                              <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>{t("menu")}:</Text>
+                                <Text style={styles.detailValue}>
+                                  {selectedMenuLong[detail.sessionDate].name}
+                                </Text>
+                              </View>
+                              {selectedMenuLong[detail.sessionDate].menuItems.map((dish, idx) => (
+                                <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+                                  <Text style={styles.dishName}>{dish.dishName}</Text>
+                                </View>
+                              ))}
                             </View>
-                          ))}
-                        </View>
-                      )}
+                          )}
 
-                      {extraDishIds[detail.sessionDate] && (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <Text style={styles.detailLabel}>
-                            {t("extraDishes")}:
-                          </Text>
-                          <View>
-                            {Object.values(extraDishIds[detail.sessionDate]).map((dish, idx) => (
-                              <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
-                                <Text style={styles.dishName}>{dish.name}</Text>
+                          {extraDishIds[detail.sessionDate] && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                              <Text style={styles.detailLabel}>
+                                {t("extraDishes")}:
+                              </Text>
+                              <View>
+                                {Object.values(extraDishIds[detail.sessionDate]).map((dish, idx) => (
+                                  <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+                                    <Text style={styles.dishName}>{dish.name}</Text>
+                                  </View>
+                                ))}
                               </View>
-                            ))}
-                          </View>
-                        </View>
-                      )}
-                      {selectedDishes[detail.sessionDate] && (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <Text style={styles.detailLabel}>
-                            {t("dishes")}:
-                          </Text>
-                          <View>
-                            {Object.values(selectedDishes[detail.sessionDate]).map((dish, idx) => (
-                              <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
-                                <Text style={styles.dishName}>{dish.name}</Text>
+                            </View>
+                          )}
+                          {selectedDishes[detail.sessionDate] && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                              <Text style={styles.detailLabel}>
+                                {t("dishes")}:
+                              </Text>
+                              <View>
+                                {Object.values(selectedDishes[detail.sessionDate]).map((dish, idx) => (
+                                  <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+                                    <Text style={styles.dishName}>{dish.name}</Text>
+                                  </View>
+                                ))}
                               </View>
-                            ))}
-                          </View>
+                            </View>
+                          )}
                         </View>
-                      )}
+
+                        <View style={styles.detailRow}>
+                          <Text style={[styles.detailLabel, styles.totalLabel]}>
+                            {t("totalPerDay")}:
+                          </Text>
+                          <Text style={[styles.detailValue, styles.totalValue]}>
+                            ${(detail.totalPrice || 0).toFixed(2)}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-
-                    <View style={styles.detailRow}>
-                      <Text style={[styles.detailLabel, styles.totalLabel]}>
-                        {t("totalPerDay")}:
+                  ))}
+                  <View style={styles.summaryContainer}>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>{t("discount")}:</Text>
+                      <Text style={[styles.summaryValue, styles.discount]}>
+                        -${(calcuResult.discountAmount || 0).toFixed(2)}
                       </Text>
-                      <Text style={[styles.detailValue, styles.totalValue]}>
-                        ${(detail.totalPrice || 0).toFixed(2)}
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>{t("distance")}:</Text>
+                      <Text style={styles.summaryValue}>
+                        {calcuResult.distanceKm} km
+                      </Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, styles.totalLabel]}>
+                        {t("total")}:
+                      </Text>
+                      <Text style={[styles.summaryValue, styles.totalValue]}>
+                        ${(calcuResult.totalPrice || 0).toFixed(2)}
                       </Text>
                     </View>
                   </View>
-                </View>
-              ))}
-              <View style={styles.summaryContainer}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>{t("discount")}:</Text>
-                  <Text style={[styles.summaryValue, styles.discount]}>
-                    -${(calcuResult.discountAmount || 0).toFixed(2)}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, styles.totalLabel]}>
-                    {t("total")}:
-                  </Text>
-                  <Text style={[styles.summaryValue, styles.totalValue]}>
-                    ${(calcuResult.totalPrice || 0).toFixed(2)}
-                  </Text>
-                </View>
-              </View>
 
-              <View style={styles.spacer} />
-            </ScrollView>
-            <View style={styles.buttonArea}>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirmBooking}
-              >
-                <Text style={styles.confirmButtonText}>{t("confirmBooking")}</Text>
-              </TouchableOpacity>
-            </View>
+                  <View style={styles.spacer} />
+
+
+                </ScrollView>
+                <View style={styles.buttonArea}>
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={handleConfirmBooking}
+                  >
+                    <Text style={styles.confirmButtonText}>{t("confirmBooking")}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+
+            )
+            }
           </>
         )}
 
@@ -355,7 +392,7 @@ const ReviewBookingScreen = () => {
         // onClose={closePlatformFeeModal}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Phí áp dụng là gì?</Text>
+            <Text style={styles.modalTitle}>{t("applicationFeeTitle")}</Text>
             <Text style={styles.modalText}>
               Phí áp dụng là khoản phí được thu để hỗ trợ cải thiện và duy
               trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.

@@ -158,6 +158,51 @@ const ScheduleBlocked = () => {
         }));
     };
 
+    // const handleSave = async () => {
+    //     const allBlocks = [];
+    //     Object.keys(selectedDates).forEach(date => {
+    //         if (!existingDates[date] && schedule[date]) {
+    //             const validBlocks = schedule[date]
+    //                 .filter(item => item.startTime && item.endTime)
+    //                 .map(item => ({
+    //                     blockedDate: date,
+    //                     startTime: item.startTime,
+    //                     endTime: item.endTime,
+    //                     reason: item.reason,
+    //                 }));
+    //             allBlocks.push(...validBlocks);
+    //         }
+    //     });
+
+    //     if (allBlocks.length === 0) {
+    //         showModal("Thông báo", "Không có lịch mới để lưu!");
+    //         return;
+    //     }
+
+    //     console.log(allBlocks);
+    //     // return;
+
+    //     try {
+    //         setLoading(true);
+    //         // const promises = allBlocks.map(block =>
+    //         //     axiosInstance.post("/chef-blocked-dates", block)
+    //         // );
+
+    //         // const response = await Promise.allSettled(promises);
+    //         const response = await Promise.all(allBlocks.map(block =>
+    //             axiosInstance.post("/chef-blocked-dates", block)
+    //         ));
+
+    //         console.log(response);
+    //         // showModal("Thành công", "Đã lưu lịch chặn!");
+    //         fetchSchedule();
+    //     } catch (error) {
+    //         showModal("Error ", error.response?.data?.message || "Đã có lỗi xảy ra!", "Failed");
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
     const handleSave = async () => {
         const allBlocks = [];
         Object.keys(selectedDates).forEach(date => {
@@ -175,28 +220,46 @@ const ScheduleBlocked = () => {
         });
 
         if (allBlocks.length === 0) {
-            showModal("Thông báo", "Không có lịch mới để lưu!");
+            showModal("Thông báo", "Không có lịch mới để lưu!", "Failed");
             return;
         }
 
-        console.log(allBlocks);
-        // return;
-
         try {
             setLoading(true);
-            const promises = allBlocks.map(block =>
-                axiosInstance.post("/chef-blocked-dates", block)
-            );
-            await Promise.allSettled(promises);
 
-            showModal("Thành công", "Đã lưu lịch chặn!");
+            const results = await Promise.allSettled(
+                allBlocks.map(block =>
+                    axiosInstance.post("/chef-blocked-dates", block)
+                        .then(res => ({ success: true, data: res.data }))
+                        .catch(err => ({
+                            success: false,
+                            error: err.response?.data?.message || "Lỗi không xác định",
+                            date: block.blockedDate
+                        }))
+                )
+            );
+
+            const failed = results.filter(r => !r.value?.success);
+
+            if (failed.length > 0) {
+                const messages = failed.map((f, i) => {
+                    const err = f.value;
+                    return `• ${err.date}: ${err.error}`;
+                }).join('\n');
+
+                throw new Error(`Một số ngày bị lỗi:\n${messages}`);
+            }
+
+            showModal("Thành công", "Đã lưu toàn bộ lịch chặn!");
             fetchSchedule();
         } catch (error) {
-            showModal("Lỗi", error.response?.data?.message || "Đã có lỗi xảy ra!");
+            showModal("Lỗi", error.message || "Đã có lỗi xảy ra!", "Failed");
         } finally {
             setLoading(false);
         }
     };
+
+
 
     return (
         <SafeAreaView style={commonStyles.container}>
@@ -248,7 +311,7 @@ const ScheduleBlocked = () => {
                                     {schedule[date]?.map((item, index) => (
                                         <View key={index} style={styles.fieldGroup}>
                                             <TouchableOpacity
-                                                disabled={isExisting}
+                                                // disabled={isExisting}
                                                 onPress={() => openTimePicker(date, index, "startTime")}
                                                 style={styles.inputContainer}
                                             >
@@ -261,7 +324,7 @@ const ScheduleBlocked = () => {
                                             </TouchableOpacity>
 
                                             <TouchableOpacity
-                                                disabled={isExisting}
+                                                // disabled={isExisting}
                                                 onPress={() => openTimePicker(date, index, "endTime")}
                                                 style={styles.inputContainer}
                                             >
@@ -298,15 +361,15 @@ const ScheduleBlocked = () => {
 
                                     ))}
 
-                                    {!isExisting && (
-                                        <TouchableOpacity
-                                            style={styles.addButton}
-                                            onPress={() => handleAddField(date)}
-                                        >
-                                            <Icon name="add" size={20} color="#A9411D" />
-                                            <Text style={styles.addButtonText}>Thêm khung giờ</Text>
-                                        </TouchableOpacity>
-                                    )}
+                                    {/* {!isExisting && ( */}
+                                    <TouchableOpacity
+                                        style={styles.addButton}
+                                        onPress={() => handleAddField(date)}
+                                    >
+                                        <Icon name="add" size={20} color="#A9411D" />
+                                        <Text style={styles.addButtonText}>Thêm khung giờ</Text>
+                                    </TouchableOpacity>
+                                    {/* )} */}
                                 </View>
                             );
                         })}

@@ -42,7 +42,6 @@ export default function WelcomeScreen() {
   const [notification, setNotification] = useState();
   const notificationListener = useRef();
   const responseListener = useRef();
-  const [hasNavigated, setHasNavigated] = useState(false);
   const { user, loading } = useContext(AuthContext);
 
   const setupNotifications = async () => {
@@ -99,7 +98,7 @@ export default function WelcomeScreen() {
   };
 
   const handleLogin = () => {
-    router.push("screen/login");
+    router.replace("screen/login");
   };
 
 
@@ -159,7 +158,7 @@ export default function WelcomeScreen() {
 
       <View>
         <TouchableOpacity
-          onPress={() => router.push("screen/signup")}
+          onPress={() => router.replace("screen/signup")}
           style={{
             padding: 13,
             marginTop: 40,

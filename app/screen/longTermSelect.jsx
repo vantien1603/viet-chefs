@@ -525,13 +525,10 @@ const LongTermSelectBooking = () => {
             trackColor={{ false: "#767577", true: "#A64B2A", }}
             thumbColor={ingredientPrep[date] ? "#A64B2A" : "#f4f3f4"}
           />
-
         </View>
       </View >
     );
   });
-
-
 
   const handleBack = () => {
     router.replace("/screen/longTermBooking")
@@ -543,6 +540,7 @@ const LongTermSelectBooking = () => {
       <SafeAreaView style={commonStyles.containerContent}>
         <View>
           <FlatList
+            showsVerticalScrollIndicator={false}
             data={groupDatesByWeek(selectedDates)}
             keyExtractor={(_, index) => `week-${index}`}
             nestedScrollEnabled={true}
@@ -1017,7 +1015,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: "#E0E0E0",
   },
   incompleteCard: {
@@ -1037,8 +1036,8 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    right: -20,
-    top: -20,
+    right: -15,
+    top: -15,
     width: 20,
     height: 20,
     borderRadius: 12,

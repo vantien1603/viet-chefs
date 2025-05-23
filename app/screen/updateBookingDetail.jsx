@@ -11,7 +11,6 @@ import {
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Dropdown } from "react-native-element-dropdown";
@@ -32,7 +31,8 @@ const UpdateBookingDetailScreen = () => {
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
 
-  console.log("cc", chefId);
+console.log("cc", chefId);
+  // Fetch danh sách menu
   useEffect(() => {
     const fetchMenus = async () => {
       try {
@@ -174,19 +174,9 @@ const UpdateBookingDetailScreen = () => {
         platformFee: response.data.platformFee || 0,
         totalChefFeePrice: response.data.totalChefFeePrice || 0,
         discountAmout: response.data.discountAmout || 0,
-        timeBeginCook: response.data.timeBeginCook || {
-          hour: 0,
-          minute: 0,
-          second: 0,
-          nano: 0,
-        },
-        timeBeginTravel: response.data.timeBeginTravel || {
-          hour: 0,
-          minute: 0,
-          second: 0,
-          nano: 0,
-        },
-        menuId: selectedMenu ? parseInt(selectedMenu) : null,
+        timeBeginCook: response.data.timeBeginCook,
+        timeBeginTravel: response.data.timeBeginTravel,
+        menuId: selectedMenu ? parseInt(selectedMenu) : null, // Cho phép menuId là null
       };
 
       console.log("Update data:", JSON.stringify(updateData, null, 2));
@@ -208,10 +198,6 @@ const UpdateBookingDetailScreen = () => {
     }
   };
 
-  const clearMenuSelection = () => {
-    setSelectedMenu(null);
-    setSelectedExtraDishIds([]); 
-  };
 
   const renderMenuDishItem = ({ item }) => (
     <View style={styles.dishItem}>
@@ -361,7 +347,6 @@ const UpdateBookingDetailScreen = () => {
         )}
       </TouchableOpacity>
 
-      <Toast />
     </SafeAreaView>
   );
 };

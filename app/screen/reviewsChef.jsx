@@ -17,6 +17,7 @@ import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import { FlatList } from "react-native";
+import { t } from "i18next";
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -205,10 +206,10 @@ const ReviewsChefScreen = () => {
     1
   );
   const sortOptions = [
-    { label: "Newest", value: "newest" },
-    { label: "Oldest", value: "oldest" },
-    { label: "Highest Rating", value: "highest-rating" },
-    { label: "Lowest Rating", value: "lowest-rating" },
+    { key: "newest", value: "newest" },
+    { key: "oldest", value: "oldest" },
+    { key: "highestRating", value: "highest-rating" },
+    { key: "lowestRating", value: "lowest-rating" },
   ];
 
   return (
@@ -267,7 +268,7 @@ const ReviewsChefScreen = () => {
                             sort === option.value && styles.sortButtonTextActive,
                           ]}
                         >
-                          {option.label}
+                          {t(option.key)}
                         </Text>
                       )}
                     </TouchableOpacity>

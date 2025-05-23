@@ -87,23 +87,23 @@ const ResetPasswordScreen = () => {
     <SafeAreaView style={styles.container}>
       <Header title={"Reset Password"} />
       <Text style={styles.description}>
-        We have sent a code to your email{" "}
+        {t("wehaveSentACodeToYourEmail")}
         <Text style={{ fontWeight: "bold" }}>{email}</Text>
       </Text>
       <View style={styles.content}>
-        <Text style={styles.label}>New Password</Text>
+        <Text style={styles.label}>{t("newPass")}</Text>
         <TextInput
           style={styles.input}
-          placeholder={"Enter new password"}
+          placeholder={t("enterNewPass")}
           secureTextEntry
           value={newPassword}
           onChangeText={setNewPassword}
         />
 
-        <Text style={styles.label}>Confirm Password</Text>
+        <Text style={styles.label}>{t("confirmNewPass")}</Text>
         <TextInput
           style={styles.input}
-          placeholder={"Confirm new password"}
+          placeholder={t("confirmNewPass")}
           secureTextEntry
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -127,7 +127,7 @@ const ResetPasswordScreen = () => {
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleReset}>
-          <Text style={styles.buttonText}>Reset Password</Text>
+          <Text style={styles.buttonText}>{t("resetPassword")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

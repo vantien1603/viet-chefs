@@ -46,12 +46,12 @@ const ForgotPasswordScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Forgot Password" />
+      <Header title={t("forgot")} />
       <View style={styles.container}>
         <Text style={styles.description}>
           {t("enterEmailToResetPassword")}
         </Text>
-        <Text style={styles.textLabel}>Email Address</Text>
+        <Text style={styles.textLabel}>Email</Text>
         <TextInput
           placeholder="example@gmail.com"
           style={[styles.input, errorMessage ? styles.inputError : null]}

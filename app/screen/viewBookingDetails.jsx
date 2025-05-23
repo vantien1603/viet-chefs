@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,14 +7,19 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
+  Image,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Modalize } from "react-native-modalize";
+import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const formatTime = (timeObj) => {
   if (!timeObj || typeof timeObj !== "object") return timeObj || "N/A";
@@ -27,9 +32,43 @@ const formatTime = (timeObj) => {
 const ViewBookingDetailsScreen = () => {
   const { bookingId, bookingType, refreshing } = useLocalSearchParams();
   const [bookingDetails, setBookingDetails] = useState([]);
+  const [bookingStatus, setBookingStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [depositLoading, setDepositLoading] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
   const axiosInstance = useAxios();
+  const [pinValues, setPinValues] = useState(["", "", "", ""]);
+  const [error, setError] = useState("");
+  const [hasPassword, setHasPassword] = useState(true);
+  const modalizeRef = useRef(null);
+  const pinInputRefs = useRef([
+    React.createRef(),
+    React.createRef(),
+    React.createRef(),
+    React.createRef(),
+  ]).current;
+  const { showModal } = useCommonNoification();
+
+  const pin = pinValues.join("");
+
+  useEffect(() => {
+    checkWalletPassword();
+    fetchBookingDetails();
+    fetchBookingStatus();
+  }, [bookingId, refreshing]);
+
+  const checkWalletPassword = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/users/profile/my-wallet/has-password");
+      console.log(response.data);
+      setHasPassword(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const fetchBookingDetails = async () => {
     setLoading(true);
@@ -37,12 +76,56 @@ const ViewBookingDetailsScreen = () => {
       const response = await axiosInstance.get(
         `/bookings/${bookingId}/booking-details`
       );
-      // console.log("Booking details:", JSON.stringify(response.data, null, 2));
       setBookingDetails(response.data.content || []);
     } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
       showModal("Error", "Failed to load booking details", "Failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBookingStatus = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/bookings/${bookingId}`);
+      setBookingStatus(response.data.status);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal("Error", "Failed to load booking status", "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const accessWallet = async () => {
+    if (pin.length !== 4) {
+      setError("PIN must be 4 digits");
+      return;
+    }
+    try {
+      await axiosInstance.post(
+        `/users/profile/my-wallet/access?password=${pin}`
+      );
+      setError("");
+
+      modalizeRef.current?.close();
+      if (bookingType === "LONG_TERM") {
+        console.log("1")
+        await handleDeposit();
+
+      } else {
+        console.log("2")
+        await handlePay();
+        console.log("3");
+      }
+      console.log(pin);
+
+    } catch (error) {
+      console.error("Error accessing wallet:", error.response?.data);
+      setError("Invalid PIN");
+      setPinValues(["", "", "", ""]);
+      pinInputRefs[0].current?.focus();
     }
   };
 
@@ -52,26 +135,9 @@ const ViewBookingDetailsScreen = () => {
       const response = await axiosInstance.post(
         `/bookings/${bookingId}/deposit`
       );
-      // console.log("Deposit response:", JSON.stringify(response.data, null, 2));
-
-      const depositSuccessful =
-        response.status === 200 || response.data?.status === "DEPOSITED";
-
-      if (depositSuccessful) {
+      if (response.status === 200) {
         showModal("Success", "Deposit successful", "Success");
-        await fetchBookingDetails();
-
-        const updatedDetails = bookingDetails.some(
-          (detail) => detail.status === "DEPOSITED"
-        );
-        if (updatedDetails || depositSuccessful) {
-          router.push("/(tabs)/home");
-        } else {
-          showModal("Error", "Deposit processed but status not updated yet. Please wait...", "Failed");
-
-        }
-      } else {
-        showModal("Error", "Deposit failed. Please try again.", "Failed");
+        fetchBookingDetails();
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -80,17 +146,87 @@ const ViewBookingDetailsScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Failed to process deposit", "Failed");
+      // showModal("Error", "Failed to process deposit", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
-      setDepositLoading(false);
+      setPayLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchBookingDetails();
+  const handlePay = async () => {
+    console.log("Roi")
+    setPayLoading(true);
+    try {
+      const response = await axiosInstance.post(
+        `/bookings/${bookingId}/payment`
+      );
+      if (response.status === 200) {
+        showModal(t("success"), t("paymentSuccessful"), "Success");
+        fetchBookingDetails();
+      }
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      if (error.response.data.message === "Insufficient balance in the wallet.") {
+        showModal(t("error"), error.response?.data.message, "Failed", null, [
+          {
+            label: "Cancel",
+            onPress: () => console.log("Cancel pressed"),
+            style: { backgroundColor: "#ccc" }
+          },
+          {
+            label: "Top up",
+            onPress: () => router.push("/screen/wallet"),
+            style: { backgroundColor: "#A64B2A" }
+          }
+        ])
+      } else {
+        showModal(t("error"), error.response?.data.message, "Failed");
+      }
+
+    } finally {
+      setPayLoading(false);
     }
-  }, [bookingId, refreshing]);
+  };
+
+  const handleOpenPinModal = () => {
+    modalizeRef.current?.open();
+    setTimeout(() => pinInputRefs[0].current?.focus(), 100);
+  };
+
+  const handlePinChange = (text, index) => {
+    const firstEmptyIndex = pinValues.findIndex((val) => val === "");
+    const validIndex = firstEmptyIndex === -1 ? 3 : firstEmptyIndex;
+
+    if (index !== validIndex) {
+      pinInputRefs[validIndex].current?.focus();
+      return;
+    }
+
+    const newPinValues = [...pinValues];
+    newPinValues[index] = text.replace(/[^0-9]/g, "").slice(0, 1);
+    setPinValues(newPinValues);
+
+    if (text && index < 3) {
+      pinInputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleKeyPress = ({ nativeEvent }, index) => {
+    if (nativeEvent.key === "Backspace") {
+      const lastFilledIndex = pinValues
+        .slice(0, 4)
+        .reduce((last, val, i) => (val !== "" ? i : last), -1);
+
+      if (lastFilledIndex >= 0) {
+        const newPinValues = [...pinValues];
+        newPinValues[lastFilledIndex] = "";
+        setPinValues(newPinValues);
+        pinInputRefs[lastFilledIndex].current?.focus();
+      }
+    }
+  };
+
+
 
   if (loading) {
     return (
@@ -98,7 +234,6 @@ const ViewBookingDetailsScreen = () => {
         <Header title="Booking Details" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="white" />
-          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -117,201 +252,275 @@ const ViewBookingDetailsScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[commonStyles.containerContent]}>
-      <Header title="Booking Details" />
-      <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContent}>
-        {bookingDetails.map((detail, index) => (
-          <React.Fragment key={detail.id || index}>
-            {/* Booking Information */}
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Booking Information</Text>
-              <View style={styles.detailRow}>
-                <MaterialIcons
-                  name="calendar-today"
-                  size={18}
-                  color="#A64B2A"
-                />
-                <Text style={styles.detailLabel}>Session Date:</Text>
-                <Text style={styles.detailValue}>
-                  {detail.sessionDate || "N/A"}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="access-time" size={18} color="#A64B2A" />
-                <Text style={styles.detailLabel}>Start Time:</Text>
-                <Text style={styles.detailValue}>
-                  {formatTime(detail.startTime)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="location-on" size={18} color="#A64B2A" />
-                <Text style={styles.detailLabel}>Location:</Text>
-                <Text style={styles.detailValue}>
-                  {detail.location || "N/A"}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="info" size={18} color="#A64B2A" />
-                <Text style={styles.detailLabel}>Status:</Text>
-                <Text
-                  style={[
-                    styles.detailValue,
-                    {
-                      color:
-                        detail.status === "CONFIRMED" ||
-                        detail.status === "DEPOSITED"
-                          ? "#2ECC71"
-                          : detail.status === "PENDING"
-                            ? "#A64B2A"
-                            : "#E74C3C",
-                    },
-                  ]}
-                >
-                  {detail.status || "N/A"}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
-                <Text style={styles.detailLabel}>Total Price:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.totalPrice || 0}
-                </Text>
-              </View>
-            </View>
-
-            {/* Fee Details */}
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Fee Details</Text>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Chef Cooking Fee:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.chefCookingFee || 0}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Price of Dishes:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.priceOfDishes || 0}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Arrival Fee:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.arrivalFee || 0}
-                </Text>
-              </View>
-              {detail.chefServingFee !== undefined && (
+    <GestureHandlerRootView>
+      <SafeAreaView style={[commonStyles.container]}>
+        <Header title="Booking Details" />
+        <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContent}>
+          {bookingDetails.map((detail, index) => (
+            <React.Fragment key={detail.id || index}>
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Booking Information</Text>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- Chef Serving Fee:</Text>
+                  <MaterialIcons
+                    name="calendar-today"
+                    size={18}
+                    color="#A64B2A"
+                  />
+                  <Text style={styles.detailLabel}>Session Date:</Text>
                   <Text style={styles.detailValue}>
-                    ${detail.chefServingFee || 0}
+                    {detail.sessionDate || "N/A"}
                   </Text>
                 </View>
-              )}
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Applicable Fee:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.platformFee || 0}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Total Chef Fee:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.totalChefFeePrice || 0}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>- Discount Amount:</Text>
-                <Text style={styles.detailValue}>
-                  ${detail.discountAmout || 0}
-                </Text>
-              </View>
-            </View>
-
-            {/* Schedule */}
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Schedule</Text>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Time Begin Cook:</Text>
-                <Text style={styles.detailValue}>
-                  {formatTime(detail.timeBeginCook)}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Time Begin Travel:</Text>
-                <Text style={styles.detailValue}>
-                  {formatTime(detail.timeBeginTravel)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Dishes */}
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Dishes</Text>
-              {!detail.dishes || detail.dishes.length === 0 ? (
-                <View style={styles.noDataContainer}>
-                  <Text style={[styles.detailValue, { color: "#A64B2A" }]}>
-                    No dishes selected
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="access-time" size={18} color="#A64B2A" />
+                  <Text style={styles.detailLabel}>Start Time:</Text>
+                  <Text style={styles.detailValue}>
+                    {formatTime(detail.startTime)}
                   </Text>
                 </View>
-              ) : (
-                detail.dishes.map((dishItem, dishIndex) => (
-                  <View key={dishItem.id || dishIndex} style={styles.dishItem}>
-                    <Text style={styles.detailValue}>
-                      - {dishItem.dish?.name || "N/A"}
-                      {dishItem.notes ? ` (${dishItem.notes})` : ""}
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="location-on" size={18} color="#A64B2A" />
+                  <Text style={styles.detailLabel}>Location:</Text>
+                  <Text style={styles.detailValue}>
+                    {detail.location || "N/A"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="info" size={18} color="#A64B2A" />
+                  <Text style={styles.detailLabel}>Status:</Text>
+                  <Text
+                    style={[
+                      styles.detailValue,
+                      {
+                        color:
+                          detail.status === "CONFIRMED" ||
+                            detail.status === "DEPOSITED"
+                            ? "#2ECC71"
+                            : detail.status === "PENDING"
+                              ? "#A64B2A"
+                              : "#E74C3C",
+                      },
+                    ]}
+                  >
+                    {detail.status || "N/A"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
+                  <Text style={styles.detailLabel}>Total Price:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.totalPrice || 0}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Schedule */}
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Schedule</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time Begin Cook:</Text>
+                  <Text style={styles.detailValue}>
+                    {formatTime(detail.timeBeginCook)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time Begin Travel:</Text>
+                  <Text style={styles.detailValue}>
+                    {formatTime(detail.timeBeginTravel)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Dishes */}
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Dishes</Text>
+                {!detail.dishes || detail.dishes.length === 0 ? (
+                  <View style={styles.noDataContainer}>
+                    <Text style={[styles.detailValue, { color: "#A64B2A" }]}>
+                      No dishes selected
                     </Text>
                   </View>
-                ))
-              )}
-            </View>
-            <View
-              style={{
-                borderColor: "#CCCCCC",
-                marginBottom: 15,
-                borderWidth: 1,
-                borderRadius: 10,
-              }}
-            />
-          </React.Fragment>
-        ))}
-      </ScrollView>
+                ) : (
+                  detail.dishes.map((dishItem, dishIndex) => (
+                    <View
+                      key={dishItem.id || dishIndex}
+                      style={styles.dishItem}
+                    >
+                      <Image
+                        source={{
+                          uri: dishItem.dish?.imageUrl,
+                        }}
+                        style={{ width: 30, height: 30, borderRadius: 6 }}
+                      />
+                      <Text style={styles.detailValue}>
+                        {dishItem.dish?.name || "N/A"}
+                        {dishItem.notes ? ` (${dishItem.notes})` : ""}
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </View>
 
-      {/* Nút Make Deposit */}
-      {bookingType === "LONG_TERM" && (
-        <TouchableOpacity
-          style={[
-            styles.depositButton,
-            depositLoading && styles.disabledButton,
-          ]}
-          onPress={handleDeposit}
-          disabled={depositLoading}
+              {/* Fee Details */}
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Fee Details</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Chef Cooking Fee:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.chefCookingFee || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Price of Dishes:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.priceOfDishes || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Arrival Fee:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.arrivalFee || 0}
+                  </Text>
+                </View>
+                {detail.chefServingFee !== undefined && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Chef Serving Fee:</Text>
+                    <Text style={styles.detailValue}>
+                      ${detail.chefServingFee || 0}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Applicable Fee:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.platformFee || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Chef Fee:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.totalChefFeePrice || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Discount Amount:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.discountAmout || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total price:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.totalPrice || 0}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={{
+                  borderColor: "#CCCCCC",
+                  marginBottom: 15,
+                  borderWidth: 1,
+                  borderRadius: 10,
+                }}
+              />
+            </React.Fragment>
+          ))}
+        </ScrollView>
+
+        {/* Nút Make Deposit hoặc Pay (chỉ hiển thị nếu booking status là PENDING) */}
+        {bookingStatus === "PENDING" && bookingType === "LONG_TERM" && (
+          <TouchableOpacity
+            style={[
+              styles.depositButton,
+              depositLoading && styles.disabledButton,
+            ]}
+            onPress={() => hasPassword ? handleOpenPinModal() : handleDeposit()}
+            disabled={depositLoading}
+          >
+            {depositLoading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <View style={styles.depositButtonContent}>
+                <MaterialIcons name="payment" size={18} color="#FFF" />
+                <Text style={styles.depositButtonText}>Make Deposit</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+        {bookingStatus === "PENDING" && bookingType === "SINGLE" && (
+          <TouchableOpacity
+            style={[styles.depositButton, payLoading && styles.disabledButton]}
+            onPress={() => hasPassword ? handleOpenPinModal() : handlePay()}
+            disabled={payLoading}
+          >
+            {payLoading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <View style={styles.depositButtonContent}>
+                <MaterialIcons name="attach-money" size={18} color="#FFF" />
+                <Text style={styles.depositButtonText}>Pay</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+
+        <Modalize
+          ref={modalizeRef}
+          adjustToContentHeight={true}
+          modalStyle={styles.modalStyle}
         >
-          {depositLoading ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <View style={styles.depositButtonContent}>
-              <MaterialIcons name="payment" size={18} color="#FFF" />
-              <Text style={styles.depositButtonText}>Make Deposit</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      )}
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
+                modalizeRef.current?.close();
+                setPinValues(["", "", "", ""]);
+                setError("");
+              }}
+            >
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Enter Wallet PIN</Text>
+            <Text style={styles.modalSubtitle}>Please enter your 4-digit PIN</Text>
+            <View style={styles.pinContainer}>
+              {[0, 1, 2, 3].map((index) => (
+                <View key={index} style={styles.pinBox}>
+                  <TextInput
 
-      <Toast />
-    </SafeAreaView>
+                    ref={pinInputRefs[index]}
+                    style={styles.pinInput}
+                    value={pinValues[index]}
+                    onChangeText={(text) => handlePinChange(text, index)}
+                    onKeyPress={(e) => handleKeyPress(e, index)}
+                    keyboardType="numeric"
+                    maxLength={1}
+                    secureTextEntry={true}
+                    textAlign="center"
+                    selectionColor="transparent"
+                  />
+                </View>))}
+            </View>
+            {error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity onPress={() => accessWallet()}>
+              <Text>{t("confirm")}</Text>
+            </TouchableOpacity>
+          </View>
+        </Modalize>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
   scrollContent: {
     // padding: 16,
-    paddingBottom: 100, // Đảm bảo nút Deposit không che nội dung
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: "#F9F5F0",
     borderRadius: 12,
-    padding: 16,
+    padding: 15,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#E0E0E0",
@@ -337,7 +546,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     marginLeft: 8,
-    width: 150, // Căn chỉnh nhãn
+    width: 150,
   },
   detailValue: {
     fontSize: 14,
@@ -345,12 +554,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dishItem: {
+    marginLeft: 10,
+    alignItems: 'center',
     paddingVertical: 8,
-  },
-  dishRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
+    flexDirection: 'row',
+    gap: 10
   },
   noDataContainer: {
     alignItems: "center",
@@ -397,6 +605,76 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
     marginLeft: 8,
+  },
+  modalStyle: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  handleStyle: {
+    backgroundColor: "#A64B2A",
+    width: 40,
+    height: 5,
+    borderRadius: 5,
+  },
+  modalContent: {
+    alignItems: "center",
+    position: "relative",
+  },
+  closeButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    padding: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 20,
+  },
+  pinContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "80%",
+    marginBottom: 20,
+  },
+  pinBox: {
+    width: 50,
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  pinInput: {
+    width: "100%",
+    height: "100%",
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+    borderWidth: 0,
+    backgroundColor: "transparent",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  forgotPinText: {
+    color: "#FF69B4",
+    fontSize: 16,
+    textDecorationLine: "underline",
   },
 });
 

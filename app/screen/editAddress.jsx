@@ -38,6 +38,9 @@ const EditAddress = () => {
   const { showModalLogin } = useModalLogin();
   const { showConfirm } = useConfirmModal();
   const { showModal } = useCommonNoification();
+  const [isEdit, setIsEdit] = useState(false);
+
+
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
@@ -56,6 +59,7 @@ const EditAddress = () => {
           },
         }
       );
+      console.log("Suggestions response:", response.data);
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
       }
@@ -226,6 +230,7 @@ const EditAddress = () => {
   };
 
   const handleUpdateAddress = async () => {
+    setLoading(true);
     if (!editingAddress.title || !editingAddress.address) {
       showModal("Error", "Vui lòng điền đầy đủ thông tin.", "Failed");
 
@@ -240,6 +245,7 @@ const EditAddress = () => {
           )
         );
         setModalVisible(false);
+        setIsEdit(false);
         setEditingAddress(null);
         showModal("Success", "Cập nhật địa chỉ thành công.", "Success");
 
@@ -252,6 +258,8 @@ const EditAddress = () => {
         return;
       }
       showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật địa chỉ.", "Failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -278,6 +286,15 @@ const EditAddress = () => {
         showModal("Error", "Có lỗi xảy ra trong quá trình xóa địa chỉ.", "Failed");
       }
     }))
+  };
+
+  const handleSearch = (query) => {
+    if (isEdit) {
+      setEditingAddress({ ...editingAddress, address: query })
+    } else {
+      setNewAddress({ ...newAddress, address: query });
+    }
+    fetchAddressSuggestions(query);
   };
 
   const renderAddressItem = (item) => (
@@ -323,6 +340,7 @@ const EditAddress = () => {
       <View style={{ flexDirection: "row" }}>
         <TouchableOpacity
           onPress={() => {
+            setIsEdit(true);
             setEditingAddress(item);
             setModalVisible(true);
           }}
@@ -384,14 +402,22 @@ const EditAddress = () => {
                   <TextInput
                     style={styles.input}
                     placeholder={t("address")}
-                    value={
-                      editingAddress ? editingAddress.address : newAddress.address
-                    }
-                    onChangeText={(text) =>
-                      editingAddress
-                        ? setEditingAddress({ ...editingAddress, address: text })
-                        : setNewAddress({ ...newAddress, address: text })
-                    }
+                    // value={
+                    //   editingAddress ? editingAddress.address : newAddress.address
+                    // }
+                    // onChangeText={(text) =>
+                    //   editingAddress
+                    //     ? setEditingAddress({ ...editingAddress, address: text })
+                    //     : setNewAddress({ ...newAddress, address: text })
+                    // }
+                    // onSubmitEditing={(event) => {
+                    //   event.persist();
+                    //   fetchAddressSuggestions(event.nativeEvent.text);
+                    // }}
+                    // returnKeyType="search"
+
+                    value={editingAddress ? editingAddress.address : newAddress.address}
+                    onChangeText={handleSearch}
                     onSubmitEditing={(event) => {
                       event.persist();
                       fetchAddressSuggestions(event.nativeEvent.text);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,10 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
@@ -20,95 +19,138 @@ import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
-import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-  const [favoriteLoading, setFavoriteLoading] = useState({});
   const axiosInstance = useAxios();
+  const [location, setLocation] = useState(null);
   const { showModal } = useCommonNoification();
-  const { user } = useContext(AuthContext);
-  const requireAuthAndNetwork = useRequireAuthAndNetwork();
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(0);
+  const [refresh, setRefresh] = useState(false);
+  const { user, isGuest } = useContext(AuthContext);
+  const [favorite, setFavorite] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+      if (!isGuest) {
+        loadFavorites();
+      }
+    }, [isGuest])
+  );
 
   useEffect(() => {
-    fetchChefs();
-    loadFavorites();
-  }, []);
-
-  const loadFavorites = async () => {
-    try {
-      const storedFavorites = await AsyncStorage.getItem("favorites");
-      if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
-      }
-    } catch (err) {
-      showModal("Error", "Có lỗi khi tải danh sách đầu bếp yêu thích", "Failed");
+    if (location) {
+      fetchChefs(0, true);
     }
-  };
+  }, [location]);
 
-  const fetchChefs = async () => {
+
+
+  const loadData = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get("/chefs");
-      setChefs(response.data.content);
-      console.log(response.data.content)
+      const savedAddress = await AsyncStorage.getItem("selectedAddress");
+      let newLocation = null;
+
+      if (savedAddress) {
+        const parsedAddress = JSON.parse(savedAddress);
+        if (parsedAddress.latitude && parsedAddress.longitude) {
+          newLocation = {
+            latitude: parsedAddress.latitude,
+            longitude: parsedAddress.longitude,
+          };
+        }
+      }
+      setLocation(newLocation);
     } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        console.log('Request was cancelled');
-        return;
-      }
-      showModal("Error", "Có lỗi khi tải danh sách đầu bếp", "Failed");
-    }
-    finally {
+      showModal("Error", "Có lỗi khi tải địa chỉ.", "Failed");
+    } finally {
       setLoading(false);
     }
   };
 
-  const toggleFavorite = async (chefId) => {
-    setFavoriteLoading((prev) => ({ ...prev, [chefId]: true }));
-    try {
-      const isFavoriteResponse = await axiosInstance.get(
-        `/favorite-chefs/${user.userId}/chefs/${chefId}`
-      );
-      const isFavorite = isFavoriteResponse.data;
-      console.log("cac", isFavorite);
 
-      if (isFavorite) {
-        await axiosInstance.delete(
-          `/favorite-chefs/${user.userId}/chefs/${chefId}`
-        );
-        const updatedFavorites = favorites.filter((id) => id !== chefId);
-        setFavorites(updatedFavorites);
-        await AsyncStorage.setItem(
-          "favorites",
-          JSON.stringify(updatedFavorites)
-        );
-      } else {
-        await axiosInstance.post(
-          `/favorite-chefs/${user.userId}/chefs/${chefId}`
-        );
-        const updatedFavorites = [...favorites, chefId];
-        setFavorites(updatedFavorites);
-        await AsyncStorage.setItem(
-          "favorites",
-          JSON.stringify(updatedFavorites)
-        );
-      }
-    } catch (err) {
-      let errorMessage =
-        err.response?.data?.message ||
-        `Lỗi khi ${favorites.includes(chefId) ? "xóa" : "thêm"
-        } đầu bếp vào danh sách yêu thích.`;
-      console.log("Error toggling favorite:", errorMessage);
+  const loadFavorites = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`);
+      if (response.status === 200) setFavorite(response.data.content);
+    } catch (error) {
+      showModal("Error", "Có lỗi khi tải danh sách đầu bếp yêu thích", "Failed");
     } finally {
-      setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
+      setLoading(false);
     }
+  };
+
+  // const fetchChefs = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await axiosInstance.get("/chefs");
+  //     setChefs(response.data.content);
+  //     console.log(response.data.content)
+  //   } catch (error) {
+  //     if (error.response?.status === 401) {
+  //       return;
+  //     }
+  //     if (axios.isCancel(error)) {
+  //       console.log('Request was cancelled');
+  //       return;
+  //     }
+  //     showModal("Error", "Có lỗi khi tải danh sách đầu bếp", "Failed");
+  //   }
+  //   finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchChefs = async (page, isRefresh = false) => {
+    if (loading && !isRefresh) return;
+    if (!location) return;
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/chefs/nearby", {
+        params: {
+          customerLat: location.latitude,
+          customerLng: location.longitude,
+          distance: 30,
+          pageNo: page,
+          pageSize: 10,
+          sortBy: "distance",
+          sortDir: "asc",
+        },
+      });
+
+      const newChefs = response.data?.content || [];
+
+      setChefs((prevChefs) => {
+        return isRefresh ? newChefs : [...prevChefs, ...newChefs];
+      });
+      setTotalPages(response.data.totalPages);
+
+    } catch (error) {
+      if (!axios.isCancel(error)) return;
+      showModal("Error", "Có lỗi khi tải danh sách đầu bếp gần bạn.", "Failed");
+    } finally {
+      setLoading(false);
+      if (isRefresh) setRefresh(false);
+    }
+  };
+
+  const loadMoreData = async () => {
+    if (!loading && page + 1 <= totalPages - 1) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      await fetchChefs(nextPage);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefresh(true);
+    setPage(0);
+    await fetchChefs(0, true);
   };
 
   const renderChefItem = ({ item }) => (
@@ -121,18 +163,42 @@ const AllChefs = () => {
         })
       }
     >
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <View>
         <Image
-          source={{
-            uri:
-              item.user.avatarUrl === "default"
-                ? "https://via.placeholder.com/80"
-                : item.user.avatarUrl,
-          }}
+          source={
+            item.user?.avatarUrl === "default"
+              ? require("../../assets/images/avatar.png")
+              : { uri: item.user?.avatarUrl }
+          }
           style={styles.chefAvatar}
         />
-        <Text>{item.averageRating}</Text>
+        <View style={styles.chefMeta}>
+          {[...Array(5)].map((_, index) => {
+            const full = index + 1 <= item.averageRating;
+            const half = item.averageRating >= index + 0.5 && item.averageRating < index + 1;
 
+            return (
+              <Ionicons
+                key={index}
+                name={
+                  full
+                    ? "star"
+                    : half
+                      ? "star-half"
+                      : "star-outline"
+                }
+                size={16}
+                color="#f5b50a"
+              />
+            );
+          })}
+        </View>
+        <View style={styles.chefMeta}>
+          <Ionicons name="cash-outline" size={16} color="#888" />
+          <Text style={styles.chefPrice}>
+            {item.price ? `${item.price} $/giờ` : "N/A"}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.chefInfo}>
@@ -150,50 +216,75 @@ const AllChefs = () => {
           </Text>
         </View>
         <View style={styles.chefMeta}>
-          <Ionicons name="cash-outline" size={16} color="#888" />
+          <MaterialIcons name="social-distance" size={16} color="#888" />
           <Text style={styles.chefPrice}>
-            {item.price ? `${item.price} $/giờ` : "N/A"}
+            {item.distance.toFixed(2)} km
           </Text>
         </View>
       </View>
-      <TouchableOpacity
-        style={styles.favoriteIcon}
-        onPress={() => requireAuthAndNetwork(() => toggleFavorite(item.id))}
-        disabled={favoriteLoading[item.id]}
-      >
-        {favoriteLoading[item.id] ? (
-          <ActivityIndicator size="small" color="#e74c3c" />
-        ) : (
-          <Ionicons
-            name={favorites.includes(item.id) ? "heart" : "heart-outline"}
-            size={24}
-            color={favorites.includes(item.id) ? "#e74c3c" : "#888"}
-          />
-        )}
-      </TouchableOpacity>
+      <Ionicons
+        name={favorite.some(fav => fav.chefId === item.id) ? "heart" : "heart-outline"}
+        size={24}
+        color={
+          favorite.some(fav => fav.chefId === item.id) ? "#e74c3c" : "#888"
+        }
+      />
     </TouchableOpacity>
   );
+
+  // if (loading) {
+  //   return (
+  //     <SafeAreaView style={styles.container}>
+  //       <Header title={t("allChefs")} />
+  //       <View style={styles.loadingContainer}>
+  //         <ActivityIndicator size="large" color="#e74c3c" />
+  //         <Text style={styles.loadingText}>{t("loadingChef")}</Text>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
+
+  // if (error) {
+  //   return (
+  //     <SafeAreaView style={styles.container}>
+  //       <Header title={t("allChefs")} />
+  //       <View style={styles.errorContainer}>
+  //         <Text style={styles.errorText}>{error}</Text>
+  //         <TouchableOpacity
+  //           style={styles.retryButton}
+  //           onPress={() => {
+  //             setError(null);
+  //             setLoading(true);
+  //             loadData();
+  //           }}
+  //         >
+  //           <Text style={styles.retryButtonText}>{t("tryAgain")}</Text>
+  //         </TouchableOpacity>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   return (
     <SafeAreaView style={commonStyles.container}>
       <Header title={t("allChefs")} />
-      {loading ? (
-        <ActivityIndicator size="large" color="#A64B2A" style={{ marginTop: 20 }} />
-      ) : (
-        <FlatList
-          data={chefs}
-          renderItem={renderChefItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            !loading ? (
-              <Text style={{ textAlign: 'center', marginTop: 20 }}>No data available</Text>
-            ) : null
-          }
-        />
-      )}
-
+      <FlatList
+        data={chefs}
+        renderItem={renderChefItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={<Text style={styles.emptyText}>{t("noChefFound")}</Text>}
+        initialNumToRender={10}
+        refreshing={refresh}
+        onRefresh={handleRefresh}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={true}
+        onEndReached={() => {
+          loadMoreData();
+        }}
+        onEndReachedThreshold={0.2}
+      />
     </SafeAreaView>
   );
 };
@@ -264,12 +355,6 @@ const styles = StyleSheet.create({
     color: "#888",
     marginLeft: 6,
   },
-  favoriteIcon: {
-    position: "absolute",
-    bottom: 16,
-    left: 16,
-    padding: 4,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -302,6 +387,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#fff",
     fontWeight: "600",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
   },
 });
 

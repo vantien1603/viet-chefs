@@ -12,9 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import WebView from "react-native-webview";
-import Toast from "react-native-toast-message";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
@@ -31,6 +30,8 @@ const DepositScreen = () => {
   const balance = params.balance;
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const predefinedAmounts = [5, 10, 20, 50, 100, 500];
+
   const handleDeposit = async () => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       showModal("Error", "Vui lòng nhập số tiền hợp lệ!", "Failed")
@@ -68,11 +69,11 @@ const DepositScreen = () => {
     if (url.includes("success")) {
       showModal("Success", "Nạp tiền thành công!", "Success");
       setShowWebView(false);
-      router.push({
+      router.replace({
         pathname: "/screen/wallet",
         params: {
           depositAmount: amount,
-          refresh: "true"
+          refresh: "true",
         },
       });
     } else if (url.includes("cancel")) {
@@ -82,50 +83,72 @@ const DepositScreen = () => {
     }
   };
 
-  const handleBack = async () => {
-    router.push("/screen/wallet");
+  const handleAmountPress = (amount) => {
+    const text = String(amount);
+    setAmount(text); // Cập nhật amount thay vì depositAmount
   };
+
+  const handleBack = () => {
+    router.replace("/screen/wallet");
+  }
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("depositToWallet")} onLeftPress={handleBack} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.balanceContainer}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={styles.sectionTitle}>{t("currentBalance")}</Text>
-            <Text style={styles.sectionTitle}>{balance}</Text>
-          </View>
-          <View style={styles.separator} />
+      <Header title={t("topUp")} onLeftPress={() => handleBack()} />
+      <View style={styles.balanceContainer}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <Text style={styles.sectionTitle}>{t("currentBalance")}</Text>
+          <Text style={styles.sectionTitle}>${balance}</Text>
+        </View>
+        <View style={styles.separator} />
+        <View style={{ position: "relative" }}>
           <TextInput
             placeholder={t("enterDepositAmount")}
             keyboardType="numeric"
             style={styles.input}
             placeholderTextColor="#999"
-            value={amount}
-            onChangeText={setAmount}
+            value={amount} // Sử dụng amount thay vì depositAmount
+            onChangeText={(text) => {
+              setAmount(text);
+            }}
           />
+          {amount.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setAmount("")} // Cập nhật amount
+              style={styles.clearIcon}
+            >
+              <MaterialIcons name="highlight-remove" size={24} color="black" />
+            </TouchableOpacity>
+          )}
         </View>
-
-        <View style={styles.paymentContainer}>
-          <Text style={styles.sectionTitle}>{t("paymentMethod")}</Text>
-          <View style={styles.paymentMethod}>
-            <View style={styles.paymentRow}>
-              <View style={styles.paymentIconText}>
-                <Ionicons
-                  name="logo-paypal"
-                  size={24}
-                  color="#003087"
-                  style={{ marginRight: 10 }}
-                />
-                <Text style={styles.paymentText}>Paypal</Text>
-              </View>
+      </View>
+      <View style={styles.amountButtonsContainer}>
+        {predefinedAmounts.map((amount, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.amountButton}
+            onPress={() => handleAmountPress(amount)}
+          >
+            <Text style={styles.amountText}>${amount}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={styles.paymentContainer}>
+        <Text style={styles.sectionTitle}>{t("paymentMethod")}</Text>
+        <View style={styles.paymentMethod}>
+          <View style={styles.paymentRow}>
+            <View style={styles.paymentIconText}>
+              <Ionicons
+                name="logo-paypal"
+                size={24}
+                color="#003087"
+                style={{ marginRight: 10 }}
+              />
+              <Text style={styles.paymentText}>Paypal</Text>
             </View>
           </View>
         </View>
-      </ScrollView>
+      </View>
 
       <View style={styles.bottomButtonContainer}>
         <TouchableOpacity
@@ -176,23 +199,18 @@ const DepositScreen = () => {
           )}
         </View>
       </Modal>
-      <Toast />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
   balanceContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: "#E0E0E0",
-    marginBottom: 20,
+    marginHorizontal: 5,
   },
   sectionTitle: {
     fontSize: 16,
@@ -213,7 +231,8 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   paymentContainer: {
-    marginBottom: 20,
+    marginHorizontal: 5,
+    marginVertical: 10,
   },
   paymentMethod: {
     borderColor: "#DDD",
@@ -292,6 +311,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A9411D",
     marginTop: 20,
+  },
+  amountButtonsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    padding: 10,
+    marginHorizontal: 5,
+  },
+  amountButton: {
+    width: "30%",
+    borderWidth: 1,
+    borderColor: "#CCCCCC",
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 5,
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+  },
+  amountText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+  },
+  clearIcon: {
+    position: "absolute",
+    right: 10,
+    top: "50%",
+    transform: [{ translateY: -12 }],
+    zIndex: 1,
   },
 });
 

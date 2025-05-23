@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { useSelectedItems } from "../../context/itemContext";
 import * as SecureStore from "expo-secure-store";
+import { AuthContext } from "../../config/AuthContext";
+import { useModalLogin } from "../../context/modalLoginContext";
 
 
 const ChefDetail = () => {
@@ -32,7 +34,9 @@ const ChefDetail = () => {
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [dishes, setDishes] = useState([]);
   const [chefs, setChefs] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [favorites, setFavorites] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState({});
   const { chefId } = useLocalSearchParams();
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
@@ -41,16 +45,29 @@ const ChefDetail = () => {
   const { setChefId, setRouteBefore, clearSelection } = useSelectedItems();
   const [modalKey, setModalKey] = useState(1);
   const segment = useSegments();
-
-
+  const { user, isGuest } = useContext(AuthContext);
+  const { showModalLogin } = useModalLogin();
 
   useEffect(() => {
+    if (!isGuest) checkFavorite();
     fetchDishes();
     fetchChefById();
   }, []);
 
+  const checkFavorite = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}/chefs/${chefId}`);
+      if (response.status === 200) setFavorites(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const fetchChefById = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
       const response = await axiosInstance.get(`/chefs/${chefId}`);
       if (response.status === 200) {
@@ -63,12 +80,12 @@ const ChefDetail = () => {
       }
       showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const fetchDishes = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
       const response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
       if (response.status === 200) {
@@ -82,7 +99,22 @@ const ChefDetail = () => {
       showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
 
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleChat = () => {
+    if (chefs?.user) {
+      router.push({
+        pathname: "/screen/message",
+        params: {
+          contact: JSON.stringify({
+            id: chefs.user.username,
+            name: chefs.user.fullName,
+            avatar: chefs.user.avatarUrl,
+          }),
+        },
+      });
     }
   };
 
@@ -92,8 +124,36 @@ const ChefDetail = () => {
       modalizeRef.current?.open();
     }, 100)
   };
-  const toggleBio = () => setExpandedBio(!expandedBio);
-  const toggleDesc = () => setExpandedDesc(!expandedDesc);
+
+  const toggleFavorite = async (chefId) => {
+    if (isGuest) {
+      showModalLogin("Login required!", "Bạn cần đăng nhập để sử dụng tính năng này", true);
+      return;
+    }
+    setFavoriteLoading(true);
+
+    try {
+      if (favorites) {
+        await axiosInstance.delete(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        setFavorites(false);
+      } else {
+        await axiosInstance.post(
+          `/favorite-chefs/${user.userId}/chefs/${chefId}`
+        );
+        setFavorites(true);
+      }
+    } catch (err) {
+      let errorMessage =
+        err.response?.data?.message ||
+        `Lỗi khi ${favorites ? "xóa đầu bếp khỏi" : "thêm đầu bếp vào"
+        } danh sách yêu thích.`;
+      showModal("Error", errorMessage, "Failed");
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
   const toggleDetails = () => setShowMoreDetails(!showMoreDetails);
 
   const DishCard = React.memo(({ dish, onPress }) => (
@@ -110,7 +170,7 @@ const ChefDetail = () => {
       <FlatList
         ListHeaderComponent={
           <>
-            {isLoading ? (
+            {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#f5a623" />
                 <Text style={styles.loadingText}>{t("loadingData")}</Text>
@@ -119,24 +179,37 @@ const ChefDetail = () => {
               chefs && (
                 <View style={styles.profileContainer}>
                   <View style={styles.header}>
-                    <Image
-                      source={
-                        chefs?.user?.avatarUrl === "default"
-                          ? require("../../assets/images/avatar.png")
-                          : { uri: chefs?.user?.avatarUrl }
-                      }
-                      style={styles.avatar}
-                    />
+                    <View style={styles.avatarContainer}>
+                      <Image
+                        source={
+                          chefs?.user?.avatarUrl === "default"
+                            ? require("../../assets/images/avatar.png")
+                            : { uri: chefs?.user?.avatarUrl }
+                        }
+                        style={styles.avatar}
+                      />
+                      <TouchableOpacity
+                        style={styles.favoriteIcon}
+                        onPress={() => toggleFavorite(chefId)}
+                        disabled={favoriteLoading[chefId]}
+                      >
+                        {favoriteLoading[chefId] ? (
+                          <ActivityIndicator size="small" color="#e74c3c" />
+                        ) : (
+                          <Ionicons
+                            name={favorites ? "heart" : "heart-outline"}
+                            size={24}
+                            color={
+                              favorites ? "#e74c3c" : "#888"
+                            }
+                          />
+                        )}
+                      </TouchableOpacity>
+                    </View>
                     <View style={styles.textContainer}>
                       <View style={{ flexDirection: 'row' }}>
                         <Text style={styles.name}>{chefs?.user?.fullName}</Text>
-                        <TouchableOpacity style={{ position: 'absolute', right: 10 }} onPress={() => navigation.navigate("screen/message", {
-                          contact: {
-                            id: chefs?.user?.id,
-                            name: chefs?.user?.fullName,
-                            avatar: chefs?.user?.avatarUrl
-                          }
-                        })}>
+                        <TouchableOpacity style={{ position: 'absolute', right: 10 }} onPress={() => handleChat()}>
                           <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
                         </TouchableOpacity>
                       </View>
@@ -154,7 +227,7 @@ const ChefDetail = () => {
                             if (i < Math.floor(rating)) {
                               color = "#f5a623";
                             } else if (i < rating) {
-                              iconName = "star-half-full"; // Hoặc "star-half-o" tùy font
+                              iconName = "star-half-full";
                               color = "#f5a623";
                             }
 
@@ -174,80 +247,64 @@ const ChefDetail = () => {
 
                     </View>
                   </View>
+                  <View style={[styles.detailsFrame, !showMoreDetails && { maxHeight: 250, overflow: 'hidden' }]}>
+                    <View style={styles.section}>
+                      <Text
+                        style={styles.value}
+                        numberOfLines={showMoreDetails ? undefined : 2}
+                        ellipsizeMode="tail"                      >
+                        {chefs?.bio || t("noInformation")}
+                      </Text>
 
-                  <View style={styles.section}>
-                    <Text
-                      style={styles.value}
-                      numberOfLines={expandedBio ? undefined : 3}
-                    >
-                      {chefs?.bio || t("noInformation")}
+                    </View>
+
+                    <View style={styles.section}>
+                      <Text
+                        style={styles.value}
+                        numberOfLines={showMoreDetails ? undefined : 2}
+                        ellipsizeMode="tail"                      >
+                        {chefs?.description || t("noInformation")}
+                      </Text>
+                    </View>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("address")}: </Text>
+                      <Text style={styles.value}>{chefs?.address}</Text>
                     </Text>
-                    {chefs?.bio && chefs.bio.length > 100 && (
-                      <TouchableOpacity onPress={toggleBio}>
-                        <Text style={styles.showMore}>
-                          {expandedBio ? t("seeLess") : t("seeMore")}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>Email: </Text>
+                      <Text style={styles.value}>{chefs?.user?.email}</Text>
+                    </Text>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("phone")}: </Text>
+                      <Text style={styles.value}>{chefs?.user?.phone}</Text>
+                    </Text>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("gender")}: </Text>
+                      <Text style={styles.value}>{chefs?.user?.gender}</Text>
+                    </Text>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("dob")}: </Text>
+                      <Text style={styles.value}>{chefs?.user?.dob}</Text>
+                    </Text>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("country")}: </Text>
+                      <Text style={styles.value}>{chefs?.country}</Text>
+                    </Text>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("experienceYears")}: </Text>
+                      <Text style={styles.value}>
+                        {chefs?.yearsOfExperience || t("noInformation")}
+                      </Text>
+                    </Text>
+                    <Text style={styles.section}>
+                      <Text style={styles.label}>{t("maxServingSize")}: </Text>
+                      <Text style={styles.value}>
+                        {chefs?.maxServingSize} {t("people")}
+                      </Text>
+                    </Text>
                   </View>
 
-                  <View style={styles.section}>
-                    {/* <Text style={styles.label}>{t("description")}:</Text> */}
-                    <Text
-                      style={styles.value}
-                      numberOfLines={expandedDesc ? undefined : 3}
-                    >
-                      {chefs?.description || t("noInformation")}
-                    </Text>
-                    {chefs?.description && chefs.description.length > 100 && (
-                      <TouchableOpacity onPress={toggleDesc}>
-                        <Text style={styles.showMore}>
-                          {expandedDesc ? t("seeLess") : t("seeMore")}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
 
-                  {showMoreDetails && (
-                    <>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("address")}: </Text>
-                        <Text style={styles.value}>{chefs?.address}</Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>Email: </Text>
-                        <Text style={styles.value}>{chefs?.user?.email}</Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("phone")}: </Text>
-                        <Text style={styles.value}>{chefs?.user?.phone}</Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("gender")}: </Text>
-                        <Text style={styles.value}>{chefs?.user?.gender}</Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("dob")}: </Text>
-                        <Text style={styles.value}>{chefs?.user?.dob}</Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("country")}: </Text>
-                        <Text style={styles.value}>{chefs?.country}</Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("experienceYears")}: </Text>
-                        <Text style={styles.value}>
-                          {chefs?.yearsOfExperience || t("noInformation")}
-                        </Text>
-                      </Text>
-                      <Text style={styles.section}>
-                        <Text style={styles.label}>{t("maxServingSize")}: </Text>
-                        <Text style={styles.value}>
-                          {chefs?.maxServingSize} {t("people")}
-                        </Text>
-                      </Text>
-                    </>
-                  )}
 
                   <TouchableOpacity onPress={toggleDetails}>
                     <Text style={styles.showMore}>
@@ -285,7 +342,12 @@ const ChefDetail = () => {
               <Text style={styles.sectionTitle}>{t("featuredDishes")}</Text>
               <TouchableOpacity
                 style={styles.viewAllContainer}
-                onPress={() => router.push("/screen/allDish")}
+                onPress={() =>
+                  router.push({
+                    pathname: "/screen/chefDishes",
+                    params: { chefId: chefId },
+                  })
+                }
               >
                 <Icon name="restaurant-outline" size={16} color="#b0532c" />
                 <Text style={styles.viewAll}>{t("seeAllDishes")}</Text>
@@ -310,7 +372,7 @@ const ChefDetail = () => {
         contentContainerStyle={styles.dishContainer}
         ListFooterComponent={<View style={{ height: 20 }} />}
         ListEmptyComponent={
-          isLoading ? (
+          loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#f5a623" />
               <Text style={styles.loadingText}>{t("loadingFood")}</Text>
@@ -394,7 +456,6 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               clearSelection();
               setChefId(chefId);
-              // setRouteBefore(segment);
               SecureStore.setItem("firstChef", chefId);
               router.replace("/screen/longTermBooking")
             }}
@@ -428,11 +489,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  avatarContainer: {
+    position: "relative",
+  },
   avatar: {
     width: 90,
     height: 90,
     borderRadius: 45,
     backgroundColor: "#eee",
+  },
+  favoriteIcon: {
+    position: "absolute",
+    bottom: -5,
+    right: -5,
+    padding: 4,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   textContainer: {
     marginLeft: 16,

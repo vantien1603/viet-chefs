@@ -1,9 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
-import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import { doc, setDoc } from "firebase/firestore";
-import { database } from "../config/firebase";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxiosBase from "./AXIOS_BASE";
@@ -75,15 +72,6 @@ export const AuthProvider = ({ children }) => {
         const loggedUser = { fullName: response.data.fullName, token: access_token, avatarUrl: decoded.avatarUrl, ...decoded };
 
         setIsGuest(false);
-        if (decoded) {
-          const userDocRef = doc(database, "users", decoded.userId);
-          await setDoc(userDocRef, {
-            _id: decoded.userId,
-            name: response.data.fullName,
-            avatar: decoded.avatarUrl,
-            token: expoToken
-          });
-        }
         return loggedUser;
       }
     } catch (error) {
@@ -112,7 +100,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isGuest, setIsGuest, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, isGuest, setIsGuest, login, logout, logoutNoDirect, loading }}>
       {children}
     </AuthContext.Provider>
   );

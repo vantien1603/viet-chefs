@@ -160,213 +160,203 @@ const DetailsBooking = () => {
 
     }
 
+    const handleChat = () => {
+        console.log(booking.customer);
+        router.push({
+            pathname: "/screen/message",
+            params: {
+                contact: JSON.stringify({
+                    id: booking.customer?.id,
+                    name: booking.customer?.fullName,
+                    avatar: booking.customer?.avatarUrl,
+                }),
+            },
+        });
+    };
 
     return (
         <SafeAreaView style={commonStyles.container}>
             <Header title={"Details request"} />
-            <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 100 }}>
-                <View key={booking.id} style={styles.itemContainer}>
-                    <View style={{ gap: 3 }}>
-                        <View style={{ flexDirection: "row", justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text >
-                                <Text style={styles.itemContentLabel}>Customer: </Text>
-                                <Text style={{ fontWeight: "bold", fontSize: 16 }}>{booking.customer?.fullName}</Text>
-                            </Text>
-                            <TouchableOpacity>
-                                <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
-                            </TouchableOpacity>
-                        </View>
-                        <Text >
-                            <Text style={styles.itemContentLabel}>Phone: </Text>
-                            <Text style={styles.itemContent}>{booking.customer?.phone}</Text>
-                        </Text>
-                        <View style={{ flexDirection: "row", justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text >
-                                <Text style={styles.itemContentLabel}>Session date: </Text>
-                                <Text style={styles.itemContent}>{sessionDateDisplay}</Text>
-                            </Text>
-                        </View>
-                        <Text >
-                            <Text style={styles.itemContentLabel}>Location: </Text>
-                            <Text style={styles.itemContent}>{firstLocation}</Text>
-                        </Text>
-                        <Text >
-                            <Text style={styles.itemContentLabel}>Guest: </Text>
-                            <Text style={styles.itemContent}>{booking.guestCount}</Text>
-                        </Text>
-                        <Text >
-                            <Text style={styles.itemContentLabel}>Booking pakage: </Text>
-                            <Text style={styles.itemContent}>{booking.bookingType === "SINGLE" ? booking.bookingType : booking.bookingPackage?.name}</Text>
-                        </Text>
-                        <Text >
-                            <Text style={styles.itemContentLabel}>Note: </Text>
-                            <Text style={styles.itemContent}>{booking.requestDetails}</Text>
-                        </Text>
-                        <Text style={{ fontWeight: "bold", fontSize: 20, textAlign: 'right' }}>${booking.totalPrice}</Text>
-
-                    </View>
-
-                    <View style={styles.bookingDetailsContainer}>
-                        {booking.bookingDetails && booking.bookingDetails.map((detail) => (
-                            <View
-                                key={detail.id}
-                                style={{ borderWidth: 0.5, borderBottomColor: "#333", borderRadius: 6, paddingHorizontal: 8, marginVertical: 10 }}>
-                                <View style={styles.detailItem}>
-                                    {/* {booking.bookingType != "SINGLE" && (
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-                                            <Text >
-                                                <Text style={styles.itemContentLabel}>Time: </Text>
-                                                <Text style={styles.itemContent}>{detail.startTime}</Text>
-                                            </Text>
-                                            <Text >
-                                                <Text style={styles.itemContentLabel}>Session date: </Text>
-                                                <Text style={styles.itemContent}>{detail.sessionDate}</Text>
-                                            </Text>
-                                        </View>
-
-                                    )} */}
-
-                                    {/* {booking.bookingType === "SINGLE" && (
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-                                            <Text >
-                                                <Text style={styles.itemContentLabel}>Time: </Text>
-                                                <Text style={styles.itemContent}>{detail.startTime}</Text>
-                                            </Text>
-                                            <Text>
-                                                <Text style={styles.itemContentLabel}>Received: </Text>
-                                                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>${detail.totalChefFeePrice}</Text>
-                                            </Text>
-                                        </View>
-
-                                    )} */}
-
-
-
-                                    {booking.bookingType != "SINGLE" ? (
-                                        <View>
-                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-                                                <Text >
-                                                    <Text style={styles.itemContentLabel}>Session date: </Text>
-                                                    <Text style={styles.itemContent}>{detail.sessionDate}</Text>
-                                                </Text>
-                                                <Text>
-                                                    <Text style={styles.itemContentLabel}>Received: </Text>
-                                                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>${detail.totalChefFeePrice}</Text>
-                                                </Text>
-                                            </View>
-
-                                            <Text >
-                                                <Text style={styles.itemContentLabel}>Time: </Text>
-                                                <Text style={styles.itemContent}>{detail.startTime}</Text>
-                                            </Text>
-                                        </View>
-                                    ) : (
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-                                            <Text >
-                                                <Text style={styles.itemContentLabel}>Time: </Text>
-                                                <Text style={styles.itemContent}>{detail.startTime}</Text>
-                                            </Text>
-                                            <Text>
-                                                <Text style={styles.itemContentLabel}>Received: </Text>
-                                                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>${detail.totalChefFeePrice}</Text>
-                                            </Text>
-                                        </View>
-                                    )}
-                                    <Text>
-                                        <Text style={styles.itemContentLabel}>Time to go: </Text>
-                                        <Text style={styles.itemContent}>{detail.timeBeginTravel}</Text>
+            {loading ? (
+                <ActivityIndicator size={'large'} color={'white'} />
+            ) : (
+                <>
+                    <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 100 }}>
+                        <View key={booking.id} style={styles.itemContainer}>
+                            <View style={{ gap: 3 }}>
+                                <View style={{ flexDirection: "row", justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text >
+                                        <Text style={styles.itemContentLabel}>Customer: </Text>
+                                        <Text style={{ fontWeight: "bold", fontSize: 16 }}>{booking.customer?.fullName}</Text>
                                     </Text>
-                                    <Text>
-                                        <Text style={styles.itemContentLabel}>Cooking start time: </Text>
-                                        <Text style={styles.itemContent}>{detail.timeBeginCook}</Text>
-                                    </Text>
-                                    <View>
-                                        <Text>
-                                            <Text style={styles.itemContentLabel}>Dishes: </Text>
-                                        </Text>
-                                        {detail.dishes && detail.dishes.map((dish) => (
-                                            <View key={dish.id} style={{ paddingHorizontal: 10, paddingVertical: 5, flexDirection: "row", alignItems: 'center' }} >
-                                                <Image source={{ uri: dish.dish.imageUrl }} style={{ width: 40, height: 40, marginRight: 10 }} />
-                                                <View>
-                                                    <Text style={{ fontSize: 15 }}>{dish.dish.name}</Text>
-                                                    {!dish.notes && (
-                                                        <Text style={{ fontSize: 13, color: '#333' }}>{dish.notes}qqqqqqqq</Text>
-                                                    )}
-                                                </View>
-                                            </View>
-                                        ))}
-                                    </View>
+                                    <TouchableOpacity onPress={() => handleChat()}>
+                                        <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
+                                    </TouchableOpacity>
                                 </View>
+                                <Text >
+                                    <Text style={styles.itemContentLabel}>Phone: </Text>
+                                    <Text style={styles.itemContent}>{booking.customer?.phone}</Text>
+                                </Text>
+                                <View style={{ flexDirection: "row", justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text >
+                                        <Text style={styles.itemContentLabel}>Session date: </Text>
+                                        <Text style={styles.itemContent}>{sessionDateDisplay}</Text>
+                                    </Text>
+                                </View>
+                                <Text >
+                                    <Text style={styles.itemContentLabel}>Location: </Text>
+                                    <Text style={styles.itemContent}>{firstLocation}</Text>
+                                </Text>
+                                <Text >
+                                    <Text style={styles.itemContentLabel}>Guest: </Text>
+                                    <Text style={styles.itemContent}>{booking.guestCount}</Text>
+                                </Text>
+                                <Text >
+                                    <Text style={styles.itemContentLabel}>Booking pakage: </Text>
+                                    <Text style={styles.itemContent}>{booking.bookingType === "SINGLE" ? booking.bookingType : booking.bookingPackage?.name}</Text>
+                                </Text>
+                                <Text >
+                                    <Text style={styles.itemContentLabel}>Note: </Text>
+                                    <Text style={styles.itemContent}>{booking.requestDetails}</Text>
+                                </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20, textAlign: 'right' }}>${booking.totalPrice}</Text>
+
                             </View>
 
-                        ))}
-                    </View>
-                </View>
-            </ScrollView>
-            {booking.status === "PAID" || booking.status === "DEPOSITED" || booking.status === "PAID_FIRST_CYCLE" ? (
-                <View
-                    style={{
-                        position: "absolute",
-                        bottom: 20,
-                        left: 20,
-                        right: 20,
-                        alignItems: "center",
-                        flexDirection: 'row',
-                        justifyContent: 'space-around'
-                    }}
-                >
-                    <TouchableOpacity
-                        onPress={() => handleReject(booking.id)}
-                        style={{ backgroundColor: "#A64B2A", elevation: 5, padding: 15, alignItems: 'center', width: "30%", borderRadius: 10, }}
-                    >
-                        {loading ? (
-                            <ActivityIndicator size="small" color="white" />
-                        ) : (
-                            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16, textAlign: 'center' }}>
-                                Reject
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => handleAccept(booking.id)}
-                        style={{ backgroundColor: "green", elevation: 5, padding: 15, alignItems: 'center', width: "30%", borderRadius: 10, }}
-                    >
-                        {loading ? (
-                            <ActivityIndicator size="small" color="white" />
-                        ) : (
-                            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16, textAlign: 'center' }}>
-                                Confirm
-                            </Text>
-                        )}
-                    </TouchableOpacity>
+                            <View style={styles.bookingDetailsContainer}>
+                                {booking.bookingDetails && booking.bookingDetails.map((detail) => (
+                                    <View
+                                        key={detail.id}
+                                        style={{ borderWidth: 0.5, borderBottomColor: "#333", borderRadius: 6, paddingHorizontal: 8, marginVertical: 10 }}>
+                                        <View style={styles.detailItem}>
+                                            {booking.bookingType != "SINGLE" ? (
+                                                <View>
+                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
+                                                        <Text >
+                                                            <Text style={styles.itemContentLabel}>Session date: </Text>
+                                                            <Text style={styles.itemContent}>{detail.sessionDate}</Text>
+                                                        </Text>
+                                                        <Text>
+                                                            <Text style={styles.itemContentLabel}>Received: </Text>
+                                                            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>${detail.totalChefFeePrice}</Text>
+                                                        </Text>
+                                                    </View>
 
-                </View>
-            )
-                : booking.status === "CONFIRMED_PAID" || booking.status === "CONFIRMED_PARTIALLY_PAID" || booking.status === "CONFIRMED" && (
-                    <TouchableOpacity
-                        style={{
-                            position: "absolute",
-                            bottom: 20,
-                            left: 20,
-                            right: 20,
-                            backgroundColor: "red",
-                            padding: 15,
-                            borderRadius: 10,
-                            alignItems: "center",
-                            elevation: 5,
-                        }}
-                        onPress={() => handleCancel(booking.id)}
-                    >
-                        {loading ? (
-                            <ActivityIndicator size="small" color="white" />
-                        ) : (
-                            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                                Cancel
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                )
-            }
+                                                    <Text >
+                                                        <Text style={styles.itemContentLabel}>Time: </Text>
+                                                        <Text style={styles.itemContent}>{detail.startTime}</Text>
+                                                    </Text>
+                                                </View>
+                                            ) : (
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
+                                                    <Text >
+                                                        <Text style={styles.itemContentLabel}>Time: </Text>
+                                                        <Text style={styles.itemContent}>{detail.startTime}</Text>
+                                                    </Text>
+                                                    <Text>
+                                                        <Text style={styles.itemContentLabel}>Received: </Text>
+                                                        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>${detail.totalChefFeePrice}</Text>
+                                                    </Text>
+                                                </View>
+                                            )}
+                                            <Text>
+                                                <Text style={styles.itemContentLabel}>Time to go: </Text>
+                                                <Text style={styles.itemContent}>{detail.timeBeginTravel}</Text>
+                                            </Text>
+                                            <Text>
+                                                <Text style={styles.itemContentLabel}>Cooking start time: </Text>
+                                                <Text style={styles.itemContent}>{detail.timeBeginCook}</Text>
+                                            </Text>
+                                            <View>
+                                                <Text>
+                                                    <Text style={styles.itemContentLabel}>Dishes: </Text>
+                                                </Text>
+                                                {detail.dishes && detail.dishes.map((dish) => (
+                                                    <View key={dish.id} style={{ paddingHorizontal: 10, paddingVertical: 5, flexDirection: "row", alignItems: 'center' }} >
+                                                        <Image source={{ uri: dish.dish.imageUrl }} style={{ width: 40, height: 40, marginRight: 10 }} />
+                                                        <View>
+                                                            <Text style={{ fontSize: 15 }}>{dish.dish.name}</Text>
+                                                            {!dish.notes && (
+                                                                <Text style={{ fontSize: 13, color: '#333' }}>{dish.notes}qqqqqqqq</Text>
+                                                            )}
+                                                        </View>
+                                                    </View>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                ))}
+                            </View>
+                        </View>
+                    </ScrollView>
+                    {booking.status === "PAID" || booking.status === "DEPOSITED" || booking.status === "PAID_FIRST_CYCLE" ? (
+                        <View
+                            style={{
+                                position: "absolute",
+                                bottom: 20,
+                                left: 20,
+                                right: 20,
+                                alignItems: "center",
+                                flexDirection: 'row',
+                                justifyContent: 'space-around'
+                            }}
+                        >
+                            <TouchableOpacity
+                                onPress={() => handleReject(booking.id)}
+                                style={{ backgroundColor: "#A64B2A", elevation: 5, padding: 15, alignItems: 'center', width: "30%", borderRadius: 10, }}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Text style={{ color: "white", fontWeight: "bold", fontSize: 16, textAlign: 'center' }}>
+                                        Reject
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleAccept(booking.id)}
+                                style={{ backgroundColor: "green", elevation: 5, padding: 15, alignItems: 'center', width: "30%", borderRadius: 10, }}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Text style={{ color: "white", fontWeight: "bold", fontSize: 16, textAlign: 'center' }}>
+                                        Confirm
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+
+                        </View>
+                    )
+                        : booking.status === "CONFIRMED_PAID" || booking.status === "CONFIRMED_PARTIALLY_PAID" || booking.status === "CONFIRMED" && (
+                            <TouchableOpacity
+                                style={{
+                                    position: "absolute",
+                                    bottom: 20,
+                                    left: 20,
+                                    right: 20,
+                                    backgroundColor: "red",
+                                    padding: 15,
+                                    borderRadius: 10,
+                                    alignItems: "center",
+                                    elevation: 5,
+                                }}
+                                onPress={() => handleCancel(booking.id)}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                                        Cancel
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        )
+                    }
+                </>
+            )}
+
         </SafeAreaView>
     )
 }

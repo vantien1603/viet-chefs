@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../components/header'
 import useAxios from '../../config/AXIOS_API'
 import { View, ScrollView, TouchableOpacity, StyleSheet, Text, Image, ActivityIndicator } from 'react-native'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import { useRoute } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 import { commonStyles } from '../../style'
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -24,7 +24,7 @@ const DetailsBooking = () => {
     const [images, setImages] = useState([]);
     const { showModal } = useCommonNoification();
     const axiosInstanceForm = useAxiosFormData();
-    const navigation = useNavigation();
+    const router = useRouter();
 
 
     useEffect(() => {
@@ -173,6 +173,19 @@ const DetailsBooking = () => {
 
     }
 
+    const handleChat = () => {
+        router.push({
+            pathname: "/screen/message",
+            params: {
+                contact: JSON.stringify({
+                    id: customer?.id,
+                    name: customer?.fullName,
+                    avatar: customer?.avatarUrl,
+                }),
+            },
+        });
+    };
+
     return (
         <SafeAreaView style={commonStyles.container}>
             <Header title={"Details order"} />
@@ -184,13 +197,7 @@ const DetailsBooking = () => {
                                 <Text style={styles.itemContentLabel}>Name: </Text>
                                 <Text style={{ fontWeight: "bold", fontSize: 16 }}>{customer?.fullName}</Text>
                             </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate("screen/message", {
-                                contact: {
-                                    id: customer.id,
-                                    name: customer.fullName,
-                                    avatar: customer.avatarUrl
-                                }
-                            })}>
+                            <TouchableOpacity onPress={() => handleChat()}>
                                 <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
                             </TouchableOpacity>
                         </View>

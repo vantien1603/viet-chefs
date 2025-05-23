@@ -7,7 +7,6 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,23 +20,46 @@ import { commonStyles } from "../../style";
 import * as Location from "expo-location";
 import { t } from "i18next";
 import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
+import CustomChat from "../../components/CustomChat.jsx";
+
 
 export default function Home() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [chef, setChef] = useState([]);
   const [dishes, setDishes] = useState([]);
+  const [chefFavorite, setChefFavorite] = useState([]);
   const axiosInstance = useAxios();
   const { user, isGuest } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [location, setLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const { showModal } = useCommonNoification();
+
+  const [messages, setMessages] = useState([]);
+  const [isChatVisible, setIsChatVisible] = useState(false);
+
+  const initialMessages = [
+    {
+      role: "assistant",
+      content: "Hello! Welcome to VietChef virtual assistant. I will support you here today.",
+      suggestContactAdmin: false,
+    },
+    { role: "assistant", content: "How can I help you today?", suggestContactAdmin: false },
+  ];
+
+  useEffect(() => {
+    if (isChatVisible && messages.length === 0) {
+      setMessages(initialMessages);
+    }
+  }, [isChatVisible]);
 
   useFocusEffect(
     useCallback(() => {
       loadData();
-      fetchUnreadCount();
+      if (!isGuest) fetchUnreadCount();
     }, [])
   );
 
@@ -46,6 +68,7 @@ export default function Home() {
       if (location) {
         fetchChef();
         fetchDishes();
+        !isGuest && fetchChefFavorite();
       }
     }, [location])
   );
@@ -53,14 +76,11 @@ export default function Home() {
 
 
   const fetchUnreadCount = async () => {
-    if (isGuest) return;
     setLoading(true);
     try {
-      const response = await axiosInstance.get("/notifications/my");
+      const response = await axiosInstance.get("/notifications/my/count");
       if (response.status === 200) {
-        const unread = response.data.content.filter(
-          (notification) => !notification.read
-        ).length;
+        const unread = response.data.notiNotChat;
         setUnreadCount(unread);
       }
     } catch (error) {
@@ -74,16 +94,12 @@ export default function Home() {
   };
 
 
-
   const getCurrentLocation = async () => {
     setLoading(true);
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Quyền truy cập vị trí bị từ chối",
-          "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn."
-        );
+        showModal("Quyền truy cập vị trí bị từ chối", "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.", "Failed");
         return null;
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
@@ -99,6 +115,7 @@ export default function Home() {
   };
 
   const reverseGeocode = async (coords) => {
+    setLoading(true);
     try {
       let reverseGeocode = await Location.reverseGeocodeAsync({
         latitude: coords.latitude,
@@ -121,7 +138,8 @@ export default function Home() {
       return null;
     } catch (error) {
       showModal("Error", "Có lỗi xảy ra trong quá trình reverse geocoding", "Failed");
-
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,6 +183,36 @@ export default function Home() {
     }
   };
 
+  const fetchChefFavorite = async () => {
+    setLoading(true);
+    try {
+      if (!location) return;
+      // const response = await axiosInstance.get("/favorite-chefs/nearby", {
+      //   params: {
+      //     customerLat: location.latitude,
+      //     customerLng: location.longitude,
+      //     distance: 30,
+      //     sortBy: "id",
+      //     sortDir: "asc",
+      //   },
+      // });
+      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`, {
+        params: {
+          pageSize: 7,
+          sortBy: "createdAt",
+          sortDir: "desc",
+        },
+      });
+      setChefFavorite(response.data.content);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal("Error", error.response.data.message, "Failed");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
   const fetchChef = async () => {
     setLoading(true);
     try {
@@ -173,9 +221,7 @@ export default function Home() {
         params: {
           customerLat: location.latitude,
           customerLng: location.longitude,
-          distance: 300,
-          pageNo: 0,
-          pageSize: 30,
+          distance: 30,
           sortBy: "id",
           sortDir: "asc",
         },
@@ -200,9 +246,7 @@ export default function Home() {
         params: {
           customerLat: location.latitude,
           customerLng: location.longitude,
-          distance: 300,
-          pageNo: 0,
-          pageSize: 30,
+          distance: 30,
           sortBy: "id",
           sortDir: "asc",
         },
@@ -218,6 +262,48 @@ export default function Home() {
     }
   };
 
+
+  const handleSend = (userMessage) => {
+    setMessages((prev) => [...prev, userMessage]);
+  };
+
+  const handleChatbot = async (inputText) => {
+    try {
+      const response = await axiosInstance.post("/chatbot/ask", null, {
+        params: {
+          message: inputText,
+        },
+      });
+      const replyContent = response.data.reply;
+      const suggestContactAdmin = response.data.suggestContactAdmin || false;
+      const botMessage = {
+        role: "assistant",
+        content: replyContent,
+        suggestContactAdmin: suggestContactAdmin
+      };
+      setMessages((prev) => [...prev, botMessage]);
+      console.log("Bot response:", response.data);
+    } catch (error) {
+      console.log("Error in handleChatbot:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Xin lỗi, tôi không thể trả lời ngay bây giờ. Vui lòng thử lại",
+          suggestContactAdmin: false,
+        },
+      ]);
+    }
+  };
+
+  const toggleChat = () => {
+    if (isChatVisible) {
+      setMessages([]);
+    }
+    setIsChatVisible(!isChatVisible);
+  };
+
+
   const handleSearchIconPress = () => {
     router.push({
       pathname: "/screen/search",
@@ -228,6 +314,30 @@ export default function Home() {
       },
     });
   };
+
+  const renderChefFavoriteItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/screen/chefDetail",
+          params: { chefId: item.chefId },
+        })
+      }
+    >
+      <View style={styles.imageContainer}>
+        <Image
+          source={{
+            uri: item?.chefAvatar,
+          }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+      </View>
+      <Text style={styles.title}>{item.chefName}</Text>
+      <Text style={{ color: "#F8BF40" }}>{item.chefSpecialization}</Text>
+    </TouchableOpacity>
+  );
 
   const renderDishItem = ({ item }) => (
     <TouchableOpacity
@@ -247,7 +357,7 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail"  style={{ color: "#F8BF40" }}>{item.description}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{item.description}</Text>
     </TouchableOpacity>
   );
 
@@ -264,19 +374,14 @@ export default function Home() {
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri:
-              item.user.avatarUrl === "default"
-                ? "https://via.placeholder.com/120"
-                : item.user.avatarUrl,
+            uri: item.user.avatarUrl,
           }}
           style={styles.image}
           resizeMode="contain"
         />
       </View>
       <Text style={styles.title}>{item.user.fullName}</Text>
-      <Text style={{ color: "#F8BF40" }}>
-        {item.specialization || "Đầu bếp"}
-      </Text>
+      <Text style={{ color: "#F8BF40" }}>{item.specialization}</Text>
     </TouchableOpacity>
   );
 
@@ -328,7 +433,7 @@ export default function Home() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 10 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
           <Image
@@ -377,6 +482,44 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
+
+        {/* đầu bếp yêu thích gần đây */}
+        {chefFavorite.length > 0 && (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
+            <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
+              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                {t("seeAll")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {chefFavorite.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {loading ? (
+              <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+            ) : (
+              chefFavorite.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderChefFavoriteItem({ item })}
+                </View>
+              ))
+            )}
+          </ScrollView>
+        )}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
@@ -386,28 +529,35 @@ export default function Home() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator size={'large'} color={'white'} />
+          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {dishes.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 200,
-                  alignItems: "center",
-                  marginRight: 20,
-                  marginLeft: index === 0 ? 16 : 0,
-                }}
-              >
-                {renderDishItem({ item })}
-              </View>
-            ))}
-          </ScrollView>
+          dishes.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
+            >
+              {dishes.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderDishItem({ item })}
+                </View>
+              ))}
+            </ScrollView>
+          )
         )}
+
 
 
         <View style={styles.sectionHeader}>
@@ -419,31 +569,86 @@ export default function Home() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator size={'large'} color={'white'} />
+          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {chef.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 200,
-                  alignItems: "center",
-                  marginRight: 20,
-                  marginLeft: index === 0 ? 16 : 0,
-                }}
-              >
-                {renderChefItem({ item })}
-              </View>
-            ))}
-          </ScrollView>
-        )}
+          chef.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
+            >
+              {loading ? (
+                <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+              ) : (
+                chef.map((item, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: 200,
+                      alignItems: "center",
+                      marginRight: 20,
+                      marginLeft: index === 0 ? 16 : 0,
+                    }}
+                  >
+                    {renderChefItem({ item })}
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          ))}
 
       </ScrollView>
-    </SafeAreaView>
+      <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
+        <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />
+      </TouchableOpacity>
+
+      {
+        isChatVisible && (
+          <View style={styles.chatOverlay}>
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: "#A9411D",
+                padding: 20,
+                alignItems: "center",
+              }}
+            >
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  borderWidth: 1,
+                  borderColor: "#EBE5DD",
+                }}
+              />
+              <Text style={{ color: "#fff", fontSize: 15, marginLeft: 15 }}>
+                VietChef Chatbot
+              </Text>
+              <TouchableOpacity
+                style={styles.closeChatButton}
+                onPress={toggleChat}
+              >
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <CustomChat
+              messages={messages}
+              onSendMessage={handleSend}
+              callApi={handleChatbot}
+              onContactAdmin={() => router.push("/screen/helpCentre")}
+            />
+          </View>
+        )
+      }
+
+    </SafeAreaView >
   );
 }
 
@@ -542,4 +747,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
+  chatbotIcon: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#4EA0B7",
+    borderRadius: 30,
+    padding: 15,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  chatOverlay: {
+    position: "absolute",
+    bottom: 80,
+    right: 20,
+    width: 300,
+    height: "60%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  closeChatButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    borderRadius: 20,
+    padding: 10,
+  },
+
 });

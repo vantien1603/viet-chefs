@@ -12,7 +12,14 @@ import {
   ActivityIndicator,
   BackHandler,
 } from "react-native";
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useContext,
+} from "react";
 import { commonStyles } from "../../style";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,8 +27,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useAxios from "../../config/AXIOS_API";
 import * as Location from "expo-location";
 import { Modalize } from "react-native-modalize";
-import { Dropdown } from "react-native-element-dropdown";
-import Toast from "react-native-toast-message";
 import axios from "axios";
 import { AuthContext } from "../../config/AuthContext";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -38,14 +43,23 @@ const SearchResultScreen = () => {
   const router = useRouter();
   const axiosInstance = useAxios();
   const [searchQuery, setSearchQuery] = useState(query || "");
-  const [isSelected, setIsSelected] = useState(type === "chef" ? 1 : 0);
+  const [isSelected, setIsSelected] = useState(type === "chef" ? 1 : 0 ? 2 : 0);
   const [chefs, setChefs] = useState([]);
   const [dishes, setDishes] = useState([]);
+  const [menus, setMenus] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const textInputRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [distance, setDistance] = useState(30);
-  const [tempDistance, setTempDistance] = useState(30);
+  const [tempDistance, setTempDistance] = useState(null);
+  const [dishPriceRange, setDishPriceRange] = useState(null);
+  const [chefPriceRange, setChefPriceRange] = useState(null);
+  const [tempDishPriceRange, setTempDishPriceRange] = useState(null);
+  const [tempChefPriceRange, setTempChefPriceRange] = useState(null);
+
+  const [rateRange, setRateRange] = useState(null);
+  const [tempRateRange, setTempRateRange] = useState(null);
   const modalizeRef = useRef(null);
   const addressModalizeRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
@@ -61,23 +75,77 @@ const SearchResultScreen = () => {
   const [lastParams, setLastParams] = useState(null);
   const [lastDishResults, setLastDishResults] = useState([]);
   const [lastChefResults, setLastChefResults] = useState([]);
-  const { showModal } = useCommonNoification();
-  const distanceOptions = [
-    { label: "1 km", value: 1 },
-    { label: "5 km", value: 5 },
-    { label: "10 km", value: 10 },
-    { label: "15 km", value: 15 },
-    { label: "20 km", value: 20 },
-    { label: "25 km", value: 25 },
-    { label: "30 km", value: 30 },
-  ];
+  const [lastMenuResults, setLastMenuResults] = useState([]);
 
-  const priceRangeOptions = [
-    { label: "Under $10", value: { min: 0, max: 10 } },
-    { label: "$10 - $100", value: { min: 10, max: 100 } },
-    { label: "$100 - $1000", value: { min: 100, max: 1000 } },
-    { label: "Over $1000", value: { min: 1000, max: Infinity } },
-  ];
+  const distanceOptions = useMemo(
+    () => [
+      { label: "1 km", value: 1 },
+      { label: "5 km", value: 5 },
+      { label: "10 km", value: 10 },
+      { label: "15 km", value: 15 },
+      { label: "20 km", value: 20 },
+      { label: "25 km", value: 25 },
+      { label: "30 km", value: 30 },
+    ],
+    []
+  );
+
+  const dishPriceRangeOptions = useMemo(
+    () => [
+      { label: "Under $10", value: { min: 0, max: 10 } },
+      { label: "$10 - $30", value: { min: 10, max: 30 } },
+      { label: "$30 - $50", value: { min: 30, max: 50 } },
+      { label: "Over $50", value: { min: 50, max: Infinity } },
+    ],
+    []
+  );
+
+  const chefPriceRangeOptions = useMemo(
+    () => [
+      { label: "Under $50/hr", value: { min: 0, max: 50 } },
+      { label: "$50 - $100/hr", value: { min: 50, max: 100 } },
+      { label: "$100 - $300/hr", value: { min: 100, max: 300 } },
+      { label: "Over $300/hr", value: { min: 300, max: Infinity } },
+    ],
+    []
+  );
+
+  const rateRangeOptions = useMemo(
+    () => [
+      { label: "1 sao trở lên", value: { min: 1, max: 5 } },
+      { label: "2 sao trở lên", value: { min: 2, max: 5 } },
+      { label: "3 sao trở lên", value: { min: 3, max: 5 } },
+      { label: "4 sao trở lên", value: { min: 4, max: 5 } },
+      { label: "5 sao", value: { min: 5, max: 5 } },
+    ],
+    []
+  );
+
+  const filterFields = useMemo(
+    () => [
+      {
+        index: 0,
+        name: "Distance",
+        value: distance ? `${distance} km` : "All",
+      },
+      {
+        index: 1,
+        name: "Dish Price",
+        value: dishPriceRange ? dishPriceRange.label : "All",
+      },
+      {
+        index: 2,
+        name: "Chef Price",
+        value: chefPriceRange ? chefPriceRange.label : "All",
+      },
+      {
+        index: 3,
+        name: "Chef Rating",
+        value: rateRange ? rateRange.label : "All",
+      },
+    ],
+    [distance, dishPriceRange, chefPriceRange, rateRange]
+  );
 
   useEffect(() => {
     const backAction = () => {
@@ -148,111 +216,9 @@ const SearchResultScreen = () => {
 
       setAddresses(addressesWithCoords);
     } catch (error) {
-      showModal("Error", "Failed to load address list.", "Failed");
+      console.error("Error fetching addresses:", error);
     }
   };
-
-  const getCurrentLocation = async () => {
-    setLoading(true);
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        showModal("Error", "Location services are required.", "Failed");
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      let reverseGeocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (reverseGeocode.length > 0) {
-        let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
-          }, ${addr.region || ""}, ${addr.country || ""}`;
-
-        const newAddress = {
-          id: Date.now().toString(),
-          title: "Current Location",
-          address: fullAddress,
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-
-        setAddresses((prev) => [...prev, newAddress]);
-        selectAddress(newAddress);
-      }
-    } catch (error) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình xử lý", "Failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-  //   if (!keyword || keyword.trim().length < 2) {
-  //     setSuggestions([]);
-  //     setShowSuggestions(false);
-  //     return;
-  //   }
-
-  //   const params = {
-  //     keyword,
-  //     customerLat: location?.latitude || 0,
-  //     customerLng: location?.longitude || 0,
-  //     distance,
-  //   };
-
-  //   // Kiểm tra tham số để sử dụng cache
-  //   if (lastParams && JSON.stringify(params) === JSON.stringify(lastParams)) {
-  //     setSuggestions(suggestions);
-  //     setShowSuggestions(suggestions.length > 0);
-  //     return;
-  //   }
-
-  //   try {
-  //     const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
-  //       params,
-  //     });
-  //     const chefsResponse = await axiosInstance.get("/chefs/nearby/search", {
-  //       params,
-  //     });
-
-  //     const dishSuggestions = dishesResponse.data.content
-  //       .map((dish) => ({
-  //         type: "dish",
-  //         id: dish.id,
-  //         name: dish.name,
-  //         imageUrl: dish.imageUrl,
-  //       }))
-  //       .slice(0, 5);
-
-  //     const chefSuggestions = chefsResponse.data.content
-  //       .map((chef) => ({
-  //         type: "chef",
-  //         id: chef.id,
-  //         name: chef.user.fullName || chef.user.username,
-  //         imageUrl: chef.user.avatarUrl,
-  //       }))
-  //       .slice(0, 5);
-
-  //     const combinedSuggestions = [...dishSuggestions, ...chefSuggestions];
-  //     setSuggestions(combinedSuggestions);
-  //     setShowSuggestions(combinedSuggestions.length > 0);
-  //     setLastParams(params); // Cập nhật tham số lần gọi
-  //   } catch (error) {
-  //     console.error("Error fetching suggestions:", error);
-  //     setSuggestions([]);
-  //     setShowSuggestions(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   const delayDebounceFn = setTimeout(() => {
-  //     // fetchSuggestions(searchQuery);
-  //   }, 500); // Tăng debounce lên 500ms
-
-  //   return () => clearTimeout(delayDebounceFn);
-  // }, [searchQuery, location, distance]);
 
   const fetchData = async (params) => {
     const {
@@ -260,29 +226,51 @@ const SearchResultScreen = () => {
       lat = location?.latitude,
       lng = location?.longitude,
       distance: dist = distance,
+      dishPriceRange: dpr = dishPriceRange,
+      chefPriceRange: cpr = chefPriceRange,
+      rateRange: ra = rateRange,
       isSearch = false,
     } = params;
 
-    if (!lat || !lng) {
-      setDishes([]);
-      setChefs([]);
-      return;
-    }
+    // Params for dish API call
+    const dishApiParams = {
+      keyword,
+      customerLat: lat,
+      customerLng: lng,
+      distance: dist,
+      ...(dpr && { minPrice: dpr.value.min, maxPrice: dpr.value.max }), // Chỉ áp dụng dpr cho món ăn
+    };
 
-    const apiParams = {
+    // Params for chef API call
+    const chefApiParams = {
+      keyword,
+      customerLat: lat,
+      customerLng: lng,
+      distance: dist,
+      // Nếu API của bạn hỗ trợ lọc giá đầu bếp, bạn có thể thêm vào đây
+      ...(ra && { minRate: ra.value.min, maxRate: ra.value.max }),
+    };
+
+    //Params for menu API call
+    const menuApiParams = {
       keyword,
       customerLat: lat,
       customerLng: lng,
       distance: dist,
     };
 
-    if (lastParams &&
+    if (
+      lastParams &&
       JSON.stringify({
-        ...apiParams,
+        ...dishApiParams,
+        ...chefApiParams,
+        ...menuApiParams,
+        chefPriceRange: cpr, // Thêm vào để phản ánh trạng thái lọc giá đầu bếp
       }) === JSON.stringify(lastParams)
     ) {
       setDishes(lastDishResults);
       setChefs(lastChefResults);
+      setMenus(lastMenuResults);
       if (isSearch) {
         const isChefPriority =
           type === "chef" || keyword.toLowerCase().includes("chef");
@@ -295,25 +283,60 @@ const SearchResultScreen = () => {
       setLoading(true);
 
       const dishesResponse = await axiosInstance.get("/dishes/nearby/search", {
-        params: {
-          ...apiParams,
-        },
+        params: dishApiParams,
       });
 
       const chefsResponse = await axiosInstance.get("/chefs/nearby/search", {
-        params: {
-          ...apiParams,
-        },
+        params: chefApiParams,
       });
 
-      const dishesData = dishesResponse.data.content;
-      const chefsData = chefsResponse.data.content;
+      const menusResponse = await axiosInstance.get("/menus/nearby/search", {
+        params: menuApiParams,
+      });
+      console.log("dish", dishesResponse.data);
+      console.log("menu", menusResponse.data);
+
+      let chefsData = chefsResponse.data.content;
+      let dishesData = dishesResponse.data.content;
+      const menusData = menusResponse.data;
+
+      // Áp dụng lọc giá đầu bếp phía client
+      if (cpr) {
+        chefsData = chefsData.filter(
+          (chef) => chef.price >= cpr.value.min && chef.price <= cpr.value.max
+        );
+      }
+
+      // Áp dụng lọc giá món ăn phía client nếu cần
+      if (dpr) {
+        dishesData = dishesData.filter(
+          (dish) =>
+            dish.basePrice >= dpr.value.min && dish.basePrice <= dpr.value.max
+        );
+      }
+
+      if (ra) {
+        chefsData = chefsData.filter(
+          (chef) =>
+            chef.averageRating >= ra.value.min &&
+            chef.averageRating <= ra.value.max
+        );
+      }
+
+      chefsData = chefsData.sort((a, b) => b.averageRating - a.averageRating);
 
       setDishes(dishesData);
       setChefs(chefsData);
+      setMenus(menusData);
       setLastDishResults(dishesData);
       setLastChefResults(chefsData);
-      setLastParams({ ...apiParams });
+      setLastMenuResults(menusData);
+      setLastParams({
+        ...dishApiParams,
+        ...chefApiParams,
+        ...menuApiParams,
+        chefPriceRange: cpr, // Thêm vào để phản ánh trạng thái lọc giá đầu bếp
+      });
 
       if (isSearch) {
         const isChefPriority =
@@ -321,10 +344,14 @@ const SearchResultScreen = () => {
         setIsSelected(isChefPriority && chefsData.length > 0 ? 1 : 0);
       } else if (type === "chef") {
         setIsSelected(1);
+      } else if (type === "menu") {
+        setIsSelected(2);
       }
     } catch (error) {
+      console.log("Error fetching data:", error);
       setDishes([]);
       setChefs([]);
+      setMenus([]);
       if (isSearch) {
         setIsSelected(1);
       }
@@ -339,34 +366,29 @@ const SearchResultScreen = () => {
 
   useEffect(() => {
     const getLocationAndFetchData = async () => {
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          showModal("Error", "Location permission is required to search nearby chefs and dishes.", "Failed");
-          setLocation(null);
-          setDishes([]);
-          setChefs([]);
-          return;
-        }
-
-        if (!location) {
-          let userLocation = await Location.getCurrentPositionAsync({});
-          setLocation({
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-          });
-          await fetchData({
-            lat: userLocation.coords.latitude,
-            lng: userLocation.coords.longitude,
-          });
-        } else {
-          await fetchData({ lat: location.latitude, lng: location.longitude });
-        }
-      } catch (error) {
-        showModal("Error", "Có lỗi xảy ra trong quá trình lấy địa chỉ. Hãy chắc chắn rằng bạn đã cho phép ứng dụng sử dụng vị trí", "Failed");
-        setLocation(null);
-        setDishes([]);
-        setChefs([]);
+      if (selectedAddress?.latitude && selectedAddress?.longitude) {
+        setLocation({
+          latitude: selectedAddress.latitude,
+          longitude: selectedAddress.longitude,
+        });
+        await fetchData({
+          keyword: query || "",
+          lat: selectedAddress.latitude,
+          lng: selectedAddress.longitude,
+          isSearch: !!query,
+        });
+      } else {
+        let userLocation = await Location.getCurrentPositionAsync({});
+        setLocation({
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
+        });
+        await fetchData({
+          keyword: query || "",
+          lat: userLocation.coords.latitude,
+          lng: userLocation.coords.longitude,
+          isSearch: !!query,
+        });
       }
 
       await fetchAddresses();
@@ -377,16 +399,11 @@ const SearchResultScreen = () => {
     };
 
     getLocationAndFetchData();
-  }, [location]);
+  }, [selectedAddress]);
 
   const handleSearch = async () => {
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery === "") return;
-
-    if (!location) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình tìm kiếm. Hãy chắc chắn rằng bạn đã cho phép ứng dụng sử dụng vị trí", "Failed");
-      return;
-    }
 
     await fetchData({
       keyword: trimmedQuery,
@@ -404,24 +421,32 @@ const SearchResultScreen = () => {
       });
       setSelectedAddress(address);
       addressModalizeRef.current?.close();
-    } else {
-      showModal("Error", "Không thể lấy tọa độ cho địa chỉ này", "Failed");
     }
   };
 
   const openFilterModal = () => {
     Keyboard.dismiss();
     setTempDistance(distance);
+    setTempDishPriceRange(dishPriceRange);
+    setTempChefPriceRange(chefPriceRange);
+    setTempRateRange(rateRange);
     modalizeRef.current?.open();
   };
 
   const applyFilter = async () => {
     setDistance(tempDistance);
+    setDishPriceRange(tempDishPriceRange);
+    setChefPriceRange(tempChefPriceRange);
+    setRateRange(tempRateRange);
+
     if (location) {
       await fetchData({
         lat: location.latitude,
         lng: location.longitude,
         distance: tempDistance,
+        dishPriceRange: tempDishPriceRange,
+        chefPriceRange: tempChefPriceRange,
+        rateRange: tempRateRange,
       });
     }
     modalizeRef.current?.close();
@@ -483,12 +508,9 @@ const SearchResultScreen = () => {
             }
             returnKeyType="search"
             autoFocus={true}
-            editable={true} // Ngăn nhập văn bản, chỉ để hiển thị và nhấn
+            editable={true}
           />
         </View>
-        <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
-          <Icon name="filter" size={24} color="#4EA0B7" />
-        </TouchableOpacity>
       </View>
 
       <TouchableOpacity
@@ -506,12 +528,41 @@ const SearchResultScreen = () => {
         </Text>
       </TouchableOpacity>
 
+      <View style={styles.filterContainer}>
+        <TouchableOpacity onPress={openFilterModal} style={{ marginRight: 10 }}>
+          <Icon name="filter" size={24} color="#4EA0B7" />
+        </TouchableOpacity>
+        <FlatList
+          data={filterFields}
+          keyExtractor={(item) => item.index.toString()}
+          horizontal
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.filterItem}
+              onPress={openFilterModal}
+            >
+              <Text style={styles.filterText}>
+                {item.name}: {item.value}
+              </Text>
+              <Icon
+                name="chevron-down"
+                size={16}
+                color="#4EA0B7"
+                style={styles.filterIcon}
+              />
+            </TouchableOpacity>
+          )}
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterList}
+        />
+      </View>
+
       <View style={styles.rowNgayGui}>
         <FlatList
           data={[
-            { index: 0, name: "Recommended" },
+            { index: 0, name: "Recommended (Dishes)" },
             { index: 1, name: "Chefs" },
-            { index: 2, name: "Ratings" },
+            { index: 2, name: "Menus" },
           ]}
           keyExtractor={(item) => item.index.toString()}
           horizontal
@@ -545,7 +596,7 @@ const SearchResultScreen = () => {
     return text.substring(0, maxLength) + "...";
   };
 
-  const renderItem = ({ item }) => {
+  const RenderItem = ({ item }) => {
     switch (isSelected) {
       case 1: // Chefs
         return (
@@ -558,28 +609,52 @@ const SearchResultScreen = () => {
               })
             }
           >
-            <View style={styles.chefContainer}>
+            <View style={styles.container}>
               {item.user.avatarUrl && (
                 <Image
                   source={{ uri: item.user.avatarUrl }}
-                  style={styles.avatar}
+                  style={styles.image}
                   resizeMode="cover"
                 />
               )}
-              <View style={styles.chefInfo}>
+              <View style={styles.info}>
                 <Text style={styles.title}>
                   {truncateText(item.user.fullName)}
+                </Text>
+                <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">
+                  {truncateText(item.description)}
+                </Text>
+                <Text style={styles.address} numberOfLines={1} ellipsizeMode="tail">{truncateText(item.address)}</Text>
+                <Text style={styles.description}>
+                  Max Serving: {item.maxServingSize}
+                </Text>
+                <Text style={styles.description}>Price/hour: {item.price}</Text>
+              </View>
+              <Text style={styles.rating}>
+                ⭐{item.averageRating.toFixed(1)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      case 2:
+        return (
+          <TouchableOpacity style={styles.card}>
+            <View style={styles.container}>
+              {item.imageUrl && (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              )}
+              <View style={styles.info}>
+                <Text style={styles.title}>{truncateText(item.name)}</Text>
+                <Text style={styles.subtitle}>
+                  Chef: {truncateText(item.chef.user.fullName)}
                 </Text>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
                 </Text>
-                <Text style={styles.address}>{truncateText(item.address)}</Text>
-                <Text style={styles.serving}>
-                  Max Serving: {item.maxServingSize}
-                </Text>
-                {/* {item.rating && (
-                  <Text style={styles.rating}>Rating: {item.rating} ⭐</Text>
-                )} */}
               </View>
             </View>
           </TouchableOpacity>
@@ -592,22 +667,22 @@ const SearchResultScreen = () => {
             onPress={() =>
               router.push({
                 pathname: "/screen/dishDetails",
-                params: { dishId: item.id },
+                params: { dishId: item.id, chefId: item.chef.id.toString() },
               })
             }
           >
-            <View style={styles.dishContainer}>
+            <View style={styles.container}>
               {item.imageUrl && (
                 <Image
                   source={{ uri: item.imageUrl }}
-                  style={styles.dishImage}
+                  style={styles.image}
                   resizeMode="cover"
                 />
               )}
-              <View style={styles.dishInfo}>
+              <View style={styles.info}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
                 <Text style={styles.subtitle}>
-                  By: {truncateText(item.chef.user.fullName)}
+                  Chef: {truncateText(item.chef.user.fullName)}
                 </Text>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
@@ -615,10 +690,8 @@ const SearchResultScreen = () => {
                 <Text style={styles.cuisine}>
                   Cuisine: {truncateText(item.cuisineType)}
                 </Text>
-                <Text style={styles.cookTime}>
-                  Cook Time: {item.cookTime} min
-                </Text>
-                <Text style={styles.price}>Price: ${item.basePrice}</Text>
+                <Text style={styles.label}>Cook Time: {item.cookTime} min</Text>
+                <Text style={styles.label}>Price: ${item.basePrice}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -630,6 +703,8 @@ const SearchResultScreen = () => {
     switch (isSelected) {
       case 1:
         return chefs;
+      case 2:
+        return menus;
       case 0:
       default:
         return dishes;
@@ -651,51 +726,192 @@ const SearchResultScreen = () => {
         </View>
       );
     }
+    if (isSelected === 2 && menus?.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No menus found</Text>
+        </View>
+      );
+    }
     return null;
   };
 
-  const renderFilterModal = () => (
-    <Modalize
-      ref={modalizeRef}
-      handlePosition="outside"
-      modalStyle={styles.modal}
-      handleStyle={styles.handle}
-      adjustToContentHeight={true}
-    >
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Filter Options</Text>
+  const renderFilterModal = () => {
+    const handleDistanceChange = useCallback((value) => {
+      setTempDistance((prev) => (prev === value ? null : value));
+    }, []);
 
-        <View style={styles.dropdownContainer}>
-          <Text style={styles.dropdownLabel}>Distance</Text>
-          <Dropdown
-            style={styles.dropdown}
-            data={distanceOptions}
-            labelField="label"
-            valueField="value"
-            placeholder="Select distance"
-            value={tempDistance}
-            onChange={(item) => setTempDistance(item.value)}
-            selectedTextStyle={styles.selectedTextStyle}
-            placeholderStyle={styles.placeholderStyle}
-            itemTextStyle={styles.itemTextStyle}
-            containerStyle={styles.dropdownItemContainer}
-          />
-        </View>
+    const handleRateChange = useCallback((value) => {
+      setTempRateRange((prev) =>
+        prev?.value.min === value.value.min &&
+          prev?.value.max === value.value.max
+          ? null
+          : value
+      );
+    }, []);
 
-        <View style={styles.modalButtons}>
-          <TouchableOpacity
-            onPress={() => modalizeRef.current?.close()}
-            style={styles.cancelButton}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={applyFilter} style={styles.applyButton}>
-            <Text style={styles.applyButtonText}>Apply Filter</Text>
-          </TouchableOpacity>
+    return (
+      <Modalize
+        ref={modalizeRef}
+        handlePosition="outside"
+        modalStyle={styles.modal}
+        handleStyle={styles.handle}
+        adjustToContentHeight={true}
+        useNativeDriver={true}
+        animationConfig={{ timing: { duration: 150 } }}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Filter Options</Text>
+
+          {/* Distance Filter */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>Distance</Text>
+            <View style={styles.buttonGroup}>
+              {distanceOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempDistance === option.value &&
+                    styles.optionButtonSelected,
+                  ]}
+                  onPress={() => handleDistanceChange(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempDistance === option.value &&
+                      styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Dish Price Filter */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>Dish Price Range</Text>
+            <View style={styles.buttonGroup}>
+              {dishPriceRangeOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempDishPriceRange?.value.min === option.value.min &&
+                    tempDishPriceRange?.value.max === option.value.max &&
+                    styles.optionButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setTempDishPriceRange((prev) =>
+                      prev?.value.min === option.value.min &&
+                        prev?.value.max === option.value.max
+                        ? null
+                        : option
+                    );
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempDishPriceRange?.value.min === option.value.min &&
+                      tempDishPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Chef Price Filter */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>
+              Chef Price Range (per hour)
+            </Text>
+            <View style={styles.buttonGroup}>
+              {chefPriceRangeOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempChefPriceRange?.value.min === option.value.min &&
+                    tempChefPriceRange?.value.max === option.value.max &&
+                    styles.optionButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setTempChefPriceRange((prev) =>
+                      prev?.value.min === option.value.min &&
+                        prev?.value.max === option.value.max
+                        ? null
+                        : option
+                    );
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempChefPriceRange?.value.min === option.value.min &&
+                      tempChefPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Rating Filter */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>Chef Rating Range</Text>
+            <View style={styles.buttonGroup}>
+              {rateRangeOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[
+                    styles.optionButton,
+                    tempRateRange?.value.min === option.value.min &&
+                    tempRateRange?.value.max === option.value.max &&
+                    styles.optionButtonSelected,
+                  ]}
+                  onPress={() => handleRateChange(option)}
+                >
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      tempRateRange?.value.min === option.value.min &&
+                      tempRateRange?.value.max === option.value.max &&
+                      styles.optionButtonTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              onPress={() => modalizeRef.current?.close()}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={applyFilter} style={styles.applyButton}>
+              <Text style={styles.applyButtonText}>Apply Filter</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </Modalize>
-  );
+      </Modalize>
+    );
+  };
 
   const renderAddressModal = () => (
     <Modalize
@@ -726,7 +942,25 @@ const SearchResultScreen = () => {
           ))
         )}
         <TouchableOpacity
-          onPress={getCurrentLocation}
+          onPress={() => {
+            setLoading(true);
+            Location.getCurrentPositionAsync({})
+              .then((location) => {
+                const newAddress = {
+                  id: Date.now().toString(),
+                  title: "Current Location",
+                  address: `${location.coords.latitude}, ${location.coords.longitude}`,
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                };
+                setAddresses((prev) => [...prev, newAddress]);
+                selectAddress(newAddress);
+              })
+              .catch((error) => {
+                console.error("Error getting current location:", error);
+              })
+              .finally(() => setLoading(false));
+          }}
           style={{
             backgroundColor: "#A64B2A",
             padding: 15,
@@ -755,26 +989,24 @@ const SearchResultScreen = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      {/* <SafeAreaView> */}
-        {renderHeader()}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4EA0B7" />
-          </View>
-        ) : (
-          <FlatList
-            data={getData()}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id.toString()}
-            ListEmptyComponent={renderEmptyMessage}
-            contentContainerStyle={styles.flatListContainer}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
-          />
-        )}
-        {renderFilterModal()}
-        {renderAddressModal()}
-      {/* </SafeAreaView> */}
+      {renderHeader()}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4EA0B7" />
+        </View>
+      ) : (
+        <FlatList
+          data={getData()}
+          renderItem={RenderItem}
+          keyExtractor={(item) => item.id.toString()}
+          ListEmptyComponent={renderEmptyMessage}
+          contentContainerStyle={styles.flatListContainer}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+        />
+      )}
+      {renderFilterModal()}
+      {renderAddressModal()}
     </GestureHandlerRootView>
   );
 };
@@ -818,9 +1050,6 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginLeft: 15,
   },
-  filterButton: {
-    marginLeft: 10,
-  },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -836,55 +1065,77 @@ const styles = StyleSheet.create({
     flex: 1,
     flexWrap: "wrap",
   },
+  filterContainer: {
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  filterList: {
+    flexGrow: 0,
+  },
+
+  ilterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
+    backgroundColor: "#FFF8EF",
+    borderRadius: 20,
+  },
+  filterText: {
+    fontSize: 14,
+    color: "#333",
+    marginRight: 5,
+  },
+  filterIcon: {
+    marginLeft: 5,
+  },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
     padding: 10,
-    margin: 5,
-    flex: 1,
-    width: screenWidth * 0.45,
-    height: 300,
-    maxWidth: "48%",
+    // paddingTop: 50,
+    // alignItems: "center",
+    // ,
+
+
+    width: 200,
+    marginTop: 20,
   },
-  chefContainer: {
-    flexDirection: "column",
+  container: {
+    // flexDirection: "column",
+    // alignItems: "flex-start",
+  },
+  info: {
     alignItems: "flex-start",
   },
-  avatar: {
+  image: {
     width: "100%",
     height: 120,
     borderRadius: 10,
     marginBottom: 8,
-  },
-  chefInfo: {
-    alignItems: "flex-start",
-  },
-  dishContainer: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-  },
-  dishImage: {
-    width: "100%",
-    height: 120,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  dishInfo: {
-    alignItems: "flex-start",
   },
   title: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#FFF",
     marginBottom: 4,
+    alignSelf: 'center'
   },
   subtitle: {
-    fontSize: 12,
-    color: "#F8BF40",
+    fontSize: 14,
+    color: "#EBE5DD",
     marginBottom: 4,
   },
   description: {
     fontSize: 12,
+    color: "#EBE5DD",
+    marginBottom: 4,
+  },
+  rating: {
+    fontSize: 14,
     color: "#FFF",
     marginBottom: 4,
   },
@@ -898,21 +1149,9 @@ const styles = StyleSheet.create({
     color: "#EBE5DD",
     marginBottom: 4,
   },
-  serving: {
+  label: {
     fontSize: 12,
-    color: "#F8BF40",
-  },
-  cookTime: {
-    fontSize: 12,
-    color: "#F8BF40",
-  },
-  price: {
-    fontSize: 12,
-    color: "#F8BF40",
-  },
-  rating: {
-    fontSize: 12,
-    color: "#F8BF40",
+    color: "#EBE5DD",
   },
   rowNgayGui: {
     marginTop: 10,
@@ -980,31 +1219,28 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 10,
   },
-  dropdown: {
-    height: 50,
-    borderColor: "#4EA0B7",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: "#EBE5DD",
+  buttonGroup: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    gap: 8,
   },
-  selectedTextStyle: {
-    fontSize: 16,
-    color: "#333",
+  optionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
   },
-  placeholderStyle: {
-    fontSize: 16,
-    color: "#4EA0B7",
+  optionButtonSelected: {
+    backgroundColor: "#00C2FF",
   },
-  itemTextStyle: {
-    fontSize: 16,
-    color: "#333",
+  optionButtonText: {
+    color: "#555",
+    fontWeight: "500",
   },
-  dropdownItemContainer: {
-    borderRadius: 8,
-    borderColor: "#4EA0B7",
-    borderWidth: 1,
-    maxHeight: 300,
+  optionButtonTextSelected: {
+    color: "white",
+    fontWeight: "bold",
   },
   modalButtons: {
     flexDirection: "row",
@@ -1034,6 +1270,7 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
+
   },
   addressItem: {
     paddingVertical: 10,

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import {
   View,
   Text,
@@ -9,10 +9,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { commonStyles } from "../../style";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import { t } from "i18next";
-
 
 
 const Profile = () => {
@@ -20,6 +19,7 @@ const Profile = () => {
   const { user, isGuest } = useContext(AuthContext);
   const handleSetting = (id) => {
     if (isGuest) {
+      if (id === "viewProfile") router.replace("/")
       if (id === "1") router.push("/screen/setting");
       return;
     }
@@ -36,8 +36,14 @@ const Profile = () => {
       case "2":
         router.push("/screen/createChef");
         break;
-      case "5":
+      case "7":
         router.push("/screen/setting");
+        break;
+      case "5":
+        router.push("/screen/allReview");
+        break;
+      case "6":
+        router.push("/screen/helpCentre");
         break;
       default:
         router.push("/screen/profileDetail");
@@ -52,7 +58,9 @@ const Profile = () => {
     { id: "2", icon: "briefcase", title: "Create chef account" },
     { id: "3", icon: "heart", title: "Favorite chef" },
     { id: "4", icon: "lock-closed", title: "Change password" },
-    { id: "5", icon: "settings", title: "Setting" },
+    { id: "5", icon: "star", title: "allReview" },
+    { id: "6", icon: "help-circle", title: "helpCentre" },
+    { id: "7", icon: "settings", title: "Setting" },
   ];;
   return (
     <ScrollView style={[commonStyles.container,]}>

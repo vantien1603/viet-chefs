@@ -25,7 +25,6 @@ import axios from "axios";
 import { useSelectedItems } from "../../context/itemContext";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useCommonNoification } from "../../context/commonNoti";
-import { useIsFocused } from "@react-navigation/native";
 
 const generateTimeSlots = () => {
   const timeSlots = [];
@@ -71,7 +70,7 @@ const BookingScreen = () => {
     dishNotes, setDishNotes,
     ingredientPrep, setIngredientPrep,
     address, setAddress,
-    chefId } = useSelectedItems();
+    chefId, routeBefore, setRouteBefore } = useSelectedItems();
   const today = moment();
   const days = getSurrounding30Days();
   const [loading, setLoading] = useState(false);
@@ -90,7 +89,6 @@ const BookingScreen = () => {
   const requireAuthAndNetwork = useRequireAuthAndNetwork();
   const [errors, setErrors] = useState({});
   const { showModal } = useCommonNoification();
-  const segment = useSegments();
 
 
   useEffect(() => {
@@ -196,7 +194,8 @@ const BookingScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách availability", "Failed");
+      // showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách availability", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setIsFetchingAvailability(false);
     }
@@ -264,9 +263,17 @@ const BookingScreen = () => {
   };
 
   const handleAddItems = () => {
-    // router.back();
     router.replace("/screen/selectFood");
+
   };
+
+  const handleBack = () => {
+    if (routeBefore[1] === "schedule") {
+      router.replace(`${routeBefore[0]}/${routeBefore[1]}`);
+    } else {
+      router.replace("/screen/selectFood");
+    }
+  }
 
   const handleConfirmBooking = async () => {
     const hasError = !selectedDay || !startTime || !address;
@@ -342,7 +349,7 @@ const BookingScreen = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title="Booking" onLeftPress={() => handleAddItems()} />
+      <Header title="Booking" onLeftPress={() => handleBack()} />
       <ScrollView
         style={{ flex: 1, paddingHorizontal: 10 }}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -636,9 +643,13 @@ const BookingScreen = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("ingredientPreparation")}</Text>
-          <View style={styles.ingredientPrepContainer}>
+          <View>
             <TouchableOpacity
-              style={styles.checkboxContainer}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 5,
+              }}
               onPress={() => setIngredientPrep("customer")}
             >
               <MaterialIcons
@@ -655,7 +666,7 @@ const BookingScreen = () => {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.checkboxContainer}
+              style={{ flexDirection: "row", alignItems: "center" }}
               onPress={() => setIngredientPrep("chef")}
             >
               <MaterialIcons
@@ -730,20 +741,6 @@ const BookingScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F8BF40",
-    backgroundColor: "#FDFBF6",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#A9411D",
-    marginLeft: 10,
-  },
   section: {
     borderTopColor: "#E5E5E5",
     borderTopWidth: 1,
@@ -819,6 +816,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   dishRow: {
     flexDirection: "row",

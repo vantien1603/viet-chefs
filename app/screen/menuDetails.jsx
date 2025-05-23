@@ -9,8 +9,6 @@ import {
     TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation, useRoute } from '@react-navigation/native';
-import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import { commonStyles } from "../../style";
 import { Modalize } from "react-native-modalize";
@@ -34,8 +32,6 @@ const MenuDetails = () => {
     // const navigation = useNavigation();
     // const { menuId } = route.params;
     const { id } = useLocalSearchParams();
-
-    console.log(id);
 
     const axiosInstanceForm = useAxiosFormData();
     const axiosInstance = useAxios();
@@ -331,7 +327,23 @@ const MenuDetails = () => {
                                 style={commonStyles.input}
                             />
                         )} */}
+                        <View>
 
+                        </View>
+                        <Text style={styles.itemContentLabel}>Total cook time:</Text>
+                        {isEditing ? (
+                            <TextInput
+                                value={editedMenu.description}
+                                onChangeText={(text) =>
+                                    setEditedMenu({ ...editedMenu, description: text })
+                                }
+                                style={commonStyles.inputDes}
+                                textAlignVertical="top"
+                                multiline={true}
+                            />
+                        ) : (
+                            <Text style={styles.itemContent}>{menu.description}</Text>
+                        )}
 
                         <View>
                             <Text style={styles.itemContentLabel}>Description:</Text>

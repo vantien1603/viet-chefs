@@ -31,7 +31,6 @@ const ChefMenu = () => {
   const { showConfirm } = useConfirmModal();
   const { user } = useContext(AuthContext);
 
-
   useEffect(() => {
     fetchMenu();
   }, [])
@@ -42,8 +41,10 @@ const ChefMenu = () => {
       const response = await axiosInstance.get("/menus", {
         params: { chefId: user?.chefId },
       });
+
       setMenus(response.data.content);
-      // console.log(response.data.content)
+      console.log(response.data.content)
+      console.log(user?.chefId)
     } catch (error) {
       if (error.response?.status === 401) {
         return;

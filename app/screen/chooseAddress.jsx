@@ -22,7 +22,6 @@ import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useSelectedItems } from "../../context/itemContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
 
 const ChooseAddressScreen = () => {
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
@@ -34,14 +33,9 @@ const ChooseAddressScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { showModal } = useCommonNoification();
   const { address, setAddress, isLong } = useSelectedItems();
-  const isFocused = useIsFocused();
+  const MAX_DISTANCE_KM = 50;
+  const [currentLocation, setCurrentLocation] = useState(null);
 
-  useEffect(() => {
-    if (!isFocused) {
-      console.log("chooseAddress");
-      return
-    };
-  }, [])
   useEffect(() => {
     const fetchAddress = async () => {
       try {
@@ -96,24 +90,59 @@ const ChooseAddressScreen = () => {
           params: {
             place_id: placeId,
             key: API_GEO_KEY,
-            fields: "formatted_address",
+            fields: "formatted_address,geometry",
             language: "vi",
           },
         }
       );
-      return response.data.result.formatted_address;
+      return response.data.result;
     } catch (error) {
       console.error("Error fetching place details:", error);
       return null;
     }
   };
 
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6378;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lng2 - lng1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   const selectAddress = async (prediction) => {
-    const formattedAddress = await getPlaceDetails(prediction.place_id);
-    if (formattedAddress) {
-      setNewAddress({ ...newAddress, address: formattedAddress });
+    // const formattedAddress = await getPlaceDetails(prediction.place_id);
+    // if (formattedAddress) {
+    //   setNewAddress({ ...newAddress, address: formattedAddress });
+    //   setSuggestions([]);
+    //   setSearchQuery(formattedAddress);
+    // }
+
+    const details = await getPlaceDetails(prediction.place_id);
+    if (details) {
+      const { formatted_address, geometry } = details;
+      const { lat, lng } = geometry.location;
+      console.log("cur", currentLocation)
+      const distance = calculateDistance(currentLocation.latitude, currentLocation.longitude, lat, lng);
+      console.log("detial", details);
+
+      if (distance > MAX_DISTANCE_KM) {
+        showModal("Error", "Địa chỉ phải nằm trong bán kính 50km từ vị trí hiện tại", "Failed");
+        return;
+      }
+
+      setNewAddress({ ...newAddress, address: details });
+
+      // setNewAddress({
+      //   title: newAddress.title,
+      //   address: formatted_address,
+      //   placeId: prediction.place_id,
+      // });
       setSuggestions([]);
-      setSearchQuery(formattedAddress);
+      setSearchQuery(details);
     }
   };
 
