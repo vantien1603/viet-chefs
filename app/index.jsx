@@ -8,6 +8,7 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert, Platform } from "react-native";
 import * as Location from "expo-location";
+import { t } from "i18next";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -168,7 +169,7 @@ export default function WelcomeScreen() {
               fontFamily: "nunito-bold",
             }}
           >
-            SIGN UP
+            {t("signup")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -190,7 +191,7 @@ export default function WelcomeScreen() {
               fontFamily: "nunito-bold",
             }}
           >
-            LOGIN
+            {t("login")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -204,7 +205,7 @@ export default function WelcomeScreen() {
         }}
       >
         <Text style={{ textDecorationLine: "underline" }}>
-          Tiếp tục với tư cách khách
+          {t("continueAsGuest")}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>

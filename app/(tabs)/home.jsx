@@ -22,6 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import * as Location from "expo-location";
 import { t } from "i18next";
+import CustomChat from "../../components/CustomChat";
 
 export default function Home() {
   const router = useRouter();
@@ -37,6 +38,23 @@ export default function Home() {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [location, setLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messages, setMessages] = useState([]);
+  const [isChatVisible, setIsChatVisible] = useState(false);
+
+  const initialMessages = [
+    {
+      role: "assistant",
+      content: "Hello! Welcome to VietChef virtual assistant. I will support you here today.",
+      suggestContactAdmin: false,
+    },
+    { role: "assistant", content: "How can I help you today?", suggestContactAdmin: false },
+  ];
+
+  useEffect(() => {
+    if (isChatVisible && messages.length === 0) {
+      setMessages(initialMessages);
+    }
+  }, [isChatVisible]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -222,7 +240,6 @@ export default function Home() {
     }, [])
   );
 
-  // Chuyển hướng sang SearchScreen
   const handleSearchIconPress = () => {
     router.push({
       pathname: "/screen/search",
@@ -232,6 +249,46 @@ export default function Home() {
           : null,
       },
     });
+  };
+
+  const handleSend = (userMessage) => {
+    setMessages((prev) => [...prev, userMessage]);
+  };
+
+  const handleChatbot = async (inputText) => {
+    try {
+      const response = await axiosInstance.post("/chatbot/ask", null, {
+        params: {
+          message: inputText,
+        },
+      });
+      const replyContent = response.data.reply;
+      const suggestContactAdmin = response.data.suggestContactAdmin || false;
+      const botMessage = { 
+        role: "assistant", 
+        content: replyContent,
+        suggestContactAdmin: suggestContactAdmin 
+      };
+      setMessages((prev) => [...prev, botMessage]);
+      console.log("Bot response:", response.data);
+    } catch (error) {
+      console.log("Error in handleChatbot:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Xin lỗi, tôi không thể trả lời ngay bây giờ. Vui lòng thử lại",
+          suggestContactAdmin: false,
+        },
+      ]);
+    }
+  };
+
+  const toggleChat = () => {
+    if (isChatVisible) {
+      setMessages([]);
+    }
+    setIsChatVisible(!isChatVisible);
   };
 
   const renderChefFavoriteItem = ({ item }) => (
@@ -403,7 +460,6 @@ export default function Home() {
               <Icon name="search" size={24} color="#4EA0B7" />
             </TouchableOpacity>
           </View>
-          {/* đầu bếp yêu thích gần đây */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
             {chefFavorite.length > 0 && (
@@ -416,7 +472,6 @@ export default function Home() {
           </View>
 
           {chefFavorite.length === 0 ? (
-            // Chưa thích ai
             <View
               style={{
                 alignItems: "center",
@@ -431,7 +486,6 @@ export default function Home() {
               </Text>
             </View>
           ) : filteredChefFavorite.length === 0 ? (
-            // Đã thích nhưng không ai gần
             <View
               style={{
                 alignItems: "center",
@@ -467,7 +521,6 @@ export default function Home() {
             </ScrollView>
           )}
 
-          {/* món ăn gần đây */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
@@ -512,7 +565,6 @@ export default function Home() {
             </ScrollView>
           )}
 
-          {/* đầu bếp gần đây */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
@@ -558,6 +610,50 @@ export default function Home() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
+        <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />
+      </TouchableOpacity>
+
+      {isChatVisible && (
+        <View style={styles.chatOverlay}>
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: "#A9411D",
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                borderWidth: 1,
+                borderColor: "#EBE5DD",
+              }}
+            />
+            <Text style={{ color: "#fff", fontSize: 15, marginLeft: 15 }}>
+              VietChef Chatbot
+            </Text>
+            <TouchableOpacity
+              style={styles.closeChatButton}
+              onPress={toggleChat}
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <CustomChat
+            messages={messages}
+            onSendMessage={handleSend}
+            callApi={handleChatbot}
+            onContactAdmin={() => router.push("/screen/helpCentre")}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -656,5 +752,39 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  chatbotIcon: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#4EA0B7",
+    borderRadius: 30,
+    padding: 15,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  chatOverlay: {
+    position: "absolute",
+    bottom: 80,
+    right: 20,
+    width: 300,
+    height: "60%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  closeChatButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    borderRadius: 20,
+    padding: 10,
   },
 });

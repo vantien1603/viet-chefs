@@ -148,9 +148,9 @@ const ViewDetailBookingDetails = () => {
   if (!bookingDetails) {
     return (
       <SafeAreaView style={commonStyles.containerContent}>
-        <Header />
+        <Header title={t("viewDetailBookingDetail")} />
         <View style={styles.container}>
-          <Text style={styles.noData}>Đang tải...</Text>
+          <Text style={styles.noData}>{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -158,59 +158,60 @@ const ViewDetailBookingDetails = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header />
+      <Header title={t("viewDetailBookingDetail")} />
       <View style={styles.mainContainer}>
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Thông tin đặt chỗ</Text>
+            <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
             <Text style={styles.label}>
-              Đầu bếp: {bookingDetails.booking?.chef?.user?.fullName || "N/A"}
+              {t("chef")}:{" "}
+              {bookingDetails.booking?.chef?.user?.fullName || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Ngày: {bookingDetails.sessionDate || "N/A"}
+              {t("sessionDate")}: {bookingDetails.sessionDate || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Giờ bắt đầu: {bookingDetails.startTime || "N/A"}
+              {t("startTime")}: {bookingDetails.startTime || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Địa chỉ: {bookingDetails.location || "N/A"}
+              {t("address")}: {bookingDetails.location || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Tổng giá:{" "}
+              {t("totalPrice")}:
               {bookingDetails.totalPrice
                 ? `${bookingDetails.totalPrice.toFixed(2)}`
                 : "N/A"}
             </Text>
             <Text style={styles.label}>
-              Trạng thái: {bookingDetails.status || "N/A"}
+              {t("status")}: {bookingDetails.status || "N/A"}
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Chi tiết giá</Text>
+            <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
             <Text style={styles.label}>
-              Phí nấu:{" "}
+              {t("chefCookingFee")}:
               {bookingDetails.chefCookingFee
                 ? `${bookingDetails.chefCookingFee.toFixed(2)}`
                 : "0"}
             </Text>
             <Text style={styles.label}>
-              Giá món ăn:{" "}
+              {t("priceOfDishes")}:
               {bookingDetails.priceOfDishes
                 ? `${bookingDetails.priceOfDishes.toFixed(2)}`
                 : "0"}
             </Text>
             <Text style={styles.label}>
-              Phí áp dụng:{" "}
+              {t("platformFee")}:{" "}
               {bookingDetails.platformFee
                 ? `${bookingDetails.platformFee.toFixed(2)}`
                 : "0"}
             </Text>
             <Text style={styles.label}>
-              Giảm giá:{" "}
+              {t("discount")}:{" "}
               {bookingDetails.discountAmout
                 ? `${bookingDetails.discountAmout.toFixed(2)}`
                 : "0"}
@@ -218,34 +219,34 @@ const ViewDetailBookingDetails = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Món ăn</Text>
+            <Text style={styles.sectionTitle}>{t("dish")}</Text>
             {bookingDetails.dishes?.length > 0 ? (
               bookingDetails.dishes.map((dish) => (
                 <View key={dish.id} style={styles.dishItem}>
                   <Text style={styles.label}>
-                    - {dish.dish?.name || "N/A"} (Ghi chú:{" "}
-                    {dish.notes || "N/A"})
+                    - {dish.dish?.name || "N/A"} ({t("note")}: {dish.notes || "N/A"}
+                    )
                   </Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.noData}>Không có món ăn nào.</Text>
+              <Text style={styles.noData}>{t("noDishSelect")}</Text>
             )}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Thông tin bổ sung</Text>
+            <Text style={styles.sectionTitle}>{t("moreInfo")}</Text>
             <Text style={styles.label}>
-              Loại đặt chỗ: {bookingDetails.booking?.bookingType || "N/A"}
+              {t("bookingType")}: {bookingDetails.booking?.bookingType || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Trạng thái booking: {bookingDetails.booking?.status || "N/A"}
+              {t("status")}: {bookingDetails.booking?.status || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Thời gian bắt đầu nấu: {bookingDetails.timeBeginCook || "N/A"}
+              {t("timeBeginCook")}: {bookingDetails.timeBeginCook || "N/A"}
             </Text>
             <Text style={styles.label}>
-              Thời gian bắt đầu di chuyển:{" "}
+              {t("timeBeginTravel")}:
               {bookingDetails.timeBeginTravel || "N/A"}
             </Text>
           </View>
@@ -294,7 +295,7 @@ const ViewDetailBookingDetails = () => {
                 style={[styles.button, { backgroundColor: "#dc3545" }]}
                 onPress={openReportModal}
               >
-                <Text style={styles.buttonText}>Report</Text>
+                <Text style={styles.buttonText}>{t("report")}</Text>
               </TouchableOpacity>
             )}
           {bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
@@ -302,7 +303,7 @@ const ViewDetailBookingDetails = () => {
               style={[styles.button, { backgroundColor: "#28a745" }]}
               onPress={handleCompleted}
             >
-              <Text style={styles.buttonText}>Confirm Completed</Text>
+              <Text style={styles.buttonText}>{t("confirmCompleted")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -346,17 +347,17 @@ const ViewDetailBookingDetails = () => {
         handlePosition="outside"
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Report</Text>
-          <Text style={styles.modalLabel}>Reason</Text>
+          <Text style={styles.modalTitle}>{t("report")}</Text>
+          <Text style={styles.modalLabel}>{t("reason")}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: "#e0e0e0" }]}
             value="Chef not arrived"
             editable={false}
           />
-          <Text style={styles.modalLabel}>Detail (Optional)</Text>
+          <Text style={styles.modalLabel}>{t("detailOptional")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Provide additional details..."
+            placeholder={t("provideDetails")}
             value={reportReasonDetail}
             onChangeText={setReportReasonDetail}
             multiline
@@ -367,13 +368,13 @@ const ViewDetailBookingDetails = () => {
               style={[styles.modalButton, { backgroundColor: "#6c757d" }]}
               onPress={closeReportModal}
             >
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={styles.buttonText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: "#dc3545" }]}
               onPress={handleSubmitReport}
             >
-              <Text style={styles.buttonText}>Submit Report</Text>
+              <Text style={styles.buttonText}>{t("submitReport")}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -16,18 +16,20 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import Header from "../../components/header";
 import { useNavigation } from "@react-navigation/native";
 import useAxios from "../../config/AXIOS_API";
-import Toast from "react-native-toast-message";
 import { t } from "i18next";
 import { useFocusEffect } from "expo-router";
+import { SocketContext } from "../../config/SocketContext";
 
 const Chat = () => {
   const { user } = useContext(AuthContext);
+  const { registerNotificationCallback } = useContext(SocketContext);
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState([]);
   const navigation = useNavigation();
   const axiosInstance = useAxios();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredConversations, setFilteredConversations] = useState([]);
+  const [shouldRefetch, setShouldRefetch] = useState(0);
 
   const fetchConversations = async () => {
     if (!user?.sub) {
@@ -55,7 +57,6 @@ const Chat = () => {
               `/users/${otherUserId}`
             );
             avatarUrl = userResponse.data?.avatarUrl;
-            console.log(`Avatar for ${otherUserId}:`, avatarUrl);
           } catch (error) {
             console.error(
               `Lỗi khi lấy dữ liệu người dùng ${otherUserId}:`,
@@ -150,11 +151,15 @@ const Chat = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?.sub) {
-        fetchConversations();
-      }
-    }, [])
+      fetchConversations();
+    }, [shouldRefetch])
   );
+
+  useEffect(() => {
+    registerNotificationCallback(() => {
+      setShouldRefetch((prev) => prev + 1);
+    });
+  }, []);
 
   const handleSearch = (text) => {
     setSearchQuery(text);

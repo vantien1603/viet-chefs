@@ -201,6 +201,11 @@ const LongTermDetailsScreen = () => {
   }, [pin]);
 
   const renderCycleItem = (cycle) => {
+    const sortedBookingDetails = [...cycle.bookingDetails].sort((a, b) => {
+      const dateA = new Date(a.sessionDate);
+      const dateB = new Date(b.sessionDate);
+      return dateA - dateB;
+    });
     return (
       <View key={cycle.id} style={styles.cycleCard}>
         <Text style={styles.cycleTitle}>
@@ -237,7 +242,7 @@ const LongTermDetailsScreen = () => {
 
         <View style={styles.bookingDetailsContainer}>
           <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
-          {cycle.bookingDetails.map((detail) => (
+          {sortedBookingDetails.map((detail) => (
             <TouchableOpacity
               key={detail.id}
               style={styles.detailItem}
@@ -352,7 +357,9 @@ const LongTermDetailsScreen = () => {
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{t("enterWalletPin")}</Text>
-            <Text style={styles.modalSubtitle}>{t("pleaseEnter4DigitPin")}</Text>
+            <Text style={styles.modalSubtitle}>
+              {t("pleaseEnter4DigitPin")}
+            </Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
                 <Animated.View

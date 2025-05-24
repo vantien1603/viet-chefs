@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
+import { t } from "i18next";
 export default function SignUpScreen() {
   const [phone, setPhone] = useState("");
   const [mail, setMail] = useState("");
@@ -82,22 +83,22 @@ export default function SignUpScreen() {
 
   return (
     <ScrollView style={commonStyles.containerContent}>
-      <Header title="Register" />
+      <Header title={t("register")} />
       <View>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-          Pleasure to be at your service!
+          {t("pleasure")}
         </Text>
         <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}>
-          Create an account now to experience our services!
+          {t("createAccount")}
         </Text>
 
-        <Text style={commonStyles.labelInput}>Username</Text>
+        <Text style={commonStyles.labelInput}>{t("username")}</Text>
         <TextInput
           style={[
             commonStyles.input,
             errors.username && { borderColor: "red", borderWidth: 1 },
           ]}
-          placeholder="User name"
+          placeholder={t("username")}
           value={username}
           onChangeText={(text) => {
             setUsername(text);
@@ -109,13 +110,13 @@ export default function SignUpScreen() {
         {errors.username && (
           <Text style={{ color: "red", fontSize: 12 }}>{errors.username}</Text>
         )}
-        <Text style={commonStyles.labelInput}>First and last name</Text>
+        <Text style={commonStyles.labelInput}>{t("fullName")}</Text>
         <TextInput
           style={[
             commonStyles.input,
             errors.fullName && { borderColor: "red", borderWidth: 1 },
           ]}
-          placeholder="Full name"
+          placeholder={t("fullName")}
           value={fullName}
           onChangeText={(text) => {
             setFullName(text);
@@ -127,7 +128,7 @@ export default function SignUpScreen() {
         {errors.fullName && (
           <Text style={{ color: "red", fontSize: 12 }}>{errors.fullName}</Text>
         )}
-        <Text style={commonStyles.labelInput}>Phone number</Text>
+        <Text style={commonStyles.labelInput}>{t("phone")}</Text>
         <TextInput
           style={[
             commonStyles.input,
@@ -147,7 +148,7 @@ export default function SignUpScreen() {
         {errors.phone && (
           <Text style={{ color: "red", fontSize: 12 }}>{errors.phone}</Text>
         )}
-        <Text style={commonStyles.labelInput}>Mail address</Text>
+        <Text style={commonStyles.labelInput}>{t("mailAddress")}</Text>
         <TextInput
           style={[commonStyles.input, errors.email && { borderColor: "red", borderWidth: 1 }]}
           placeholder="xxx@gmail.com"
@@ -186,7 +187,7 @@ export default function SignUpScreen() {
                 fontFamily: "nunito-bold",
               }}
             >
-              Next
+              {t("next")}
             </Text>
           </TouchableOpacity>
         </View>

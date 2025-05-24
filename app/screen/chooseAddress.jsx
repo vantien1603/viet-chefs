@@ -10,44 +10,63 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
+import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import axios from "axios";
-import Toast from "react-native-toast-message";
 import { API_GEO_KEY } from "@env";
 import { t } from "i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const MAX_DISTANCE_KM = 50;
+
 const ChooseAddressScreen = () => {
   const params = useLocalSearchParams();
-  const { source, chefId, selectedPackage, numPeople } = params; // Add source and other params
+  const { source, chefId, selectedPackage, numPeople } = params;
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
   const axiosInstance = useAxios();
   const [addresses, setAddresses] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newAddress, setNewAddress] = useState({ title: "", address: "" });
+  const [newAddress, setNewAddress] = useState({
+    title: "",
+    address: "",
+    placeId: "",
+  });
   const [suggestions, setSuggestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(""); 
+  const [locationError, setLocationError] = useState("");
+  const [distanceError, setDistanceError] = useState(""); 
 
   useEffect(() => {
     const fetchAddress = async () => {
       try {
         const response = await axiosInstance.get("/address/my-addresses");
         setAddresses(response.data);
-        console.log(response.data);
       } catch (error) {
         console.log("err", error);
-        Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: "Không thể tải danh sách địa chỉ",
-        });
+        setErrorMessage("Không thể tải danh sách địa chỉ");
       }
     };
     fetchAddress();
+
+    // Request current location
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocationError("Quyền truy cập vị trí bị từ chối");
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    })();
   }, []);
 
   const fetchAddressSuggestions = async (query) => {
@@ -71,10 +90,8 @@ const ChooseAddressScreen = () => {
         setSuggestions(response.data.predictions);
       }
     } catch (error) {
-      console.error(
-        "Error fetching suggestions from Google Places:",
-        error?.response?.data
-      );
+      console.error("Error fetching suggestions from Google Places:", error?.response?.data);
+      setErrorMessage("Không thể tải gợi ý địa chỉ");
     }
   };
 
@@ -86,48 +103,70 @@ const ChooseAddressScreen = () => {
           params: {
             place_id: placeId,
             key: API_GEO_KEY,
-            fields: "formatted_address",
+            fields: "formatted_address,geometry",
             language: "vi",
           },
         }
       );
-      return response.data.result.formatted_address;
+      return response.data.result;
     } catch (error) {
       console.error("Error fetching place details:", error);
       return null;
     }
   };
 
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6378;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lng2 - lng1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   const selectAddress = async (prediction) => {
-    const formattedAddress = await getPlaceDetails(prediction.place_id);
-    if (formattedAddress) {
-      setNewAddress({ ...newAddress, address: formattedAddress });
+    if (!currentLocation) {
+      setLocationError("Vui lòng cho phép truy cập vị trí");
+      return;
+    }
+
+    const details = await getPlaceDetails(prediction.place_id);
+    if (details) {
+      const { formatted_address, geometry } = details;
+      const { lat, lng } = geometry.location;
+      const distance = calculateDistance(currentLocation.latitude, currentLocation.longitude, lat, lng);
+      if (distance > MAX_DISTANCE_KM) {
+        setDistanceError("Địa chỉ phải nằm trong bán kính 50km từ vị trí hiện tại");
+        return;
+      }
+      setDistanceError(""); // Clear distance error if valid
+      setNewAddress({
+        title: newAddress.title,
+        address: formatted_address,
+        placeId: prediction.place_id,
+      });
       setSuggestions([]);
-      setSearchQuery(formattedAddress);
+      setSearchQuery(formatted_address);
     }
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     setNewAddress({ ...newAddress, address: query });
+    setDistanceError(""); // Clear distance error while typing
+    fetchAddressSuggestions(query); // Fetch suggestions as the user types
   };
 
   const createAddress = async () => {
-    if (!newAddress.title || !newAddress.address) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng điền đầy đủ thông tin",
-      });
+    if (!newAddress.title || !newAddress.address || !newAddress.placeId) {
+      setErrorMessage("Vui lòng chọn địa chỉ từ gợi ý");
       return;
     }
 
     if (addresses.length >= 5) {
-      Toast.show({
-        type: "error",
-        text1: "Giới hạn",
-        text2: "Bạn chỉ được tạo tối đa 5 địa chỉ",
-      });
+      setErrorMessage("Bạn chỉ được tạo tối đa 5 địa chỉ");
       setModalVisible(false);
       return;
     }
@@ -141,12 +180,14 @@ const ChooseAddressScreen = () => {
       if (response.status === 201) {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
-        setNewAddress({ title: "", address: "" });
+        setNewAddress({ title: "", address: "", placeId: "" });
         setSearchQuery("");
         setSuggestions([]);
+        setErrorMessage(""); // Clear error on success
       }
     } catch (error) {
       console.log("err", error);
+      setErrorMessage("Không thể tạo địa chỉ mới");
     }
   };
 
@@ -156,31 +197,19 @@ const ChooseAddressScreen = () => {
     }
 
     const selectedAddress = addresses[selectedAddressIndex];
-
-    // Save selected address to AsyncStorage
     try {
-      await AsyncStorage.setItem(
-        "selectedAddress",
-        JSON.stringify(selectedAddress)
-      );
-      console.log("Saved selected address:", selectedAddress.address);
+      await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
     } catch (error) {
       console.error("Error saving selected address:", error);
+      setErrorMessage("Không thể lưu địa chỉ đã chọn");
     }
 
     if (source === "longTerm") {
-      // Navigate back to LongTermBookingScreen
       router.push({
         pathname: "/screen/longTermBooking",
-        params: {
-          chefId,
-          selectedPackage,
-          numPeople,
-          address: selectedAddress.address,
-        },
+        params: { chefId, selectedPackage, numPeople, address: selectedAddress.address },
       });
     } else {
-      // Navigate to regular booking screen
       router.push({
         pathname: "/screen/booking",
         params: {
@@ -204,11 +233,7 @@ const ChooseAddressScreen = () => {
     <View style={styles.addressContainer}>
       <TouchableOpacity onPress={() => setSelectedAddressIndex(index)}>
         <Ionicons
-          name={
-            selectedAddressIndex === index
-              ? "radio-button-on"
-              : "radio-button-off"
-          }
+          name={selectedAddressIndex === index ? "radio-button-on" : "radio-button-off"}
           size={24}
           color={selectedAddressIndex === index ? "#A64B2A" : "#999"}
         />
@@ -217,6 +242,9 @@ const ChooseAddressScreen = () => {
         <Text style={styles.titleText}>{item.title}</Text>
         <Text style={styles.addressText}>{item.address}</Text>
       </View>
+      <TouchableOpacity onPress={() => { /* Edit logic here */ }}>
+        <Text style={styles.editText}>Edit</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -224,13 +252,18 @@ const ChooseAddressScreen = () => {
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title={t("chooseAddress")} />
 
-      {/* Address Section */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.sectionTitle}>{t("address")}</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Text style={styles.addNewText}>{t("addNew")}</Text>
-        </TouchableOpacity>
-      </View>
+      {locationError ? <Text style={styles.errorText}>{locationError}</Text> : null}
+      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+      <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.7}>
+        <View style={styles.headerContainer}>
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <Ionicons name="add" size={24} color="black" />
+            <Text style={styles.addNewText}>{t("addNew")}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
       <FlatList
         data={addresses}
         renderItem={renderAddressItem}
@@ -239,64 +272,41 @@ const ChooseAddressScreen = () => {
         contentContainerStyle={{ paddingBottom: 80 }}
       />
 
-      {/* Confirm Button */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
           <Text style={styles.confirmButtonText}>{t("confirm")}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Modal for Adding New Address */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("addNewAddress")}</Text>
 
-            {/* Title Selection with Home/Work Buttons */}
             <Text style={styles.inputLabel}>{t("addressLabel")}</Text>
             <View style={styles.titleButtonContainer}>
               <TouchableOpacity
-                style={[
-                  styles.titleButton,
-                  newAddress.title === "Home" && styles.titleButtonSelected,
-                ]}
+                style={[styles.titleButton, newAddress.title === "Home" && styles.titleButtonSelected]}
                 onPress={() => setNewAddress({ ...newAddress, title: "Home" })}
               >
                 <Text
-                  style={[
-                    styles.titleButtonText,
-                    newAddress.title === "Home" &&
-                      styles.titleButtonTextSelected,
-                  ]}
+                  style={[styles.titleButtonText, newAddress.title === "Home" && styles.titleButtonTextSelected]}
                 >
                   {t("home")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.titleButton,
-                  newAddress.title === "Work" && styles.titleButtonSelected,
-                ]}
+                style={[styles.titleButton, newAddress.title === "Work" && styles.titleButtonSelected]}
                 onPress={() => setNewAddress({ ...newAddress, title: "Work" })}
               >
                 <Text
-                  style={[
-                    styles.titleButtonText,
-                    newAddress.title === "Work" &&
-                      styles.titleButtonTextSelected,
-                  ]}
+                  style={[styles.titleButtonText, newAddress.title === "Work" && styles.titleButtonTextSelected]}
                 >
                   {t("work")}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Address Input */}
             <Text style={styles.inputLabel}>{t("address")}</Text>
             <TextInput
               style={styles.input}
@@ -304,50 +314,41 @@ const ChooseAddressScreen = () => {
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={handleSearch}
-              onSubmitEditing={(event) => {
-                event.persist();
-                fetchAddressSuggestions(event.nativeEvent.text);
-              }}
               returnKeyType="search"
             />
 
-            {/* Address Suggestions */}
+            {distanceError ? <Text style={styles.errorText}>{distanceError}</Text> : null}
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
             {suggestions.length > 0 && (
-              <ScrollView
-                style={styles.suggestionContainer}
-                nestedScrollEnabled={true}
-              >
+              <ScrollView style={styles.suggestionContainer} nestedScrollEnabled={true}>
                 {suggestions.map((item, index) => (
                   <TouchableOpacity
                     key={`${item.place_id}-${index}`}
                     onPress={() => selectAddress(item)}
                     style={styles.suggestionItem}
                   >
-                    <Text style={styles.suggestionText}>
-                      {item.description}
-                    </Text>
+                    <Text style={styles.suggestionText}>{item.description}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             )}
 
-            {/* Modal Buttons */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 onPress={() => {
                   setModalVisible(false);
-                  setNewAddress({ title: "", address: "" });
+                  setNewAddress({ title: "", address: "", placeId: "" });
                   setSearchQuery("");
                   setSuggestions([]);
+                  setErrorMessage("");
+                  setDistanceError("");
                 }}
                 style={styles.cancelButton}
               >
                 <Text style={styles.cancelText}>{t("cancel")}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={createAddress}
-                style={styles.saveButton}
-              >
+              <TouchableOpacity onPress={createAddress} style={styles.saveButton}>
                 <Text style={styles.saveText}>{t("save")}</Text>
               </TouchableOpacity>
             </View>
@@ -359,26 +360,6 @@ const ChooseAddressScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    marginHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#666",
-  },
-  addNewText: {
-    color: "#A64B2A",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
   addressContainer: {
     flexDirection: "row",
     padding: 16,
@@ -400,6 +381,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     marginTop: 4,
+  },
+  editText: {
+    color: "#A64B2A",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 10,
+    padding: 20,
+    backgroundColor: "#EBE5DD",
+    borderBottomColor: "#CCCCCC",
+    borderBottomWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  addNewText: {
+    color: "#A64B2A",
+    fontWeight: "bold",
+    fontSize: 17,
+    marginLeft: 10,
   },
   separator: {
     height: 1,
@@ -537,6 +543,12 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 18,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
   },
 });
 

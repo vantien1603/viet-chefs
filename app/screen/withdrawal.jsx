@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { use, useContext, useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -14,6 +14,7 @@ import Header from "../../components/header";
 import { MaterialIcons } from "@expo/vector-icons";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
+import { t } from "i18next";
 
 const WithdrawalScreen = () => {
   const params = useLocalSearchParams();
@@ -127,22 +128,22 @@ const WithdrawalScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Withdrawal" />
+      <Header title={t("withdrawal")} rightText={"Your requests"} onRightPress={() => router.push("/screen/walletRequest")}/>
       <View style={styles.container}>
-        <Text style={styles.title}>Withdraw From</Text>
+        <Text style={styles.title}>{t("withdrawFrom")}</Text>
         <View style={styles.walletContainer}>
-          <Text style={styles.walletText}>VietChef Wallet</Text>
+          <Text style={styles.walletText}>{t("vietchefWallet")}</Text>
           <Text style={styles.balanceText}>${balance}</Text>
         </View>
         <View style={styles.emailContainer}>
-          <Text style={styles.label}>Paypal account email</Text>
+          <Text style={styles.label}>{t("paypalAccountEmail")}</Text>
           <View style={styles.row}>
             <TextInput
               style={styles.inputEmail}
               value={email}
               onChangeText={setEmail}
               editable={isEditing}
-              placeholder="Enter your PayPal email"
+              placeholder={t("enterPayPalEmail")}
               placeholderTextColor="#999"
             />
             <TouchableOpacity onPress={toggleEditing}>
@@ -155,7 +156,7 @@ const WithdrawalScreen = () => {
           </View>
         </View>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Withdraw amount</Text>
+          <Text style={styles.label}>{t("withdrawAmount")}</Text>
           <View style={{ position: "relative" }}>
             <TextInput
               style={styles.input}
@@ -204,7 +205,7 @@ const WithdrawalScreen = () => {
           onPress={handleWithdraw}
           disabled={isWithdraw}
         >
-          <Text style={styles.withdrawButtonText}>Withdraw</Text>
+          <Text style={styles.withdrawButtonText}>{t("withdraw")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

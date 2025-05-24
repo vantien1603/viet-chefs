@@ -54,7 +54,7 @@ const Setting = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title={'Setting'}  />
+      <Header title={t('settings')}  />
       <TouchableOpacity
         onPress={() => openModalCountry()}
         style={{
@@ -123,14 +123,14 @@ const Setting = () => {
 
       <Modalize ref={modalLangRef} adjustToContentHeight>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Chọn ngôn ngữ</Text>
+          <Text style={styles.title}>{t("selectLanguage")}</Text>
 
           <TouchableOpacity
             style={styles.languageItem}
             onPress={() => selectLanguage('vi')}
           >
             <Text style={styles.flag}>🇻🇳</Text>
-            <Text style={styles.languageName}>Tiếng Việt</Text>
+            <Text style={styles.languageName}>{t("vietnamese")}</Text>
             {selectedLang === 'vi' && (
               <AntDesign name="check" size={18} color="green" />
             )}
@@ -140,7 +140,7 @@ const Setting = () => {
             onPress={() => selectLanguage('en')}
           >
             <Text style={styles.flag}>🇬🇧</Text>
-            <Text style={styles.languageName}>English</Text>
+            <Text style={styles.languageName}>{t("english")}</Text>
             {selectedLang === 'en' && (
               <AntDesign name="check" size={18} color="green" />
             )}
@@ -150,14 +150,14 @@ const Setting = () => {
 
       <Modalize ref={modalCountryRef} adjustToContentHeight>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Chọn quốc gia</Text>
+          <Text style={styles.title}>{t("selectCountry")}</Text>
 
           <TouchableOpacity
             style={styles.languageItem}
             onPress={() => selectCountry('vi')}
           >
             <Text style={styles.flag}>🇻🇳</Text>
-            <Text style={styles.languageName}>Tiếng Việt</Text>
+            <Text style={styles.languageName}>{t("vietnam")}</Text>
             {selectedCountry === 'vi' && (
               <AntDesign name="check" size={18} color="green" />
             )}
@@ -167,7 +167,7 @@ const Setting = () => {
             onPress={() => selectCountry('my')}
           >
             <Text style={styles.flag}>🇬🇧</Text>
-            <Text style={styles.languageName}>English</Text>
+            <Text style={styles.languageName}>{t("america")}</Text>
             {selectedCountry === 'my' && (
               <AntDesign name="check" size={18} color="green" />
             )}

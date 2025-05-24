@@ -260,6 +260,7 @@ const BookingScreen = () => {
       try {
         const date = selectedDay.format("YYYY-MM-DD");
         const menuIdParam = parsedSelectedMenu ? parsedSelectedMenu.id : null;
+        console.log("dataa: ", date + " | " + address + " | " + numPeople + " | " + menuIdParam + " | " + dishIds);
         const response = await axiosInstance.get(
           `/availability/chef/${chefId}/single-date`,
           {
@@ -284,7 +285,6 @@ const BookingScreen = () => {
             },
           }
         );
-
         setAvailability(response.data);
       } catch (error) {
         console.error(

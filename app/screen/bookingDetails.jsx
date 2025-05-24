@@ -457,6 +457,42 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
   },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 8,
+    width: 150,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#666",
+    flex: 1,
+  },
 });
 
 export default BookingDetailScreen;

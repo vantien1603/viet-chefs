@@ -431,6 +431,12 @@ export default function RootLayout() {
                       headerShown: false,
                     }}
                   />
+                  <Stack.Screen
+                    name="screen/walletRequest"
+                    options={{
+                      headerShown: false,
+                    }}
+                  />
                 </Stack>
               </ModalNotiProvider>
             </ModalProvider>

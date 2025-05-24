@@ -9,27 +9,45 @@ function CustomTabBar({ state, descriptors, navigation }) {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const axiosInstance = useAxios();
 
+  let interval = null; // Đặt ngoài useEffect để có thể dùng ở mọi nơi trong component
+
   const fetchUnreadMessageCount = async () => {
     try {
       const response = await axiosInstance.get("/notifications/my/count");
-      setUnreadMessageCount(response.data.chatNoti);
+      const count = response.data.chatNoti ?? 0;
+      setUnreadMessageCount(count);
+
+      if (count === 0 && interval) {
+        clearInterval(interval);
+        interval = null; // reset
+      }
     } catch (error) {
-      console.error("Error fetching unread message count:", error);
+      console.log("Error fetching unread message count:", error);
     }
   };
 
   useEffect(() => {
-    fetchUnreadMessageCount();
+    fetchUnreadMessageCount(); // gọi lần đầu
+
+    interval = setInterval(() => {
+      fetchUnreadMessageCount(); // gọi lặp lại mỗi 3s
+    }, 3000);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, []);
 
   const handleUpdate = async () => {
     try {
       await axiosInstance.put("/notifications/my-chat");
-      fetchUnreadMessageCount();
+      fetchUnreadMessageCount(); // gọi lại sau khi cập nhật
     } catch (error) {
-      console.error("Error fetching unread message count:", error);
+      console.log("Error updating notifications:", error);
     }
-  }
+  };
 
   useEffect(() => {
     const restrictedScreens = ["chat", "history"];
@@ -93,7 +111,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     </Text>
                   </View>
                 )}
-                
               </TouchableOpacity>
             </View>
           );

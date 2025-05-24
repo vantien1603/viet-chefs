@@ -15,6 +15,7 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Dropdown } from "react-native-element-dropdown";
 import useAxios from "../../config/AXIOS_API";
+import { t } from "i18next";
 
 const UpdateBookingDetailScreen = () => {
   const { bookingDetailId, chefId } = useLocalSearchParams();
@@ -242,7 +243,7 @@ const UpdateBookingDetailScreen = () => {
       {selectedDishes.some((dish) => dish.dishId === item.id) && (
         <TextInput
           style={styles.input}
-          placeholder="Notes"
+          placeholder={t("note")}
           value={
             selectedDishes.find((dish) => dish.dishId === item.id)?.notes || ""
           }
@@ -254,17 +255,17 @@ const UpdateBookingDetailScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Update Booking Detail" />
+      <Header title={t("updateBookingDetail")} />
       <ScrollView style={{ padding: 20 }}>
         {/* Menu Dropdown */}
-        <Text style={styles.sectionTitle}>Select Menu</Text>
+        <Text style={styles.sectionTitle}>{t("selectMenu")}</Text>
         <View style={styles.dropdownContainer}>
           <Dropdown
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
             selectedTextStyle={styles.selectedTextStyle}
             data={[
-              { label: "Select a menu", value: null },
+              { label: t("selectAMenu"), value: null },
               ...menus.map((menu) => ({
                 label: menu.name || `Menu ${menu.id}`,
                 value: menu.id,
@@ -272,7 +273,7 @@ const UpdateBookingDetailScreen = () => {
             ]}
             labelField="label"
             valueField="value"
-            placeholder="Select a menu"
+            placeholder={t("selectAMenu")}
             value={selectedMenu}
             onChange={(item) => {
               setSelectedMenu(item.value);
@@ -289,7 +290,7 @@ const UpdateBookingDetailScreen = () => {
         {/* Dishes của Menu (chỉ hiển thị khi chọn menu) */}
         {selectedMenu && (
           <>
-            <Text style={styles.sectionTitle}>Dishes in Menu</Text>
+            <Text style={styles.sectionTitle}>{t("dishesInMenu")}</Text>
             {menuDishes.length > 0 ? (
               <FlatList
                 data={menuDishes}
@@ -298,7 +299,7 @@ const UpdateBookingDetailScreen = () => {
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.noDataText}>No dishes in this menu</Text>
+              <Text style={styles.noDataText}>{t("noDishesInMenu")}</Text>
             )}
           </>
         )}
@@ -306,7 +307,7 @@ const UpdateBookingDetailScreen = () => {
         {/* Extra Dishes (chỉ hiển thị khi chọn menu) */}
         {selectedMenu && (
           <>
-            <Text style={styles.sectionTitle}>Select Extra Dishes</Text>
+            <Text style={styles.sectionTitle}>{t("selectExtraDishes")}</Text>
             {extraDishes.length > 0 ? (
               <FlatList
                 data={extraDishes}
@@ -315,7 +316,7 @@ const UpdateBookingDetailScreen = () => {
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.noDataText}>No extra dishes available</Text>
+              <Text style={styles.noDataText}>{t("noExtraDishes")}</Text>
             )}
           </>
         )}
@@ -323,7 +324,7 @@ const UpdateBookingDetailScreen = () => {
         {/* Dishes (chỉ hiển thị khi không chọn menu) */}
         {!selectedMenu && (
           <>
-            <Text style={styles.sectionTitle}>Select Dishes</Text>
+            <Text style={styles.sectionTitle}>{t("selectDishes")}</Text>
             {allDishes.length > 0 ? (
               <FlatList
                 data={allDishes}
@@ -332,7 +333,7 @@ const UpdateBookingDetailScreen = () => {
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.noDataText}>No dishes available</Text>
+              <Text style={styles.noDataText}>{t("noDishesAvailable")}</Text>
             )}
           </>
         )}
@@ -346,7 +347,7 @@ const UpdateBookingDetailScreen = () => {
         {loading ? (
           <ActivityIndicator size="small" color="white" />
         ) : (
-          <Text style={styles.doneButtonText}>Done</Text>
+          <Text style={styles.doneButtonText}>{t("done")}</Text>
         )}
       </TouchableOpacity>
 

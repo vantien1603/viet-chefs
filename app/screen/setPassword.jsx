@@ -6,6 +6,7 @@ import { PasswordInput } from '../../components/PasswordInput/passwordInput';
 import { commonStyles } from '../../style';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AXIOS_BASE from '../../config/AXIOS_BASE';
+import { t } from 'i18next';
 
 const SetPassword = () => {
     const { username, fullName, phone, mail, mode } = useLocalSearchParams();
@@ -54,17 +55,17 @@ const SetPassword = () => {
     }
     return (
         <SafeAreaView style={commonStyles.containerContent}>
-            <Header title={"Set password"} />
+            <Header title={t("setPassword")} />
             <View>
                 <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 20 }}>
-                    Please enter your password. This password will be used for future logins
+                    {t("enterPassword")}
                 </Text>
                 <PasswordInput
-                    placeholder="Password"
+                    placeholder={t("password")}
                     onPasswordChange={handlePasswordChange}
                 />
                 <PasswordInput
-                    placeholder="Re-enter password"
+                    placeholder={t("rePassword")}
                     onPasswordChange={handleRePasswordChange}
                 />
             </View>
@@ -84,7 +85,7 @@ const SetPassword = () => {
                         fontSize: 18,
                         color: '#fff',
                         fontFamily: 'nunito-bold',
-                    }}>Next</Text>
+                    }}>{t("next")}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
