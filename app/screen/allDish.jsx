@@ -69,7 +69,7 @@ const AllDishScreen = () => {
         console.log('Request was cancelled');
         return;
       }
-      showModal("Error", "Có lỗi khi tải danh sách món ăn", "Failed", fetchDishes());
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách món ăn", t("modal.failed"), fetchDishes());
     } finally {
       setLoading(false);
       if (isRefresh) setRefresh(false);
@@ -93,7 +93,7 @@ const AllDishScreen = () => {
       }
       setLocation(newLocation);
     } catch (error) {
-      showModal("Error", "Có lỗi khi tải địa chỉ.", "Failed");
+      showModal(t("modal.error"), "Có lỗi khi tải địa chỉ.", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -191,7 +191,7 @@ const AllDishScreen = () => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm món ăn..."
+            placeholder={t("search")}
             value={searchQuery}
             onChangeText={handleSearch}
             autoFocus={true}

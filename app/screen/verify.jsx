@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import Header from "../../components/header";
 import useAxiosBase from "../../config/AXIOS_BASE";
+import { t } from "i18next";
 
 const VerifyScreen = () => {
   const router = useRouter();
@@ -63,7 +64,7 @@ const VerifyScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xác mình.", "Failed");
+      showModal(t("modal.error"), t("verifyFailed"), t("modal.failed"));
     }
   };
 
@@ -73,7 +74,7 @@ const VerifyScreen = () => {
         `/resend-code?email=${encodeURIComponent(mail)}`
       );
       if (response.status === 200) {
-        showModal("Success", "Resend code. Please check your email.", "Success");
+        showModal(t("modal.success"), t("resendCode"), t("modal.success"));
 
       }
     } catch (error) {
@@ -84,7 +85,7 @@ const VerifyScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={"Verify account"} />
+      <Header title={t("verifyAccount")} />
       <View style={commonStyles.containerContent}>
         {/* <Image
           source={require("../../assets/images/logo.png")}
@@ -92,8 +93,7 @@ const VerifyScreen = () => {
           resizeMode="cover"
         /> */}
         <Text style={{ textAlign: "center", fontSize: 16, fontWeight: "600" }}>
-          Please enter the 4-digit verification code that has been sent to the
-          phone number
+          {t("enter4digit")}
         </Text>
 
         <View style={styles.inputCode}>
@@ -117,7 +117,7 @@ const VerifyScreen = () => {
           onPress={handleSendAgain}
         >
           <Text style={{ color: "#383737", fontSize: 16 }}>
-            Not receive code? Send again
+            {t("notReceiveCode")}
           </Text>
         </TouchableOpacity>
         <View style={commonStyles.mainButtonContainer}>
@@ -125,7 +125,7 @@ const VerifyScreen = () => {
             onPress={() => handleVerify()}
             style={commonStyles.mainButton}
           >
-            <Text style={commonStyles.textMainButton}>VERIFY</Text>
+            <Text style={commonStyles.textMainButton}>{t("verify")}</Text>
           </TouchableOpacity>
         </View>
       </View>

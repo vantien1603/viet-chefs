@@ -29,8 +29,6 @@ import { useModalLogin } from "../../context/modalLoginContext";
 
 
 const ChefDetail = () => {
-  const [expandedBio, setExpandedBio] = useState(false);
-  const [expandedDesc, setExpandedDesc] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [dishes, setDishes] = useState([]);
   const [chefs, setChefs] = useState(null);
@@ -72,13 +70,14 @@ const ChefDetail = () => {
       const response = await axiosInstance.get(`/chefs/${chefId}`);
       if (response.status === 200) {
         setChefs(response.data);
+        console.log("chef data", response.data);
       }
     } catch (error) {
       if (axios.isCancel(error)) {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
+      showModal(t("modal.error"), t("errors.fetchChefError"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -96,7 +95,7 @@ const ChefDetail = () => {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
+      showModal(t("modal.error"), t("errors.fetchDishesError"), t("modal.failed"));
 
     } finally {
       setLoading(false);
@@ -127,7 +126,7 @@ const ChefDetail = () => {
 
   const toggleFavorite = async (chefId) => {
     if (isGuest) {
-      showModalLogin("Login required!", "Bạn cần đăng nhập để sử dụng tính năng này", true);
+      showModalLogin(t("loginRequired"), t("loginRequiredMessage"), true);
       return;
     }
     setFavoriteLoading(true);
@@ -145,11 +144,12 @@ const ChefDetail = () => {
         setFavorites(true);
       }
     } catch (err) {
-      let errorMessage =
+      const action = favorites ? t("removing") : t("adding");
+      const preposition = favorites ? t("from") : t("to");
+      const errorMessage =
         err.response?.data?.message ||
-        `Lỗi khi ${favorites ? "xóa đầu bếp khỏi" : "thêm đầu bếp vào"
-        } danh sách yêu thích.`;
-      showModal("Error", errorMessage, "Failed");
+        t("errors.toggleFavoriteError", { action, preposition });
+      showModal(t("modal.error"), errorMessage, t("modal.failed"));
     } finally {
       setFavoriteLoading(false);
     }
@@ -401,13 +401,13 @@ const ChefDetail = () => {
                 popover={
                   <View style={{ padding: 4 }}>
                     <Text style={{ marginBottom: 4 }}>
-                      Choose the type of booking you want.
+                      {t("tooltip.title")}
                     </Text>
                     <Text style={{ marginBottom: 4 }}>
-                      <Text style={{ fontWeight: 'bold' }}>Regular booking:</Text> Choose dishes or menu for 1 meal according to your schedule.
+                      <Text style={{ fontWeight: 'bold' }}>{t("tooltip.regularBooking")}</Text> 
                     </Text>
                     <Text>
-                      <Text style={{ fontWeight: 'bold' }}>Long-term booking:</Text> Experience the service on many selected days. You can flexibly change dishes/menu before the booking date.
+                      <Text style={{ fontWeight: 'bold' }}>{t("tooltip.longTermBooking")}</Text>
                     </Text>
                   </View>
                 }

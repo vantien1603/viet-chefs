@@ -21,7 +21,20 @@ import { useCommonNoification } from "../../context/commonNoti";
 import { useSelectedItems } from "../../context/itemContext";
 
 const ConfirmBookingScreen = () => {
-  const { selectedMenu, selectedDishes, extraDishIds, selectedDay, specialRequest, numPeople, startTime, dishNotes, ingredientPrep, address, chefId, setTotalPrice } = useSelectedItems();
+  const {
+    selectedMenu,
+    selectedDishes,
+    extraDishIds,
+    selectedDay,
+    specialRequest,
+    numPeople,
+    startTime,
+    dishNotes,
+    ingredientPrep,
+    address,
+    chefId,
+    setTotalPrice,
+  } = useSelectedItems();
   const axiosInstance = useAxios();
   const [calcuResult, setCalcuResult] = useState({});
   const [loading, setLoading] = useState(false);
@@ -30,12 +43,14 @@ const ConfirmBookingScreen = () => {
   const { showModal } = useCommonNoification();
   const allDishes = [
     ...(selectedMenu?.menuItems || []),
-    ...(selectedMenu ? Object.values(extraDishIds || {}) : Object.values(selectedDishes || {})),
+    ...(selectedMenu
+      ? Object.values(extraDishIds || {})
+      : Object.values(selectedDishes || {})),
   ];
 
   useEffect(() => {
     fetchCalculatorBooking();
-  }, [])
+  }, []);
 
   const fetchCalculatorBooking = async () => {
     setLoading(true);
@@ -52,28 +67,37 @@ const ConfirmBookingScreen = () => {
             // Object.keys(extraDishIds).length > 0
             selectedMenu
               ? Object.keys(extraDishIds).map((key) => extraDishIds[key].id)
-              : Object.keys(selectedDishes).map((key) => selectedDishes[key].id),
+              : Object.keys(selectedDishes).map(
+                  (key) => selectedDishes[key].id
+                ),
           dishes: null,
           chefBringIngredients: ingredientPrep === "chef",
         },
       };
-      const response = await axiosInstance.post("/bookings/calculate-single-booking", payload);
+      const response = await axiosInstance.post(
+        "/bookings/calculate-single-booking",
+        payload
+      );
       console.log("response conculator", response.data);
-      setCalcuResult(response.data)
+      setCalcuResult(response.data);
     } catch (error) {
       if (axios.isCancel(error) || error.response.status === 401) {
         return;
       }
-      showModal("Error", error.response.data.message, "Failed");
+      showModal(
+        t("modal.error"),
+        error.response.data.message,
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
-  }
+  };
   const handleKeepBooking = async () => {
     setLoading(true);
     try {
-      const selectedDishIds = allDishes.map((dish) => dish.id || dish.dishId); console.log("measd", selectedMenu);
-
+      const selectedDishIds = allDishes.map((dish) => dish.id || dish.dishId);
+      console.log("measd", selectedMenu);
 
       const payload = {
         customerId: user?.userId,
@@ -100,15 +124,19 @@ const ConfirmBookingScreen = () => {
               dishId: dishId,
               notes: dishNotes[dishId] || null,
             })),
-            chefBringIngredients: ingredientPrep === "chef"
+            chefBringIngredients: ingredientPrep === "chef",
           },
         ],
       };
       const response = await axiosInstance.post("/bookings", payload);
       if (response.status === 201 || response.status === 200) {
-        showModal("Success", "Booking confirmed successfully!", "Success");
+        showModal(
+          t("modal.success"),
+          t("bookingConfirmed"),
+          t("modal.success")
+        );
       }
-      setTotalPrice(calcuResult.totalPrice)
+      setTotalPrice(calcuResult.totalPrice);
       router.replace({
         pathname: "/screen/paymentBooking",
         params: {
@@ -119,7 +147,11 @@ const ConfirmBookingScreen = () => {
       if (axios.isCancel(error) || error.response.status === 401) {
         return;
       }
-      showModal("Error", error.response.data.message, "Failed");
+      showModal(
+        t("modal.error"),
+        error.response.data.message,
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -127,7 +159,7 @@ const ConfirmBookingScreen = () => {
 
   const handleBack = () => {
     router.replace("/screen/booking");
-  }
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
@@ -150,7 +182,9 @@ const ConfirmBookingScreen = () => {
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{address?.address}</Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+              {address?.address}
+            </Text>
           </View>
         </View>
 
@@ -170,7 +204,9 @@ const ConfirmBookingScreen = () => {
             <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
-              <Text style={styles.details}>{selectedDay && selectedDay.format("YYYY-MM-DD")}</Text>
+              <Text style={styles.details}>
+                {selectedDay && selectedDay.format("YYYY-MM-DD")}
+              </Text>
             </View>
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
@@ -209,7 +245,9 @@ const ConfirmBookingScreen = () => {
               <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("totalNumberOfDishes")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("totalNumberOfDishes")}
+              </Text>
               <Text style={styles.details}>{allDishes.length}</Text>
             </View>
             {selectedMenu && (
@@ -219,52 +257,79 @@ const ConfirmBookingScreen = () => {
                   <Text style={styles.details}>{selectedMenu.name}</Text>
                 </View>
                 {selectedMenu.menuItems.map((item, idx) => (
-                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                  <View
+                    key={idx}
+                    style={{ alignItems: "flex-end", paddingHorizontal: 5 }}
+                  >
                     <Text style={styles.dishName}>{item.dishName}</Text>
                   </View>
-                )
-                )}
+                ))}
               </View>
             )}
-            <View style={{ flexDirection: 'row', padding: 5, justifyContent: 'space-evenly' }}>
+            <View
+              style={{
+                flexDirection: "row",
+                padding: 5,
+                justifyContent: "space-evenly",
+              }}
+            >
               {/* <View style={styles.row}> */}
-              <Text style={{ fontSize: 14, flex: 1 }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {selectedMenu ? "Side dish" : t("dishList")}
+              </Text>
               {/* </View> */}
               <View>
-                {selectedMenu ? (
-                  Object.keys(extraDishIds).map((key, idx) => (
-                    <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                      <Text style={styles.dishName}>{extraDishIds[key].name}</Text>
-                    </View>
-                  ))) : (
-                  Object.keys(selectedDishes).map((key, idx) => (
-                    <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                      <Text style={styles.dishName}>{selectedDishes[key].name}</Text>
-                    </View>
-                  )))
-                }
+                {selectedMenu
+                  ? Object.keys(extraDishIds).map((key, idx) => (
+                      <View
+                        key={idx}
+                        style={{ alignItems: "flex-end", paddingHorizontal: 5 }}
+                      >
+                        <Text style={styles.dishName}>
+                          {extraDishIds[key].name}
+                        </Text>
+                      </View>
+                    ))
+                  : Object.keys(selectedDishes).map((key, idx) => (
+                      <View
+                        key={idx}
+                        style={{ alignItems: "flex-end", paddingHorizontal: 5 }}
+                      >
+                        <Text style={styles.dishName}>
+                          {selectedDishes[key].name}
+                        </Text>
+                      </View>
+                    ))}
               </View>
             </View>
 
             <View style={styles.row}>
               <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
               <Text style={styles.details}>
-                {ingredientPrep === "customer" ? t("IWillPrepareIngredients") : t("chefWillPrepareIngredients")}
+                {ingredientPrep === "customer"
+                  ? t("IWillPrepareIngredients")
+                  : t("chefWillPrepareIngredients")}
               </Text>
             </View>
             <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
               {t("feeDetails")}
             </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("chefCookingFee")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("chefCookingFee")}
+              </Text>
               <Text style={styles.details}>${calcuResult.chefCookingFee}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("priceOfDishes")}</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("priceOfDishes")}
+              </Text>
               <Text style={styles.details}>${calcuResult.priceOfDishes}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("arrivalFee")} ({calcuResult.distanceKm} km)</Text>
+              <Text style={{ fontSize: 14, flex: 1 }}>
+                {t("arrivalFee")} ({calcuResult.distanceKm} km)
+              </Text>
               <Text style={styles.details}>${calcuResult.arrivalFee}</Text>
             </View>
             <View style={styles.row}>
@@ -306,10 +371,12 @@ const ConfirmBookingScreen = () => {
               {t("total")}:
             </Text>
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-              {calcuResult.totalPrice && calcuResult.totalPrice?.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              }) || "$0"}
+              {(calcuResult.totalPrice &&
+                calcuResult.totalPrice?.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })) ||
+                "$0"}
             </Text>
           </View>
         </View>

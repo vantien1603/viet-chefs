@@ -41,25 +41,31 @@ const ResetPasswordScreen = () => {
 
   const handleReset = async () => {
     if (!newPassword || !confirmPassword) {
-      showModal("Error", "Please enter and confirm your new password.", "Failed")
+      showModal(t("modal.error"), t("errors.emptyPassword"), t("modal.failed"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showModal("Error", "Passwords do not match.", "Failed")
-
+      showModal(
+        t("modal.error"),
+        t("errors.passwordMismatch"),
+        t("modal.failed")
+      );
       return;
     }
 
     const token = code.join("");
 
     if (token.length !== 4) {
-      showModal("Error", "Please enter the 4-digit token.", "Failed")
+      showModal(
+        t("modal.error"),
+        t("errors.invalidToken"),
+        t("modal.failed")
+      );
 
       return;
     }
     console.log("Sending data:", { email, newPassword, token });
-
 
     try {
       const response = await AXIOS_BASE.post("/reset-password", {
@@ -68,7 +74,11 @@ const ResetPasswordScreen = () => {
         token,
       });
       if (response.status === 200) {
-        showModal("Success", "Password reset successfully!", "Success")
+        showModal(
+          t("modal.success"),
+          t("resetPasswordSuccess"),
+          t("modal.succeeded")
+        );
 
         router.push("/screen/login");
       }
@@ -79,13 +89,17 @@ const ResetPasswordScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình đặt lại mật khẩu.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.resetPasswordFailed"),
+        t("modal.failed")
+      );
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={"Reset Password"} />
+      <Header title={t("resetPassword")} />
       <Text style={styles.description}>
         {t("wehaveSentACodeToYourEmail")}
         <Text style={{ fontWeight: "bold" }}>{email}</Text>
@@ -109,7 +123,7 @@ const ResetPasswordScreen = () => {
           onChangeText={setConfirmPassword}
         />
 
-        <Text style={styles.label}>Token</Text>
+        <Text style={styles.label}>{t("token")}</Text>
         <View style={styles.inputCodeContainer}>
           {code.map((digit, index) => (
             <TextInput

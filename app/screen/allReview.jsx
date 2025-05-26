@@ -20,6 +20,7 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { t } from "i18next";
 
 const AllReview = () => {
   const axiosInstance = useAxios();
@@ -36,10 +37,10 @@ const AllReview = () => {
   const [customReason, setCustomReason] = useState("");
   const [reasonDetail, setReasonDetail] = useState("");
   const predefinedReasons = [
-    "Misleading or False Information",
-    "Disrespectful or Offensive Language",
-    "Unprofessional Behavior",
-    "Other",
+    t("predefinedReasons.misleading"),
+    t("predefinedReasons.offensive"),
+    t("predefinedReasons.unprofessional"),
+    t("predefinedReasons.other"),
   ];
   const [expanded, setExpanded] = useState(false);
   const toggleExpand = () => setExpanded(!expanded);
@@ -57,7 +58,7 @@ const AllReview = () => {
       });
     } catch (error) {
       console.log("Error fetching reviews:", error);
-      setError("Failed to load reviews. Please try again.");
+      setError(t("errors.failedToLoad"));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,10 @@ const AllReview = () => {
         return [...prev, reason];
       }
     });
-    if (reason === "Other" && selectedReasons.includes("Other")) {
+    if (
+      reason === t("predefinedReasons.other") &&
+      selectedReasons.includes(t("predefinedReasons.other"))
+    ) {
       setCustomReason("");
     }
   };
@@ -101,7 +105,7 @@ const AllReview = () => {
 
   const handleReport = async () => {
     if (!selectedReview || (!selectedReasons.length && !customReason.trim())) {
-      alert("Please select at least one reason or provide a custom reason.");
+      alert(t("errors.selectReason"));
       return;
     }
 
@@ -123,10 +127,10 @@ const AllReview = () => {
       const response = await axiosInstance.post("/reports/others", payload);
       console.log("Report submitted:", response.data);
       setModalVisible(false);
-      alert("Report submitted successfully.");
+      alert(t("reportSubmitted"));;
     } catch (error) {
       console.log("Error submitting report:", error);
-      alert("Failed to submit report. Please try again.");
+      alert(t("errors.failedToReport"));
     }
   };
 
@@ -174,20 +178,20 @@ const AllReview = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="My Reviews" />
+      <Header title={t("myReviews")} />
       <View style={styles.summaryContainer}>
         <View style={styles.row}>
           <FontAwesome5 name="user" size={24} color="black" />
           <View style={{ marginLeft: 10 }}>
             <Text style={styles.summaryText}>{reviewData.totalReviews}</Text>
-            <Text style={styles.label}>Reviews</Text>
+            <Text style={styles.label}>{t("reviews")}</Text>
           </View>
         </View>
         <View style={styles.row}>
           <AntDesign name="like1" size={24} color="black" />
           <View style={{ marginLeft: 10 }}>
             <Text style={styles.summaryText}>{reviewData.totalLikes}</Text>
-            <Text style={styles.label}>Likes</Text>
+            <Text style={styles.label}>{t("likes")}</Text>
           </View>
         </View>
       </View>
@@ -201,9 +205,9 @@ const AllReview = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Report Review</Text>
+            <Text style={styles.modalTitle}>{t("reportReview")}</Text>
             <View style={styles.reasonContainer}>
-              <Text style={styles.reasonLabel}>Select Reasons:</Text>
+              <Text style={styles.reasonLabel}>{t("selectReasons")}:</Text>
               <View style={styles.reasonButtonContainer}>
                 {predefinedReasons.map((reason) => (
                   <TouchableOpacity
@@ -211,7 +215,7 @@ const AllReview = () => {
                     style={[
                       styles.reasonButton,
                       selectedReasons.includes(reason) &&
-                      styles.reasonButtonSelected,
+                        styles.reasonButtonSelected,
                     ]}
                     onPress={() => handleReasonSelect(reason)}
                   >
@@ -219,7 +223,7 @@ const AllReview = () => {
                       style={[
                         styles.reasonButtonText,
                         selectedReasons.includes(reason) &&
-                        styles.reasonButtonTextSelected,
+                          styles.reasonButtonTextSelected,
                       ]}
                     >
                       {reason}
@@ -227,19 +231,19 @@ const AllReview = () => {
                   </TouchableOpacity>
                 ))}
               </View>
-              {selectedReasons.includes("Other") && (
+              {selectedReasons.includes(t("predefinedReasons.other")) && (
                 <TextInput
                   style={styles.input}
-                  placeholder="Please specify the reason"
+                  placeholder={t("placeholders.customReason")}
                   value={customReason}
                   onChangeText={setCustomReason}
-                  editable={selectedReasons.includes("Other")}
+                  editable={selectedReasons.includes(t("predefinedReasons.other"))}
                 />
               )}
             </View>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Additional Details"
+              placeholder={t("placeholders.additionalDetails")}
               value={reasonDetail}
               onChangeText={setReasonDetail}
               multiline
@@ -250,13 +254,13 @@ const AllReview = () => {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={styles.modalButtonText}>{t("cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.submitButton]}
                 onPress={handleReport}
               >
-                <Text style={styles.modalButtonText}>Submit</Text>
+                <Text style={styles.modalButtonText}>{t("submit")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -289,9 +293,13 @@ const AllReview = () => {
               <View style={styles.responseBox}>
                 <TouchableOpacity
                   onPress={toggleExpand}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
                 >
-                  <Text style={styles.responseTitle}>Phản hồi từ đầu bếp:</Text>
+                  <Text style={styles.responseTitle}>{t("responseFromChef")}:</Text>
                   <MaterialIcons
                     name={expanded ? "arrow-drop-up" : "arrow-drop-down"}
                     size={24}
@@ -308,13 +316,13 @@ const AllReview = () => {
                 style={styles.reportButton}
                 onPress={() => openReportModal(item)}
               >
-                <Text style={styles.reportText}>Report</Text>
+                <Text style={styles.reportText}>{t("report")}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         ))
       ) : (
-        <Text style={styles.noReviews}>No reviews yet.</Text>
+        <Text style={styles.noReviews}>{t("noReviews")}</Text>
       )}
     </SafeAreaView>
   );

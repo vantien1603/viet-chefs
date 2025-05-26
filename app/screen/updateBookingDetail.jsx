@@ -17,6 +17,7 @@ import { Dropdown } from "react-native-element-dropdown";
 import useAxios from "../../config/AXIOS_API";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
+import { t } from "i18next";
 
 const UpdateBookingDetailScreen = () => {
   const { bookingDetailId, chefId } = useLocalSearchParams();
@@ -49,7 +50,7 @@ console.log("cc", chefId);
         if (axios.isCancel(error)) {
           return;
         }
-        showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách menu.", "Failed");
+        showModal(t("modal.error"), t("errors.fetchMenusFailed"), t("modal.failed"));
       }
     };
     fetchMenus();
@@ -84,7 +85,7 @@ console.log("cc", chefId);
           if (axios.isCancel(error)) {
             return;
           }
-          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+          showModal(t("modal.error"), t("errors.fetchDishFailed"), t("modal.failed"));
           setExtraDishes([]);
         }
       } else {
@@ -108,7 +109,7 @@ console.log("cc", chefId);
           if (axios.isCancel(error)) {
             return;
           }
-          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+          showModal(t("modal.error"), t("errors.fetchDishFailed"), t("modal.failed"));
           setAllDishes([]);
         }
       } else {
@@ -163,7 +164,7 @@ console.log("cc", chefId);
         calculateData
       );
 
-      // showModal("Success", "Calculation completed.", "Success");
+      // showModal(t("modal.success")success"), "Calculation compt("modal.success")t("modal.success"));
 
       const updateData = {
         dishes: selectedDishes,
@@ -192,7 +193,7 @@ console.log("cc", chefId);
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xử lí.", "Failed");
+      showModal(t("modal.error"), t("errors.calculateFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -239,7 +240,7 @@ console.log("cc", chefId);
       {selectedDishes.some((dish) => dish.dishId === item.id) && (
         <TextInput
           style={styles.input}
-          placeholder="Notes"
+          placeholder={t("note")}
           value={
             selectedDishes.find((dish) => dish.dishId === item.id)?.notes || ""
           }
@@ -251,17 +252,17 @@ console.log("cc", chefId);
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Update Booking Detail" />
+      <Header title={t("updateBookingDetail")} />
       <ScrollView style={{ padding: 20 }}>
         {/* Menu Dropdown */}
-        <Text style={styles.sectionTitle}>Select Menu</Text>
+        <Text style={styles.sectionTitle}>{t("selectMenu")}</Text>
         <View style={styles.dropdownContainer}>
           <Dropdown
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
             selectedTextStyle={styles.selectedTextStyle}
             data={[
-              { label: "Select a menu", value: null },
+              { label: t("selectAMenu"), value: null },
               ...menus.map((menu) => ({
                 label: menu.name || `Menu ${menu.id}`,
                 value: menu.id,
@@ -269,7 +270,7 @@ console.log("cc", chefId);
             ]}
             labelField="label"
             valueField="value"
-            placeholder="Select a menu"
+            placeholder={t("selectAMenu")}
             value={selectedMenu}
             onChange={(item) => {
               setSelectedMenu(item.value);
@@ -286,7 +287,7 @@ console.log("cc", chefId);
         {/* Dishes của Menu (chỉ hiển thị khi chọn menu) */}
         {selectedMenu && (
           <>
-            <Text style={styles.sectionTitle}>Dishes in Menu</Text>
+            <Text style={styles.sectionTitle}>{t("dishesInMenu")}</Text>
             {menuDishes.length > 0 ? (
               <FlatList
                 data={menuDishes}
@@ -295,7 +296,7 @@ console.log("cc", chefId);
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.noDataText}>No dishes in this menu</Text>
+              <Text style={styles.noDataText}>{t("noDishesInMenu")}</Text>
             )}
           </>
         )}
@@ -303,7 +304,7 @@ console.log("cc", chefId);
         {/* Extra Dishes (chỉ hiển thị khi chọn menu) */}
         {selectedMenu && (
           <>
-            <Text style={styles.sectionTitle}>Select Extra Dishes</Text>
+            <Text style={styles.sectionTitle}>{t("selectExtraDishes")}</Text>
             {extraDishes.length > 0 ? (
               <FlatList
                 data={extraDishes}
@@ -312,7 +313,7 @@ console.log("cc", chefId);
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.noDataText}>No extra dishes available</Text>
+              <Text style={styles.noDataText}>{t("noExtraDishes")}</Text>
             )}
           </>
         )}
@@ -320,7 +321,7 @@ console.log("cc", chefId);
         {/* Dishes (chỉ hiển thị khi không chọn menu) */}
         {!selectedMenu && (
           <>
-            <Text style={styles.sectionTitle}>Select Dishes</Text>
+            <Text style={styles.sectionTitle}>{t("selectDishes")}</Text>
             {allDishes.length > 0 ? (
               <FlatList
                 data={allDishes}
@@ -329,7 +330,7 @@ console.log("cc", chefId);
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.noDataText}>No dishes available</Text>
+              <Text style={styles.noDataText}>{t("noDishesAvailable")}</Text>
             )}
           </>
         )}
@@ -343,7 +344,7 @@ console.log("cc", chefId);
         {loading ? (
           <ActivityIndicator size="small" color="white" />
         ) : (
-          <Text style={styles.doneButtonText}>Done</Text>
+          <Text style={styles.doneButtonText}>{t("done")}</Text>
         )}
       </TouchableOpacity>
 

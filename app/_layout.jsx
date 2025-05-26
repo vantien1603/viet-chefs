@@ -10,7 +10,6 @@ import { ModalLoginProvider } from "../context/modalLoginContext";
 import { SelectedItemsProvider } from "../context/itemContext";
 import { SocketProvider } from "../config/SocketContext";
 
-
 export default function RootLayout() {
   return (
     <GestureHandlerRootView>
@@ -246,10 +245,11 @@ export default function RootLayout() {
                           options={{
                             headerShown: false,
                           }}
-                        /><Stack.Screen
+                        />
+                        <Stack.Screen
                           name="screen/updateBookingDetail"
                           options={{
-                            headerShown: false
+                            headerShown: false,
                           }}
                         />
 
@@ -421,6 +421,12 @@ export default function RootLayout() {
                             headerShown: false,
                           }}
                         />
+                        <Stack.Screen
+                          name="screen/walletRequest"
+                          options={{
+                            headerShown: false,
+                          }}
+                        />
                       </Stack>
                     </SelectedItemsProvider>
                   </ConfirmModalProvider>
@@ -430,7 +436,6 @@ export default function RootLayout() {
           </AuthProvider>
         </ModalProvider>
       </NetworkProvider>
-    </GestureHandlerRootView >
+    </GestureHandlerRootView>
   );
 }
-

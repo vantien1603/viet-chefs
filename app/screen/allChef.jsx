@@ -66,7 +66,7 @@ const AllChefs = () => {
       }
       setLocation(newLocation);
     } catch (error) {
-      showModal("Error", "Có lỗi khi tải địa chỉ.", "Failed");
+      showModal(t("modal.error"), "Có lỗi khi tải địa chỉ.", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -79,32 +79,11 @@ const AllChefs = () => {
       const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`);
       if (response.status === 200) setFavorite(response.data.content);
     } catch (error) {
-      showModal("Error", "Có lỗi khi tải danh sách đầu bếp yêu thích", "Failed");
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách đầu bếp yêu thích", t("modal.failed"));
     } finally {
       setLoading(false);
     }
   };
-
-  // const fetchChefs = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const response = await axiosInstance.get("/chefs");
-  //     setChefs(response.data.content);
-  //     console.log(response.data.content)
-  //   } catch (error) {
-  //     if (error.response?.status === 401) {
-  //       return;
-  //     }
-  //     if (axios.isCancel(error)) {
-  //       console.log('Request was cancelled');
-  //       return;
-  //     }
-  //     showModal("Error", "Có lỗi khi tải danh sách đầu bếp", "Failed");
-  //   }
-  //   finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const fetchChefs = async (page, isRefresh = false) => {
     if (loading && !isRefresh) return;
@@ -132,7 +111,7 @@ const AllChefs = () => {
 
     } catch (error) {
       if (!axios.isCancel(error)) return;
-      showModal("Error", "Có lỗi khi tải danh sách đầu bếp gần bạn.", "Failed");
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách đầu bếp gần bạn.", t("modal.failed"));
     } finally {
       setLoading(false);
       if (isRefresh) setRefresh(false);
@@ -204,7 +183,7 @@ const AllChefs = () => {
       <View style={styles.chefInfo}>
         <Text style={styles.chefName}>{item.user.fullName}</Text>
         <Text style={styles.chefSpecialization}>
-          {item.specialization || "Đầu bếp"}{" "}
+          {item.specialization || "Đầu bếp"}
         </Text>
         <Text style={styles.chefBio} numberOfLines={2}>
           {item?.bio}
@@ -231,39 +210,6 @@ const AllChefs = () => {
       />
     </TouchableOpacity>
   );
-
-  // if (loading) {
-  //   return (
-  //     <SafeAreaView style={styles.container}>
-  //       <Header title={t("allChefs")} />
-  //       <View style={styles.loadingContainer}>
-  //         <ActivityIndicator size="large" color="#e74c3c" />
-  //         <Text style={styles.loadingText}>{t("loadingChef")}</Text>
-  //       </View>
-  //     </SafeAreaView>
-  //   );
-  // }
-
-  // if (error) {
-  //   return (
-  //     <SafeAreaView style={styles.container}>
-  //       <Header title={t("allChefs")} />
-  //       <View style={styles.errorContainer}>
-  //         <Text style={styles.errorText}>{error}</Text>
-  //         <TouchableOpacity
-  //           style={styles.retryButton}
-  //           onPress={() => {
-  //             setError(null);
-  //             setLoading(true);
-  //             loadData();
-  //           }}
-  //         >
-  //           <Text style={styles.retryButtonText}>{t("tryAgain")}</Text>
-  //         </TouchableOpacity>
-  //       </View>
-  //     </SafeAreaView>
-  //   );
-  // }
 
   return (
     <SafeAreaView style={commonStyles.container}>

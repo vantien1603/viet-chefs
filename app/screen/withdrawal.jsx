@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, {  useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -16,6 +16,7 @@ import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useConfirmModal } from "../../context/commonConfirm";
 import axios from "axios";
+import { t } from "i18next";
 
 const WithdrawalScreen = () => {
   const params = useLocalSearchParams();
@@ -46,11 +47,10 @@ const WithdrawalScreen = () => {
     const amount = parseFloat(text);
 
     if (amount > balance) {
-      setError("Withdrawal amount is over the wallet balance.");
+      setError(t("amountOverBalance"));
     } else if (amount < 2) {
-      setError("Amount must be greater than 2");
-    }
-    else {
+      setError(t("amountTooLow"));
+    } else {
       setError("");
     }
   };
@@ -60,29 +60,33 @@ const WithdrawalScreen = () => {
   }, [withdrawAmount]);
 
   const handleWithdraw = () => {
-    showConfirm("Tạo yêu cầu rút tiền", `Bạn có chắc chắn muốn rút $${parseFloat(withdrawAmount).toFixed(
-      2
-    )} từ VietChef Wallet không?`,
+    showConfirm(
+      t("createWithdrawalRequest"),
+      t("confirmWithdrawal", {
+        amount: `$${parseFloat(withdrawAmount).toFixed(2)}`,
+      }),
       async () => {
         const payload = {
           userId: user.userId,
           requestType: "WITHDRAWAL",
           amount: parseFloat(withdrawAmount),
-          note: `Rút tiền từ ví VietChef`,
-        }
+          note: t("withdrawalNote"),
+        };
         try {
           const response = await axiosInstance.post("wallet-requests", payload);
           setWithdrawAmount("");
           console.log("Tạo yêu cầu thành công", response.data);
-          showModal("Thành công", "Bạn đã tạo yêu cầu rút tiền thành công");
+          showModal(t("modal.success"), t("withdrawalSuccess"));
         } catch (error) {
           if (axios.isCancel(error) || error.response.status === 401) return;
-          showModal("Error", error.response.data.message, "Failed");
+          showModal(
+            t("modal.error"),
+            error.response.data.message,
+            t("modal.failed")
+          );
         }
       }
-    )
-
-
+    );
   };
 
   const validateEmail = (email) => {
@@ -93,11 +97,11 @@ const WithdrawalScreen = () => {
   const toggleEditing = () => {
     if (isEditing) {
       if (!email) {
-        showModal("Error", "Email không được để trống", "Failed");
+        showModal(t("modal.error"), t("emailRequired"), t("modal.failed"));
         return;
       }
       if (!validateEmail(email)) {
-        showModal("Error", "Vui lòng nhập email hợp lệ", "Failed");
+        showModal(t("modal.error"), t("emailInvalid"), t("modal.failed"));
         return;
       }
       handleUpdateEmail(email);
@@ -114,35 +118,44 @@ const WithdrawalScreen = () => {
       console.log("email updated", response.data);
       setEmail(newEmail);
       setIsEditing(false);
-      showModal("Thành công", "Email PayPal đã được cập nhật");
+      showModal(t("modal.success"), t("updateEmailSuccess"));
     } catch (error) {
       if (axios.isCancel(error) || error.response.status === 401) return;
-      showModal("Error", error.response.data?.message, "Failed");
+      showModal(
+        t("modal.error"),
+        error.response.data?.message,
+        t("modal.failed")
+      );
     }
   };
 
   const handleBack = () => {
     router.replace("/screen/wallet");
-  }
+  };
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Withdrawal" onLeftPress={() => handleBack()} />
+      <Header
+        title="Withdrawal"
+        onLeftPress={() => handleBack()}
+        rightText={"Requests"}
+        onRightPress={() => router.push("screen/walletRequest")}
+      />
       <View style={styles.container}>
-        <Text style={styles.title}>Withdraw From</Text>
+        <Text style={styles.title}>{t("withdrawFrom")}</Text>
         <View style={styles.walletContainer}>
-          <Text style={styles.walletText}>VietChef Wallet</Text>
+          <Text style={styles.walletText}>{t("vietchefWallet")}</Text>
           <Text style={styles.balanceText}>${balance}</Text>
         </View>
         <View style={styles.emailContainer}>
-          <Text style={styles.label}>Paypal account email</Text>
+          <Text style={styles.label}>{t("paypalAccountEmail")}</Text>
           <View style={styles.row}>
             <TextInput
               style={styles.inputEmail}
               value={email}
               onChangeText={setEmail}
               editable={isEditing}
-              placeholder="Enter your PayPal email"
+              placeholder={t("enterPayPalEmail")}
               placeholderTextColor="#999"
             />
             <TouchableOpacity onPress={toggleEditing}>
@@ -155,7 +168,7 @@ const WithdrawalScreen = () => {
           </View>
         </View>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Withdraw amount</Text>
+          <Text style={styles.label}>{t("withdrawAmount")}</Text>
           <View style={{ position: "relative" }}>
             <TextInput
               style={styles.input}
@@ -204,7 +217,7 @@ const WithdrawalScreen = () => {
           onPress={handleWithdraw}
           disabled={isWithdraw}
         >
-          <Text style={styles.withdrawButtonText}>Withdraw</Text>
+          <Text style={styles.withdrawButtonText}>{t("withdraw")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

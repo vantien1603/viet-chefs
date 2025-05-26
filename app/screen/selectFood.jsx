@@ -25,7 +25,7 @@ const DishCard = ({ item, selectedList, onToggle, note, viewDetails }) => (
   <View style={[styles.dishCard, { flexDirection: 'row', alignItems: 'center', paddingRight: 50 }, selectedList[item.id] && styles.selectedDishes,]}>
     <TouchableOpacity onPress={() => onToggle()} style={{ flexDirection: 'row' }}>
       <Image
-        source={{ uri: item.imageUrl || "https://via.placeholder.com/80" }}
+        source={{ uri: item.imageUrl }}
         style={styles.image}
         resizeMode="cover"
       />
@@ -110,7 +110,7 @@ const SelectFood = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách menu", "Failed");
+      showModal(t("modal.error"), t("fetchMenusFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ const SelectFood = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
+      showModal(t("modal.error"), t("fetchDishesFailed"), t("modal.failed"));
       setDishes([]);
     } finally {
       setLoading(false);
@@ -177,7 +177,7 @@ const SelectFood = () => {
     const selectedDishesCount =
       Object.values(selectedDishes).filter(Boolean).length;
     if (selectedDishesCount > 0) {
-      showModal("Error", "Bạn phải bỏ chọn tất cả món ăn trước khi chọn menu.", "Failed");
+      showModal(t("modal.error"), t("menuSelectError"), t("modal.failed"));
       return;
     }
     setSelectedMenu((prev) => (prev?.id === menu.id ? null : menu));
@@ -187,7 +187,7 @@ const SelectFood = () => {
 
   const handleContinue = () => {
     if (!selectedMenu && selectedDishes.length === 0) {
-      showModal("Error", "Vui lòng chọn ít nhất một menu hoặc món ăn.", "Failed");
+      showModal(t("modal.error"), t("selectionRequired"), t("modal.failed"));
       return;
     }
     // router.push("/screen/booking");

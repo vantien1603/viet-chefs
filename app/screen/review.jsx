@@ -20,7 +20,7 @@ const ReviewScreen = () => {
   const params = useLocalSearchParams();
   const { bookingId, chefId } = params;
   const [criteria, setCriteria] = useState([]);
-  const [description, setDescription] = useState("");
+  const [overallExperience, setOverallExperience] = useState("");
   const [criteriaRatings, setCriteriaRatings] = useState({});
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,11 @@ const ReviewScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchCriteriaFailed"),
+        t("modal.failed")
+      );
     }
   };
 
@@ -70,7 +74,7 @@ const ReviewScreen = () => {
     );
 
     if (!hasAnyRating) {
-      showModal("Error", "Please rate at least one criterion.", "Failed");
+      showModal(t("modal.error"), t("errors.noRating"), t("modal.failed"));
       setLoading(false);
       return;
     }
@@ -78,14 +82,18 @@ const ReviewScreen = () => {
       const payload = {
         chefId: parseInt(chefId),
         bookingId: parseInt(bookingId),
-        overallExperience: description.trim() || "",
+        overallExperience: overallExperience.trim() || "",
         mainImage: null,
         additionalImages: [],
         criteriaRatings: { ...criteriaRatings },
       };
       const response = await axiosInstance.post("/reviews", payload);
       if (response.status === 200)
-        showModal("Success", "Review submitted successfully!", "Success");
+        showModal(
+          t("modal.success"),
+          t("submitReviewSuccess"),
+          t("modal.succeeded")
+        );
       fetchCriteria();
     } catch (error) {
       if (error.response?.status === 401) {
@@ -94,8 +102,12 @@ const ReviewScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal("Error", "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình nộp đánh giá.", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.submitReviewFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }

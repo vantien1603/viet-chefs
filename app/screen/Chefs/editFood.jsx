@@ -41,8 +41,8 @@ const EditFoodScreen = () => {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       Toast.show({
-        type: "error",
-        text1: "Error",
+        type: t("modal.error"),
+        text1: t("modal.error"),
         text2: "Please fill in all the required fields",
         position: "top",
       });
@@ -58,8 +58,8 @@ const EditFoodScreen = () => {
     });
 
     Toast.show({
-      type: "success",
-      text1: "Success",
+      type: t("modal.success"),
+      text1: t("modal.success"),
       text2: "Food updated successfully",
       position: "top",
     });

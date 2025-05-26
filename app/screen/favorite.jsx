@@ -64,7 +64,7 @@ const FavoriteScreen = () => {
       favoriteIds = favoriteIds.filter((id) => id !== chefId.toString());
       await AsyncStorage.setItem("favorites", JSON.stringify(favoriteIds));
 
-      Alert.alert(t("success"), t("removedFromFavorites"));
+      Alert.alert(t(t("modal.success")), t("removedFromFavorites"));
     } catch (error) {
       console.log(
         "Error removing favorite:",

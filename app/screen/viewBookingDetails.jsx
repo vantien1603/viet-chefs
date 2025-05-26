@@ -79,7 +79,7 @@ const ViewBookingDetailsScreen = () => {
       setBookingDetails(response.data.content || []);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", "Failed to load booking details", "Failed");
+      showModal(t("modal.error"), t("fetchBookingFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ const ViewBookingDetailsScreen = () => {
       setBookingStatus(response.data.status);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", "Failed to load booking status", "Failed");
+      showModal(t("modal.error"), t("fetchStatusFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -136,7 +136,7 @@ const ViewBookingDetailsScreen = () => {
         `/bookings/${bookingId}/deposit`
       );
       if (response.status === 200) {
-        showModal("Success", "Deposit successful", "Success");
+        showModal(t("modal.success"), t("depositSuccessMsg"), t("modal.success"));
         fetchBookingDetails();
       }
     } catch (error) {
@@ -146,8 +146,8 @@ const ViewBookingDetailsScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal("Error", "Failed to process deposit", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      // showModal(t("modal.error"), "Failed to process deposit", t("modal.failed"));
+      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
     } finally {
       setPayLoading(false);
     }
@@ -161,13 +161,13 @@ const ViewBookingDetailsScreen = () => {
         `/bookings/${bookingId}/payment`
       );
       if (response.status === 200) {
-        showModal(t("success"), t("paymentSuccessful"), "Success");
+        showModal(t(t("modal.success")), t("paymentSuccessful"), t("modal.success"));
         fetchBookingDetails();
       }
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
       if (error.response.data.message === "Insufficient balance in the wallet.") {
-        showModal(t("error"), error.response?.data.message, "Failed", null, [
+        showModal(t(t("modal.error")), error.response?.data.message, t("modal.failed"), null, [
           {
             label: "Cancel",
             onPress: () => console.log("Cancel pressed"),
@@ -180,7 +180,7 @@ const ViewBookingDetailsScreen = () => {
           }
         ])
       } else {
-        showModal(t("error"), error.response?.data.message, "Failed");
+        showModal(t(t("modal.error")), error.response?.data.message, t("modal.failed"));
       }
 
     } finally {
@@ -231,7 +231,7 @@ const ViewBookingDetailsScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={[commonStyles.container]}>
-        <Header title="Booking Details" />
+        <Header title={t("bookingDetails")} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="white" />
         </View>
@@ -242,10 +242,10 @@ const ViewBookingDetailsScreen = () => {
   if (!bookingDetails || bookingDetails.length === 0) {
     return (
       <SafeAreaView style={[commonStyles.container]}>
-        <Header title="Booking Details" />
+        <Header title={t("bookingDetails")} />
         <View style={styles.noDataContainer}>
           <MaterialIcons name="error-outline" size={40} color="#A64B2A" />
-          <Text style={styles.noDataText}>No booking details available</Text>
+          <Text style={styles.noDataText}>{t("noBookingDetails")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -254,40 +254,40 @@ const ViewBookingDetailsScreen = () => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={[commonStyles.container]}>
-        <Header title="Booking Details" />
+        <Header title={t("bookingDetails")} />
         <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContent}>
           {bookingDetails.map((detail, index) => (
             <React.Fragment key={detail.id || index}>
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Booking Information</Text>
+                <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
                 <View style={styles.detailRow}>
                   <MaterialIcons
                     name="calendar-today"
                     size={18}
                     color="#A64B2A"
                   />
-                  <Text style={styles.detailLabel}>Session Date:</Text>
+                  <Text style={styles.detailLabel}>{t("sessionDate")}:</Text>
                   <Text style={styles.detailValue}>
                     {detail.sessionDate || "N/A"}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <MaterialIcons name="access-time" size={18} color="#A64B2A" />
-                  <Text style={styles.detailLabel}>Start Time:</Text>
+                  <Text style={styles.detailLabel}>{t("startTime")}:</Text>
                   <Text style={styles.detailValue}>
                     {formatTime(detail.startTime)}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <MaterialIcons name="location-on" size={18} color="#A64B2A" />
-                  <Text style={styles.detailLabel}>Location:</Text>
+                  <Text style={styles.detailLabel}>{t("location")}:</Text>
                   <Text style={styles.detailValue}>
                     {detail.location || "N/A"}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <MaterialIcons name="info" size={18} color="#A64B2A" />
-                  <Text style={styles.detailLabel}>Status:</Text>
+                  <Text style={styles.detailLabel}>{t("status")}:</Text>
                   <Text
                     style={[
                       styles.detailValue,
@@ -307,7 +307,7 @@ const ViewBookingDetailsScreen = () => {
                 </View>
                 <View style={styles.detailRow}>
                   <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
-                  <Text style={styles.detailLabel}>Total Price:</Text>
+                  <Text style={styles.detailLabel}>{t("totalPrice")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.totalPrice || 0}
                   </Text>
@@ -316,15 +316,15 @@ const ViewBookingDetailsScreen = () => {
 
               {/* Schedule */}
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Schedule</Text>
+                <Text style={styles.sectionTitle}>{t("schedule")}</Text>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Time Begin Cook:</Text>
+                  <Text style={styles.detailLabel}>{t("timeBeginCook")}:</Text>
                   <Text style={styles.detailValue}>
                     {formatTime(detail.timeBeginCook)}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Time Begin Travel:</Text>
+                  <Text style={styles.detailLabel}>{t("timeBeginTravel")}:</Text>
                   <Text style={styles.detailValue}>
                     {formatTime(detail.timeBeginTravel)}
                   </Text>
@@ -333,11 +333,11 @@ const ViewBookingDetailsScreen = () => {
 
               {/* Dishes */}
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Dishes</Text>
+                <Text style={styles.sectionTitle}>{t("dishes")}</Text>
                 {!detail.dishes || detail.dishes.length === 0 ? (
                   <View style={styles.noDataContainer}>
                     <Text style={[styles.detailValue, { color: "#A64B2A" }]}>
-                      No dishes selected
+                      {t("noDishSelect")}
                     </Text>
                   </View>
                 ) : (
@@ -363,53 +363,53 @@ const ViewBookingDetailsScreen = () => {
 
               {/* Fee Details */}
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Fee Details</Text>
+                <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Chef Cooking Fee:</Text>
+                  <Text style={styles.detailLabel}>{t("chefCookingFee")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.chefCookingFee || 0}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Price of Dishes:</Text>
+                  <Text style={styles.detailLabel}>{t("priceOfDishes")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.priceOfDishes || 0}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Arrival Fee:</Text>
+                  <Text style={styles.detailLabel}>{t("arrivalFee")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.arrivalFee || 0}
                   </Text>
                 </View>
                 {detail.chefServingFee !== undefined && (
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Chef Serving Fee:</Text>
+                    <Text style={styles.detailLabel}>{t("chefServingFee")}:</Text>
                     <Text style={styles.detailValue}>
                       ${detail.chefServingFee || 0}
                     </Text>
                   </View>
                 )}
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Applicable Fee:</Text>
+                  <Text style={styles.detailLabel}>{t("platformFee")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.platformFee || 0}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Total Chef Fee:</Text>
+                  <Text style={styles.detailLabel}>{t("totalChefFee")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.totalChefFeePrice || 0}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Discount Amount:</Text>
+                  <Text style={styles.detailLabel}>{t("discountAmount")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.discountAmout || 0}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Total price:</Text>
+                  <Text style={styles.detailLabel}>{t("totalPrice")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.totalPrice || 0}
                   </Text>
@@ -443,7 +443,7 @@ const ViewBookingDetailsScreen = () => {
             ) : (
               <View style={styles.depositButtonContent}>
                 <MaterialIcons name="payment" size={18} color="#FFF" />
-                <Text style={styles.depositButtonText}>Make Deposit</Text>
+                <Text style={styles.depositButtonText}>{t("deposit")}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -459,7 +459,7 @@ const ViewBookingDetailsScreen = () => {
             ) : (
               <View style={styles.depositButtonContent}>
                 <MaterialIcons name="attach-money" size={18} color="#FFF" />
-                <Text style={styles.depositButtonText}>Pay</Text>
+                <Text style={styles.depositButtonText}>{t("pay")}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -481,8 +481,8 @@ const ViewBookingDetailsScreen = () => {
             >
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Enter Wallet PIN</Text>
-            <Text style={styles.modalSubtitle}>Please enter your 4-digit PIN</Text>
+            <Text style={styles.modalTitle}>{t("enterPin")}</Text>
+            <Text style={styles.modalSubtitle}>{t("pleaseEnterPin")}</Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
                 <View key={index} style={styles.pinBox}>

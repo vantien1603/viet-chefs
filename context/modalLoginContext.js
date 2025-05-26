@@ -7,6 +7,7 @@ import { PasswordInput } from '../components/PasswordInput/passwordInput';
 import { commonStyles } from '../style';
 import useActionCheckNetwork from '../hooks/useAction';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { t } from 'i18next';
 
 const ModalContextLogin = createContext();
 
@@ -46,7 +47,7 @@ export const ModalLoginProvider = ({ children }) => {
 
     const handleLogin = async () => {
         if (email.trim().length === 0 || password.trim().length === 0) {
-            setError("Login failed. Please check your account or password again.");
+            setError(t("loginfailMessage"));
             return;
         }
         
@@ -59,7 +60,7 @@ export const ModalLoginProvider = ({ children }) => {
             }
             setIsVisible(false);
         } else {
-            setError("Login failed. Please check your account or password again.");
+            setError(t("loginfailMessage"));
         }
         
         setLoading(false);
@@ -96,7 +97,7 @@ export const ModalLoginProvider = ({ children }) => {
                             style={styles.button}
                             onPress={() => setShowLoginForm(true)}
                         >
-                            <Text style={styles.buttonText}>Đăng nhập</Text>
+                            <Text style={styles.buttonText}>{t("login")}</Text>
                         </TouchableOpacity>
                     )}
 
@@ -111,7 +112,7 @@ export const ModalLoginProvider = ({ children }) => {
                                     keyboardType="email-address"
                                     style={commonStyles.input}
                                 />
-                                <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
+                                <PasswordInput placeholder={t("password")} onPasswordChange={setPassword} />
                             </View>
 
                             {error ? <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text> : null}
@@ -123,7 +124,7 @@ export const ModalLoginProvider = ({ children }) => {
                                 {loading ? (
                                     <ActivityIndicator size={'small'} color={'white'} />
                                 ) : (
-                                    <Text style={styles.buttonText}>Login</Text>
+                                    <Text style={styles.buttonText}>{t("login")}</Text>
                                 )}
                             </TouchableOpacity>
                         </>
@@ -134,7 +135,7 @@ export const ModalLoginProvider = ({ children }) => {
                             style={styles.button}
                             onPress={closeModal}
                         >
-                            <Text style={styles.buttonText}>Đóng</Text>
+                            <Text style={styles.buttonText}>{t("close")}</Text>
                         </TouchableOpacity>
                     )}
                 </View>

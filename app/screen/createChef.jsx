@@ -77,7 +77,7 @@ const CreateChefScreen = () => {
         payload
       );
       if (response.status === 200 || response.status === 201) {
-        showModal("Success", "Thanks for registering. Your profile is under review — we’ll notify you soon.", "Success");
+        showModal(t("modal.success"), t("chefRegistration"), t("modal.success"));
       }
 
       setTimeout(() => {
@@ -90,7 +90,7 @@ const CreateChefScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình đăng ký.", "Failed");
+      showModal(t("modal.error"), t("registrationFailed"), t("modal.failed"));
     }
   };
 

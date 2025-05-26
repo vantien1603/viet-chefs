@@ -27,7 +27,11 @@ const ReviewBookingScreen = () => {
   const { showModal } = useCommonNoification();
   const { user } = useContext(AuthContext);
   const platformFeeModalRef = useRef(null);
-  const { numPeople, address, chefId, selectedPackage,
+  const {
+    numPeople,
+    address,
+    chefId,
+    selectedPackage,
     startTime,
     ingredientPrep,
     dishNotes,
@@ -35,7 +39,10 @@ const ReviewBookingScreen = () => {
     selectedDishes,
     extraDishIds,
     selectedDates,
-    isSelected, setTotalPrice, setLocation } = useSelectedItems();
+    isSelected,
+    setTotalPrice,
+    setLocation,
+  } = useSelectedItems();
 
   const [loading, setLoading] = useState(false);
   const [calcuResult, setCalcuResult] = useState(null);
@@ -54,7 +61,9 @@ const ReviewBookingScreen = () => {
           ? selectedMenuLong[date].menuItems
           : [];
 
-        const extra = extraDishIds[date] ? Object.values(extraDishIds[date]) : [];
+        const extra = extraDishIds[date]
+          ? Object.values(extraDishIds[date])
+          : [];
 
         const selected = selectedDishes[date]
           ? Object.values(selectedDishes[date])
@@ -67,13 +76,12 @@ const ReviewBookingScreen = () => {
         console.log("extra", extraDishIds[date]);
         console.log("dishes", selectedDishes[date]);
 
-
         return {
           sessionDate: date,
           startTime: `${startTime[date]}:00`,
           menuId: selectedMenuLong[date]?.id || null,
           extraDishIds: allDishIds || null,
-          isDishSelected: (isSelected[date]) ? true : false,
+          isDishSelected: isSelected[date] ? true : false,
           dishes: allDishIds?.map((id) => ({
             dishId: id,
             notes: dishNotes[date]?.[id] || "",
@@ -91,21 +99,31 @@ const ReviewBookingScreen = () => {
         bookingDetails,
       };
 
-      const response = await axiosInstance.post("/bookings/calculate-long-term-booking", payload);
+      const response = await axiosInstance.post(
+        "/bookings/calculate-long-term-booking",
+        payload
+      );
       console.log("répóne 4", response.status);
       setCalcuResult(response.data);
     } catch (error) {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      if (!error.response?.status === 403 && !error.response.data.message === "Chef không đủ uy tín để nhận booking.") {
-        showModal("Error", error.response.data.message, "Failed");
+      if (
+        !error.response?.status === 403 &&
+        !error.response.data.message === "Chef không đủ uy tín để nhận booking."
+      ) {
+        showModal(
+          t("modal.error"),
+          t("errors.chefNotEligible"),
+          t("modal.failed")
+        );
       }
       setError(error.response.data.message);
     } finally {
       setLoading(false);
     }
-  }
+  };
   console.log("cauaciiacs", calcuResult);
 
   const openPlatformFeeModal = () => {
@@ -156,7 +174,11 @@ const ReviewBookingScreen = () => {
       console.log(payload);
       const response = await axiosInstance.post("/bookings/long-term", payload);
       if (response.status === 200 || response.status === 201) {
-        showModal("Success", "Đặt chỗ dài hạn đã được xác nhận!", "Success");
+        showModal(
+          t("modal.success"),
+          t("confirmBookingSuccess"),
+          t("modal.succeeded")
+        );
         setTotalPrice(calcuResult.totalPrice);
         setLocation(calcuResult.bookingDetails?.[0]?.location);
         router.replace({
@@ -166,48 +188,85 @@ const ReviewBookingScreen = () => {
           },
         });
       }
-
     } catch (error) {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal("Error", error.response.data.message || "Có lỗi xảy ra trong quá trình đặt chổ.", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.confirmBookingFailed"),
+        t("modal.failed")
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
   const handleBack = () => {
-    router.replace('/screen/longTermSelect');
-  }
+    router.replace("/screen/longTermSelect");
+  };
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
       <SafeAreaView style={commonStyles.containerContent}>
         <Header title={t("confirmBooking")} onLeftPress={() => handleBack()} />
-        {loading ? (<ActivityIndicator size={'large'} color={'white'} />) : (
+        {loading ? (
+          <ActivityIndicator size={"large"} color={"white"} />
+        ) : (
           <>
             {!calcuResult ? (
               <>
-                <MaterialIcons style={{ alignSelf: 'center' }} name={'error'} size={48} color={'red'} />
-                <Text style={{ alignSelf: 'center', color: 'red', fontSize: 15 }}>{error}</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 }}>
-                  <TouchableOpacity style={{ borderRadius: 10, backgroundColor: "#6C757D", paddingVertical: 10, paddingHorizontal: 20 }} onPress={() => router.replace("/(tabs)/home")}>
-                    <Text style={{ color: 'white' }}>
-                      Ve trang chu
-                    </Text>
+                <MaterialIcons
+                  style={{ alignSelf: "center" }}
+                  name={"error"}
+                  size={48}
+                  color={"red"}
+                />
+                <Text
+                  style={{ alignSelf: "center", color: "red", fontSize: 15 }}
+                >
+                  {error}
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-around",
+                    marginTop: 20,
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      borderRadius: 10,
+                      backgroundColor: "#6C757D",
+                      paddingVertical: 10,
+                      paddingHorizontal: 20,
+                    }}
+                    onPress={() => router.replace("/(tabs)/home")}
+                  >
+                    <Text style={{ color: "white" }}>{t("backToHome")}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={{ borderRadius: 10, backgroundColor: "#A64B2A", paddingVertical: 10, paddingHorizontal: 20 }} onPress={() => router.replace("/screen/allChef")}>
-                    <Text style={{ color: 'white' }}>
-                      Xem dau bep khac
-                    </Text>
+                  <TouchableOpacity
+                    style={{
+                      borderRadius: 10,
+                      backgroundColor: "#A64B2A",
+                      paddingVertical: 10,
+                      paddingHorizontal: 20,
+                    }}
+                    onPress={() => router.replace("/screen/allChef")}
+                  >
+                    <Text style={{ color: "white" }}>{t("viewOtherChefs")}</Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
               <>
-                <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-                  <Text style={styles.title}>{t("longTermBookingDetails")}</Text>
+                <ScrollView
+                  style={styles.container}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.title}>
+                    {t("longTermBookingDetails")}
+                  </Text>
                   <View style={styles.infoContainer}>
                     <Text style={styles.infoLabel}>{t("location")}:</Text>
                     <Text style={styles.infoValue}>
@@ -225,25 +284,33 @@ const ReviewBookingScreen = () => {
                           </Text>
                         </View>
                         <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>{t("travelFee")}:</Text>
+                          <Text style={styles.detailLabel}>
+                            {t("travelFee")}:
+                          </Text>
                           <Text style={styles.detailValue}>
                             ${(detail.arrivalFee || 0).toFixed(2)}
                           </Text>
                         </View>
                         <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>{t("cookingFee")}:</Text>
+                          <Text style={styles.detailLabel}>
+                            {t("cookingFee")}:
+                          </Text>
                           <Text style={styles.detailValue}>
                             ${(detail.chefCookingFee || 0).toFixed(2)}
                           </Text>
                         </View>
                         <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>{t("dishFee")}:</Text>
+                          <Text style={styles.detailLabel}>
+                            {t("dishFee")}:
+                          </Text>
                           <Text style={styles.detailValue}>
                             ${(detail.priceOfDishes || 0).toFixed(2)}
                           </Text>
                         </View>
                         <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>{t("discount")}:</Text>
+                          <Text style={styles.detailLabel}>
+                            {t("discount")}:
+                          </Text>
                           <Text style={styles.detailValue}>
                             -${(detail.discountAmout || 0).toFixed(2)}
                           </Text>
@@ -257,7 +324,9 @@ const ReviewBookingScreen = () => {
                           </Text>
                         </View>
                         <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>{t("ingredients")}:</Text>
+                          <Text style={styles.detailLabel}>
+                            {t("ingredients")}:
+                          </Text>
                           <Text style={styles.detailValue}>
                             {ingredientPrep[detail.sessionDate]
                               ? t("chefBringIngredients")
@@ -288,42 +357,86 @@ const ReviewBookingScreen = () => {
                           {selectedMenuLong[detail.sessionDate] && (
                             <View>
                               <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>{t("menu")}:</Text>
+                                <Text style={styles.detailLabel}>
+                                  {t("menu")}:
+                                </Text>
                                 <Text style={styles.detailValue}>
                                   {selectedMenuLong[detail.sessionDate].name}
                                 </Text>
                               </View>
-                              {selectedMenuLong[detail.sessionDate].menuItems.map((dish, idx) => (
-                                <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
-                                  <Text style={styles.dishName}>{dish.dishName}</Text>
+                              {selectedMenuLong[
+                                detail.sessionDate
+                              ].menuItems.map((dish, idx) => (
+                                <View
+                                  key={idx}
+                                  style={{
+                                    alignItems: "flex-end",
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  <Text style={styles.dishName}>
+                                    {dish.dishName}
+                                  </Text>
                                 </View>
                               ))}
                             </View>
                           )}
 
                           {extraDishIds[detail.sessionDate] && (
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                marginBottom: 10,
+                              }}
+                            >
                               <Text style={styles.detailLabel}>
                                 {t("extraDishes")}:
                               </Text>
                               <View>
-                                {Object.values(extraDishIds[detail.sessionDate]).map((dish, idx) => (
-                                  <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
-                                    <Text style={styles.dishName}>{dish.name}</Text>
+                                {Object.values(
+                                  extraDishIds[detail.sessionDate]
+                                ).map((dish, idx) => (
+                                  <View
+                                    key={idx}
+                                    style={{
+                                      alignItems: "flex-end",
+                                      marginBottom: 10,
+                                    }}
+                                  >
+                                    <Text style={styles.dishName}>
+                                      {dish.name}
+                                    </Text>
                                   </View>
                                 ))}
                               </View>
                             </View>
                           )}
                           {selectedDishes[detail.sessionDate] && (
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                marginBottom: 10,
+                              }}
+                            >
                               <Text style={styles.detailLabel}>
                                 {t("dishes")}:
                               </Text>
                               <View>
-                                {Object.values(selectedDishes[detail.sessionDate]).map((dish, idx) => (
-                                  <View key={idx} style={{ alignItems: 'flex-end', marginBottom: 10 }}>
-                                    <Text style={styles.dishName}>{dish.name}</Text>
+                                {Object.values(
+                                  selectedDishes[detail.sessionDate]
+                                ).map((dish, idx) => (
+                                  <View
+                                    key={idx}
+                                    style={{
+                                      alignItems: "flex-end",
+                                      marginBottom: 10,
+                                    }}
+                                  >
+                                    <Text style={styles.dishName}>
+                                      {dish.name}
+                                    </Text>
                                   </View>
                                 ))}
                               </View>
@@ -366,21 +479,19 @@ const ReviewBookingScreen = () => {
                   </View>
 
                   <View style={styles.spacer} />
-
-
                 </ScrollView>
                 <View style={styles.buttonArea}>
                   <TouchableOpacity
                     style={styles.confirmButton}
                     onPress={handleConfirmBooking}
                   >
-                    <Text style={styles.confirmButtonText}>{t("confirmBooking")}</Text>
+                    <Text style={styles.confirmButtonText}>
+                      {t("confirmBooking")}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
-
-            )
-            }
+            )}
           </>
         )}
 
@@ -389,15 +500,12 @@ const ReviewBookingScreen = () => {
           adjustToContentHeight={true}
           handlePosition="outside"
           modalStyle={styles.modalStyle}
-        // onClose={closePlatformFeeModal}
+          // onClose={closePlatformFeeModal}
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("applicationFeeTitle")}</Text>
             <Text style={styles.modalText}>
-              Phí áp dụng là khoản phí được thu để hỗ trợ cải thiện và duy
-              trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.
-              Chúng tôi sử dụng phí này để nâng cấp tính năng, bảo trì hệ thống
-              và mang đến nhiều dịch vụ chất lượng hơn cho bạn.
+              {t("applicationFeeDescription")}
             </Text>
             <TouchableOpacity
               style={styles.modalButton}
@@ -410,7 +518,7 @@ const ReviewBookingScreen = () => {
       </SafeAreaView>
     </GestureHandlerRootView>
   );
-}
+};
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

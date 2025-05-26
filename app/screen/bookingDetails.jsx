@@ -43,7 +43,7 @@ const BookingDetailScreen = () => {
             );
             return { dishId: dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            showModal("Error", `Error fetching dish ${dish.dish.id}`, "Failed");
+            showModal(t("modal.error"), `Error fetching dish ${dish.dish.id}`, t("modal.failed"));
             return { dishId: dish.dish.id, dishName: `Dish ${dish.dish.id}` };
           }
         });
@@ -61,7 +61,7 @@ const BookingDetailScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", t("failedToLoadBookingDetail"), "Failed");
+      showModal(t("modal.error"), t("failedToLoadBookingDetail"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ const BookingDetailScreen = () => {
         parsedUpdateData
       );
 
-      showModal("Success", t("bookingDetailUpdated"), "Success");
+      showModal(t("modal.success"), t("bookingDetailUpdated"), t("modal.success"));
 
 
       if (parsedUpdateData.dishes && parsedUpdateData.dishes.length > 0) {
@@ -122,7 +122,7 @@ const BookingDetailScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", t("failedToUpdateBookingDetail"), "Failed");
+      showModal(t("modal.error"), t("failedToUpdateBookingDetail"), t("modal.failed"));
     } finally {
       setUpdating(false);
     }
@@ -447,6 +447,42 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 16,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 8,
+    width: 150,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#666",
+    flex: 1,
   },
 });
 

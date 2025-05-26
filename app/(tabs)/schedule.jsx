@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,6 +13,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
@@ -27,36 +34,51 @@ const CustomerSchedule = () => {
   const [bookingDetails, setBookingDetails] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { setChefId, setRouteBefore } = useSelectedItems();
-  const routes = useMemo(() => [
-    { key: "today", title: "Today" },
-    { key: "upcoming", title: "Upcoming" },
-    { key: "past", title: "Past" },
-  ], []);
+  const routes = useMemo(
+    () => [
+      { key: "today", title: "Today" },
+      { key: "upcoming", title: "Upcoming" },
+      { key: "past", title: "Past" },
+    ],
+    []
+  );
 
   useEffect(() => {
     if (isGuest) return;
     fetchBookingDetails();
   }, [isGuest]);
 
-  const fetchBookingDetails = async () => {
+  const fetchBookingDetails = async (page, isRefresh = false) => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get("/bookings/booking-details/user", {
-        params: {
-          pageNo: 0,
-          pageSize: 1000,
-          sortBy: "sessionDate",
-          sortDir: "desc",
-        },
+      const response = await axiosInstance.get(
+        "/bookings/booking-details/user",
+        {
+          params: {
+            pageNo: 0,
+            pageSize: 1000,
+            sortBy: "sessionDate",
+            sortDir: "desc",
+          },
+        }
+      );
+      const newBookingDetail = response.data.content;
+      setBookingDetails((prev) => {
+        return isRefresh ? newBookingDetail : [...prev, ...newBookingDetail];
       });
-      setBookingDetails(response.data.content);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", t("modal.failed"));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchBookingDetails();
   };
 
   const today = useMemo(() => {
@@ -65,21 +87,36 @@ const CustomerSchedule = () => {
     return d;
   }, []);
 
-  const filteredBookingDetails = useMemo(() =>
-    bookingDetails.filter((d) =>
-      ["SCHEDULED", "COMPLETED", "SCHEDULED_COMPLETE", "WAITING_FOR_CONFIRMATION"].includes(d.status)
-    ), [bookingDetails]);
+  const filteredBookingDetails = useMemo(
+    () =>
+      bookingDetails.filter((d) =>
+        [
+          "SCHEDULED",
+          "COMPLETED",
+          "SCHEDULED_COMPLETE",
+          "WAITING_FOR_CONFIRMATION",
+        ].includes(d.status)
+      ),
+    [bookingDetails]
+  );
 
-  const todayDetails = useMemo(() =>
-    filteredBookingDetails.filter((d) =>
-      new Date(d.sessionDate).toDateString() === today.toDateString()
-    ), [filteredBookingDetails, today]);
+  const todayDetails = useMemo(
+    () =>
+      filteredBookingDetails.filter(
+        (d) => new Date(d.sessionDate).toDateString() === today.toDateString()
+      ),
+    [filteredBookingDetails, today]
+  );
 
-  const upcomingDetails = useMemo(() =>
-    filteredBookingDetails.filter((d) => new Date(d.sessionDate) > today), [filteredBookingDetails, today]);
+  const upcomingDetails = useMemo(
+    () => filteredBookingDetails.filter((d) => new Date(d.sessionDate) > today),
+    [filteredBookingDetails, today]
+  );
 
-  const pastDetails = useMemo(() =>
-    filteredBookingDetails.filter((d) => new Date(d.sessionDate) < today), [filteredBookingDetails, today]);
+  const pastDetails = useMemo(
+    () => filteredBookingDetails.filter((d) => new Date(d.sessionDate) < today),
+    [filteredBookingDetails, today]
+  );
 
   const handlePressDetail = useCallback((id) => {
     router.push({
@@ -90,12 +127,20 @@ const CustomerSchedule = () => {
 
   const handleRebook = useCallback((bookingDetail) => {
     if (bookingDetail.status !== "COMPLETED") {
-      showModal("Error", "Rebook is only allowed when status is COMPLETED", "Failed");
+      showModal(
+        t("modal.error"),
+        "Rebook is only allowed when status is COMPLETED",
+        t("modal.failed")
+      );
       return;
     }
 
     const selectedMenu = bookingDetail.menuId
-      ? { id: bookingDetail.menuId, name: `Menu ${bookingDetail.menuId}`, menuItems: [] }
+      ? {
+          id: bookingDetail.menuId,
+          name: `Menu ${bookingDetail.menuId}`,
+          menuItems: [],
+        }
       : null;
 
     const selectDishes = bookingDetail.dishes.map(({ dish }) => ({
@@ -115,54 +160,83 @@ const CustomerSchedule = () => {
       params: {
         chefId: bookingDetail.booking?.chef?.id,
         selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-        selectedDishes: selectDishes.length > 0 ? JSON.stringify(selectDishes) : null,
-        dishNotes: Object.keys(dishNotes).length > 0 ? JSON.stringify(dishNotes) : null,
+        selectedDishes:
+          selectDishes.length > 0 ? JSON.stringify(selectDishes) : null,
+        dishNotes:
+          Object.keys(dishNotes).length > 0 ? JSON.stringify(dishNotes) : null,
         address: bookingDetail.location,
       },
     });
   }, []);
 
-  const renderBookingItem = useCallback(({ item: detail }) => (
-    <View style={styles.bookingItem}>
-      <TouchableOpacity onPress={() => handlePressDetail(detail.id)} style={styles.touchableArea}>
-        <View style={styles.row}>
-          <Text style={styles.label1}>{detail.booking?.chef?.user?.fullName || "N/A"}</Text>
-          <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
-        </View>
-        <Text style={styles.label}>{t("time")}: {detail.startTime || "N/A"}</Text>
-        <Text style={styles.label}>{t("address")}: {detail.location || "N/A"}</Text>
-        <Text style={styles.label}>
-          {t("totalPrice")}: {detail.totalPrice ? `${detail.totalPrice.toFixed(2)}` : "N/A"}
-        </Text>
-        <View style={styles.statusContainer}>
-          <Text style={[
-            styles.labelStatus,
-            {
-              color: detail.status === "COMPLETED"
-                ? "green"
-                : ["SCHEDULED", "SCHEDULED_COMPLETE"].includes(detail.status)
-                  ? "orange"
-                  : "black"
-            }
-          ]}>
-            {detail.status.replace("_", " ")}
-            {detail.status === "COMPLETED" && (
-              <Ionicons name="checkmark-done" size={20} color="green" />
-            )}
+  const renderBookingItem = useCallback(
+    ({ item: detail }) => (
+      <View style={styles.bookingItem}>
+        <TouchableOpacity
+          onPress={() => handlePressDetail(detail.id)}
+          style={styles.touchableArea}
+        >
+          <View style={styles.row}>
+            <Text style={styles.label1}>
+              {detail.booking?.chef?.user?.fullName || "N/A"}
+            </Text>
+            <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
+          </View>
+          <Text style={styles.label}>
+            {t("time")}: {detail.startTime || "N/A"}
           </Text>
-          {detail.status === "COMPLETED" && (
-            <TouchableOpacity style={styles.rebookButton} onPress={() => handleRebook(detail)}>
-              <Text style={styles.rebookText}>{t("rebook")}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
-    </View>
-  ), [handlePressDetail, handleRebook]);
+          <Text style={styles.label}>
+            {t("address")}: {detail.location || "N/A"}
+          </Text>
+          <Text style={styles.label}>
+            {t("totalPrice")}:{" "}
+            {detail.totalPrice ? `${detail.totalPrice.toFixed(2)}` : "N/A"}
+          </Text>
+          <View style={styles.statusContainer}>
+            <Text
+              style={[
+                styles.labelStatus,
+                {
+                  color:
+                    detail.status === "COMPLETED"
+                      ? "green"
+                      : ["SCHEDULED", "SCHEDULED_COMPLETE"].includes(
+                          detail.status
+                        )
+                      ? "orange"
+                      : "black",
+                },
+              ]}
+            >
+              {detail.status.replace("_", " ")}
+              {detail.status === "COMPLETED" && (
+                <Ionicons name="checkmark-done" size={20} color="green" />
+              )}
+            </Text>
+            {detail.status === "COMPLETED" && (
+              <TouchableOpacity
+                style={styles.rebookButton}
+                onPress={() => handleRebook(detail)}
+              >
+                <Text style={styles.rebookText}>{t("rebook")}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    ),
+    [handlePressDetail, handleRebook]
+  );
 
   const renderBookingList = (details) => {
     if (loading) {
-      return <ActivityIndicator size="large" color="white" style={{ marginTop: 20 }} />;
+      return (
+        <ActivityIndicator
+          size="large"
+          color="white"
+          style={{ marginTop: 20 }}
+        />
+      );
     }
 
     return (
@@ -170,7 +244,9 @@ const CustomerSchedule = () => {
         data={details}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderBookingItem}
-        ListEmptyComponent={<Text style={styles.noData}>{t("noBookings")}</Text>}
+        ListEmptyComponent={
+          <Text style={styles.noData}>{t("noBookings")}</Text>
+        }
         contentContainerStyle={{ padding: 10 }}
       />
     );

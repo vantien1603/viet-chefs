@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { NetworkContext } from "../hooks/networkProvider";
+import { t } from "i18next";
 
 const NetworkAlert = () => {
   const { isConnected } = useContext(NetworkContext);
@@ -9,7 +10,7 @@ const NetworkAlert = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>⚠️ No internet connected</Text>
+      <Text style={styles.text}>⚠️ {t("noInternet")}</Text>
     </View>
   );
 };

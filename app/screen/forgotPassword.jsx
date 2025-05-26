@@ -12,7 +12,6 @@ import { commonStyles } from "../../style";
 import Header from "../../components/header";
 import { router } from "expo-router";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
-import useAxios from "../../config/AXIOS_API";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import { t } from "i18next";
@@ -23,13 +22,13 @@ const ForgotPasswordScreen = () => {
   const { showModal } = useCommonNoification();
   const handleSend = async () => {
     if (!email) {
-      setErrorMessage("Please enter your email");
+      setErrorMessage(t("errors.invalidEmail"));
       return;
     }
     try {
       const response = await AXIOS_BASE.post(`/forgot-password?email=${email}`);
       if (response.status === 200) {
-        showModal("Success", "Password reset token sent to your email.", "Success");
+        showModal(t("modal.success"), t("sendResetTokenSuccess"), t("modal.success"));
         router.push({
           pathname: "/screen/resetPassword",
           params: { email },
@@ -40,7 +39,7 @@ const ForgotPasswordScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình gửi mã đặt lại mật khẩu.", "Failed");
+      showModal(t("modal.error"), t("errors.sendResetTokenFailed"), t("modal.failed"));
     }
   };
 

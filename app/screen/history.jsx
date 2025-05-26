@@ -19,11 +19,11 @@ const OrderHistories = () => {
 
   const [index, setIndex] = useState(0);
   const [routes] = useState([
-    { key: "pending", title: "Pending" },
-    { key: "paidDeposit", title: "Paid/Deposit" },
-    { key: "completed", title: "Completed" },
-    { key: "confirm", title: "Confirmed" },
-    { key: "cancel", title: "Canceled" },
+    { key: "pending", title: t("tabs.pending") },
+    { key: "paidDeposit", title: t("tabs.paidDeposit") },
+    { key: "completed", title: t("tabs.completed") },
+    { key: "confirm", title: t("tabs.confirm") },
+    { key: "cancel", title: t("tabs.cancel") },
   ]);
   const [bookings, setBookings] = useState([]);
   const [pageNo, setPageNo] = useState(0);
@@ -82,23 +82,25 @@ const OrderHistories = () => {
       });
       setTotalPages(
         response.data.totalPages ||
-        Math.ceil(
-          (response.data.totalElements || bookingData.length) / PAGE_SIZE
-        )
+          Math.ceil(
+            (response.data.totalElements || bookingData.length) / PAGE_SIZE
+          )
       );
       setPageNo(page);
     } catch (error) {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Error occurs while fetching booking list", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchBookingsFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
       if (isRefresh) setRefreshing(false);
     }
   };
-
-
 
   useEffect(() => {
     const currentStatus = statusMap[routes[index].key];
@@ -106,7 +108,6 @@ const OrderHistories = () => {
     setPageNo(0);
     fetchBookingDetails(0, currentStatus, true);
   }, [index]);
-
 
   const handleLoadMore = () => {
     if (pageNo < totalPages - 1 && !loading) {
@@ -123,7 +124,6 @@ const OrderHistories = () => {
 
     fetchBookingDetails(0, currentStatus, true);
   }, []);
-
 
   const renderScene = SceneMap({
     pending: () => (
@@ -180,7 +180,7 @@ const OrderHistories = () => {
 
   return (
     <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
-      <Header title="Order History" />
+      <Header title={t("orderHistory")} />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

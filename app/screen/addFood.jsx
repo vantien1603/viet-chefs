@@ -7,7 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  TextInput
+  TextInput,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -21,6 +21,7 @@ import { AuthContext } from "../../config/AuthContext";
 import axios from "axios";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
+import { t } from "i18next";
 
 const AddNewFoodScreen = () => {
   const [foodName, setFoodName] = useState("");
@@ -39,16 +40,16 @@ const AddNewFoodScreen = () => {
   const { showModal } = useCommonNoification();
   const { user } = useContext(AuthContext);
   const cookGroups = [
-    { label: "1. Nấu riêng", value: "1" },
-    { label: "2. Nấu chung với 1 món", value: "2" },
-    { label: "3. Nấu chung với 2 món", value: "3" },
-    { label: "4. Nấu chung với 3 món", value: "4" },
+    { label: t("cookGroups.1"), value: "1" },
+    { label: t("cookGroups.2"), value: "2" },
+    { label: t("cookGroups.3"), value: "3" },
+    { label: t("cookGroups.4"), value: "4" },
   ];
 
   const cuisineTypes = [
-    { label: "Miền Bắc", value: "Northern" },
-    { label: "Miền Trung", value: "Central" },
-    { label: "Miền Nam", value: "Southern" },
+    { label: t("cuisineTypes.Northern"), value: "Northern" },
+    { label: t("cuisineTypes.Central"), value: "Central" },
+    { label: t("cuisineTypes.Southern"), value: "Southern" },
   ];
 
   const validateCookTime = (text) => {
@@ -109,9 +110,9 @@ const AddNewFoodScreen = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu loại món ăn.", "Failed");
+        showModal(t("modal.error"), t("errors.dataLoadError"), t("modal.failed"));
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
     fetchFoodTypes();
@@ -119,17 +120,18 @@ const AddNewFoodScreen = () => {
 
   const handleSave = async () => {
     let newError = {};
-    if (!foodName.trim()) newError.foodName = "Food Name is required";
-    if (!cookTime.trim()) newError.cookTime = "Cook Time is required";
-    if (!details.trim()) newError.details = "Details is required";
-    if (!estimatedCookGroup) newError.estimatedCookGroup = "Estimate Cook Group is required";
-    if (selectedFoodTypeIds.length === 0) newError.type = "Food Type is required";
-    if (!cuisineType) newError.cuisineType = "Cuisine Type is required";
-    if (!basePrice.trim()) newError.basePrice = "Base Price is required";
+    if (!foodName.trim()) newError.foodName = t("errors.foodName");
+    if (!cookTime.trim()) newError.cookTime = t("errors.cookTime");
+    if (!details.trim()) newError.details = t("errors.details");
+    if (!estimatedCookGroup)
+      newError.estimatedCookGroup = t("errors.estimatedCookGroup");
+    if (selectedFoodTypeIds.length === 0) newError.type = t("errors.foodType");
+    if (!cuisineType) newError.cuisineType = t("errors.cuisineType");
+    if (!basePrice.trim()) newError.basePrice = t("errors.basePrice");
 
     if (Object.keys(newError).length > 0) {
       setErrors(newError);
-      showModal("Error", `Please fill in all the required fields`, "Failed");
+      showModal(t("modal.error"), t("errors.failedToAdd"), t("modal.failed"));
       return;
     }
 
@@ -159,9 +161,9 @@ const AddNewFoodScreen = () => {
     try {
       console.log(formData);
       const response = await axiosInstanceForm.post("/dishes", formData);
-      console.log("tao toa")
+      console.log("tao toa");
       if (response.status === 201 || response.status === 200) {
-        showModal("Success", "Added new dish successfully", "Success");
+        showModal(t("modal.success"), t("addedDish"), t("modal.success"));
         setTimeout(() => {
           router.back();
         }, 1000);
@@ -183,9 +185,9 @@ const AddNewFoodScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Failed to add food. Please try again.", "Failed");
+      showModal(t("modal.error"), t("errors.failedToAdd"), t("modal.failed"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -205,91 +207,101 @@ const AddNewFoodScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title="Add New Food" />
+      <Header title={t("addNewFood")} />
       <ScrollView
         style={commonStyles.containerContent}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.label}>Food name</Text>
+        <Text style={styles.label}>{t("foodName")}</Text>
         <TextInput
           value={foodName}
           onChangeText={handleFoodName}
-          placeholder="Canh chua, xx"
+          placeholder={t("placeholders.foodName")}
           style={[styles.input, errors.foodName && styles.inputError]}
           disabled={loading}
         />
 
-        <Text style={styles.label}>Upload photo</Text>
+        <Text style={styles.label}>{t("uploadPhoto")}</Text>
         <View style={styles.uploadContainer}>
-          <TouchableOpacity style={styles.uploadBox} onPress={pickImage} disabled={loading}>
+          <TouchableOpacity
+            style={styles.uploadBox}
+            onPress={pickImage}
+            disabled={loading}
+          >
             {image ? (
               <Image source={{ uri: image }} style={styles.image} />
             ) : (
               <>
                 <MaterialIcons name="cloud-upload" size={24} color="#A18CD1" />
-                <Text style={styles.uploadText}>Add</Text>
+                <Text style={styles.uploadText}>
+                  {t("add")}
+                </Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Cook time</Text>
+        <Text style={styles.label}>{t("cookTime")}</Text>
         <TextInput
           value={cookTime}
-          placeholder="Enter time"
+          placeholder={t("placeholders.cookTime")}
           keyboardType="numeric"
           style={[styles.input, errors.cookTime && styles.inputError]}
           onChangeText={handleCookTime}
           disabled={loading}
         />
 
-        <Text style={styles.label}>Food type</Text>
+        <Text style={styles.label}>{t("foodType")}</Text>
         <MultiSelect
           disable={loading}
           style={[styles.dropdown, errors.type && styles.inputError]}
-          placeholder="Select Food Types"
+          placeholder={t("placeholders.foodType")}
           data={foodTypes}
           labelField="label"
           valueField="value"
           value={Array.isArray(selectedFoodTypeIds) ? selectedFoodTypeIds : []}
           onChange={(selectedIds) => {
-            const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
+            const safeSelectedIds = Array.isArray(selectedIds)
+              ? selectedIds
+              : [];
             setSelectedFoodTypeIds(safeSelectedIds);
-            setSelectedFoodTypeIds(prev => safeSelectedIds);
+            setSelectedFoodTypeIds((prev) => safeSelectedIds);
           }}
           renderItem={(item) => {
-            const isSelected = Array.isArray(selectedFoodTypeIds) && selectedFoodTypeIds.includes(item.value);
+            const isSelected =
+              Array.isArray(selectedFoodTypeIds) &&
+              selectedFoodTypeIds.includes(item.value);
             return (
-              <View style={{
-                padding: 10,
-                backgroundColor: isSelected ? '#F9F5F0' : 'white',
-                borderWidth: 2,
-                borderRadius: 6,
-                borderColor: isSelected ? '#F8BF40' : 'transparent',
-                flexDirection: 'row',
-                alignItems: 'center'
-              }}>
-                <Text style={{ color: 'black' }}>{item.label}</Text>
+              <View
+                style={{
+                  padding: 10,
+                  backgroundColor: isSelected ? "#F9F5F0" : "white",
+                  borderWidth: 2,
+                  borderRadius: 6,
+                  borderColor: isSelected ? "#F8BF40" : "transparent",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "black" }}>{item.label}</Text>
               </View>
             );
           }}
           selectedStyle={{
-            backgroundColor: '#f5f5f5',
+            backgroundColor: "#f5f5f5",
             borderRadius: 10,
-            color: 'black'
+            color: "black",
           }}
         />
 
-
-
-        <Text style={styles.label}>Cuisine type</Text>
+        <Text style={styles.label}>{t("cuisineType")}</Text>
         <Dropdown
           style={[styles.dropdown, errors.cuisineType && styles.inputError]}
           data={cuisineTypes}
           labelField="label"
           valueField="value"
-          placeholder="Select cuisine type"
+          placeholder={t("placeholders.cuisineType")}
           value={cuisineType}
           onChange={(item) => setCuisineType(item.value)}
           renderRightIcon={() => (
@@ -302,13 +314,16 @@ const AddNewFoodScreen = () => {
           disabled={loading}
         />
 
-        <Text style={styles.label}>Estimated cook group</Text>
+        <Text style={styles.label}>{t("estimatedCookGroup")}</Text>
         <Dropdown
-          style={[styles.dropdown, errors.estimatedCookGroup && styles.inputError]}
+          style={[
+            styles.dropdown,
+            errors.estimatedCookGroup && styles.inputError,
+          ]}
           data={cookGroups}
           labelField="label"
           valueField="value"
-          placeholder="Select cook group"
+          placeholder={t("placeholders.cookGroup")}
           value={estimatedCookGroup}
           onChange={(item) => setEstimatedCookGroup(item.value)}
           renderRightIcon={() => (
@@ -321,21 +336,21 @@ const AddNewFoodScreen = () => {
           disabled={loading}
         />
 
-        <Text style={styles.label}>Details</Text>
+        <Text style={styles.label}>{t("details")}</Text>
         <TextInput
           value={details}
           onChangeText={handleDetails}
-          placeholder="Add details"
+          placeholder={t("placeholders.details")}
           multiline
           numberOfLines={4}
           style={[styles.textArea, errors.details && styles.inputError]}
           disabled={loading}
         />
 
-        <Text style={styles.label}>Base price</Text>
+        <Text style={styles.label}>{t("basePrice")}</Text>
         <TextInput
           value={basePrice}
-          placeholder="Enter base price"
+          placeholder={t("placeholders.basePrice")}
           keyboardType="numeric"
           style={[styles.input, errors.basePrice && styles.inputError]}
           onChangeText={handleBasePrice}
@@ -358,10 +373,10 @@ const AddNewFoodScreen = () => {
         }}
       >
         {loading ? (
-          <ActivityIndicator size={'small'} color={'white'} />
+          <ActivityIndicator size={"small"} color={"white"} />
         ) : (
           <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-            Save
+            {t("save")}
           </Text>
         )}
       </TouchableOpacity>
@@ -385,40 +400,40 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   dropdown: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     paddingHorizontal: 12,
     paddingVertical: 10,
     // marginLeft: 10,
     flex: 1,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     // paddingVertical: 8,
     paddingHorizontal: 12,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     flex: 1,
-    color: '#333',
+    color: "#333",
   },
   inputError: {
     borderColor: "red",
   },
   textArea: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#ccc',
+    backgroundColor: "#f5f5f5",
+    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#333',
+    color: "#333",
     minHeight: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     marginBottom: 10,
   },
   errorText: {

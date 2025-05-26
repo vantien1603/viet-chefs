@@ -46,7 +46,7 @@ const PaymentBookingScreen = () => {
   ]).current;
   const pin = pinValues.join("");
   const [showBalance, setShowBalance] = useState(false);
-  const toggleBalance = () => setShowBalance(prev => !prev);
+  const toggleBalance = () => setShowBalance((prev) => !prev);
   useEffect(() => {
     checkWalletPassword();
     fetchBalanceInWallet();
@@ -55,7 +55,9 @@ const PaymentBookingScreen = () => {
   const checkWalletPassword = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get("/users/profile/my-wallet/has-password");
+      const response = await axiosInstance.get(
+        "/users/profile/my-wallet/has-password"
+      );
       console.log(response.data);
       setHasPassword(response.data);
     } catch (error) {
@@ -63,7 +65,7 @@ const PaymentBookingScreen = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const fetchBalanceInWallet = async () => {
     setLoading(true);
@@ -73,7 +75,11 @@ const PaymentBookingScreen = () => {
       setBalance(wallet.balance);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", t("errorFetchingBalance"), "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchBalanceFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -108,22 +114,26 @@ const PaymentBookingScreen = () => {
     }
   };
 
-
   const handleCompletePayment = async () => {
     if (balance < totalPrice) {
-      showModal("Error", t("notEnoughBalance"), "Failed", null,
+     showModal(
+        t("modal.error"),
+        t("errors.notEnoughBalance"),
+        t("modal.failed"),
+        null,
         [
           {
-            label: "Cancel",
+            label: t("cancel"),
             onPress: () => console.log("Cancel pressed"),
-            style: { backgroundColor: "#ccc", borderColor: "#ccc" }
+            style: { backgroundColor: "#ccc", borderColor: "#ccc" },
           },
           {
-            label: "Deposit",
+            label: t("deposit"),
             onPress: () => router.push("/screen/wallet"),
-            style: { backgroundColor: "#383737", borderColor: "#383737" }
-          }
-        ]);
+            style: { backgroundColor: "#383737", borderColor: "#383737" },
+          },
+        ]
+      );
       return;
     }
     setLoading(true);
@@ -134,7 +144,8 @@ const PaymentBookingScreen = () => {
       );
       console.log("Payment Response:", response.data);
       if (response.status === 200) {
-        showModal("Success", "Payment successfully", "Success");
+        await fetchBalanceInWallet();
+        showModal(t("modal.success"), t("success.paymentSuccess"), t("modal.succeeded"));
         setIsPaySuccess(true);
         // clearSelection();
       }
@@ -145,7 +156,7 @@ const PaymentBookingScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình thanh toán", "Failed");
+      showModal(t("modal.error"), t("errors.paymentFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -199,21 +210,24 @@ const PaymentBookingScreen = () => {
 
   const handleBack = () => {
     router.replace("/screen/confirmBooking");
-  }
+  };
 
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={styles.container}>
-        <Header title={t("confirmAndPayment")} onLeftPress={() => handleBack()} />
+        <Header
+          title={t("confirmAndPayment")}
+          onLeftPress={() => handleBack()}
+        />
         <View style={styles.content}>
           <Text style={styles.title}>{t("bookingPayment")}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={styles.priceLabel}>
-              Số dư: {showBalance ? balance : '***'}
+              Số dư: {showBalance ? balance : "***"}
             </Text>
             <TouchableOpacity onPress={toggleBalance} style={{ marginLeft: 8 }}>
               <MaterialIcons
-                name={showBalance ? 'visibility' : 'visibility-off'}
+                name={showBalance ? "visibility" : "visibility-off"}
                 size={20}
                 color="#555"
               />
@@ -222,25 +236,36 @@ const PaymentBookingScreen = () => {
           <View style={styles.priceContainer}>
             <Text style={styles.priceLabel}>{t("totalAmount")}:</Text>
             <Text style={styles.priceValue}>
-              {totalPrice && totalPrice.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}
+              {totalPrice &&
+                totalPrice.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
             </Text>
           </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.button, isPaySuccess ? styles.paymentButton : styles.backButton]}
+              style={[
+                styles.button,
+                isPaySuccess ? styles.paymentButton : styles.backButton,
+              ]}
               onPress={handleBackHome}
               disabled={loading}
             >
               <Text style={styles.buttonText}>{t("backHome")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, isPaySuccess ? styles.backButton : styles.paymentButton]}
+              style={[
+                styles.button,
+                isPaySuccess ? styles.backButton : styles.paymentButton,
+              ]}
               onPress={() =>
-                showConfirm("Complete payment", "Are you sure you want to pay this booking?", () => requireAuthAndNetwork(hasPassword ? confirmPayment : handleCompletePayment))
+                showConfirm(
+                  t("completePaymentTitle"),
+                  t("completePaymentMessage"),
+                  () => requireAuthAndNetwork(hasPassword ? confirmPayment : handleCompletePayment)
+                )
               }
               disabled={loading || isPaySuccess}
             >
@@ -297,8 +322,20 @@ const PaymentBookingScreen = () => {
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
-            <TouchableOpacity style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#A64B2A', borderRadius: 20 }} onPress={() => accessWallet()}>
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}>Thanh toán</Text>
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                backgroundColor: "#A64B2A",
+                borderRadius: 20,
+              }}
+              onPress={() => accessWallet()}
+            >
+              <Text
+                style={{ fontSize: 16, color: "white", fontWeight: "bold" }}
+              >
+                {t("pay")}
+              </Text>
             </TouchableOpacity>
           </View>
         </Modalize>
@@ -335,7 +372,7 @@ const styles = StyleSheet.create({
     // justifyContent: "space-around",
     alignItems: "center",
     width: "100%",
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: 20,
   },
   priceLabel: {
@@ -369,7 +406,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
-    textAlign: 'center'
+    textAlign: "center",
   },
   modalOverlay: {
     flex: 1,
@@ -434,7 +471,7 @@ const styles = StyleSheet.create({
   modalContent: {
     alignItems: "center",
     // position: "relative",
-    paddingBottom: 20
+    paddingBottom: 20,
   },
   closeButton: {
     position: "absolute",

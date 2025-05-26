@@ -43,18 +43,25 @@ const ReviewsChefScreen = () => {
   const [replyTexts, setReplyTexts] = useState({});
   const { showModal } = useCommonNoification();
 
-  const fetchReviewChef = async (page = 0, sortOption = sort, isRefresh = false) => {
+  const fetchReviewChef = async (
+    page = 0,
+    sortOption = sort,
+    isRefresh = false
+  ) => {
     if (loading && !isRefresh) return;
     setLoading(true);
     try {
       const chefIdToFetch = chefId || user.chefId;
-      const response = await axiosInstance.get(`/reviews/chef/${chefIdToFetch}`, {
-        params: {
-          pageNo: page,
-          pageSize: PAGE_SIZE,
-          sort: sortOption,
-        },
-      });
+      const response = await axiosInstance.get(
+        `/reviews/chef/${chefIdToFetch}`,
+        {
+          params: {
+            pageNo: page,
+            pageSize: PAGE_SIZE,
+            sort: sortOption,
+          },
+        }
+      );
       // setReviews((prev) => {
       //   const existingIds = new Set(prev.map((r) => r.id));
       //   const newReviews = response.data.reviews.filter((r) => !existingIds.has(r.id));
@@ -65,9 +72,11 @@ const ReviewsChefScreen = () => {
         isRefresh ? response.data.reviews : [...prev, ...response.data.reviews]
       );
 
-
-      const calculatedAvg = response.data.reviews.length > 0
-        ? response.data.reviews.reduce((sum, r) => sum + r.rating, 0) / response.data.reviews.length : 0;
+      const calculatedAvg =
+        response.data.reviews.length > 0
+          ? response.data.reviews.reduce((sum, r) => sum + r.rating, 0) /
+            response.data.reviews.length
+          : 0;
 
       setAverageRating(response.data.averageRating || calculatedAvg);
       setRatingDistribution(response.data.ratingDistribution || {});
@@ -75,14 +84,13 @@ const ReviewsChefScreen = () => {
       setPageNo(page);
       setTotalReviews(response.data.totalReviews || 0);
     } catch (error) {
-      // showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
-      showModal("Error", error.response.data.nessage, "Failed");
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", t("modal.failed"));
+      showModal(t("modal.error"), error.response.data.nessage, t("modal.failed"));
     } finally {
       setLoading(false);
       setRefresh(false);
     }
   };
-
 
   useEffect(() => {
     fetchReviewChef(0, sort, true);
@@ -114,15 +122,17 @@ const ReviewsChefScreen = () => {
   const handleReply = async (id) => {
     setLoading(true);
     try {
-      const response = await axiosInstance.post(`reviews/${id}/reply`, replyTexts[id]);
+      const response = await axiosInstance.post(
+        `reviews/${id}/reply`,
+        replyTexts[id]
+      );
       console.log(response.data);
     } catch (error) {
-      showModal("Error", error.response.data.message, "Failed");
+      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
     } finally {
       setLoading(false);
     }
-  }
-
+  };
 
   const RatingStars = ({ rating }) => (
     <View style={styles.starsContainer}>
@@ -168,12 +178,9 @@ const ReviewsChefScreen = () => {
     return (
       <View style={styles.reviewItem}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image
-            source={{ uri: review.userAvatar || "https://via.placeholder.com/50" }}
-            style={styles.avatar}
-          />
+          <Image source={{ uri: review.userAvatar }} style={styles.avatar} />
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
+            <Text style={styles.userName}>{review.userName}</Text>
             <RatingStars rating={review.rating} />
           </View>
         </View>
@@ -187,7 +194,7 @@ const ReviewsChefScreen = () => {
               onChangeText={(text) =>
                 setReplyTexts((prev) => ({ ...prev, [review.id]: text }))
               }
-              style={[styles.replyInput, { textAlignVertical: 'top' }]}
+              style={[styles.replyInput, { textAlignVertical: "top" }]}
               multiline
               numberOfLines={4}
             />
@@ -226,7 +233,9 @@ const ReviewsChefScreen = () => {
               <View style={styles.summaryContainer}>
                 <Text style={styles.summaryTitle}>Overall Rating</Text>
                 <View style={styles.averageRatingContainer}>
-                  <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
+                  <Text style={styles.averageRating}>
+                    {averageRating.toFixed(1)}
+                  </Text>
                   <RatingStars rating={Math.round(averageRating)} />
                 </View>
                 <Text style={styles.totalItems}>{totalReviews} reviews</Text>
@@ -265,7 +274,8 @@ const ReviewsChefScreen = () => {
                         <Text
                           style={[
                             styles.sortButtonText,
-                            sort === option.value && styles.sortButtonTextActive,
+                            sort === option.value &&
+                              styles.sortButtonTextActive,
                           ]}
                         >
                           {t(option.key)}
@@ -279,7 +289,11 @@ const ReviewsChefScreen = () => {
           }
           ListFooterComponent={
             loading && !refresh ? (
-              <ActivityIndicator size="large" color="#A64B2A" style={{ marginVertical: 20 }} />
+              <ActivityIndicator
+                size="large"
+                color="#A64B2A"
+                style={{ marginVertical: 20 }}
+              />
             ) : null
           }
           onEndReached={loadMoreData}
@@ -288,72 +302,111 @@ const ReviewsChefScreen = () => {
           onRefresh={handleRefresh}
           ListEmptyComponent={
             !loading && (
-              <Text style={{ textAlign: "center", marginTop: 30 }}>Chưa có đánh giá nào</Text>
+              <Text style={{ textAlign: "center", marginTop: 30 }}>
+                Chưa có đánh giá nào
+              </Text>
             )
           }
         />
       </View>
-    </SafeAreaView >
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#EBE5DD",
+  },
+  reviewItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
   replyInput: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#E0E0E0",
     borderRadius: 8,
-    padding: 8,
-    marginTop: 8,
+    padding: 10,
+    marginTop: 10,
+    marginBottom: 10,
+    backgroundColor: "#F9F9F9",
+    fontSize: 14,
+    color: "#333",
+    minHeight: 80,
   },
   replyButton: {
-    alignSelf: 'flex-end',
-    marginTop: 5,
-    color: "#A64B2A",
-    fontWeight: "bold",
+    alignSelf: "flex-end",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#A64B2A",
+    borderRadius: 8,
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
   sortContainer: {
     marginBottom: 20,
+    paddingHorizontal: 10,
   },
   sortLabel: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: "#333",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sortButtons: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 10,
   },
   sortButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderRadius: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#CCCCCC",
+    borderColor: "#E0E0E0",
     minWidth: 100,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   sortButtonActive: {
     backgroundColor: "#A64B2A",
     borderColor: "#A64B2A",
   },
   sortButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   sortButtonText: {
     fontSize: 14,
     color: "#333",
+    fontWeight: "500",
   },
   sortButtonTextActive: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   summaryContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 15,
-    padding: 15,
+    padding: 10,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -362,118 +415,84 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   summaryTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#333",
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: "center",
   },
   averageRatingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
+    marginBottom: 8,
   },
   averageRating: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#f5a623",
-    marginRight: 10,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#A64B2A",
+    marginRight: 12,
   },
   ratingDistribution: {
-    marginTop: 10,
+    marginTop: 12,
   },
   distributionRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   distributionLabel: {
-    width: 80,
+    width: 90,
   },
   barContainer: {
     flex: 1,
-    height: 8,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 5,
     overflow: "hidden",
-  },
-  reviewCount: {
-    fontSize: 12,
-    color: "#666",
-    marginLeft: 10,
-    width: 30,
-    textAlign: "right",
   },
   bar: {
     height: "100%",
-    backgroundColor: "#666",
-    borderRadius: 4,
+    backgroundColor: "#A64B2A",
+    borderRadius: 5,
   },
-  reviewCard: {
-    padding: 5,
-    marginBottom: 15,
-    backgroundColor: "#EBE5DD",
-    borderBottomWidth: 1,
-    borderBottomColor: "#CCCCCC",
-  },
-  reviewHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-  },
-  userInfo: {
-    flex: 1,
+  reviewCount: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 12,
+    width: 40,
+    textAlign: "right",
   },
   userName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: "#333",
+    marginBottom: 4,
   },
   reviewText: {
     color: "#555",
     fontSize: 14,
-    marginBottom: 10,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginVertical: 8,
   },
   reviewDate: {
     fontSize: 12,
     color: "#888",
     textAlign: "right",
-  },
-  noReviews: {
-    textAlign: "center",
-    color: "#666",
-    fontSize: 16,
-    marginTop: 20,
+    marginBottom: 10,
   },
   starsContainer: {
     flexDirection: "row",
+    marginBottom: 4,
   },
   star: {
-    marginLeft: 2,
+    marginRight: 4,
   },
   totalItems: {
-    fontSize: 12,
-    color: "#888",
+    fontSize: 14,
+    color: "#666",
     textAlign: "center",
-  },
-  likeButton: {
-    padding: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 20,
+    marginTop: 4,
   },
 });
 

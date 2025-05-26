@@ -7,6 +7,7 @@ import axios from 'axios';
 import useActionCheckNetwork from '../../hooks/useAction';
 import { useCommonNoification } from '../../context/commonNoti';
 import useAxiosBase from '../../config/AXIOS_BASE';
+import { t } from 'i18next';
 export default function SignUpScreen() {
     const [phone, setPhone] = useState('');
     const [mail, setMail] = useState('');
@@ -63,23 +64,23 @@ export default function SignUpScreen() {
             if (axios.isCancel(error)) {
                 return;
             }
-            // showModal("Error", "Có lỗi xảy ra trong quá trình đăng ký.", "Failed");
-            showModal("Error", error.response.data.message, "Failed");
+            // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình đăng ký.", t("modal.failed").failed"));
+            showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
         }
     };
 
     return (
 
         <ScrollView style={commonStyles.container}>
-            <Header title="Register" />
+            <Header title={t("register")} />
             <View style={commonStyles.containerContent}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold' }}> Pleasure to be at your service!</Text>
-                <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}> Create an account now to experience our services!</Text>
+                <Text style={{ fontSize: 18, fontWeight: 'bold' }}> {t("pleasure")}</Text>
+                <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}> {t("createAccount")}</Text>
 
-                <Text style={commonStyles.labelInput}>Username</Text>
+                <Text style={commonStyles.labelInput}>{t("username")}</Text>
                 <TextInput
                     style={commonStyles.input}
-                    placeholder='User name'
+                    placeholder={t("username")}
                     value={username}
                     onChangeText={(text) => {
                         setUsername(text);
@@ -90,10 +91,10 @@ export default function SignUpScreen() {
                 {errors.username && (
                     <Text style={{ color: "red", fontSize: 12 }}>{errors.username}</Text>
                 )}
-                <Text style={commonStyles.labelInput}>First and last name</Text>
+                <Text style={commonStyles.labelInput}>{t("fullName")}</Text>
                 <TextInput
                     style={commonStyles.input}
-                    placeholder='Full name'
+                    placeholder={t("fullName")}
                     value={fullName}
                     onChangeText={(text) => {
                         setFullName(text);
@@ -105,7 +106,7 @@ export default function SignUpScreen() {
                 {errors.fullName && (
                     <Text style={{ color: "red", fontSize: 12 }}>{errors.fullName}</Text>
                 )}
-                <Text style={commonStyles.labelInput}>Phone number</Text>
+                <Text style={commonStyles.labelInput}>{t("phone")}</Text>
                 <TextInput
                     style={commonStyles.input}
                     placeholder="03730xxxxx"
@@ -121,7 +122,7 @@ export default function SignUpScreen() {
                 {errors.phone && (
                     <Text style={{ color: "red", fontSize: 12 }}>{errors.phone}</Text>
                 )}
-                <Text style={commonStyles.labelInput}>Mail address</Text>
+                <Text style={commonStyles.labelInput}>{t("mailAddress")}</Text>
                 <TextInput
                     style={commonStyles.input}
                     placeholder="xxx@gmail.com"
@@ -158,14 +159,14 @@ export default function SignUpScreen() {
                         )}
                     </TouchableOpacity>
                     <Text style={{ flex: 1 }}>
-                        Tôi đồng ý với{' '}
+                        {t("termsAgreement")}{' '}
                         <Text
                             style={{ color: '#007AFF', textDecorationLine: 'underline' }}
                             onPress={() => {
                                 Linking.openURL('https://www.termsfeed.com/live/34c3495d-1cd2-4b4c-95f2-cf216da991ed');
                             }}
                         >
-                            các điều khoản và điều kiện
+                            {t("termsLink")}
                         </Text>
                     </Text>
                 </View>
@@ -185,7 +186,7 @@ export default function SignUpScreen() {
                             fontSize: 18,
                             color: '#fff',
                             fontFamily: 'nunito-bold',
-                        }}>Next</Text>
+                        }}>{t("next")}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

@@ -87,7 +87,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xử lý", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xử lý", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ export default function Home() {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        showModal("Quyền truy cập vị trí bị từ chối", "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.", "Failed");
+        showModal("Quyền truy cập vị trí bị từ chối", "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.", t("modal.failed"));
         return null;
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
@@ -108,7 +108,7 @@ export default function Home() {
         longitude: currentLocation.coords.longitude,
       };
     } catch (error) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình xác định vị trí", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xác định vị trí", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export default function Home() {
       }
       return null;
     } catch (error) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình reverse geocoding", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình reverse geocoding", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải địa chỉ", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải địa chỉ", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -206,7 +206,7 @@ export default function Home() {
       setChefFavorite(response.data.content);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", error.response.data.message, "Failed");
+      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
     }
     finally {
       setLoading(false);
@@ -232,7 +232,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -256,7 +256,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin món ăn", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải thông tin món ăn", t("modal.failed"));
     } finally {
       setLoading(false);
     }

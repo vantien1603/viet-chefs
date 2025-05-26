@@ -1,21 +1,35 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
-import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import Header from '../../components/header'
-import { commonStyles } from '../../style'
-import useAxios from '../../config/AXIOS_API'
-import { AuthContext } from '../../config/AuthContext'
-import { useCommonNoification } from '../../context/commonNoti'
-import { StyleSheet } from 'react-native'
-import { MaterialIcons } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
-import { ActivityIndicator } from 'react-native'
-import { TabBar, TabView } from 'react-native-tab-view'
-import { useConfirmModal } from '../../context/commonConfirm'
-import useRequireAuthAndNetwork from '../../hooks/useRequireAuthAndNetwork'
+import React, { useContext, useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Header from "../../components/header";
+import { commonStyles } from "../../style";
+import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
+import { useCommonNoification } from "../../context/commonNoti";
+import { StyleSheet } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { ActivityIndicator } from "react-native";
+import { TabBar, TabView } from "react-native-tab-view";
+import { useConfirmModal } from "../../context/commonConfirm";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
-
-const PackageRender = ({ packages, loading, onLongPress, onChoose, selectionMode, selectedList, type, action }) => {
+const PackageRender = ({
+  packages,
+  loading,
+  onLongPress,
+  onChoose,
+  selectionMode,
+  selectedList,
+  type,
+  action,
+}) => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       onLongPress={() => onLongPress(item.id)}
@@ -25,36 +39,59 @@ const PackageRender = ({ packages, loading, onLongPress, onChoose, selectionMode
         }
       }}
       key={item.id}
-      style={[styles.section, selectedList.includes(item.id) && styles.selectedCard]}
+      style={[
+        styles.section,
+        selectedList.includes(item.id) && styles.selectedCard,
+      ]}
     >
       <Text numberOfLines={1} ellipsizeMode="tail">
-        <Text style={styles.itemContentLabel}>Menu name: </Text>
+        <Text style={styles.itemContentLabel}>{t("packageName")}: </Text>
         <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
       </Text>
       <Text numberOfLines={1} ellipsizeMode="tail">
-        <Text style={styles.itemContentLabel}>Duration: </Text>
+        <Text style={styles.itemContentLabel}>{t("duration")}: </Text>
         <Text style={styles.itemContent}>{item.durationDays} days</Text>
       </Text>
       <Text numberOfLines={2} ellipsizeMode="tail">
-        <Text style={styles.itemContentLabel}>Max dishes: </Text>
+        <Text style={styles.itemContentLabel}>{t("maxDishes")}: </Text>
         <Text style={styles.itemContent}>{item.maxDishesPerMeal}</Text>
       </Text>
       <Text numberOfLines={1} ellipsizeMode="tail">
-        <Text style={styles.itemContentLabel}>Max guests: </Text>
+        <Text style={styles.itemContentLabel}>{t("maxGuests")}: </Text>
         <Text style={styles.itemContent}>{item.maxGuestCountPerMeal}</Text>
       </Text>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         {item.discount > 0 && (
           <Text numberOfLines={1} ellipsizeMode="tail">
-            <Text style={styles.itemContentLabel}>Discount: </Text>
+            <Text style={styles.itemContentLabel}>{t("discount")}: </Text>
             <Text style={styles.itemContent}>{item.discount * 100}%</Text>
           </Text>
         )}
-        <TouchableOpacity style={{ padding: 10, borderRadius: 10, backgroundColor: type === "sub" ? '#A9411D' : 'green' }} onPress={() => action(type === "sub" ? "Unsubscribe" : "Subscribe", "single", item.id)}>
-          <Text style={{ color: 'white' }}>{type === "sub" ? 'Unsub' : 'Subscribe'}</Text>
+        <TouchableOpacity
+          style={{
+            padding: 10,
+            borderRadius: 10,
+            backgroundColor: type === "sub" ? "#A9411D" : "green",
+          }}
+          onPress={() =>
+            action(
+              type === "sub" ? "Unsubscribe" : "Subscribe",
+              "single",
+              item.id
+            )
+          }
+        >
+          <Text style={{ color: "white" }}>
+            {type === "sub" ? t("unsubscribe") : t("subscribe")}
+          </Text>
         </TouchableOpacity>
       </View>
-
     </TouchableOpacity>
   );
 
@@ -65,14 +102,22 @@ const PackageRender = ({ packages, loading, onLongPress, onChoose, selectionMode
         renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 10 }}
         keyExtractor={(item) => item.id.toString()}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>No package</Text>}
-        ListFooterComponent={(loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
+        ListEmptyComponent={
+          <Text style={{ textAlign: "center", fontSize: 16 }}>
+            {t("noPackage")}
+          </Text>
+        }
+        ListFooterComponent={
+          loading ? (
+            <ActivityIndicator size="large" />
+          ) : (
+            <View style={{ height: 100 }} />
+          )
+        }
       />
     </View>
   );
 };
-
-
 
 const Packages = () => {
   const axiosInstance = useAxios();
@@ -85,15 +130,14 @@ const Packages = () => {
   const [unsubscribes, setUnSubsribes] = useState([]);
   const [index, setIndex] = useState(0);
   const [routes] = useState([
-    { key: 'subcribe', title: 'Subcribe' },
-    { key: 'unsubcribe', title: 'Unsubcribe' },
+    { key: "subcribe", title: t("tabs.subscribe") },
+    { key: "unsubcribe", title: t("tabs.unsubscribe") },
   ]);
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
   useEffect(() => {
     fetchPackagesAndUnsubscribes();
-  }, [])
-
+  }, []);
 
   const fetchPackagesAndUnsubscribes = async () => {
     setLoading(true);
@@ -121,13 +165,15 @@ const Packages = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchPackagesFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
   };
-
-
 
   const toggleSelection = (packId) => {
     if (selectedPackages.includes(packId)) {
@@ -152,53 +198,69 @@ const Packages = () => {
     setSelectedPackages([]);
   };
 
-
   const handleAction = async (type, mode, id) => {
     console.log("press", type, mode, id);
-    showConfirm(`${type} confirm`, `Are you sure want to ${type} ${selectedPackages.length} packages?`, () => requireAuthAndNetWork(async () => {
-      setLoading(true);
-      try {
-        const payload = {
-          chefId: user.chefId,
-          packageIds: mode === "single" ? [id] : selectedPackages
-        }
-        console.log(payload)
-        let response;
+    showConfirm(
+      t(`${type}ConfirmTitle`),
+      t(`${type}ConfirmMessage`, { count: mode === 'single' ? 1 : selectedPackages.length }),
+      () =>
+        requireAuthAndNetWork(async () => {
+          setLoading(true);
+          try {
+            const payload = {
+              chefId: user.chefId,
+              packageIds: mode === "single" ? [id] : selectedPackages,
+            };
+            console.log(payload);
+            let response;
 
-        if (type === "Unsubscribe") {
-          response = await axiosInstance.post("/packages/unsubscribe", payload)
-        } else {
-          response = await axiosInstance.post("/packages/subscribe", payload)
-        }
-        console.log(response.data, response.status);
-        if (response.status === 200) {
-          showModal("Success", `${type} ${selectedPackages.length} packages successfull`);
-          setSelectedPackages([]);
-        }
-      } catch (error) {
-        if (error.response?.status === 401) {
-          return;
-        }
-        if (axios.isCancel(error)) {
-          return;
-        }
-        showModal("Error", `Có lỗi xảy ra trong quá trình ${type} ${selectedPackages.length} packages.`, "Failed");
-      } finally {
-        setLoading(false);
-        fetchPackagesAndUnsubscribes();
-
-      }
-    }))
-
-
-  }
-
-
-
+            if (type === "Unsubscribe") {
+              response = await axiosInstance.post(
+                "/packages/unsubscribe",
+                payload
+              );
+            } else {
+              response = await axiosInstance.post(
+                "/packages/subscribe",
+                payload
+              );
+            }
+            console.log(response.data, response.status);
+            if (response.status === 200) {
+              showModal(
+                t('modal.success'),
+                t(`success.${type}Success`, {
+                  count: mode === 'single' ? 1 : selectedPackages.length,
+                }),
+                t('modal.succeeded')
+              );
+              setSelectedPackages([]);
+            }
+          } catch (error) {
+            if (error.response?.status === 401) {
+              return;
+            }
+            if (axios.isCancel(error)) {
+              return;
+            }
+            showModal(
+              t('modal.error'),
+              t(`errors.${type}Failed`, {
+                count: mode === 'single' ? 1 : selectedPackages.length,
+              }),
+              t('modal.failed')
+            );
+          } finally {
+            setLoading(false);
+            fetchPackagesAndUnsubscribes();
+          }
+        })
+    );
+  };
 
   const renderScene = ({ route }) => {
     switch (route.key) {
-      case 'subcribe':
+      case "subcribe":
         return (
           <PackageRender
             packages={packages}
@@ -211,7 +273,7 @@ const Packages = () => {
             action={handleAction}
           />
         );
-      case 'unsubcribe':
+      case "unsubcribe":
         return (
           <PackageRender
             packages={unsubscribes}
@@ -232,25 +294,59 @@ const Packages = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title="Packages" />
+      <Header title={t('packages')} />
       {selectionMode && (
         <View style={styles.floatingActions}>
-          <TouchableOpacity style={[styles.floatingButton, { flexDirection: 'row', alignItems: 'center' }]} onPress={selectAll}>
-            <Text style={[styles.floatingText, { color: "grey" }]}>All ({selectedPackages.length})</Text>
+          <TouchableOpacity
+            style={[
+              styles.floatingButton,
+              { flexDirection: "row", alignItems: "center" },
+            ]}
+            onPress={selectAll}
+          >
+            <Text style={[styles.floatingText, { color: "grey" }]}>
+              {t('all')} ({selectedPackages.length})
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.floatingButton, { backgroundColor: index === 0 ? "#FFCDD2" : "green", flexDirection: 'row', alignItems: 'center' }]} onPress={() => handleAction(index === 0 ? "Unsubscribe" : "Subscribe")}>
+          <TouchableOpacity
+            style={[
+              styles.floatingButton,
+              {
+                backgroundColor: index === 0 ? "#FFCDD2" : "green",
+                flexDirection: "row",
+                alignItems: "center",
+              },
+            ]}
+            onPress={() =>
+              handleAction(index === 0 ? "Unsubscribe" : "Subscribe")
+            }
+          >
             {/* <MaterialIcons name="delete" size={24} color="red" /> */}
-            <Text style={[styles.floatingText, { color: index === 0 ? "grey" : "white" }]}>{index === 0 ? 'Un' : 'Sub'}</Text>
-            <Text style={[styles.floatingText, { color: index === 0 ? "red" : "white" }]}>
+            <Text
+              style={[
+                styles.floatingText,
+                { color: index === 0 ? "grey" : "white" },
+              ]}
+            >
+              {index === 0 ? t('unsubscribe') : t('subscribe')}
+            </Text>
+            <Text
+              style={[
+                styles.floatingText,
+                { color: index === 0 ? "red" : "white" },
+              ]}
+            >
               ({selectedPackages.length})
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.floatingButton, { backgroundColor: "#E0E0E0" }]} onPress={cancelSelection}>
+          <TouchableOpacity
+            style={[styles.floatingButton, { backgroundColor: "#E0E0E0" }]}
+            onPress={cancelSelection}
+          >
             <MaterialIcons name="cancel" size={24} color="black" />
           </TouchableOpacity>
         </View>
-      )
-      }
+      )}
 
       <TabView
         navigationState={{ index, routes }}
@@ -263,16 +359,16 @@ const Packages = () => {
         renderTabBar={(props) => (
           <TabBar
             {...props}
-            indicatorStyle={{ backgroundColor: '#9C583F', height: 3 }}
+            indicatorStyle={{ backgroundColor: "#9C583F", height: 3 }}
             style={{
-              backgroundColor: '#EBE5DD',
+              backgroundColor: "#EBE5DD",
               elevation: 0,
               shadowOpacity: 0,
               borderBottomWidth: 0,
             }}
             activeColor="#9C583F"
             inactiveColor="gray"
-            labelStyle={{ fontWeight: 'bold' }}
+            labelStyle={{ fontWeight: "bold" }}
           />
         )}
       />
@@ -320,9 +416,9 @@ const Packages = () => {
           </TouchableOpacity>
         )}
       /> */}
-    </SafeAreaView >
-  )
-}
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   section: {
@@ -339,10 +435,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   itemContentLabel: {
-    fontWeight: 'bold'
+    fontWeight: "bold",
   },
   itemContent: {
-    fontSize: 14
+    fontSize: 14,
   },
   selectedCard: {
     borderWidth: 3,
@@ -373,7 +469,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 6,
-    alignItems: 'center'
+    alignItems: "center",
   },
 
   floatingText: {
@@ -384,27 +480,27 @@ const styles = StyleSheet.create({
   modalContainer: {
     height: 500,
     padding: 20,
-    paddingVertical: 40
+    paddingVertical: 40,
   },
   fieldWrapper: {
     marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   itemModalLabel: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     flex: 1,
   },
   itemModalContent: {
     fontSize: 16,
-    color: '#555',
+    color: "#555",
     flex: 2,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderRadius: 5,
     padding: 10,
     marginTop: 5,
@@ -418,29 +514,28 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     alignItems: "center",
-    flexDirection: 'row',
-    justifyContent: 'space-around'
-
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
   updateButton: {
     backgroundColor: "orange",
     padding: 15,
     borderRadius: 10,
     width: "40%",
-    alignItems: "center"
+    alignItems: "center",
   },
   deleteButton: {
     backgroundColor: "red",
     padding: 15,
     borderRadius: 10,
     width: "40%",
-    alignItems: "center"
+    alignItems: "center",
   },
   buttonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 16
-  }
+    fontSize: 16,
+  },
 });
 
-export default Packages
+export default Packages;

@@ -39,7 +39,7 @@ const Home = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", t("modal.failed"));
         } finally {
             setLoading(false);
         }
@@ -61,7 +61,7 @@ const Home = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", t("modal.failed"));
         } finally {
             setLoading(false);
         }

@@ -11,9 +11,6 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { router } from "expo-router";
 
-
-
-
 const Setting = () => {
   const { t, i18n } = useTranslation();
   const modalLangRef = useRef(null);
@@ -98,7 +95,7 @@ const Setting = () => {
           onPress={logout}
         >
           <Ionicons name='log-out-outline' size={24} color="black" style={{ marginRight: 16 }} />
-          <Text style={{ flex: 1, fontSize: 16 }}>{isGuest ? 'Login/ Sign up' : t('logout')}</Text>
+          <Text style={{ flex: 1, fontSize: 16 }}>{isGuest ? (t("login")/t("signup")) : t('logout')}</Text>
 
           <Ionicons name="chevron-forward" size={20} color="gray" />
         </TouchableOpacity>
@@ -107,14 +104,14 @@ const Setting = () => {
 
       <Modalize ref={modalLangRef} adjustToContentHeight key={langModalKey}>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Chọn ngôn ngữ</Text>
+          <Text style={styles.title}>{t("selectLanguage")}</Text>
 
           <TouchableOpacity
             style={styles.languageItem}
             onPress={() => selectLanguage('vi')}
           >
             <Text style={styles.flag}>🇻🇳</Text>
-            <Text style={styles.languageName}>Tiếng Việt</Text>
+            <Text style={styles.languageName}>{t("vietnamese")}</Text>
             {selectedLang === 'vi' && (
               <AntDesign name="check" size={18} color="green" />
             )}
@@ -124,7 +121,7 @@ const Setting = () => {
             onPress={() => selectLanguage('en')}
           >
             <Text style={styles.flag}>🇬🇧</Text>
-            <Text style={styles.languageName}>English</Text>
+            <Text style={styles.languageName}>{t("english")}</Text>
             {selectedLang === 'en' && (
               <AntDesign name="check" size={18} color="green" />
             )}
@@ -134,14 +131,14 @@ const Setting = () => {
 
       <Modalize ref={modalCountryRef} adjustToContentHeight>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Chọn quốc gia</Text>
+          <Text style={styles.title}>{t("selectCountry")}</Text>
 
           <TouchableOpacity
             style={styles.languageItem}
             onPress={() => selectCountry('vi')}
           >
             <Text style={styles.flag}>🇻🇳</Text>
-            <Text style={styles.languageName}>Tiếng Việt</Text>
+            <Text style={styles.languageName}>{t("vietnam")}</Text>
             {selectedCountry === 'vi' && (
               <AntDesign name="check" size={18} color="green" />
             )}
@@ -151,7 +148,7 @@ const Setting = () => {
             onPress={() => selectCountry('my')}
           >
             <Text style={styles.flag}>🇬🇧</Text>
-            <Text style={styles.languageName}>English</Text>
+            <Text style={styles.languageName}>{t("america")}</Text>
             {selectedCountry === 'my' && (
               <AntDesign name="check" size={18} color="green" />
             )}

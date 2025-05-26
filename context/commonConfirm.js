@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import Modal from 'react-native-modal';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { t } from 'i18next';
 
 const ConfirmContext = createContext();
 
@@ -67,14 +68,14 @@ export const ConfirmModalProvider = ({ children }) => {
               onPress={closeModal}
               activeOpacity={0.7}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.confirm]}
               onPress={handleConfirm}
               activeOpacity={0.7}
             >
-              <Text style={styles.confirmText}>Confirm</Text>
+              <Text style={styles.confirmText}>{t("confirm")}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -10,6 +10,7 @@ import useActionCheckNetwork from '../../hooks/useAction';
 import { useCommonNoification } from '../../context/commonNoti';
 import axios from 'axios';
 import useAxiosBase from '../../config/AXIOS_BASE';
+import { t } from 'i18next';
 
 const SetPassword = () => {
     const { username, fullName, phone, mail, mode } = useLocalSearchParams();
@@ -29,7 +30,7 @@ const SetPassword = () => {
 
     const handleSetPassword = async () => {
         if (password !== rePassword) {
-            showModal("Error", "Passwords do not match!", "Failed")
+            showModal(t("modal.error"), t("passwordMismatch"), t("modal.failed"))
             return;
         }
 
@@ -42,33 +43,33 @@ const SetPassword = () => {
             console.log('data', setPasswordPayload);
             const response = await axiosInstanceBase.post('/set-password', setPasswordPayload);
             if (response.status === 200) {
-                showModal("Success", "Quá trình đăng kí hoàn tất. Vui lòng đăng nhập lại.", "Success");
+                showModal(t("modal.success"), "Quá trình đăng kí hoàn tất. Vui lòng đăng nhập lại.", t("modal.success"));
                 console.log('Register success');
                 router.push('/screen/login')
             } else {
-                showModal("Error", "Có lỗi xảy ra trong quá trình đặt mật khẩu.", "Failed");
+                showModal(t("modal.error"), t("fetchSetPwFailed"), t("modal.failed"));
             }
         } catch (error) {
             if (axios.isCancel(error)) {
                 return;
             }
-            // showModal("Error", "Có lỗi xảy ra trong quá trình đặt mật khẩu.", "Failed");
-            showModal("Error", error.response.data.message, "Failed");
+            // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình đặt mật khẩu.", t("modal.failed").failed"));
+            showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
         }
     }
     return (
         <SafeAreaView style={commonStyles.container}>
-            <Header title={"Set password"} />
+            <Header title={t("setPassword")} />
             <View style={commonStyles.containerContent}>
                 <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 20 }}>
-                    Please enter your password. This password will be used for future logins
+                    {t("enterPassword")}
                 </Text>
                 <PasswordInput
-                    placeholder="Password"
+                    placeholder={t("password")}
                     onPasswordChange={handlePasswordChange}
                 />
                 <PasswordInput
-                    placeholder="Re-enter password"
+                    placeholder={t("rePassword")}
                     onPasswordChange={handleRePasswordChange}
                 />
             </View>
@@ -88,7 +89,7 @@ const SetPassword = () => {
                         fontSize: 18,
                         color: '#fff',
                         fontFamily: 'nunito-bold',
-                    }}>Next</Text>
+                    }}>{t("next")}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

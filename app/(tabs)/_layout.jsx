@@ -30,7 +30,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
         clearInterval(interval);
       }
     } catch (error) {
-      console.error("Error fetching unread message count:", error);
+      console.log("Error fetching unread message count:", error);
     }
   };
 
@@ -38,11 +38,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
     if (isGuest) return;
     try {
       await axiosInstance.put("/notifications/my-chat");
-      fetchUnreadMessageCount();
+      fetchUnreadMessageCount(); // gọi lại sau khi cập nhật
     } catch (error) {
-      console.error("Error fetching unread message count:", error);
+      console.log("Error updating notifications:", error);
     }
-  }
+  };
 
   useEffect(() => {
     const restrictedScreens = ["chat", "history"];

@@ -49,7 +49,7 @@ export default function WelcomeScreen() {
       const token = await registerForPushNotificationsAsync();
       if (token) {
         setExpoPushToken(token);
-        await SecureStore.setItem('expoPushToken', token);
+        SecureStore.setItem('expoPushToken', token);
         console.log('Expo Push Token:', token);
       }
 
