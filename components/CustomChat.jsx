@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { t } from "i18next";
 import React, { useState, useEffect, useRef } from "react";
 import { StyleSheet, TextInput, ActivityIndicator } from "react-native";
 import { TouchableOpacity } from "react-native";
@@ -38,12 +39,12 @@ const CustomChat = ({ messages, onSendMessage, callApi, onContactAdmin }) => {
   };
 
   const handleSuggestionPress = async (suggestion) => {
-    const userMessage = { role: "customer", content: suggestion, suggestContactAdmin: false };
+    const userMessage = { role: "customer", content: t(`${suggestion}`), suggestContactAdmin: false };
     onSendMessage(userMessage);
     setInputText(""); 
     setIsBotTyping(true); 
     try {
-      await callApi(suggestion);
+      await callApi(t(`${suggestion}`));
     } finally {
       setIsBotTyping(false);
     }
@@ -69,7 +70,7 @@ const CustomChat = ({ messages, onSendMessage, callApi, onContactAdmin }) => {
               >
                 {message.role === "customer" ? (
                   <View style={customStyles.messageHeader}>
-                    <Text style={customStyles.messageRole}>You</Text>
+                    <Text style={customStyles.messageRole}>{t("you")}</Text>
                   </View>
                 ) : (
                   <View style={customStyles.messageHeader}>
@@ -83,7 +84,7 @@ const CustomChat = ({ messages, onSendMessage, callApi, onContactAdmin }) => {
                   style={customStyles.contactAdminButton}
                   onPress={onContactAdmin}
                 >
-                  <Text style={customStyles.contactAdminText}>Liên hệ hỗ trợ</Text>
+                  <Text style={customStyles.contactAdminText}>{t("contactSupport")}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -101,27 +102,27 @@ const CustomChat = ({ messages, onSendMessage, callApi, onContactAdmin }) => {
           <View style={customStyles.suggestionContainer}>
             <TouchableOpacity
               style={customStyles.suggestionButton}
-              onPress={() => handleSuggestionPress("Hỏi nhân viên")}
+              onPress={() => handleSuggestionPress("askStaff")}
             >
-              <Text style={customStyles.suggestionText}>Hỏi nhân viên</Text>
+              <Text style={customStyles.suggestionText}>{t("askStaff")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={customStyles.suggestionButton}
-              onPress={() => handleSuggestionPress("VietChef là gì?")}
+              onPress={() => handleSuggestionPress("whatIsVietChef")}
             >
-              <Text style={customStyles.suggestionText}>VietChef là gì?</Text>
+              <Text style={customStyles.suggestionText}>{t("whatIsVietChef")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={customStyles.suggestionButton}
-              onPress={() => handleSuggestionPress("Hướng dẫn đặt lịch một buổi")}
+              onPress={() => handleSuggestionPress("guideSingleBooking")}
             >
-              <Text style={customStyles.suggestionText}>Hướng dẫn đặt lịch một buổi</Text>
+              <Text style={customStyles.suggestionText}>{t("guideSingleBooking")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={customStyles.suggestionButton}
-              onPress={() => handleSuggestionPress("Hướng dẫn đặt lịch dài hạn")}
+              onPress={() => handleSuggestionPress("guideLongTermBooking")}
             >
-              <Text style={customStyles.suggestionText}>Hướng dẫn đặt lịch dài hạn</Text>
+              <Text style={customStyles.suggestionText}>{t("guideLongTermBooking")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -131,7 +132,7 @@ const CustomChat = ({ messages, onSendMessage, callApi, onContactAdmin }) => {
           style={customStyles.input}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Type your message..."
+          placeholder={t("inputPlaceholder")}
         />
         <TouchableOpacity onPress={handleSend}>
           <Ionicons name="send" size={24} color="black" />

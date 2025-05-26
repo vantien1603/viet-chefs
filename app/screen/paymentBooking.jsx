@@ -1,35 +1,42 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
   TextInput,
-  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../components/header";
-import Toast from "react-native-toast-message";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
-import { Modalize } from "react-native-modalize";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { useConfirmModal } from "../../context/commonConfirm";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
+import { useSelectedItems } from "../../context/itemContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Ionicons } from "@expo/vector-icons";
+import { Modalize } from "react-native-modalize";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 const PaymentBookingScreen = () => {
   const params = useLocalSearchParams();
   const bookingId = params.bookingId;
-  const bookingData = JSON.parse(params.bookingData || "{}");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [balance, setBalance] = useState(0);
   const [pinValues, setPinValues] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
-  const [hasPassword, setHasPassword] = useState(true); // Giả sử ví đã có mật khẩu
   const axiosInstance = useAxios();
+  const [isPaySuccess, setIsPaySuccess] = useState(false);
+  const requireAuthAndNetwork = useRequireAuthAndNetwork();
+  const { showConfirm } = useConfirmModal();
+  const { showModal } = useCommonNoification();
+  const { totalPrice, clearSelection } = useSelectedItems();
+  const [hasPassword, setHasPassword] = useState(false);
+  const router = useRouter();
   const modalizeRef = useRef(null);
   const pinInputRefs = useRef([
     React.createRef(),
@@ -37,42 +44,44 @@ const PaymentBookingScreen = () => {
     React.createRef(),
     React.createRef(),
   ]).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-
-  const totalPrice = bookingData?.totalPrice || 0;
   const pin = pinValues.join("");
-
+  const [showBalance, setShowBalance] = useState(false);
+  const toggleBalance = () => setShowBalance((prev) => !prev);
   useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.3,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [blinkAnim]);
+    checkWalletPassword();
+    fetchBalanceInWallet();
+  }, []);
+
+  const checkWalletPassword = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(
+        "/users/profile/my-wallet/has-password"
+      );
+      console.log(response.data);
+      setHasPassword(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchBalanceInWallet = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get("/users/profile/my-wallet");
-      console.log("Wallet Balance:", response.data);
       const wallet = response.data;
       setBalance(wallet.balance);
     } catch (error) {
-      console.error("Error fetching wallet balance:", error);
-      Toast.show({
-        type: "error",
-        text1: t("errorFetchingBalance"),
-      });
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(
+        t("modal.error"),
+        t("errors.fetchBalanceFailed"),
+        t("modal.failed")
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,23 +90,52 @@ const PaymentBookingScreen = () => {
       setError(t("pinMustBe4Digits"));
       return;
     }
+    setLoading(true);
     try {
       const response = await axiosInstance.post(
         `/users/profile/my-wallet/access?password=${pin}`
       );
-      console.log("Access wallet response:", response.data);
       setError("");
-      modalizeRef.current?.close();
-      await handleCompletePayment();
+      if (response.data === true) {
+        await handleCompletePayment();
+        modalizeRef.current?.close();
+      } else {
+        setError(t("invalidPin"));
+        setPinValues(["", "", "", ""]);
+        pinInputRefs[0].current?.focus();
+      }
     } catch (error) {
-      console.error("Error accessing wallet:", error.response?.data);
+      if (axios.isCancel(error) || error.response?.status === 401) return;
       setError(t("invalidPin"));
       setPinValues(["", "", "", ""]);
       pinInputRefs[0].current?.focus();
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCompletePayment = async () => {
+    if (balance < totalPrice) {
+     showModal(
+        t("modal.error"),
+        t("errors.notEnoughBalance"),
+        t("modal.failed"),
+        null,
+        [
+          {
+            label: t("cancel"),
+            onPress: () => console.log("Cancel pressed"),
+            style: { backgroundColor: "#ccc", borderColor: "#ccc" },
+          },
+          {
+            label: t("deposit"),
+            onPress: () => router.push("/screen/wallet"),
+            style: { backgroundColor: "#383737", borderColor: "#383737" },
+          },
+        ]
+      );
+      return;
+    }
     setLoading(true);
     try {
       const response = await axiosInstance.post(
@@ -105,35 +143,34 @@ const PaymentBookingScreen = () => {
         {}
       );
       console.log("Payment Response:", response.data);
-      Toast.show({
-        type: "success",
-        text1: t("paymentSuccess"),
-      });
-      router.push("(tabs)/home");
+      if (response.status === 200) {
+        await fetchBalanceInWallet();
+        showModal(t("modal.success"), t("success.paymentSuccess"), t("modal.succeeded"));
+        setIsPaySuccess(true);
+        // clearSelection();
+      }
     } catch (error) {
-      console.log("Error completing payment:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), t("errors.paymentFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleConfirmPayment = () => {
-    if (balance < totalPrice) {
-      Toast.show({
-        type: "error",
-        text1: t("notEnoughBalance"),
-      });
-      return;
-    }
-    setModalVisible(true);
-  };
-
   const handleBackHome = () => {
-    router.push("(tabs)/home");
+    router.replace("(tabs)/home");
   };
 
   const confirmPayment = () => {
+    // setModalVisible(false);
+    // handleCompletePayment();
     setModalVisible(false);
+    setPinValues(["", "", "", ""]);
     modalizeRef.current?.open();
     setTimeout(() => pinInputRefs[0].current?.focus(), 100);
   };
@@ -171,101 +208,76 @@ const PaymentBookingScreen = () => {
     }
   };
 
-  useEffect(() => {
-    fetchBalanceInWallet();
-  }, []);
-
-  useEffect(() => {
-    if (pin.length === 4) {
-      accessWallet();
-    }
-  }, [pin]);
+  const handleBack = () => {
+    router.replace("/screen/confirmBooking");
+  };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView>
       <SafeAreaView style={styles.container}>
-        <Header title={t("confirmAndPayment")} />
+        <Header
+          title={t("confirmAndPayment")}
+          onLeftPress={() => handleBack()}
+        />
         <View style={styles.content}>
           <Text style={styles.title}>{t("bookingPayment")}</Text>
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>{t("walletBalance")}:</Text>
-            <Text style={styles.priceValue}>
-              {balance.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.priceLabel}>
+              Số dư: {showBalance ? balance : "***"}
             </Text>
+            <TouchableOpacity onPress={toggleBalance} style={{ marginLeft: 8 }}>
+              <MaterialIcons
+                name={showBalance ? "visibility" : "visibility-off"}
+                size={20}
+                color="#555"
+              />
+            </TouchableOpacity>
           </View>
-
           <View style={styles.priceContainer}>
             <Text style={styles.priceLabel}>{t("totalAmount")}:</Text>
             <Text style={styles.priceValue}>
-              {totalPrice.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}
+              {totalPrice &&
+                totalPrice.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
             </Text>
           </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.button, styles.backButton]}
+              style={[
+                styles.button,
+                isPaySuccess ? styles.paymentButton : styles.backButton,
+              ]}
               onPress={handleBackHome}
               disabled={loading}
             >
               <Text style={styles.buttonText}>{t("backHome")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.paymentButton]}
-              onPress={handleConfirmPayment}
-              disabled={loading}
+              style={[
+                styles.button,
+                isPaySuccess ? styles.backButton : styles.paymentButton,
+              ]}
+              onPress={() =>
+                showConfirm(
+                  t("completePaymentTitle"),
+                  t("completePaymentMessage"),
+                  () => requireAuthAndNetwork(hasPassword ? confirmPayment : handleCompletePayment)
+                )
+              }
+              disabled={loading || isPaySuccess}
             >
               {loading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={styles.buttonText}>{t("completePayment")}</Text>
+                <Text style={styles.buttonText}>{t(`completePayment`)}</Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Modal xác nhận thanh toán */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContentC}>
-              <Text style={styles.modalTitleC}>{t("confirmPayment")}</Text>
-              <Text style={styles.modalText}>
-                {t("confirmPaymentWithAmount", {
-                  amount: totalPrice.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  }),
-                })}
-              </Text>
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.modalButtonText}>{t("cancel")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={confirmPayment}
-                >
-                  <Text style={styles.modalButtonText}>{t("confirm")}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Modal nhập PIN */}
         <Modalize
           ref={modalizeRef}
           adjustToContentHeight={true}
@@ -277,8 +289,6 @@ const PaymentBookingScreen = () => {
             const focusIndex = firstEmptyIndex === -1 ? 0 : firstEmptyIndex;
             pinInputRefs[focusIndex].current?.focus();
           }}
-          closeOnOverlayTap={false}
-          panGestureEnabled={false}
         >
           <View style={styles.modalContent}>
             <TouchableOpacity
@@ -295,16 +305,7 @@ const PaymentBookingScreen = () => {
             <Text style={styles.modalSubtitle}>{t("enter4DigitPin")}</Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.pinBox,
-                    pinValues[index] === "" &&
-                    index === pinValues.join("").length
-                      ? { opacity: blinkAnim }
-                      : {},
-                  ]}
-                >
+                <View key={index} style={styles.pinBox}>
                   <TextInput
                     ref={pinInputRefs[index]}
                     style={styles.pinInput}
@@ -317,10 +318,25 @@ const PaymentBookingScreen = () => {
                     textAlign="center"
                     selectionColor="transparent"
                   />
-                </Animated.View>
+                </View>
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                backgroundColor: "#A64B2A",
+                borderRadius: 20,
+              }}
+              onPress={() => accessWallet()}
+            >
+              <Text
+                style={{ fontSize: 16, color: "white", fontWeight: "bold" }}
+              >
+                {t("pay")}
+              </Text>
+            </TouchableOpacity>
           </View>
         </Modalize>
       </SafeAreaView>
@@ -337,6 +353,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 40,
     justifyContent: "flex-start",
+    paddingTop: 40,
+    justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -346,13 +364,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   priceContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 10,
+    // justifyContent: "space-around",
     alignItems: "center",
     width: "100%",
+    justifyContent: "center",
     marginBottom: 20,
   },
   priceLabel: {
@@ -363,7 +383,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#A64B2A",
-    marginTop: 10,
   },
   buttonContainer: {
     flexDirection: "row",
@@ -387,6 +406,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
+    textAlign: "center",
   },
   modalOverlay: {
     flex: 1,
@@ -436,7 +456,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-   modalStyle: {
+  modalStyle: {
     backgroundColor: "#FFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -450,7 +470,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     alignItems: "center",
-    position: "relative",
+    // position: "relative",
+    paddingBottom: 20,
   },
   closeButton: {
     position: "absolute",

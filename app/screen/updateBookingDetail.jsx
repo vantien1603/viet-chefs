@@ -15,20 +15,24 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import { Dropdown } from "react-native-element-dropdown";
 import useAxios from "../../config/AXIOS_API";
+import { useCommonNoification } from "../../context/commonNoti";
+import axios from "axios";
 import { t } from "i18next";
 
 const UpdateBookingDetailScreen = () => {
   const { bookingDetailId, chefId } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
   const [menus, setMenus] = useState([]);
-  const [selectedMenu, setSelectedMenu] = useState(null); // Menu được chọn
-  const [menuDishes, setMenuDishes] = useState([]); // Danh sách món ăn của menu
-  const [extraDishes, setExtraDishes] = useState([]); // Danh sách extra dishes
-  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState([]); // Extra dishes được chọn
-  const [allDishes, setAllDishes] = useState([]); // Danh sách tất cả dishes
-  const [selectedDishes, setSelectedDishes] = useState([]); // Dishes được chọn (bao gồm notes)
+  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [menuDishes, setMenuDishes] = useState([]);
+  const [extraDishes, setExtraDishes] = useState([]);
+  const [selectedExtraDishIds, setSelectedExtraDishIds] = useState([]);
+  const [allDishes, setAllDishes] = useState([]);
+  const [selectedDishes, setSelectedDishes] = useState([]);
   const axiosInstance = useAxios();
+  const { showModal } = useCommonNoification();
 
+console.log("cc", chefId);
   // Fetch danh sách menu
   useEffect(() => {
     const fetchMenus = async () => {
@@ -40,18 +44,18 @@ const UpdateBookingDetailScreen = () => {
         );
         setMenus(menuResponse.data.content || []);
       } catch (error) {
-        console.log("Error fetching menus:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to fetch menus.",
-        });
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal(t("modal.error"), t("errors.fetchMenusFailed"), t("modal.failed"));
       }
     };
     fetchMenus();
   }, [chefId]);
 
-  // Cập nhật danh sách món ăn của menu khi chọn menu
   useEffect(() => {
     if (selectedMenu) {
       console.log("Selected menu:", selectedMenu);
@@ -66,7 +70,6 @@ const UpdateBookingDetailScreen = () => {
     }
   }, [selectedMenu, menus]);
 
-  // Fetch danh sách extra dishes khi chọn menu
   useEffect(() => {
     const fetchExtraDishes = async () => {
       if (selectedMenu) {
@@ -76,12 +79,13 @@ const UpdateBookingDetailScreen = () => {
           );
           setExtraDishes(dishesResponse.data.content || []);
         } catch (error) {
-          console.log("Error fetching extra dishes:", error);
-          Toast.show({
-            type: "error",
-            text1: "Error",
-            text2: "Failed to fetch extra dishes.",
-          });
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            return;
+          }
+          showModal(t("modal.error"), t("errors.fetchDishFailed"), t("modal.failed"));
           setExtraDishes([]);
         }
       } else {
@@ -92,7 +96,6 @@ const UpdateBookingDetailScreen = () => {
     fetchExtraDishes();
   }, [selectedMenu]);
 
-  // Fetch danh sách tất cả dishes nếu không chọn menu
   useEffect(() => {
     const fetchDishes = async () => {
       if (!selectedMenu) {
@@ -100,12 +103,13 @@ const UpdateBookingDetailScreen = () => {
           const dishesResponse = await axiosInstance.get(`/dishes`);
           setAllDishes(dishesResponse.data.content || []);
         } catch (error) {
-          console.log("Error fetching dishes:", error);
-          Toast.show({
-            type: "error",
-            text1: "Error",
-            text2: "Failed to fetch dishes.",
-          });
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            return;
+          }
+          showModal(t("modal.error"), t("errors.fetchDishFailed"), t("modal.failed"));
           setAllDishes([]);
         }
       } else {
@@ -116,7 +120,6 @@ const UpdateBookingDetailScreen = () => {
     fetchDishes();
   }, [selectedMenu]);
 
-  // Xử lý chọn extra dish
   const toggleExtraDish = (dishId) => {
     if (selectedExtraDishIds.includes(dishId)) {
       setSelectedExtraDishIds(
@@ -127,7 +130,6 @@ const UpdateBookingDetailScreen = () => {
     }
   };
 
-  // Xử lý chọn dish và thêm notes
   const toggleDish = (dishId) => {
     if (selectedDishes.some((dish) => dish.dishId === dishId)) {
       setSelectedDishes(
@@ -150,7 +152,7 @@ const UpdateBookingDetailScreen = () => {
     setLoading(true);
     try {
       const calculateData = {
-        menuId: selectedMenu ? parseInt(selectedMenu) : null, // Cho phép menuId là null
+        menuId: selectedMenu ? parseInt(selectedMenu) : null,
         extraDishIds: selectedExtraDishIds,
         dishes: selectedDishes,
       };
@@ -162,13 +164,7 @@ const UpdateBookingDetailScreen = () => {
         calculateData
       );
 
-      console.log("Calculate response:", JSON.stringify(response.data, null, 2));
-
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: "Calculation completed",
-      });
+      // showModal(t("modal.success")success"), "Calculation compt("modal.success")t("modal.success"));
 
       const updateData = {
         dishes: selectedDishes,
@@ -191,17 +187,18 @@ const UpdateBookingDetailScreen = () => {
         params: { bookingDetailId, updateData: JSON.stringify(updateData) },
       });
     } catch (error) {
-      console.error("Error calculating booking detail:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2:
-          error.response?.data?.message || "Failed to calculate booking detail",
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), t("errors.calculateFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
   };
+
 
   const renderMenuDishItem = ({ item }) => (
     <View style={styles.dishItem}>

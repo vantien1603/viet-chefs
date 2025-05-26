@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
-    View,
-    ActivityIndicator,
-    Alert,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    StyleSheet,
+  View,
+  ActivityIndicator,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Pressable,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import moment from "moment";
@@ -17,407 +17,557 @@ import { commonStyles } from "../../style";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Header from "../../components/header";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { useCommonNoification } from "../../context/commonNoti";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import { t } from "i18next";
 
 const ScheduleBlocked = () => {
-    const [schedule, setSchedule] = useState({});
-    const [markedDates, setMarkedDates] = useState({});
-    const [selectedDates, setSelectedDates] = useState({});
-    const [loading, setLoading] = useState(true);
-    const axiosInstance = useAxios();
-    const [showPicker, setShowPicker] = useState(false);
-    const [currentField, setCurrentField] = useState({ date: "", index: 0, field: "" });
-    const requireAuthAndNetWork = useRequireAuthAndNetwork();
-    const [existingDates, setExistingDates] = useState({});
+  const [schedule, setSchedule] = useState({});
+  const [markedDates, setMarkedDates] = useState({});
+  const [selectedDates, setSelectedDates] = useState({});
+  const [loading, setLoading] = useState(true);
+  const axiosInstance = useAxios();
+  const [showPicker, setShowPicker] = useState(false);
+  const [currentField, setCurrentField] = useState({
+    date: "",
+    index: 0,
+    field: "",
+  });
+  const requireAuthAndNetWork = useRequireAuthAndNetwork();
+  const [existingDates, setExistingDates] = useState({});
+  const { showModal } = useCommonNoification();
 
-    const handleTimeChange = (event, selectedDate) => {
-        setShowPicker(false);
-        if (event.type === "dismissed") return;
+  const handleTimeChange = (event, selectedDate) => {
+    setShowPicker(false);
+    if (event.type === "dismissed") return;
+    const newTime = selectedDate.toLocaleTimeString("en-GB", {
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const { date, index, field } = currentField;
 
-        const time = moment(selectedDate).format("HH:mm");
-        const { date, index, field } = currentField;
+    const updated = [...schedule[date]];
+    updated[index][field] = newTime;
 
-        const updated = [...schedule[date]];
-        updated[index][field] = time;
+    setSchedule((prev) => ({
+      ...prev,
+      [date]: updated,
+    }));
+  };
 
-        setSchedule(prev => ({
-            ...prev,
-            [date]: updated,
-        }));
-    };
+  const openTimePicker = (date, index, field) => {
+    setCurrentField({ date, index, field });
+    setShowPicker(true);
+  };
 
-    const openTimePicker = (date, index, field) => {
-        setCurrentField({ date, index, field });
-        setShowPicker(true);
-    };
+  useEffect(() => {
+    fetchSchedule();
+  }, []);
 
-    useEffect(() => {
-        fetchSchedule();
-    }, []);
+  const fetchSchedule = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/chef-blocked-dates/me");
+      const data = response.data;
 
-    const fetchSchedule = async () => {
-        try {
-            const response = await axiosInstance.get("/chef-blocked-dates/me");
-            const data = response.data;
-
-            const grouped = {};
-            data.forEach(item => {
-                if (!grouped[item.blockedDate]) {
-                    grouped[item.blockedDate] = [];
-                }
-                grouped[item.blockedDate].push({
-                    startTime: item.startTime,
-                    endTime: item.endTime,
-                    reason: item.reason
-                });
-            });
-
-            setSchedule(grouped);
-            setExistingDates({ ...grouped });
-
-            const marks = {};
-            Object.keys(grouped).forEach(date => {
-                marks[date] = {
-                    marked: true,
-                    selected: true,
-                    selectedColor: "#A9411D",
-                };
-            });
-            setMarkedDates(marks);
-            setSelectedDates(marks);
-        } catch (error) {
-            if (error.response) {
-              console.log(`Lỗi ${error.response.status}:`, error.response.data);
-            }
-            else {
-              console.error(error.message);
-            }
-          } finally {
-            setLoading(false);
-          }
-    };
-
-    const handleDayPress = (day) => {
-        const date = day.dateString;
-        const isSelected = selectedDates[date];
-
-        const updatedSelected = { ...selectedDates };
-        const updatedMarked = { ...markedDates };
-
-        if (isSelected) {
-            delete updatedSelected[date];
-        } else {
-            updatedSelected[date] = {
-                selected: true,
-                selectedColor: "#A9411D",
-            };
-
-            if (!schedule[date]) {
-                setSchedule(prev => ({
-                    ...prev,
-                    [date]: [
-                        { startTime: "", endTime: "", reason: "" }
-                    ]
-                }));
-            }
+      const grouped = {};
+      data.forEach((item) => {
+        if (!grouped[item.blockedDate]) {
+          grouped[item.blockedDate] = [];
         }
-
-        setSelectedDates(updatedSelected);
-        setMarkedDates({
-            ...markedDates,
-            ...updatedSelected
+        grouped[item.blockedDate].push({
+          startTime: item.startTime,
+          endTime: item.endTime,
+          reason: item.reason,
         });
-    };
+      });
 
-    const handleFieldChange = (date, index, field, value) => {
-        const updated = [...schedule[date]];
-        updated[index][field] = value;
+      setSchedule(grouped);
+      setExistingDates({ ...grouped });
 
-        setSchedule(prev => ({
-            ...prev,
-            [date]: updated
+      const marks = {};
+      Object.keys(grouped).forEach((date) => {
+        marks[date] = {
+          marked: true,
+          selected: true,
+          selectedColor: "#A9411D",
+        };
+      });
+      setMarkedDates(marks);
+      setSelectedDates(marks);
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchBlockScheduleFailed"),
+        t("modal.failed")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDayPress = (day) => {
+    const date = day.dateString;
+    const isSelected = selectedDates[date];
+
+    const updatedSelected = { ...selectedDates };
+    const updatedMarked = { ...markedDates };
+
+    if (isSelected) {
+      delete updatedSelected[date];
+    } else {
+      updatedSelected[date] = {
+        selected: true,
+        selectedColor: "#A9411D",
+      };
+
+      if (!schedule[date]) {
+        setSchedule((prev) => ({
+          ...prev,
+          [date]: [{ startTime: "", endTime: "", reason: "" }],
         }));
-    };
+      }
+    }
 
-    const handleAddField = (date) => {
-        setSchedule(prev => ({
-            ...prev,
-            [date]: [
-                ...prev[date],
-                { startTime: "", endTime: "", reason: "" },
-            ],
-        }));
-    };
-    const handleRemoveField = (date, index) => {
-        const updatedFields = [...schedule[date]];
-        updatedFields.splice(index, 1);
+    setSelectedDates(updatedSelected);
+    setMarkedDates(updatedSelected);
+  };
 
-        setSchedule(prev => ({
-            ...prev,
-            [date]: updatedFields.length ? updatedFields : [{ startTime: "", endTime: "", reason: "" }]
-        }));
-    };
+  const handleFieldChange = (date, index, field, value) => {
+    const updated = [...schedule[date]];
+    updated[index][field] = value;
 
-    const handleSave = async () => {
-        const allBlocks = [];
+    setSchedule((prev) => ({
+      ...prev,
+      [date]: updated,
+    }));
+  };
 
-        // Object.keys(selectedDates).forEach(date => {
-        //     if (schedule[date]) {
-        //         const validBlocks = schedule[date]
-        //             .filter(item => item.startTime && item.endTime)
-        //             .map(item => ({
-        //                 blockedDate: date,
-        //                 startTime: item.startTime,
-        //                 endTime: item.endTime,
-        //                 reason: item.reason,
-        //             }));
-        //         allBlocks.push(...validBlocks);
-        //     }
-        // });
-        Object.keys(selectedDates).forEach(date => {
-            if (!existingDates[date] && schedule[date]) {
-                const validBlocks = schedule[date]
-                    .filter(item => item.startTime && item.endTime)
-                    .map(item => ({
-                        blockedDate: date,
-                        startTime: item.startTime,
-                        endTime: item.endTime,
-                        reason: item.reason,
-                    }));
-                allBlocks.push(...validBlocks);
-            }
-        });
+  const handleAddField = (date) => {
+    setSchedule((prev) => ({
+      ...prev,
+      [date]: [...prev[date], { startTime: "", endTime: "", reason: "" }],
+    }));
+  };
 
+  const handleRemoveField = (date, index) => {
+    const updatedFields = [...schedule[date]];
+    updatedFields.splice(index, 1);
 
-        if (allBlocks.length === 0) return;
+    setSchedule((prev) => ({
+      ...prev,
+      [date]: updatedFields.length
+        ? updatedFields
+        : [{ startTime: "", endTime: "", reason: "" }],
+    }));
+  };
 
-        try {
-            setLoading(true);
-            const promises = allBlocks.map(block =>
-                axiosInstance.post("/chef-blocked-dates", block)
-            );
-            const results = await Promise.allSettled(promises);
+  // const handleSave = async () => {
+  //     const allBlocks = [];
+  //     Object.keys(selectedDates).forEach(date => {
+  //         if (!existingDates[date] && schedule[date]) {
+  //             const validBlocks = schedule[date]
+  //                 .filter(item => item.startTime && item.endTime)
+  //                 .map(item => ({
+  //                     blockedDate: date,
+  //                     startTime: item.startTime,
+  //                     endTime: item.endTime,
+  //                     reason: item.reason,
+  //                 }));
+  //             allBlocks.push(...validBlocks);
+  //         }
+  //     });
 
-            results.forEach((result, index) => {
-                const block = allBlocks[index];
-                if (result.status === "fulfilled") {
-                    console.log(` Create blocked schedule success ${block.blockedDate}: ${block.startTime} - ${block.endTime}`);
-                } else {
-                    console.error(`Create blocked schedule failed ${block.blockedDate}: ${result.reason?.message}`);
-                }
-            });
+  //     if (allBlocks.length === 0) {
+  //         showModal("Thông báo", "Không có lịch mới để lưu!");
+  //         return;
+  //     }
 
-            Alert.alert("Xong!", "Đã lưu lịch chặn.");
-            fetchSchedule(); // reload lại
-        } catch (err) {
-            Alert.alert("Lỗi", "Không thể lưu lịch.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  //     console.log(allBlocks);
+  //     // return;
 
+  //     try {
+  //         setLoading(true);
+  //         // const promises = allBlocks.map(block =>
+  //         //     axiosInstance.post("/chef-blocked-dates", block)
+  //         // );
 
-    if (loading) return <ActivityIndicator size="large" color="#A9411D" />;
+  //         // const response = await Promise.allSettled(promises);
+  //         const response = await Promise.all(allBlocks.map(block =>
+  //             axiosInstance.post("/chef-blocked-dates", block)
+  //         ));
 
-    return (
-        <SafeAreaView style={commonStyles.container}>
-            <Header title={"Blocked schedule"} />
-            <ScrollView style={commonStyles.containerContent} contentContainerStyle={{paddingBottom:80}}>
-                <Calendar
-                    markedDates={markedDates}
-                    onDayPress={handleDayPress}
-                    markingType="simple"
-                    theme={{
-                        backgroundColor: "#EBE5DD",
-                        calendarBackground: "#EBE5DD",
-                        selectedDayBackgroundColor: "#A9411D",
-                        selectedDayTextColor: "white",
-                        todayTextColor: "#A9411D",
-                        dayTextColor: "#2d4150",
-                        textDisabledColor: "#d9e1e8",
-                        arrowColor: "#A9411D",
-                        monthTextColor: "#A9411D",
-                        textDayFontWeight: "500",
-                        textMonthFontWeight: "bold",
-                        textDayFontSize: 16,
-                        textMonthFontSize: 18,
-                    }}
-                />
+  //         console.log(response);
+  //         // showModal("Thành công", "Đã lưu lịch chặn!");
+  //         fetchSchedule();
+  //     } catch (error) {
+  //         showModal("Error ", error.response?.data?.message || "Đã có lỗi xảy ra!", t("modal.failed"));
+  //     } finally {
+  //         setLoading(false);
+  //     }
+  // };
 
+  const handleSave = async () => {
+    const allBlocks = [];
+    Object.keys(selectedDates).forEach((date) => {
+      if (!existingDates[date] && schedule[date]) {
+        const validBlocks = schedule[date]
+          .filter((item) => item.startTime && item.endTime)
+          .map((item) => ({
+            blockedDate: date,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            reason: item.reason,
+          }));
+        allBlocks.push(...validBlocks);
+      }
+    });
 
-                {Object.keys(selectedDates).map(date => {
-                    const isExisting = !!existingDates[date];
-                    return (
-                        <View style={styles.formContainer} key={date}>
-                            <Text style={styles.dateTitle}>
-                                Ngày: {date} 
-                                {/* {isExisting ? "(Đã có lịch, chỉ xem)" : ""} */}
-                            </Text>
-                            {schedule[date]?.map((item, index) => (
-                                <View key={index} style={styles.fieldGroup}>
-                                    <TouchableOpacity
-                                        disabled={isExisting}
-                                        onPress={() => openTimePicker(date, index, "startTime")}
-                                    >
-                                        <TextInput
-                                            placeholder="Start Time (hh:mm)"
-                                            value={item.startTime}
-                                            editable={false}
-                                            style={styles.input}
-                                        />
-                                    </TouchableOpacity>
+    if (allBlocks.length === 0) {
+      showModal(
+        t("modal.notification"),
+        t("errors.noNewSchedule"),
+        t("modal.failed")
+      );
+      return;
+    }
 
-                                    <TouchableOpacity
-                                        disabled={isExisting}
-                                        onPress={() => openTimePicker(date, index, "endTime")}
-                                    >
-                                        <TextInput
-                                            placeholder="End Time (hh:mm)"
-                                            value={item.endTime}
-                                            editable={false}
-                                            style={styles.input}
-                                        />
-                                    </TouchableOpacity>
+    try {
+      setLoading(true);
 
-                                    <TextInput
-                                        placeholder="Reason"
-                                        value={item.reason}
-                                        onChangeText={(text) =>
-                                            handleFieldChange(date, index, "reason", text)
-                                        }
-                                        editable={!isExisting}
-                                        style={styles.input}
-                                    />
+      const results = await Promise.allSettled(
+        allBlocks.map((block) =>
+          axiosInstance
+            .post("/chef-blocked-dates", block)
+            .then((res) => ({ success: true, data: res.data }))
+            .catch((err) => ({
+              success: false,
+              error: err.response?.data?.message || "Lỗi không xác định",
+              date: block.blockedDate,
+            }))
+        )
+      );
 
-                                    {!isExisting && (
-                                        <TouchableOpacity
-                                            onPress={() => handleRemoveField(date, index)}
-                                            style={styles.removeButton}
-                                        >
-                                            <Text style={styles.removeButtonText}>X</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            ))}
+      const failed = results.filter((r) => !r.value?.success);
 
-                            {!isExisting && (
-                                <TouchableOpacity style={styles.addButton} onPress={() => handleAddField(date)}>
-                                    <Text style={styles.addButtonText}>+ Add Field</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    );
-                })}
+      if (failed.length > 0) {
+        const messages = failed
+          .map((f, i) => {
+            const err = f.value;
+            return `• ${err.date}: ${err.error}`;
+          })
+          .join("\n");
 
+        throw new Error(`Một số ngày bị lỗi:\n${messages}`);
+      }
 
+      showModal(
+        t("modal.success"),
+        t("saveScheduleSuccess"),
+        t("modal.succeeded")
+      );
+      fetchSchedule();
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        error.message || t("errors.saveScheduleFailed"),
+        t("modal.failed")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                {showPicker && (
-                    <DateTimePicker
-                        value={
-                            schedule[currentField.date]?.[currentField.index]?.[currentField.field]
-                                ? new Date(`1970-01-01T${schedule[currentField.date][currentField.index][currentField.field]}:00`)
-                                : new Date()
-                        }
-                        mode="time"
-                        display="spinner"
-                        onChange={handleTimeChange}
-                        is24Hour={true}
-                    />
-                )}
-            </ScrollView>
-            {Object.keys(selectedDates).length > 0 && (
-                <TouchableOpacity
-                    style={{
-                        position: "absolute",
-                        bottom: 20,
-                        left: 20,
-                        right: 20,
-                        backgroundColor: "#A64B2A",
-                        padding: 15,
-                        borderRadius: 10,
-                        alignItems: "center",
-                        elevation: 5,
-                    }}
-                    onPress={() => requireAuthAndNetWork(() => handleSave())}
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="white" />
-                    ) : (
-                        <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                            Save
-                        </Text>
+  return (
+    <SafeAreaView style={commonStyles.container}>
+      <Header title={t("scheduleBlocked")} />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A9411D" />
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            style={commonStyles.containerContent}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={styles.calendarContainer}>
+              <Calendar
+                markedDates={markedDates}
+                onDayPress={handleDayPress}
+                markingType="simple"
+                minDate={moment().add(1, "days").format("YYYY-MM-DD")}
+                theme={{
+                  backgroundColor: "#F8F1E9",
+                  calendarBackground: "#F8F1E9",
+                  selectedDayBackgroundColor: "#A9411D",
+                  selectedDayTextColor: "#FFFFFF",
+                  todayTextColor: "#A9411D",
+                  dayTextColor: "#4A2C1F",
+                  textDisabledColor: "#B0A8A0",
+                  arrowColor: "#A9411D",
+                  monthTextColor: "#4A2C1F",
+                  textDayFontWeight: "500",
+                  textMonthFontWeight: "700",
+                  textDayFontSize: 16,
+                  textMonthFontSize: 18,
+                }}
+              />
+            </View>
+
+            {Object.keys(selectedDates).map((date) => {
+              const isExisting = !!existingDates[date];
+              return (
+                <View style={styles.card} key={date}>
+                  <Text style={styles.dateTitle}>
+                    {moment(date).format("DD/MM/YYYY")}
+                    {isExisting && (
+                      <Text style={styles.viewOnlyTag}> {t("viewOnly")}</Text>
                     )}
-                </TouchableOpacity>
+                  </Text>
+                  {schedule[date]?.map((item, index) => (
+                    <View key={index} style={styles.fieldGroup}>
+                      <TouchableOpacity
+                        // disabled={isExisting}
+                        onPress={() => openTimePicker(date, index, "startTime")}
+                        style={styles.inputContainer}
+                      >
+                        <TextInput
+                          placeholder={t("startTimePlaceholder")}
+                          value={item.startTime}
+                          editable={false}
+                          style={[
+                            styles.input,
+                            isExisting && styles.disabledInput,
+                          ]}
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        // disabled={isExisting}
+                        onPress={() => openTimePicker(date, index, "endTime")}
+                        style={styles.inputContainer}
+                      >
+                        <TextInput
+                          placeholder={t("endTimePlaceholder")}
+                          value={item.endTime}
+                          editable={false}
+                          style={[
+                            styles.input,
+                            isExisting && styles.disabledInput,
+                          ]}
+                        />
+                      </TouchableOpacity>
+
+                      <View style={styles.inputContainer}>
+                        <TextInput
+                          placeholder={t("reasonPlaceholder")}
+                          value={item.reason}
+                          onChangeText={(text) =>
+                            handleFieldChange(date, index, "reason", text)
+                          }
+                          editable={!isExisting}
+                          style={[
+                            styles.input,
+                            isExisting && styles.disabledInput,
+                          ]}
+                        />
+                      </View>
+
+                      {!isExisting && (
+                        <TouchableOpacity
+                          onPress={() => handleRemoveField(date, index)}
+                          style={styles.removeButton}
+                        >
+                          <Icon name="delete" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+
+                  {/* {!isExisting && ( */}
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => handleAddField(date)}
+                  >
+                    <Icon name="add" size={20} color="#A9411D" />
+                    <Text style={styles.addButtonText}>{t("addTimeSlot")}</Text>
+                  </TouchableOpacity>
+                  {/* )} */}
+                </View>
+              );
+            })}
+
+            {showPicker && (
+              <DateTimePicker
+                value={
+                  schedule[currentField.date]?.[currentField.index]?.[
+                    currentField.field
+                  ]
+                    ? new Date(
+                        `1970-01-01T${
+                          schedule[currentField.date][currentField.index][
+                            currentField.field
+                          ]
+                        }:00`
+                      )
+                    : new Date()
+                }
+                mode="time"
+                display="spinner"
+                onChange={handleTimeChange}
+                is24Hour={true}
+              />
             )}
+          </ScrollView>
 
-        </SafeAreaView>
-
-    );
+          {Object.keys(selectedDates).length > 0 && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.saveButtonPressed,
+              ]}
+              onPress={() => requireAuthAndNetWork(() => handleSave())}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>{t("saveSchedule")}</Text>
+              )}
+            </Pressable>
+          )}
+        </>
+      )}
+    </SafeAreaView>
+  );
 };
 
 export default ScheduleBlocked;
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 16,
-        backgroundColor: "#fff",
-    },
-    formContainer: {
-        marginTop: 20,
-    },
-    dateTitle: {
-        fontWeight: "bold",
-        fontSize: 16,
-        marginBottom: 10,
-    },
-    fieldGroup: {
-        marginBottom: 15,
-        backgroundColor: "#f2f2f2",
-        padding: 10,
-        borderRadius: 8,
-    },
-    input: {
-        borderBottomWidth: 1,
-        borderBottomColor: "#CCCCCC",
-        paddingVertical: 8,
-        marginBottom: 8,
-    },
-    addButton: {
-        backgroundColor: "#888",
-        padding: 10,
-        borderRadius: 8,
-        alignItems: "center",
-        marginBottom: 10,
-    },
-    addButtonText: {
-        color: "white",
-        fontWeight: "bold",
-    },
-    saveButton: {
-        backgroundColor: "#1D6A96",
-        padding: 10,
-        borderRadius: 8,
-        alignItems: "center",
-        marginTop: 20,
-    },
-    saveButtonText: {
-        color: "white",
-        fontWeight: "bold",
-    },
-    removeButton: {
-        marginTop: 8,
-        backgroundColor: "#D9534F",
-        padding: 6,
-        borderRadius: 6,
-        alignItems: "center",
-        width: 30,
-        alignSelf: 'center',
-        position: 'absolute',
-        right: 10,
-    },
-    removeButtonText: {
-        color: "white",
-        fontSize: 13,
-        fontWeight: "bold",
-    },
-
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F1E9", // Nền nhạt, ấm áp
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100, // Đảm bảo nút Save không che nội dung
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  calendarContainer: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 24,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  dateTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#4A2C1F",
+    marginBottom: 12,
+  },
+  viewOnlyTag: {
+    fontSize: 14,
+    color: "#888888",
+    fontWeight: "400",
+  },
+  fieldGroup: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    marginBottom: 16,
+    position: "relative",
+    padding: 10,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // backgroundColor: "#F8F8F8",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    color: "#4A2C1F",
+    paddingVertical: 12,
+    borderWidth: 0,
+  },
+  disabledInput: {
+    backgroundColor: "#EDEDED",
+    color: "#888888",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingVertical: 8,
+  },
+  addButtonText: {
+    fontSize: 16,
+    color: "#A9411D",
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  removeButton: {
+    position: "absolute",
+    right: -10,
+    top: -10,
+    backgroundColor: "#D9534F",
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  saveButton: {
+    position: "absolute",
+    bottom: 20,
+    left: 16,
+    right: 16,
+    backgroundColor: "#A9411D",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  saveButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  saveButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });

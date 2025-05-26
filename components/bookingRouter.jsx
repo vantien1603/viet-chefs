@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import useAxios from "../config/AXIOS_API";
+import { t } from "i18next";
 
 // Custom hook for cancellation logic
 const useBookingCancellation = () => {
@@ -24,17 +25,15 @@ const useBookingCancellation = () => {
         `/bookings/single/cancel/${bookingId}`
       );
       if (response.status === 200) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Single booking cancelled successfully",
-          visibilityTime: 4000,
-        });
+        showModal(
+          t("modal.success"),
+          t("singleCancelSuccess"),
+          t("modal.success")
+        );
         onRefresh();
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to cancel single booking";
+      const errorMessage = error.response?.data?.message || t("cancelFailed");
       console.error("Error cancelling single booking:", error?.response?.data);
       throw new Error(errorMessage);
     }
@@ -47,19 +46,12 @@ const useBookingCancellation = () => {
       );
       if (response.status === 200) {
         console.log("Long-term cancel success:", response.data);
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Long-term booking cancelled successfully",
-          visibilityTime: 4000,
-        });
+        showModal(t("modal.success"), t("longTermCancelSuccess"));
         onRefresh();
       }
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to cancel long-term booking";
+        error.response?.data?.message || error.message || t("cancelFailed");
       console.error(
         "Error cancelling long-term booking:",
         error?.response?.data
@@ -79,22 +71,17 @@ const useBookingCancellation = () => {
         "for bookingId:",
         bookingId
       );
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Invalid booking type",
-        visibilityTime: 4000,
-      });
+      showModal(t("modal.error"), t("invalidBookingType"), t("modal.failed"));
       return false;
     }
 
     Alert.alert(
-      "Cancel Booking",
-      "Are you sure you want to cancel this booking?",
+      t("cancelBooking"),
+      t("confirmCancel"),
       [
-        { text: "No", style: "cancel" },
+        { text: t("noButton"), style: "cancel" },
         {
-          text: "Yes",
+          text: t("yesButton"),
           onPress: async () => {
             try {
               if (bookingType === "SINGLE") {
@@ -105,8 +92,8 @@ const useBookingCancellation = () => {
               return true;
             } catch (error) {
               Toast.show({
-                type: "error",
-                text1: "Error",
+                type: t("modal.error"),
+                text1: t("modal.error"),
                 text2: error.message,
                 visibilityTime: 4000,
               });
@@ -127,7 +114,7 @@ const BookingCard = ({
   onReview,
   onViewReview,
   refreshing,
-  hasReview
+  hasReview,
 }) => {
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
@@ -212,7 +199,7 @@ const BookingCard = ({
           {cancellingId === booking.id ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <Text style={styles.buttonText}>Cancel</Text>
+            <Text style={styles.buttonText}>{t("cancel")}</Text>
           )}
         </TouchableOpacity>
       );
@@ -226,7 +213,7 @@ const BookingCard = ({
             style={[styles.button, styles.secondaryButton]}
             onPress={() => onViewReview(booking.id, booking.chef.id)}
           >
-            <Text style={styles.buttonText}>View Review</Text>
+            <Text style={styles.buttonText}>{t("viewReview")}</Text>
           </TouchableOpacity>
         );
       } else if (onReview) {
@@ -236,7 +223,7 @@ const BookingCard = ({
             style={[styles.button, styles.secondaryButton]}
             onPress={() => onReview(booking.id, booking.chef.id)}
           >
-            <Text style={styles.buttonText}>Review</Text>
+            <Text style={styles.buttonText}>{t("review")}</Text>
           </TouchableOpacity>
         );
       }
@@ -257,9 +244,9 @@ const BookingCard = ({
                 size={14}
                 color={timeRemaining === "Expired" ? "#991b1b" : "#64748b"}
               />{" "}
-              {timeRemaining === "Expired"
-                ? "Payment Deadline Expired"
-                : `Time to Pay: ${timeRemaining}`}
+              {timeRemaining === 'Expired'
+                ? t('paymentDeadlineExpired')
+                : t('timeToPay', { time: timeRemaining })}
             </Text>
             <View style={styles.buttonRow}>{buttons}</View>
           </View>
@@ -286,12 +273,12 @@ const BookingCard = ({
             </Text>
           </View>
           <Text style={styles.detailText}>
-            <Ionicons name="person-outline" size={14} color="#64748b" /> Chef:{" "}
+            <Ionicons name="person-outline" size={14} color="#64748b" /> {t("chef")}:{" "}
             {booking.chef.user.fullName}
           </Text>
           <Text style={styles.detailText}>
             <Ionicons name="people-outline" size={14} color="#64748b" />{" "}
-            {booking.guestCount} guests
+            {booking.guestCount} {t("guests")}
           </Text>
           <Text style={styles.detailText} numberOfLines={1}>
             <Ionicons name="location-outline" size={14} color="#64748b" />{" "}
@@ -340,6 +327,75 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
     fetchReviewStatus();
   }, []);
 
+  const handleRebook = async (booking) => {
+    setLoadingBookingId(booking.id);
+    try {
+      const bookingDetailId = booking.bookingDetails?.[0]?.id;
+      if (!bookingDetailId) {
+        throw new Error("Booking detail ID not found");
+      }
+      const response = await axiosInstance.get(
+        `/bookings/booking-details/${bookingDetailId}`
+      );
+      const bookingDetails = response.data;
+
+      let selectedMenu = null;
+      if (bookingDetails.menuId) {
+        const allowedDishIds = bookingDetails.dishes.map(({ dish }) => dish.id);
+
+        const menuValidationResponse = await axiosInstance.post(
+          `/menus/${bookingDetails.menuId}/validate`,
+          allowedDishIds
+        );
+        const isMenuValid = menuValidationResponse.data.success;
+        if (!isMenuValid) {
+          throw new Error(
+            menuValidationResponse.data.message ||
+              "Selected menu has changed or is no longer valid"
+          );
+        }
+
+        selectedMenu = {
+          id: bookingDetails.menuId,
+          name: `Menu ${bookingDetails.menuId}`,
+          menuItems: [],
+        };
+      }
+
+      const selectedDishes = bookingDetails.dishes.map(({ dish }) => ({
+        id: dish.id,
+        name: dish.name,
+        imageUrl: dish.imageUrl || null,
+      }));
+
+      const dishNotes = {};
+      bookingDetails.dishes.forEach(({ dish, notes }) => {
+        dishNotes[dish.id] = notes || "";
+      });
+
+      router.push({
+        pathname: "/screen/booking",
+        params: {
+          chefId: booking.chef.id,
+          selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
+          selectedDishes:
+            selectedDishes.length > 0 ? JSON.stringify(selectedDishes) : null,
+          dishNotes: JSON.stringify(dishNotes),
+          numPeople: booking.guestCount.toString(),
+          address: bookingDetails.location || null,
+        },
+      });
+    } catch (error) {
+      showModal(
+        t('modal.error'),
+        error.message || t('rebookFailed'),
+        t('modal.failed')
+      );
+    } finally {
+      setLoadingBookingId(null);
+    }
+  };
+
   const handleReview = (bookingId, chefId) => {
     router.push({
       pathname: "/screen/review",
@@ -381,7 +437,7 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="calendar-outline" size={48} color="#64748b" />
-            <Text style={styles.emptyText}>No bookings available</Text>
+            <Text style={styles.emptyText}>{t('noBookingsAvai')}</Text>
           </View>
         }
       />
@@ -397,7 +453,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -475,13 +531,13 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   primaryButton: {
-    backgroundColor: "#2dd4bf",
+    backgroundColor: "orange",
   },
   secondaryButton: {
-    backgroundColor: "#6366f1",
+    backgroundColor: "#666",
   },
   cancelButton: {
-    backgroundColor: "#fb7185",
+    backgroundColor: "red",
   },
   emptyContainer: {
     alignItems: "center",

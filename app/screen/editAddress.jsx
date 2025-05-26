@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -8,19 +8,21 @@ import {
   TextInput,
   Modal,
   StyleSheet,
-  Alert, // Thêm Alert để hiển thị confirm
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
-import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
-import { API_GEO_KEY } from "@env";
 import { t } from "i18next";
+import { AuthContext } from "../../config/AuthContext";
+import { useModalLogin } from "../../context/modalLoginContext";
+import { useConfirmModal } from "../../context/commonConfirm";
+import { useCommonNoification } from "../../context/commonNoti";
+import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -32,8 +34,13 @@ const EditAddress = () => {
   const [editingAddress, setEditingAddress] = useState(null);
   const axiosInstance = useAxios();
   const [suggestions, setSuggestions] = useState([]);
-  
+  const { isGuest } = useContext(AuthContext);
+  const { showModalLogin } = useModalLogin();
+  const { showConfirm } = useConfirmModal();
+  const { showModal } = useCommonNoification();
+  const [isEdit, setIsEdit] = useState(false);
 
+  const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -45,7 +52,7 @@ const EditAddress = () => {
         {
           params: {
             input: query,
-            key: API_GEO_KEY, 
+            key: process.env.API_GEO_KEY,
             language: "vi",
             components: "country:vn",
           },
@@ -56,9 +63,10 @@ const EditAddress = () => {
         setSuggestions(response.data.predictions);
       }
     } catch (error) {
-      console.error(
-        "Error fetching suggestions from Google Places:",
-        error?.response?.data
+      showModal(
+        t("modal.error"),
+        t("errors.fetchSuggestionsFailed"),
+        t("modal.failed")
       );
     }
   };
@@ -70,7 +78,7 @@ const EditAddress = () => {
         {
           params: {
             place_id: placeId,
-            key: API_GEO_KEY,
+            key: process.env.API_GEO_KEY,
             fields: "formatted_address",
             language: "vi",
           },
@@ -78,7 +86,11 @@ const EditAddress = () => {
       );
       return response.data.result.formatted_address;
     } catch (error) {
-      console.error("Error fetching place details:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.fetchPlaceDetailsFailed"),
+        t("modal.failed")
+      );
       return null;
     }
   };
@@ -94,6 +106,13 @@ const EditAddress = () => {
   };
 
   useEffect(() => {
+    if (isGuest)
+      showModalLogin(
+        t("errors.loginRequired"),
+        t("errors.loginRequiredMessage"),
+        true
+      );
+
     fetchAddresses();
     loadSelectedAddress();
   }, []);
@@ -106,7 +125,11 @@ const EditAddress = () => {
         setSelectedId(parsedAddress.id);
       }
     } catch (error) {
-      console.error("Error loading selected address:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.loadSelectedAddressFailed"),
+        t("modal.failed")
+      );
     }
   };
 
@@ -114,21 +137,28 @@ const EditAddress = () => {
     try {
       await AsyncStorage.setItem("selectedAddress", JSON.stringify(address));
     } catch (error) {
-      console.error("Error saving selected address:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.saveSelectedAddressFailed"),
+        t("modal.failed")
+      );
     }
   };
 
   const fetchAddresses = async () => {
+    if (isGuest) return;
     try {
       const response = await axiosInstance.get("/address/my-addresses");
       setAddresses(response.data);
     } catch (error) {
-      console.error("Error fetching addresses:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tải danh sách địa chỉ",
-      });
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(
+        t("modal.error"),
+        t("errors.fetchAddressesFailed"),
+        t("modal.failed")
+      );
     }
   };
 
@@ -137,11 +167,11 @@ const EditAddress = () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Toast.show({
-          type: "error",
-          text1: "Quyền bị từ chối",
-          text2: "Bạn cần bật dịch vụ định vị.",
-        });
+        showModal(
+          t("modal.error"),
+          t("errors.locationPermissionDenied"),
+          t("modal.failed")
+        );
         return;
       }
 
@@ -157,24 +187,71 @@ const EditAddress = () => {
           addr.city || ""
         }, ${addr.region || ""}, ${addr.country || ""}`;
 
+        const existingCurrentLocation = addresses.find(
+          (addr) => addr.title === t("currentLocation")
+        );
         const newLocation = {
-          title: "Vị trí hiện tại",
+          title: t("currentLocation"),
           address: fullAddress,
         };
-        await handleCreateAddress(newLocation);
+        if (existingCurrentLocation) {
+          await handleUpdateCurrentAddress({
+            ...existingCurrentLocation,
+            address: fullAddress,
+          });
+        } else {
+          await handleCreateAddress(newLocation);
+        }
         setCurrentAddress(null);
         setSelectedId(null);
       }
     } catch (error) {
-      console.error(error);
+      showModal(
+        t("modal.error"),
+        t("errors.fetchLocationFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const handleUpdateCurrentAddress = async (addresData) => {
+    try {
+      const response = await axiosInstance.put("/address", addresData);
+      if (response.status === 200) {
+        setAddresses((prev) =>
+          prev.map((addr) =>
+            addr.id === addresData.id
+              ? { ...addr, address: addresData.address }
+              : addr
+          )
+        );
+        showModal(
+          t("modal.success"),
+          t("updateCurrentLocationSuccess"),
+          t("modal.succeeded")
+        );
+      }
+    } catch (error) {
+      if (error.response.status === 401 || axios.isCancel(error)) {
+        return;
+      }
+      showModal(
+        t("modal.error"),
+        t("errors.updateCurrentLocationFailed"),
+        t("modal.failed")
+      );
+    }
+  };
+
   const handleCreateAddress = async (addressData) => {
-    // Kiểm tra giới hạn 5 địa chỉ
     if (addresses.length >= 5) {
+      showModal(
+        t("modal.warning"),
+        t("errors.maxAddresses"),
+        t("modal.warning")
+      );
       setModalVisible(false);
       return;
     }
@@ -185,14 +262,33 @@ const EditAddress = () => {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
         setNewAddress({ title: "", address: "" });
+        showModal(
+          t("modal.success"),
+          t("saveAddressSuccess"),
+          t("modal.succeeded")
+        );
       }
     } catch (error) {
-      console.error("Error creating address:", error);
+      if (error.response.status === 401 || axios.isCancel(error)) {
+        return;
+      }
+      showModal(
+        t("modal.error"),
+        t("errors.saveAddressFailed"),
+        t("modal.failed")
+      );
     }
   };
 
   const handleUpdateAddress = async () => {
+    setLoading(true);
     if (!editingAddress.title || !editingAddress.address) {
+      showModal(
+        t("modal.error"),
+        t("errors.incompleteAddress"),
+        t("modal.failed")
+      );
+
       return;
     }
     try {
@@ -204,49 +300,72 @@ const EditAddress = () => {
           )
         );
         setModalVisible(false);
+        setIsEdit(false);
         setEditingAddress(null);
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: "Địa chỉ đã được cập nhật",
-        });
+        showModal(
+          t("modal.success"),
+          t("updateAddressSuccess"),
+          t("modal.succeeded")
+        );
       }
     } catch (error) {
-      console.log("Error updating address:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(
+        t("modal.error"),
+        t("errors.updateAddressFailed"),
+        t("modal.failed")
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteAddress = (id) => {
-    // Hiển thị confirm trước khi xóa
-    Alert.alert(
-      "Xác nhận",
-      "Bạn có chắc chắn muốn xóa địa chỉ này?",
-      [
-        {
-          text: "Hủy",
-          style: "cancel",
-        },
-        {
-          text: "Xóa",
-          onPress: async () => {
-            try {
-              const response = await axiosInstance.delete(`/address/${id}`);
-              if (response.status === 200) {
-                setAddresses(addresses.filter((addr) => addr.id !== id));
-                if (selectedId === id) {
-                  setSelectedId(null);
-                  await AsyncStorage.removeItem("selectedAddress");
-                }
-              }
-            } catch (error) {
-              console.error("Error deleting address:", error);
+  const handleDeleteAddress = async (id) => {
+    showConfirm(t("deleteAddress"), t("deleteAddressMessage"), () =>
+      requireAuthAndNetWork(async () => {
+        try {
+          const response = await axiosInstance.delete(`/address/${id}`);
+          if (response.status === 200) {
+            setAddresses(addresses.filter((addr) => addr.id !== id));
+            if (selectedId === id) {
+              setSelectedId(null);
+              await AsyncStorage.removeItem("selectedAddress");
             }
-          },
-          style: "destructive",
-        },
-      ],
-      { cancelable: true }
+            showModal(
+              t("modal.success"),
+              t("deleteAddressSuccess"),
+              t("modal.succeeded")
+            );
+          }
+        } catch (error) {
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            return;
+          }
+          showModal(
+            t("modal.error"),
+            t("errors.deleteAddressFailed"),
+            t("modal.failed")
+          );
+        }
+      })
     );
+  };
+
+  const handleSearch = (query) => {
+    if (isEdit) {
+      setEditingAddress({ ...editingAddress, address: query });
+    } else {
+      setNewAddress({ ...newAddress, address: query });
+    }
+    fetchAddressSuggestions(query);
   };
 
   const renderAddressItem = (item) => (
@@ -292,6 +411,7 @@ const EditAddress = () => {
       <View style={{ flexDirection: "row" }}>
         <TouchableOpacity
           onPress={() => {
+            setIsEdit(true);
             setEditingAddress(item);
             setModalVisible(true);
           }}
@@ -312,129 +432,152 @@ const EditAddress = () => {
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title={t("address")} />
-      <ScrollView style={{ marginBottom: 80 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 10,
-          }}
-        >
-          <Text style={{ color: "#666", fontSize: 16 }}>
-            {t("addressList")}
-          </Text>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
-            <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
-              {t("addNew")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {addresses.map(renderAddressItem)}
-
-        <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {editingAddress ? t("editAddress") : t("addNewAddress")}
+      {!isGuest && (
+        <>
+          <ScrollView style={{ marginBottom: 80 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 10,
+              }}
+            >
+              <Text style={{ color: "#666", fontSize: 16 }}>
+                {t("addressList")}
               </Text>
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
+                  {t("addNew")}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder={t("addressLabel")}
-                value={editingAddress ? editingAddress.title : newAddress.title}
-                onChangeText={(text) =>
-                  editingAddress
-                    ? setEditingAddress({ ...editingAddress, title: text })
-                    : setNewAddress({ ...newAddress, title: text })
-                }
-              />
+            {addresses.map(renderAddressItem)}
 
-              <TextInput
-                style={styles.input}
-                placeholder={t("address")}
-                value={
-                  editingAddress ? editingAddress.address : newAddress.address
-                }
-                onChangeText={(text) => {
-                  editingAddress
-                    ? setEditingAddress({ ...editingAddress, address: text })
-                    : setNewAddress({ ...newAddress, address: text });
-                  fetchAddressSuggestions(text);
-                }}
-                // returnKeyType="search"
-              />
+            <Modal visible={modalVisible} animationType="slide" transparent>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>
+                    {editingAddress ? t("editAddress") : t("addNewAddress")}
+                  </Text>
 
-              {suggestions.length > 0 && (
-                <ScrollView
-                  style={styles.suggestionContainer}
-                  nestedScrollEnabled={true}
-                >
-                  {suggestions.map((item, index) => (
-                    <TouchableOpacity
-                      key={`${item.place_id}-${index}`}
-                      onPress={() => selectAddress(item)}
-                      style={styles.suggestionItem}
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("addressLabel")}
+                    value={
+                      editingAddress ? editingAddress.title : newAddress.title
+                    }
+                    onChangeText={(text) =>
+                      editingAddress
+                        ? setEditingAddress({ ...editingAddress, title: text })
+                        : setNewAddress({ ...newAddress, title: text })
+                    }
+                  />
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("address")}
+                    // value={
+                    //   editingAddress ? editingAddress.address : newAddress.address
+                    // }
+                    // onChangeText={(text) =>
+                    //   editingAddress
+                    //     ? setEditingAddress({ ...editingAddress, address: text })
+                    //     : setNewAddress({ ...newAddress, address: text })
+                    // }
+                    // onSubmitEditing={(event) => {
+                    //   event.persist();
+                    //   fetchAddressSuggestions(event.nativeEvent.text);
+                    // }}
+                    // returnKeyType="search"
+
+                    value={
+                      editingAddress
+                        ? editingAddress.address
+                        : newAddress.address
+                    }
+                    onChangeText={handleSearch}
+                    onSubmitEditing={(event) => {
+                      event.persist();
+                      fetchAddressSuggestions(event.nativeEvent.text);
+                    }}
+                    returnKeyType="search"
+                  />
+
+                  {suggestions.length > 0 && (
+                    <ScrollView
+                      style={styles.suggestionContainer}
+                      nestedScrollEnabled={true}
                     >
-                      <Text style={styles.suggestionText}>
-                        {item.description}
+                      {suggestions.map((item, index) => (
+                        <TouchableOpacity
+                          key={`${item.place_id}-${index}`}
+                          onPress={() => selectAddress(item)}
+                          style={styles.suggestionItem}
+                        >
+                          <Text style={styles.suggestionText}>
+                            {item.description}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(false);
+                        setEditingAddress(null);
+                        setSuggestions([]);
+                      }}
+                      style={styles.cancelButton}
+                    >
+                      <Text style={styles.cancelText}>{t("cancel")}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={
+                        editingAddress
+                          ? handleUpdateAddress
+                          : () => handleCreateAddress(newAddress)
+                      }
+                      style={styles.saveButton}
+                    >
+                      <Text style={styles.saveText}>
+                        {editingAddress ? t("update") : t("save")}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              )}
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setModalVisible(false);
-                    setEditingAddress(null);
-                    setSuggestions([]);
-                  }}
-                  style={styles.cancelButton}
-                >
-                  <Text style={styles.cancelText}>{t("cancel")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={
-                    editingAddress
-                      ? handleUpdateAddress
-                      : () => handleCreateAddress(newAddress)
-                  }
-                  style={styles.saveButton}
-                >
-                  <Text style={styles.saveText}>
-                    {editingAddress ? t("update") : t("save")}
-                  </Text>
-                </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-        </Modal>
-      </ScrollView>
+            </Modal>
+          </ScrollView>
 
-      <TouchableOpacity
-        onPress={getCurrentLocation}
-        style={{
-          position: "absolute",
-          bottom: 50,
-          left: 20,
-          right: 20,
-          backgroundColor: "#A64B2A",
-          padding: 15,
-          borderRadius: 10,
-          alignItems: "center",
-          elevation: 5,
-        }}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-            {t("useCurrentLocation")}
-          </Text>
-        )}
-      </TouchableOpacity>
+          <TouchableOpacity
+            onPress={getCurrentLocation}
+            style={{
+              position: "absolute",
+              bottom: 50,
+              left: 20,
+              right: 20,
+              backgroundColor: "#A64B2A",
+              padding: 15,
+              borderRadius: 10,
+              alignItems: "center",
+              elevation: 5,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text
+                style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+              >
+                {t("useCurrentLocation")}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
     </SafeAreaView>
   );
 };

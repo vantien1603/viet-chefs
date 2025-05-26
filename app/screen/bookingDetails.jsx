@@ -9,12 +9,12 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { useTranslation } from "react-i18next";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons"; // Thêm icon
+import axios from "axios";
 
 const BookingDetailScreen = () => {
   const { t } = useTranslation();
@@ -31,10 +31,7 @@ const BookingDetailScreen = () => {
       const response = await axiosInstance.get(
         `/bookings/booking-details/${bookingDetailId}`
       );
-      console.log(
-        "Booking detail 111:",
-        JSON.stringify(response.data, null, 2)
-      );
+      console.log("Booking detail:", JSON.stringify(response.data, null, 2));
       setBookingDetail(response.data);
 
       if (response.data.dishes && response.data.dishes.length > 0) {
@@ -46,7 +43,7 @@ const BookingDetailScreen = () => {
             );
             return { dishId: dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            console.error(`Error fetching dish ${dish.dish.id}:`, error);
+            showModal(t("modal.error"), `Error fetching dish ${dish.dish.id}`, t("modal.failed"));
             return { dishId: dish.dish.id, dishName: `Dish ${dish.dish.id}` };
           }
         });
@@ -58,12 +55,13 @@ const BookingDetailScreen = () => {
         setDishNames(dishNamesMap);
       }
     } catch (error) {
-      console.error("Error fetching detail:", error);
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("failedToLoadBookingDetail"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), t("failedToLoadBookingDetail"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
@@ -73,10 +71,7 @@ const BookingDetailScreen = () => {
     setUpdating(true);
     try {
       const parsedUpdateData = JSON.parse(data);
-      console.log(
-        "Parsed update data:",
-        JSON.stringify(parsedUpdateData, null, 2)
-      );
+      console.log("Parsed update data:", JSON.stringify(parsedUpdateData, null, 2));
 
       setBookingDetail((prev) => ({
         ...prev,
@@ -89,11 +84,8 @@ const BookingDetailScreen = () => {
         parsedUpdateData
       );
 
-      Toast.show({
-        type: "success",
-        text1: t("success"),
-        text2: t("bookingDetailUpdated"),
-      });
+      showModal(t("modal.success"), t("bookingDetailUpdated"), t("modal.success"));
+
 
       if (parsedUpdateData.dishes && parsedUpdateData.dishes.length > 0) {
         const dishPromises = parsedUpdateData.dishes.map(async (dish) => {
@@ -124,13 +116,13 @@ const BookingDetailScreen = () => {
         setDishNames(dishNamesMap);
       }
     } catch (error) {
-      console.error("Error updating booking detail:", error);
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2:
-          error.response?.data?.message || t("failedToUpdateBookingDetail"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), t("failedToUpdateBookingDetail"), t("modal.failed"));
     } finally {
       setUpdating(false);
     }
@@ -143,7 +135,6 @@ const BookingDetailScreen = () => {
   }, []);
 
   useEffect(() => {
-    console.log("useEffect for updateData triggered, updateData:", updateData);
     if (updateData) {
       handleUpdate(updateData);
     }

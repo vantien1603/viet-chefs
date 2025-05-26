@@ -6,7 +6,7 @@ export default {
     owner: "thangcayep",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/images/logo.png",
     scheme: "vietchef",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -53,5 +53,9 @@ export default {
       // messagingSenderId: process.env.MESSAGING_SENDER_ID,
       // appId: process.env.APP_ID,
     },
+    notification: {
+      icon: "./assets/images/logo.png",
+      color: "#FFFFFF"
+    }
   },
 };

@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Image,
-  BackHandler,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import Header from "../../components/header";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
-import { AntDesign } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../../config/AuthContext";
+import { useCommonNoification } from "../../context/commonNoti";
+import { FlatList } from "react-native";
 import { t } from "i18next";
 
 const ReviewsChefScreen = () => {
@@ -30,127 +30,107 @@ const ReviewsChefScreen = () => {
     "4-star": 0,
     "5-star": 0,
   });
+  const { user } = useContext(AuthContext);
   const [pageNo, setPageNo] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
   const PAGE_SIZE = 10;
   const [totalReviews, setTotalReviews] = useState(0);
   const [sort, setSort] = useState("newest");
+  const [refresh, setRefresh] = useState(false);
+  const [totalPage, setTotalPage] = useState(0);
+  const [replyTexts, setReplyTexts] = useState({});
+  const { showModal } = useCommonNoification();
 
-  useEffect(() => {
-    const backAction = () => {
-      router.push({ pathname: "/screen/chefDetail", params: { chefId } });
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, []);
-
-  const fetchReviewChef = async (page = 0, sortOption = sort) => {
-    if (isLoading) return;
-    setIsLoading(true);
+  const fetchReviewChef = async (
+    page = 0,
+    sortOption = sort,
+    isRefresh = false
+  ) => {
+    if (loading && !isRefresh) return;
+    setLoading(true);
     try {
-      const response = await axiosInstance.get(`/reviews/chef/${chefId}`, {
-        params: {
-          pageNo: page,
-          pageSize: PAGE_SIZE,
-          sort: sortOption,
-        },
-      });
-      const data = response.data;
-      const ids = data.reviews.map((r) => r.id);
-      const uniqueIds = new Set(ids);
-      if (ids.length !== uniqueIds.size) {
-        console.warn("Duplicate review IDs detected:", ids);
-      }
-      // Load reactions from AsyncStorage for each review
-      const reviewsWithReactions = await Promise.all(
-        data.reviews.map(async (review) => {
-          const storedReaction = await AsyncStorage.getItem(
-            `@reaction_${review.id}`
-          );
-          return {
-            ...review,
-            reactionType: storedReaction || "not_helpful",
-          };
-        })
+      const chefIdToFetch = chefId || user.chefId;
+      const response = await axiosInstance.get(
+        `/reviews/chef/${chefIdToFetch}`,
+        {
+          params: {
+            pageNo: page,
+            pageSize: PAGE_SIZE,
+            sort: sortOption,
+          },
+        }
       );
-      setReviews((prev) => {
-        const existingIds = new Set(prev.map((r) => r.id));
-        const newReviews = reviewsWithReactions.filter(
-          (r) => !existingIds.has(r.id)
-        );
-        return page === 0 ? reviewsWithReactions : [...prev, ...newReviews];
-      });
+      // setReviews((prev) => {
+      //   const existingIds = new Set(prev.map((r) => r.id));
+      //   const newReviews = response.data.reviews.filter((r) => !existingIds.has(r.id));
+      //   return page === 0 ? response.data.reviews : [...prev, ...newReviews];
+      // });
+
+      setReviews((prev) =>
+        isRefresh ? response.data.reviews : [...prev, ...response.data.reviews]
+      );
+
       const calculatedAvg =
-        data.reviews.length > 0
-          ? data.reviews.reduce((sum, r) => sum + r.rating, 0) /
-            data.reviews.length
+        response.data.reviews.length > 0
+          ? response.data.reviews.reduce((sum, r) => sum + r.rating, 0) /
+            response.data.reviews.length
           : 0;
-      setAverageRating(data.averageRating || calculatedAvg);
-      setRatingDistribution(data.ratingDistribution || {});
-      setTotalPages(data.totalPages || 1);
+
+      setAverageRating(response.data.averageRating || calculatedAvg);
+      setRatingDistribution(response.data.ratingDistribution || {});
+      setTotalPages(response.data.totalPages || 1);
       setPageNo(page);
-      setTotalReviews(data.totalReviews || 0);
+      setTotalReviews(response.data.totalReviews || 0);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch reviews",
-        visibilityTime: 4000,
-      });
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", t("modal.failed"));
+      showModal(t("modal.error"), error.response.data.nessage, t("modal.failed"));
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setRefresh(false);
     }
   };
 
   useEffect(() => {
-    fetchReviewChef(0);
+    fetchReviewChef(0, sort, true);
   }, [chefId]);
 
-  const handleLoadMore = () => {
-    if (pageNo < totalPages - 1 && !isLoading) {
-      fetchReviewChef(pageNo + 1);
-    }
-  };
-
   const handleSortChange = (sortOption) => {
-    if (isLoading) return;
+    if (loading) return;
     setSort(sortOption);
     setReviews([]);
     setPageNo(0);
-    fetchReviewChef(0, sortOption);
+    fetchReviewChef(0, sortOption, true);
   };
 
-  const handleReaction = async (reviewId, currentReaction, setReaction) => {
-    const newReaction =
-      currentReaction === "helpful" ? "not_helpful" : "helpful";
+  const loadMoreData = async () => {
+    if (!loading && pageNo + 1 <= totalPage - 1) {
+      console.log("cal load more");
+      const nextPage = pageNo + 1;
+      setPageNo(nextPage);
+      await fetchReviewChef(nextPage, sort);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefresh(true);
+    setPageNo(0);
+    await fetchReviewChef(0, sort, true);
+  };
+
+  const handleReply = async (id) => {
+    setLoading(true);
     try {
-      setReaction(newReaction);
-      await AsyncStorage.setItem(`@reaction_${reviewId}`, newReaction);
       const response = await axiosInstance.post(
-        `/reviews/${reviewId}/reaction`,
-        {
-          reactionType: newReaction,
-        }
+        `reviews/${id}/reply`,
+        replyTexts[id]
       );
-      if (response.status === 200 || response.status === 201) {
-        const reaction = response.data.reaction?.reactionType || newReaction;
-        await AsyncStorage.setItem(`@reaction_${reviewId}`, reaction);
-        setReaction(reaction);
-      }
+      console.log(response.data);
     } catch (error) {
-      console.log("Error updating reaction:", error);
-      // Revert UI and AsyncStorage on error
-      setReaction(currentReaction);
-      await AsyncStorage.setItem(`@reaction_${reviewId}`, currentReaction);
+      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -185,48 +165,45 @@ const ReviewsChefScreen = () => {
     );
   };
 
-  const ReviewCard = ({ review }) => {
-    const [reaction, setReaction] = useState(
-      review.reactionType || "not_helpful"
-    );
-
+  const renderItem = ({ item: review }) => {
     const timeAgo = (date) => {
       const now = new Date();
       const diff = Math.floor((now - new Date(date)) / 1000);
-      if (diff < 60) return `${diff} seconds ago`;
-      if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-      return `${Math.floor(diff / 86400)} days ago`;
+      if (diff < 60) return `${diff} giây trước`;
+      if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+      return `${Math.floor(diff / 86400)} ngày trước`;
     };
 
     return (
-      <View style={styles.reviewCard}>
-        <View style={styles.reviewHeader}>
-          <Image
-            source={{
-              uri: review.userAvatar,
-            }}
-            style={styles.userAvatar}
-          />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>
-              {review.userName || "Anonymous"}
-            </Text>
+      <View style={styles.reviewItem}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Image source={{ uri: review.userAvatar }} style={styles.avatar} />
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.userName}>{review.userName}</Text>
             <RatingStars rating={review.rating} />
           </View>
-          <TouchableOpacity
-            onPress={() => handleReaction(review.id, reaction, setReaction)}
-            style={styles.likeButton}
-          >
-            <AntDesign
-              name={reaction === "helpful" ? "like1" : "like2"}
-              size={20}
-              color={reaction === "helpful" ? "#A64B2A" : "#333"}
-            />
-          </TouchableOpacity>
         </View>
-        <Text style={styles.reviewText}>{review.description}</Text>
+        <Text style={styles.reviewText}>{review.overallExperience}</Text>
         <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
+        {user.roleName === "ROLE_CHEF" && (
+          <>
+            <TextInput
+              placeholder="Reply to this review..."
+              value={replyTexts[review.id] || ""}
+              onChangeText={(text) =>
+                setReplyTexts((prev) => ({ ...prev, [review.id]: text }))
+              }
+              style={[styles.replyInput, { textAlignVertical: "top" }]}
+              multiline
+              numberOfLines={4}
+            />
+
+            <TouchableOpacity onPress={() => handleReply(review.id)}>
+              <Text style={styles.replyButton}>Gửi phản hồi</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     );
   };
@@ -244,86 +221,94 @@ const ReviewsChefScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={t("reviewsFor")} subtitle={`${chefName}`} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        onMomentumScrollEnd={({ nativeEvent }) => {
-          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
-          if (
-            contentOffset.y + layoutMeasurement.height >=
-              contentSize.height - 20 &&
-            !isLoading
-          ) {
-            handleLoadMore();
-          }
-        }}
-      >
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>{t("overallRating")}</Text>
-          <View style={styles.averageRatingContainer}>
-            <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
-            <RatingStars rating={Math.round(averageRating)} />
-          </View>
-          <Text style={styles.totalItems}>
-            {totalReviews} {t("review")}
-          </Text>
-          <View style={styles.ratingDistribution}>
-            {[5, 4, 3, 2, 1].map((rating) => (
-              <RatingDistributionBar
-                key={rating}
-                rating={rating}
-                count={ratingDistribution[`${rating}-star`] || 0}
-                maxCount={maxCount}
-              />
-            ))}
-          </View>
-        </View>
-        <View style={styles.sortContainer}>
-          <Text style={styles.sortLabel}>{t("sortBy")}:</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.sortButtons}
-          >
-            {sortOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.sortButton,
-                  sort === option.value && styles.sortButtonActive,
-                  isLoading && styles.sortButtonDisabled,
-                ]}
-                onPress={() => handleSortChange(option.value)}
-                disabled={isLoading}
-              >
-                {isLoading && sort === option.value ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text
-                    style={[
-                      styles.sortButtonText,
-                      sort === option.value && styles.sortButtonTextActive,
-                    ]}
-                  >
-                    {t(`${option.key}`)}
+      <Header title="Reviews for" subtitle={`${chefName}`} />
+      <View>
+        <FlatList
+          contentContainerStyle={{ padding: 20 }}
+          data={reviews}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          ListHeaderComponent={
+            <>
+              <View style={styles.summaryContainer}>
+                <Text style={styles.summaryTitle}>Overall Rating</Text>
+                <View style={styles.averageRatingContainer}>
+                  <Text style={styles.averageRating}>
+                    {averageRating.toFixed(1)}
                   </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        {isLoading && reviews.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#A64B2A" />
-          </View>
-        ) : reviews.length > 0 ? (
-          reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))
-        ) : (
-          <Text style={styles.noReviews}>{t("noReviewsYet")}</Text>
-        )}
-      </ScrollView>
+                  <RatingStars rating={Math.round(averageRating)} />
+                </View>
+                <Text style={styles.totalItems}>{totalReviews} reviews</Text>
+                <View style={styles.ratingDistribution}>
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <RatingDistributionBar
+                      key={rating}
+                      rating={rating}
+                      count={ratingDistribution[`${rating}-star`] || 0}
+                      maxCount={maxCount}
+                    />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.sortContainer}>
+                <Text style={styles.sortLabel}>Sort by:</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.sortButtons}
+                >
+                  {sortOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.sortButton,
+                        sort === option.value && styles.sortButtonActive,
+                        loading && styles.sortButtonDisabled,
+                      ]}
+                      onPress={() => handleSortChange(option.value)}
+                      disabled={loading}
+                    >
+                      {loading && sort === option.value ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text
+                          style={[
+                            styles.sortButtonText,
+                            sort === option.value &&
+                              styles.sortButtonTextActive,
+                          ]}
+                        >
+                          {t(option.key)}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </>
+          }
+          ListFooterComponent={
+            loading && !refresh ? (
+              <ActivityIndicator
+                size="large"
+                color="#A64B2A"
+                style={{ marginVertical: 20 }}
+              />
+            ) : null
+          }
+          onEndReached={loadMoreData}
+          onEndReachedThreshold={0.5}
+          refreshing={refresh}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            !loading && (
+              <Text style={{ textAlign: "center", marginTop: 30 }}>
+                Chưa có đánh giá nào
+              </Text>
+            )
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -333,53 +318,95 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#EBE5DD",
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+  reviewItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  replyInput: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    marginBottom: 10,
+    backgroundColor: "#F9F9F9",
+    fontSize: 14,
+    color: "#333",
+    minHeight: 80,
+  },
+  replyButton: {
+    alignSelf: "flex-end",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#A64B2A",
+    borderRadius: 8,
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
   sortContainer: {
     marginBottom: 20,
+    paddingHorizontal: 10,
   },
   sortLabel: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: "#333",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sortButtons: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 10,
   },
   sortButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderRadius: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#CCCCCC",
+    borderColor: "#E0E0E0",
     minWidth: 100,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   sortButtonActive: {
     backgroundColor: "#A64B2A",
     borderColor: "#A64B2A",
   },
   sortButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   sortButtonText: {
     fontSize: 14,
     color: "#333",
+    fontWeight: "500",
   },
   sortButtonTextActive: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   summaryContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 15,
-    padding: 15,
+    padding: 10,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -388,118 +415,84 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   summaryTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#333",
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: "center",
   },
   averageRatingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
+    marginBottom: 8,
   },
   averageRating: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#f5a623",
-    marginRight: 10,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#A64B2A",
+    marginRight: 12,
   },
   ratingDistribution: {
-    marginTop: 10,
+    marginTop: 12,
   },
   distributionRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   distributionLabel: {
-    width: 80,
+    width: 90,
   },
   barContainer: {
     flex: 1,
-    height: 8,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 5,
     overflow: "hidden",
-  },
-  reviewCount: {
-    fontSize: 12,
-    color: "#666",
-    marginLeft: 10,
-    width: 30,
-    textAlign: "right",
   },
   bar: {
     height: "100%",
-    backgroundColor: "#666",
-    borderRadius: 4,
+    backgroundColor: "#A64B2A",
+    borderRadius: 5,
   },
-  reviewCard: {
-    padding: 5,
-    marginBottom: 15,
-    backgroundColor: "#EBE5DD",
-    borderBottomWidth: 1,
-    borderBottomColor: "#CCCCCC",
-  },
-  reviewHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-  },
-  userInfo: {
-    flex: 1,
+  reviewCount: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 12,
+    width: 40,
+    textAlign: "right",
   },
   userName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: "#333",
+    marginBottom: 4,
   },
   reviewText: {
     color: "#555",
     fontSize: 14,
-    marginBottom: 10,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginVertical: 8,
   },
   reviewDate: {
     fontSize: 12,
     color: "#888",
     textAlign: "right",
-  },
-  noReviews: {
-    textAlign: "center",
-    color: "#666",
-    fontSize: 16,
-    marginTop: 20,
+    marginBottom: 10,
   },
   starsContainer: {
     flexDirection: "row",
+    marginBottom: 4,
   },
   star: {
-    marginLeft: 2,
+    marginRight: 4,
   },
   totalItems: {
-    fontSize: 12,
-    color: "#888",
+    fontSize: 14,
+    color: "#666",
     textAlign: "center",
-  },
-  likeButton: {
-    padding: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 20,
+    marginTop: 4,
   },
 });
 

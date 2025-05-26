@@ -41,7 +41,7 @@ const WalletRequest = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={"My Requests"} />
+      <Header title={t("myRequest")} />
       {requests.length > 0
         ? requests.map((item) => (
             <ScrollView key={item}>

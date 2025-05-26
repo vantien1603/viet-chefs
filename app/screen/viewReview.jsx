@@ -6,6 +6,7 @@ import { commonStyles } from "../../style";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Header from "../../components/header";
 import Icon from "react-native-vector-icons/Ionicons";
+import { t } from "i18next";
 
 const ViewReview = () => {
   const { bookingId, chefId } = useLocalSearchParams();

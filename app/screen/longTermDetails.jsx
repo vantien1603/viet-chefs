@@ -11,7 +11,6 @@ import {
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import Toast from "react-native-toast-message";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
@@ -19,8 +18,9 @@ import { t } from "i18next";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
 
-// Hàm chuyển đổi status có dấu "_" thành dạng dễ đọc
 const formatStatus = (status) => {
   if (!status) return "";
   return status
@@ -33,11 +33,12 @@ const LongTermDetailsScreen = () => {
   const { bookingId, chefId } = useLocalSearchParams();
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { showModal } = useCommonNoification();
   const [bookingStatus, setBookingStatus] = useState(null);
   const axiosInstance = useAxios();
   const [pinValues, setPinValues] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
-  const [hasPassword, setHasPassword] = useState(true); // Giả sử ví đã có mật khẩu
+  const [hasPassword, setHasPassword] = useState(true);
   const [selectedPaymentCycleId, setSelectedPaymentCycleId] = useState(null);
   const modalizeRef = useRef(null);
   const pinInputRefs = useRef([
@@ -46,28 +47,20 @@ const LongTermDetailsScreen = () => {
     React.createRef(),
     React.createRef(),
   ]).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
 
   const pin = pinValues.join("");
 
   useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.3,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [blinkAnim]);
+    if (bookingId) {
+      fetchLongTermDetails();
+    }
+  }, [bookingId]);
+
+  useEffect(() => {
+    if (pin.length === 4) {
+      accessWallet();
+    }
+  }, [pin]);
 
   const fetchLongTermDetails = async () => {
     setLoading(true);
@@ -80,12 +73,17 @@ const LongTermDetailsScreen = () => {
       const bookingResponse = await axiosInstance.get(`/bookings/${bookingId}`);
       setBookingStatus(bookingResponse.data.status);
     } catch (error) {
-      console.error("Error fetching payment cycles:", error);
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: t("failedToLoadPaymentCycles"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchDetailsFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -93,9 +91,14 @@ const LongTermDetailsScreen = () => {
 
   const accessWallet = async () => {
     if (pin.length !== 4) {
-      setError("PIN must be 4 digits");
+      showModal(
+        t("modal.error"),
+        t("errors.pinLengthInvalid"),
+        t("modal.failed")
+      );
       return;
     }
+    setLoading(true);
     try {
       const response = await axiosInstance.post(
         `/users/profile/my-wallet/access?password=${pin}`
@@ -105,10 +108,16 @@ const LongTermDetailsScreen = () => {
       modalizeRef.current?.close();
       await handlePayment(selectedPaymentCycleId);
     } catch (error) {
-      console.error("Error accessing wallet:", error.response?.data);
-      setError("Invalid PIN");
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.invalidPin"),
+        t("modal.failed")
+      );
+      setError(t("errors.invalidPin")); // pinInputRefs[0].current?.focus();
+    } finally {
+      setLoading(false);
       setPinValues(["", "", "", ""]);
-      pinInputRefs[0].current?.focus();
     }
   };
 
@@ -123,26 +132,32 @@ const LongTermDetailsScreen = () => {
         response.status === 200 || response.data?.status === "PAID";
 
       if (paymentSuccessful) {
-        Toast.show({
-          type: "success",
-          text1: t("success"),
-          text2: t("paymentSuccessful"),
-        });
+        showModal(
+          t("modal.success"),
+          t("paymentSuccess"),
+          t("modal.succeeded")
+        );
         await fetchLongTermDetails();
-        router.push("/screen/history");
+        // router.push("/screen/history");
       } else {
-        Toast.show({
-          type: "error",
-          text1: t("error"),
-          text2: t("paymentFailed"),
-        });
+        showModal(
+          t("modal.error"),
+          t("errors.paymentFailed"),
+          t("modal.failed")
+        );
       }
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: t("error"),
-        text2: error.response?.data?.message || t("failedToProcessPayment"),
-      });
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.paymentProcessingFailed"),
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
       setSelectedPaymentCycleId(null);
@@ -158,16 +173,13 @@ const LongTermDetailsScreen = () => {
   const handlePinChange = (text, index) => {
     const firstEmptyIndex = pinValues.findIndex((val) => val === "");
     const validIndex = firstEmptyIndex === -1 ? 3 : firstEmptyIndex;
-
     if (index !== validIndex) {
       pinInputRefs[validIndex].current?.focus();
       return;
     }
-
     const newPinValues = [...pinValues];
     newPinValues[index] = text.replace(/[^0-9]/g, "").slice(0, 1);
     setPinValues(newPinValues);
-
     if (text && index < 3) {
       pinInputRefs[index + 1].current?.focus();
     }
@@ -187,18 +199,6 @@ const LongTermDetailsScreen = () => {
       }
     }
   };
-
-  useEffect(() => {
-    if (bookingId) {
-      fetchLongTermDetails();
-    }
-  }, [bookingId]);
-
-  useEffect(() => {
-    if (pin.length === 4) {
-      accessWallet();
-    }
-  }, [pin]);
 
   const renderCycleItem = (cycle) => {
     const sortedBookingDetails = [...cycle.bookingDetails].sort((a, b) => {
@@ -307,8 +307,8 @@ const LongTermDetailsScreen = () => {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={commonStyles.containerContent}>
+    <GestureHandlerRootView>
+      <SafeAreaView style={commonStyles.container}>
         <Header title={t("paymentCycles")} />
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -316,7 +316,10 @@ const LongTermDetailsScreen = () => {
             <Text style={styles.loadingText}>{t("loading")}</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <ScrollView
+            style={commonStyles.containerContent}
+            contentContainerStyle={styles.scrollContainer}
+          >
             {longTermDetails.length > 0 ? (
               <>{longTermDetails.map(renderCycleItem)}</>
             ) : (
@@ -362,16 +365,7 @@ const LongTermDetailsScreen = () => {
             </Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.pinBox,
-                    pinValues[index] === "" &&
-                    index === pinValues.join("").length
-                      ? { opacity: blinkAnim }
-                      : {},
-                  ]}
-                >
+                <View style={styles.pinBox} key={index}>
                   <TextInput
                     ref={pinInputRefs[index]}
                     style={styles.pinInput}
@@ -384,7 +378,7 @@ const LongTermDetailsScreen = () => {
                     textAlign="center"
                     selectionColor="transparent"
                   />
-                </Animated.View>
+                </View>
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}

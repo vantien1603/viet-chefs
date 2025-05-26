@@ -32,7 +32,6 @@ const FavoriteScreen = () => {
         await AsyncStorage.removeItem("favorites");
         return;
       }
-      console.log("Fetching favorites for userId:", user.userId);
       const response = await axiosInstance.get(
         `/favorite-chefs/${user.userId}`
       );
@@ -65,7 +64,7 @@ const FavoriteScreen = () => {
       favoriteIds = favoriteIds.filter((id) => id !== chefId.toString());
       await AsyncStorage.setItem("favorites", JSON.stringify(favoriteIds));
 
-      Alert.alert(t("success"), t("removedFromFavorites"));
+      Alert.alert(t(t("modal.success")), t("removedFromFavorites"));
     } catch (error) {
       console.log(
         "Error removing favorite:",
@@ -89,9 +88,9 @@ const FavoriteScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
+    <SafeAreaView style={commonStyles.container}>
       <Header title={t("favoriteList")} />
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContainer}>
         {favorites.length > 0 ? (
           favorites.map((chef) => (
             <View key={chef.chefId} style={styles.card}>
@@ -133,14 +132,14 @@ const FavoriteScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    // paddingHorizontal: 16,
+    paddingBottom: 80,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#fff",
     padding: 16,
     marginBottom: 16,
     position: "relative",

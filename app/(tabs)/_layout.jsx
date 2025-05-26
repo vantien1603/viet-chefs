@@ -1,46 +1,41 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 
 function CustomTabBar({ state, descriptors, navigation }) {
+  const { showModalLogin } = useModalLogin();
   const { isGuest } = useContext(AuthContext);
   const { showModal } = useGlobalModal();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const axiosInstance = useAxios();
 
-  let interval = null; // Đặt ngoài useEffect để có thể dùng ở mọi nơi trong component
+  let interval;
+  useEffect(() => {
+    if (!isGuest) {
+      interval = setInterval(() => {
+        fetchUnreadMessageCount();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+
+  }, []);
 
   const fetchUnreadMessageCount = async () => {
     try {
       const response = await axiosInstance.get("/notifications/my/count");
       const count = response.data.chatNoti ?? 0;
       setUnreadMessageCount(count);
-
       if (count === 0 && interval) {
         clearInterval(interval);
-        interval = null; // reset
       }
     } catch (error) {
       console.log("Error fetching unread message count:", error);
     }
   };
 
-  useEffect(() => {
-    fetchUnreadMessageCount(); // gọi lần đầu
-
-    interval = setInterval(() => {
-      fetchUnreadMessageCount(); // gọi lặp lại mỗi 3s
-    }, 3000);
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, []);
-
   const handleUpdate = async () => {
+    if (isGuest) return;
     try {
       await axiosInstance.put("/notifications/my-chat");
       fetchUnreadMessageCount(); // gọi lại sau khi cập nhật
@@ -54,10 +49,9 @@ function CustomTabBar({ state, descriptors, navigation }) {
     const currentScreen = state.routes[state.index].name;
 
     if (isGuest && restrictedScreens.includes(currentScreen)) {
-      showModal("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
-      // navigation.navigate("home");
+      showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
     }
-  }, []);
+  }, [state.index, isGuest]);
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -94,12 +88,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     route.name === "home"
                       ? "home"
                       : route.name === "chat"
-                      ? "chatbubble-outline"
-                      : route.name === "schedule"
-                      ? "calendar-outline"
-                      : route.name === "bag"
-                      ? "briefcase-outline"
-                      : "person-outline"
+                        ? "chatbubble-outline"
+                        : route.name === "schedule"
+                          ? "calendar-outline"
+                          : route.name === "bag"
+                            ? "briefcase-outline"
+                            : "person-outline"
                   }
                   size={24}
                   color={isFocused ? "white" : "#B0BEC5"}
@@ -111,6 +105,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     </Text>
                   </View>
                 )}
+
               </TouchableOpacity>
             </View>
           );
@@ -119,9 +114,10 @@ function CustomTabBar({ state, descriptors, navigation }) {
     </View>
   );
 }
-import { Tabs } from "expo-router";
-import { AuthContext, AuthProvider } from "../../config/AuthContext";
-import { ModalProvider, useGlobalModal } from "../../context/modalContext";
+import { Tabs, } from "expo-router";
+import { AuthContext } from "../../config/AuthContext";
+import { useGlobalModal } from "../../context/modalContext";
+import { useModalLogin } from "../../context/modalLoginContext";
 import useAxios from "../../config/AXIOS_API";
 
 export default function TabLayout() {

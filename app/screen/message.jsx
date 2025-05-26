@@ -22,6 +22,8 @@ import * as ImagePicker from "expo-image-picker";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+
 
 const Message = () => {
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ const Message = () => {
   const CLOUDINARY_URL =
     "https://api.cloudinary.com/v1_1/deczpzvro/image/upload";
   const CLOUDINARY_UPLOAD_PRESET = "vietchef_image";
+  const { showModal } = useCommonNoification();
 
   const contact = contactString ? JSON.parse(contactString) : {};
 
@@ -100,11 +103,11 @@ const Message = () => {
 
   const onError = (error) => {
     console.error("WebSocket error:", error);
-    Toast.show({
-      type: "error",
-      text1: "Lỗi kết nối",
-      text2: "Không thể kết nối đến máy chủ. Vui lòng thử lại.",
-    });
+    showModal(
+      t("modal.error"),
+      t("errors.websocketConnectionFailed"),
+      t("modal.failed")
+    );
   };
 
   useEffect(() => {
@@ -138,12 +141,11 @@ const Message = () => {
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Toast.show({
-        type: "error",
-        text1: "Quyền truy cập bị từ chối",
-        text2:
-          "Vui lòng cấp quyền truy cập thư viện ảnh trong cài đặt thiết bị.",
-      });
+      showModal(
+        t("modal.error"),
+        t("errors.mediaLibraryPermissionDenied"),
+        t("modal.failed")
+      );
       setIsPickingImage(false);
       return;
     }
@@ -161,12 +163,17 @@ const Message = () => {
         console.log("Selected image URI:", uri); // Log để gỡ lỗi
         if (fileSize && fileSize > 10 * 1024 * 1024) {
           setIsPickingImage(false);
+          showModal(
+            t("modal.error"),
+            t("errors.imageTooLarge"),
+            t("modal.failed")
+          );
           return;
         }
         setSelectedImage(uri);
       }
     } catch (error) {
-      console.error("Error picking image:", error);
+      console.log("Error picking image:", error);
     } finally {
       setIsPickingImage(false);
     }
@@ -193,12 +200,12 @@ const Message = () => {
       });
       const result = await response.json();
       if (result.error) {
-        console.error("Cloudinary error:", result.error);
+        console.log("Cloudinary error:", result.error);
         return null;
       }
       return result.secure_url;
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.log("Error uploading image:", error);
       return null;
     }
   };
@@ -244,7 +251,7 @@ const Message = () => {
       setSelectedImage(null);
       setInputText("");
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.log("Error sending message:", error);
     }
     setIsSending(false);
   };

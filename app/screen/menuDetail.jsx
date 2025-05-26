@@ -23,18 +23,25 @@ const MenuDetails = () => {
     latestDishId,
   } = useLocalSearchParams();
   const [menuDetails, setMenuDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedDishes, setSelectedDishes] = useState([]);
   const axiosInstance = useAxios();
 
   useEffect(() => {
     const fetchMenuDetails = async () => {
+      setLoading(true);
       try {
         const response = await axiosInstance.get(`/menus/${menuId}`);
         setMenuDetails(response.data);
         console.log("Menu details:", response.data);
       } catch (error) {
-        console.error("Error fetching menu details:", error);
+        if (error.response?.status === 401) {
+          return;
+        }
+        if (axios.isCancel(error)) {
+          return;
+        }
+        showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", t("modal.failed"));
       } finally {
         setLoading(false);
       }
@@ -125,8 +132,8 @@ const MenuDetails = () => {
       style={[
         styles.dishCard,
         latestDishId &&
-          item.dishId === parseInt(latestDishId) &&
-          styles.latestDish,
+        item.dishId === parseInt(latestDishId) &&
+        styles.latestDish,
       ]}
       onPress={() => handleDishPress(item)}
       activeOpacity={0.8}

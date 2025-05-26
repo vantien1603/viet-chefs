@@ -7,20 +7,20 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Animated,
   TextInput,
+  Image,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { Modalize } from "react-native-modalize";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import axios from "axios";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Toast from "react-native-toast-message";
+import { Modalize } from "react-native-modalize";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
 
-// Hàm chuyển đổi thời gian từ object thành chuỗi
 const formatTime = (timeObj) => {
   if (!timeObj || typeof timeObj !== "object") return timeObj || "N/A";
   const { hour, minute, second } = timeObj;
@@ -39,7 +39,7 @@ const ViewBookingDetailsScreen = () => {
   const axiosInstance = useAxios();
   const [pinValues, setPinValues] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
-  const [hasPassword, setHasPassword] = useState(true); // Giả sử ví đã có mật khẩu
+  const [hasPassword, setHasPassword] = useState(true);
   const modalizeRef = useRef(null);
   const pinInputRefs = useRef([
     React.createRef(),
@@ -47,69 +47,58 @@ const ViewBookingDetailsScreen = () => {
     React.createRef(),
     React.createRef(),
   ]).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
+  const { showModal } = useCommonNoification();
 
   const pin = pinValues.join("");
 
   useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.3,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [blinkAnim]);
+    checkWalletPassword();
+    fetchBookingDetails();
+    fetchBookingStatus();
+  }, [bookingId, refreshing]);
+
+  const checkWalletPassword = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/users/profile/my-wallet/has-password");
+      console.log(response.data);
+      setHasPassword(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const fetchBookingDetails = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get(
         `/bookings/${bookingId}/booking-details`
       );
       setBookingDetails(response.data.content || []);
     } catch (error) {
-      console.log("Error fetching booking details:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch booking details",
-      });
-    }
-  };
-
-  const fetchBookingStatus = async () => {
-    try {
-      const response = await axiosInstance.get(`/bookings/${bookingId}`);
-      setBookingStatus(response.data.status);
-    } catch (error) {
-      console.log("Error fetching booking status:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch booking status",
-      });
-    }
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([fetchBookingDetails(), fetchBookingStatus()]);
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(t("modal.error"), t("fetchBookingFailed"), t("modal.failed"));
     } finally {
       setLoading(false);
     }
   };
 
-  const accessWallet = async (action) => {
+  const fetchBookingStatus = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/bookings/${bookingId}`);
+      setBookingStatus(response.data.status);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(t("modal.error"), t("fetchStatusFailed"), t("modal.failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const accessWallet = async () => {
     if (pin.length !== 4) {
       setError("PIN must be 4 digits");
       return;
@@ -119,12 +108,19 @@ const ViewBookingDetailsScreen = () => {
         `/users/profile/my-wallet/access?password=${pin}`
       );
       setError("");
+
       modalizeRef.current?.close();
-      if (action === "deposit") {
+      if (bookingType === "LONG_TERM") {
+        console.log("1")
         await handleDeposit();
-      } else if (action === "pay") {
+
+      } else {
+        console.log("2")
         await handlePay();
+        console.log("3");
       }
+      console.log(pin);
+
     } catch (error) {
       console.error("Error accessing wallet:", error.response?.data);
       setError("Invalid PIN");
@@ -139,62 +135,60 @@ const ViewBookingDetailsScreen = () => {
       const response = await axiosInstance.post(
         `/bookings/${bookingId}/deposit`
       );
-
-      const depositSuccessful = response.status === 200;
-
-      if (depositSuccessful) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Deposit successful",
-        });
-        await fetchData();
-
-        if (depositSuccessful) {
-          router.push("/(tabs)/home");
-        } else {
-          Toast.show({
-            type: "info",
-            text1: "Info",
-            text2: "Deposit processed but status not updated yet. Please wait.",
-          });
-        }
+      if (response.status === 200) {
+        showModal(t("modal.success"), t("depositSuccessMsg"), t("modal.success"));
+        fetchBookingDetails();
       }
     } catch (error) {
-      console.log("Error making deposit:", error);
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        return;
+      }
+      // showModal(t("modal.error"), "Failed to process deposit", t("modal.failed"));
+      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
     } finally {
-      setDepositLoading(false);
+      setPayLoading(false);
     }
   };
 
   const handlePay = async () => {
+    console.log("Roi")
     setPayLoading(true);
     try {
       const response = await axiosInstance.post(
         `/bookings/${bookingId}/payment`
       );
       if (response.status === 200) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Payment successful",
-        });
-        await fetchData();
-        router.push("/(tabs)/home");
+        showModal(t(t("modal.success")), t("paymentSuccessful"), t("modal.success"));
+        fetchBookingDetails();
       }
     } catch (error) {
-      console.log("Error making payment:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to make payment",
-      });
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      if (error.response.data.message === "Insufficient balance in the wallet.") {
+        showModal(t(t("modal.error")), error.response?.data.message, t("modal.failed"), null, [
+          {
+            label: "Cancel",
+            onPress: () => console.log("Cancel pressed"),
+            style: { backgroundColor: "#ccc" }
+          },
+          {
+            label: "Top up",
+            onPress: () => router.push("/screen/wallet"),
+            style: { backgroundColor: "#A64B2A" }
+          }
+        ])
+      } else {
+        showModal(t(t("modal.error")), error.response?.data.message, t("modal.failed"));
+      }
+
     } finally {
       setPayLoading(false);
     }
   };
 
-  const handleOpenPinModal = (action) => {
+  const handleOpenPinModal = () => {
     modalizeRef.current?.open();
     setTimeout(() => pinInputRefs[0].current?.focus(), 100);
   };
@@ -232,27 +226,14 @@ const ViewBookingDetailsScreen = () => {
     }
   };
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchData();
-    }
-  }, [bookingId, refreshing]);
 
-  useEffect(() => {
-    if (pin.length === 4) {
-      accessWallet(bookingType === "LONG_TERM" ? "deposit" : "pay");
-    }
-  }, [pin]);
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}
-      >
+      <SafeAreaView style={[commonStyles.container]}>
         <Header title={t("bookingDetails")} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#A64B2A" />
-          <Text style={styles.loadingText}>{t("loading")}</Text>
+          <ActivityIndicator size="large" color="white" />
         </View>
       </SafeAreaView>
     );
@@ -260,9 +241,7 @@ const ViewBookingDetailsScreen = () => {
 
   if (!bookingDetails || bookingDetails.length === 0) {
     return (
-      <SafeAreaView
-        style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}
-      >
+      <SafeAreaView style={[commonStyles.container]}>
         <Header title={t("bookingDetails")} />
         <View style={styles.noDataContainer}>
           <MaterialIcons name="error-outline" size={40} color="#A64B2A" />
@@ -273,15 +252,12 @@ const ViewBookingDetailsScreen = () => {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView
-        style={[commonStyles.containerContent, { backgroundColor: "#EBE5DD" }]}
-      >
+    <GestureHandlerRootView>
+      <SafeAreaView style={[commonStyles.container]}>
         <Header title={t("bookingDetails")} />
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContent}>
           {bookingDetails.map((detail, index) => (
             <React.Fragment key={detail.id || index}>
-              {/* Booking Information */}
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
                 <View style={styles.detailRow}>
@@ -318,11 +294,11 @@ const ViewBookingDetailsScreen = () => {
                       {
                         color:
                           detail.status === "CONFIRMED" ||
-                          detail.status === "DEPOSITED"
+                            detail.status === "DEPOSITED"
                             ? "#2ECC71"
                             : detail.status === "PENDING"
-                            ? "#A64B2A"
-                            : "#E74C3C",
+                              ? "#A64B2A"
+                              : "#E74C3C",
                       },
                     ]}
                   >
@@ -330,63 +306,10 @@ const ViewBookingDetailsScreen = () => {
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <MaterialIcons
-                    name="attach-money"
-                    size={18}
-                    color="#A64B2A"
-                  />
+                  <MaterialIcons name="attach-money" size={18} color="#A64B2A" />
                   <Text style={styles.detailLabel}>{t("totalPrice")}:</Text>
                   <Text style={styles.detailValue}>
                     ${detail.totalPrice || 0}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Fee Details */}
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- {t("chefCookingFee")}:</Text>
-                  <Text style={styles.detailValue}>
-                    ${detail.chefCookingFee || 0}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- {t("priceOfDishes")}:</Text>
-                  <Text style={styles.detailValue}>
-                    ${detail.priceOfDishes || 0}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- {t("arrivalFee")}:</Text>
-                  <Text style={styles.detailValue}>
-                    ${detail.arrivalFee || 0}
-                  </Text>
-                </View>
-                {detail.chefServingFee !== undefined && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>- {t("chefServingFee")}:</Text>
-                    <Text style={styles.detailValue}>
-                      ${detail.chefServingFee || 0}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- {t("platformFee")}:</Text>
-                  <Text style={styles.detailValue}>
-                    ${detail.platformFee || 0}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- {t("totalChefFee")}:</Text>
-                  <Text style={styles.detailValue}>
-                    ${detail.totalChefFeePrice || 0}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>- {t("discountAmount")}:</Text>
-                  <Text style={styles.detailValue}>
-                    ${detail.discountAmout || 0}
                   </Text>
                 </View>
               </View>
@@ -423,14 +346,76 @@ const ViewBookingDetailsScreen = () => {
                       key={dishItem.id || dishIndex}
                       style={styles.dishItem}
                     >
+                      <Image
+                        source={{
+                          uri: dishItem.dish?.imageUrl,
+                        }}
+                        style={{ width: 30, height: 30, borderRadius: 6 }}
+                      />
                       <Text style={styles.detailValue}>
-                        - {dishItem.dish?.name || "N/A"}
+                        {dishItem.dish?.name || "N/A"}
                         {dishItem.notes ? ` (${dishItem.notes})` : ""}
                       </Text>
                     </View>
                   ))
                 )}
               </View>
+
+              {/* Fee Details */}
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("chefCookingFee")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.chefCookingFee || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("priceOfDishes")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.priceOfDishes || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("arrivalFee")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.arrivalFee || 0}
+                  </Text>
+                </View>
+                {detail.chefServingFee !== undefined && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t("chefServingFee")}:</Text>
+                    <Text style={styles.detailValue}>
+                      ${detail.chefServingFee || 0}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("platformFee")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.platformFee || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("totalChefFee")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.totalChefFeePrice || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("discountAmount")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.discountAmout || 0}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{t("totalPrice")}:</Text>
+                  <Text style={styles.detailValue}>
+                    ${detail.totalPrice || 0}
+                  </Text>
+                </View>
+              </View>
+
               <View
                 style={{
                   borderColor: "#CCCCCC",
@@ -450,7 +435,7 @@ const ViewBookingDetailsScreen = () => {
               styles.depositButton,
               depositLoading && styles.disabledButton,
             ]}
-            onPress={() => handleOpenPinModal("deposit")}
+            onPress={() => hasPassword ? handleOpenPinModal() : handleDeposit()}
             disabled={depositLoading}
           >
             {depositLoading ? (
@@ -466,7 +451,7 @@ const ViewBookingDetailsScreen = () => {
         {bookingStatus === "PENDING" && bookingType === "SINGLE" && (
           <TouchableOpacity
             style={[styles.depositButton, payLoading && styles.disabledButton]}
-            onPress={() => handleOpenPinModal("pay")}
+            onPress={() => hasPassword ? handleOpenPinModal() : handlePay()}
             disabled={payLoading}
           >
             {payLoading ? (
@@ -480,20 +465,10 @@ const ViewBookingDetailsScreen = () => {
           </TouchableOpacity>
         )}
 
-        {/* Modal nhập PIN */}
         <Modalize
           ref={modalizeRef}
           adjustToContentHeight={true}
-          handlePosition="outside"
           modalStyle={styles.modalStyle}
-          handleStyle={styles.handleStyle}
-          onOpened={() => {
-            const firstEmptyIndex = pinValues.findIndex((val) => val === "");
-            const focusIndex = firstEmptyIndex === -1 ? 0 : firstEmptyIndex;
-            pinInputRefs[focusIndex].current?.focus();
-          }}
-          closeOnOverlayTap={false}
-          panGestureEnabled={false}
         >
           <View style={styles.modalContent}>
             <TouchableOpacity
@@ -507,22 +482,12 @@ const ViewBookingDetailsScreen = () => {
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{t("enterPin")}</Text>
-            <Text style={styles.modalSubtitle}>
-              {t("pleaseEnterPin")}
-            </Text>
+            <Text style={styles.modalSubtitle}>{t("pleaseEnterPin")}</Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.pinBox,
-                    pinValues[index] === "" &&
-                    index === pinValues.join("").length
-                      ? { opacity: blinkAnim }
-                      : {},
-                  ]}
-                >
+                <View key={index} style={styles.pinBox}>
                   <TextInput
+
                     ref={pinInputRefs[index]}
                     style={styles.pinInput}
                     value={pinValues[index]}
@@ -534,10 +499,12 @@ const ViewBookingDetailsScreen = () => {
                     textAlign="center"
                     selectionColor="transparent"
                   />
-                </Animated.View>
-              ))}
+                </View>))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity onPress={() => accessWallet()}>
+              <Text>{t("confirm")}</Text>
+            </TouchableOpacity>
           </View>
         </Modalize>
       </SafeAreaView>
@@ -547,13 +514,13 @@ const ViewBookingDetailsScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: 16,
+    // padding: 16,
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
-    padding: 16,
+    padding: 15,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#E0E0E0",
@@ -587,7 +554,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dishItem: {
+    marginLeft: 10,
+    alignItems: 'center',
     paddingVertical: 8,
+    flexDirection: 'row',
+    gap: 10
   },
   noDataContainer: {
     alignItems: "center",

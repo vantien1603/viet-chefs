@@ -7,18 +7,17 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import React, { useEffect, useState, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import useAxios from "../../config/AXIOS_API";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Location from "expo-location";
 
 const AllDishScreen = () => {
   const [dishes, setDishes] = useState([]);
@@ -29,27 +28,51 @@ const AllDishScreen = () => {
   const [error, setError] = useState(null);
   const [location, setLocation] = useState(null);
   const axiosInstance = useAxios();
-  const { chefId } = useLocalSearchParams();
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(0);
+  const [refresh, setRefresh] = useState(false);
+  const { showModal } = useCommonNoification();
+  useEffect(() => {
+    loadLocation();
+  }, [])
+  useEffect(() => {
+    if (location)
+      fetchDishes(0, true);
+  }, [location]);
 
-  const getCurrentLocation = async () => {
+  const fetchDishes = async (page, isRefresh = false) => {
+    setLoading(true);
     try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Quyền truy cập vị trí bị từ chối",
-          "Vui lòng cấp quyền để tìm kiếm món ăn gần bạn."
-        );
-        return null;
-      }
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      return {
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-      };
+      let response;
+      response = await axiosInstance.get("/dishes/nearby", {
+        params: {
+          customerLat: location.latitude,
+          customerLng: location.longitude,
+          distance: 30,
+          pageNo: page,
+          pageSize: 10,
+        }
+      });
+      const newDishes = response.data?.content || [];
+
+      setDishes((prev) => {
+        return isRefresh ? newDishes : [...prev, ...newDishes];
+      });
+      setTotalPages(response.data.totalPages);
+      // setDishes(response.data.content);
+      // setFilteredDishes(response.data.content);
     } catch (error) {
-      console.error("Lỗi khi lấy vị trí:", error);
-      Alert.alert("Lỗi", "Không thể lấy vị trí hiện tại.");
-      return null;
+      if (error.response?.status === 401) {
+        return;
+      }
+      if (axios.isCancel(error)) {
+        console.log('Request was cancelled');
+        return;
+      }
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách món ăn", t("modal.failed"), fetchDishes());
+    } finally {
+      setLoading(false);
+      if (isRefresh) setRefresh(false);
     }
   };
 
@@ -68,61 +91,27 @@ const AllDishScreen = () => {
           };
         }
       }
-
-      if (!newLocation) {
-        newLocation = await getCurrentLocation();
-      }
-
       setLocation(newLocation);
     } catch (error) {
-      console.error("Error loading address from AsyncStorage:", error);
-      setError("Không thể tải vị trí.");
+      showModal(t("modal.error"), "Có lỗi khi tải địa chỉ.", t("modal.failed"));
+    } finally {
       setLoading(false);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadLocation();
-    }, [])
-  );
-
-  useEffect(() => {
-    const fetchDishes = async () => {
-      if (!chefId && !location) {
-        setLoading(false);
-        return;
-      }
-      try {
-        let response;
-        if (chefId) {
-          response = await axiosInstance.get(`/dishes?chefId=${chefId}`);
-        } else {
-          response = await axiosInstance.get("/dishes/nearby", {
-            params: {
-              customerLat: location.latitude,
-              customerLng: location.longitude,
-              distance: 30, // Adjust as needed
-            },
-          });
-        }
-        setDishes(response.data.content);
-        setFilteredDishes(response.data.content);
-      } catch (error) {
-        console.error(
-          "Error fetching dishes:",
-          error?.response?.data || error.message
-        );
-        setError("Không thể tải danh sách món ăn.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (chefId || location) {
-      fetchDishes();
+  const loadMoreData = async () => {
+    if (!loading && page + 1 <= totalPages - 1) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      await fetchDishes(nextPage);
     }
-  }, [chefId, location]);
+  };
+
+  const handleRefresh = async () => {
+    setRefresh(true);
+    setPage(0);
+    await fetchDishes(0, true);
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -191,7 +180,7 @@ const AllDishScreen = () => {
   }
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
+    <SafeAreaView style={commonStyles.container}>
       <Header
         title={t("allDishes")}
         rightIcon={"search"}
@@ -202,7 +191,7 @@ const AllDishScreen = () => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm món ăn..."
+            placeholder={t("search")}
             value={searchQuery}
             onChangeText={handleSearch}
             autoFocus={true}
@@ -214,43 +203,50 @@ const AllDishScreen = () => {
       )}
 
       <FlatList
-        data={groupedDishes}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            {item.map((dish) => (
-              <View key={dish.id} style={styles.cardContainer}>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: "/screen/dishDetails",
-                      params: { dishId: dish.id },
-                    })
-                  }
-                >
-                  <View style={styles.card}>
-                    <View style={styles.imageContainer}>
-                      <Image
-                        source={{ uri: dish.imageUrl }}
-                        style={styles.image}
-                        defaultSource={require("../../assets/images/1.jpg")}
-                        resizeMode="cover"
-                      />
-                    </View>
-                    <Text style={styles.title}>{dish.name}</Text>
-                    <Text style={{ color: "#F8BF40" }}>{dish.description}</Text>
-                    <Text style={{ color: "#FFF", fontSize: 12 }}>
-                      {t("timeCook")}: ~{dish.cookTime} {t("minutes")}
-                    </Text>
-                    <Text style={{ color: "#fff", fontSize: 12 }}>
-                      {t("distance")}: {dish.chef.distance.toFixed(2)} km
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+        data={dishes}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 15 }}
+        contentContainerStyle={{ padding: 10, gap: 20, paddingVertical: 30 }}
+        initialNumToRender={10}
+        refreshing={refresh}
+        onRefresh={handleRefresh}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={true}
+        onEndReached={() => {
+          loadMoreData();
+        }}
+        onEndReachedThreshold={0.2}
+        renderItem={({ item: dish }) => (
+          <TouchableOpacity
+            style={[
+              styles.cardContainer,
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: "/screen/dishDetails",
+                params: { dishId: dish.id },
+              })
+            }
+          >
+            <View style={styles.card}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: dish.imageUrl }}
+                  style={styles.image}
+                  defaultSource={require("../../assets/images/1.jpg")}
+                />
               </View>
-            ))}
-            {item.length === 1 && <View style={styles.cardContainer} />}
-          </View>
+              <Text style={styles.title}>{dish.name}</Text>
+              <Text style={styles.description}>{dish.description}</Text>
+              <Text style={{ color: "#FFF", fontSize: 12 }}>
+                {t("timeCook")}: ~{dish.cookTime} {t("minutes")}
+              </Text>
+              <Text style={{ color: "#fff", fontSize: 12 }}>
+                {t("distance")}: {dish.chef.distance.toFixed(2)} km
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>{t("noDishesFound")}</Text>
@@ -291,36 +287,34 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     width: "48%",
+    alignItems: "center",
   },
   card: {
     backgroundColor: "#A9411D",
     borderRadius: 16,
-    paddingTop: 90,
-    paddingBottom: 20,
-    paddingHorizontal: 12,
+    padding: 16,
+    paddingTop: 50,
     alignItems: "center",
     width: "100%",
+    //   height:'100%',
+    height: 220,
     position: "relative",
-    minHeight: 200,
-    elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
-    marginTop: 30,
+    //   elevation: 5,
   },
   imageContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: "#FFF",
     overflow: "hidden",
     position: "absolute",
     top: -30,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#EAEAEA",
   },
   image: {
     width: "100%",
@@ -328,12 +322,23 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   title: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFF",
-    marginTop: 12,
+    marginTop: 60,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: 13,
+    color: "#F8BF40",
     textAlign: "center",
     marginBottom: 6,
+  },
+  cookTime: {
+    fontSize: 13,
+    color: "#FFFFFFAA",
+    textAlign: "center",
   },
   loadingContainer: {
     flex: 1,

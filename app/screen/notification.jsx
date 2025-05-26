@@ -29,7 +29,7 @@ const NotificationScreen = () => {
         setNotifications(sortedNotifications);
       }
     } catch (error) {
-      console.log("Error", error);
+      console.log(t("modal.error"), error);
     }
   };
 

@@ -7,10 +7,7 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,7 +19,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonStyles } from "../../style";
 import * as Location from "expo-location";
 import { t } from "i18next";
-import CustomChat from "../../components/CustomChat";
+import axios from "axios";
+import { useCommonNoification } from "../../context/commonNoti";
+import CustomChat from "../../components/CustomChat.jsx";
+
 
 export default function Home() {
   const router = useRouter();
@@ -30,14 +30,14 @@ export default function Home() {
   const [chef, setChef] = useState([]);
   const [dishes, setDishes] = useState([]);
   const [chefFavorite, setChefFavorite] = useState([]);
-  const filteredChefFavorite = chefFavorite.filter((item) =>
-    item.chefName.toLowerCase().includes(query.toLowerCase())
-  );
   const axiosInstance = useAxios();
-  const { user } = useContext(AuthContext);
+  const { user, isGuest } = useContext(AuthContext);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [location, setLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const { showModal } = useCommonNoification();
+
   const [messages, setMessages] = useState([]);
   const [isChatVisible, setIsChatVisible] = useState(false);
 
@@ -56,15 +56,27 @@ export default function Home() {
     }
   }, [isChatVisible]);
 
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => true
-    );
-    return () => backHandler.remove();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+      if (!isGuest) fetchUnreadCount();
+    }, [])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (location) {
+        fetchChef();
+        fetchDishes();
+        !isGuest && fetchChefFavorite();
+      }
+    }, [location])
+  );
+
+
 
   const fetchUnreadCount = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get("/notifications/my/count");
       if (response.status === 200) {
@@ -72,24 +84,22 @@ export default function Home() {
         setUnreadCount(unread);
       }
     } catch (error) {
-      console.log("Error fetching unread count", error?.response?.data);
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xử lý", t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchUnreadCount();
-    }, [])
-  );
 
   const getCurrentLocation = async () => {
+    setLoading(true);
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Quyền truy cập vị trí bị từ chối",
-          "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn."
-        );
+        showModal("Quyền truy cập vị trí bị từ chối", "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.", t("modal.failed"));
         return null;
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
@@ -98,13 +108,14 @@ export default function Home() {
         longitude: currentLocation.coords.longitude,
       };
     } catch (error) {
-      console.error("Lỗi khi lấy vị trí:", error);
-      Alert.alert("Lỗi", "Không thể lấy vị trí hiện tại.");
-      return null;
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xác định vị trí", t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
   const reverseGeocode = async (coords) => {
+    setLoading(true);
     try {
       let reverseGeocode = await Location.reverseGeocodeAsync({
         latitude: coords.latitude,
@@ -112,9 +123,8 @@ export default function Home() {
       });
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
-          addr.city || ""
-        }, ${addr.region || ""}, ${addr.country || ""}`
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
+          }, ${addr.region || ""}, ${addr.country || ""}`
           .replace(/,,/g, ",")
           .trim();
         return {
@@ -127,12 +137,14 @@ export default function Home() {
       }
       return null;
     } catch (error) {
-      console.error("Lỗi khi reverse geocoding:", error);
-      return null;
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình reverse geocoding", t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadData = async () => {
+    setLoading(true);
     try {
       const savedAddress = await AsyncStorage.getItem("selectedAddress");
       if (savedAddress) {
@@ -162,29 +174,47 @@ export default function Home() {
         }
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải địa chỉ", t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchChefFavorite = async () => {
+    setLoading(true);
     try {
       if (!location) return;
-      const response = await axiosInstance.get("/favorite-chefs/nearby", {
+      // const response = await axiosInstance.get("/favorite-chefs/nearby", {
+      //   params: {
+      //     customerLat: location.latitude,
+      //     customerLng: location.longitude,
+      //     distance: 30,
+      //     sortBy: "id",
+      //     sortDir: "asc",
+      //   },
+      // });
+      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`, {
         params: {
-          customerLat: location.latitude,
-          customerLng: location.longitude,
-          distance: 30,
-          sortBy: "id",
-          sortDir: "asc",
+          pageSize: 7,
+          sortBy: "createdAt",
+          sortDir: "desc",
         },
       });
-      setChefFavorite(response.data.content.slice(0, 7));
+      setChefFavorite(response.data.content);
     } catch (error) {
-      console.log("Error fetching favorite chefs:", error?.response?.data);
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+    }
+    finally {
+      setLoading(false);
     }
   };
 
   const fetchChef = async () => {
+    setLoading(true);
     try {
       if (!location) return;
       const response = await axiosInstance.get("/chefs/nearby", {
@@ -196,16 +226,20 @@ export default function Home() {
           sortDir: "asc",
         },
       });
-      setChef(response.data.content.slice(0, 7));
+      if (response.status === 200)
+        setChef(response.data.content.slice(0, 7));
     } catch (error) {
-      console.log(
-        "Error fetching chefs:",
-        error?.response?.data || error.message
-      );
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchDishes = async () => {
+    setLoading(true);
     try {
       if (!location) return;
       const response = await axiosInstance.get("/dishes/nearby", {
@@ -219,37 +253,15 @@ export default function Home() {
       });
       setDishes(response.data.content.slice(0, 7));
     } catch (error) {
-      console.log(
-        "Error fetching dishes:",
-        error?.response?.data || error.message
-      );
+      if (axios.isCancel(error)) {
+        return;
+      }
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải thông tin món ăn", t("modal.failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (location) {
-      fetchChef();
-      fetchDishes();
-      fetchChefFavorite();
-    }
-  }, [location]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  const handleSearchIconPress = () => {
-    router.push({
-      pathname: "/screen/search",
-      params: {
-        selectedAddress: selectedAddress
-          ? JSON.stringify(selectedAddress)
-          : null,
-      },
-    });
-  };
 
   const handleSend = (userMessage) => {
     setMessages((prev) => [...prev, userMessage]);
@@ -264,10 +276,10 @@ export default function Home() {
       });
       const replyContent = response.data.reply;
       const suggestContactAdmin = response.data.suggestContactAdmin || false;
-      const botMessage = { 
-        role: "assistant", 
+      const botMessage = {
+        role: "assistant",
         content: replyContent,
-        suggestContactAdmin: suggestContactAdmin 
+        suggestContactAdmin: suggestContactAdmin
       };
       setMessages((prev) => [...prev, botMessage]);
       console.log("Bot response:", response.data);
@@ -289,6 +301,18 @@ export default function Home() {
       setMessages([]);
     }
     setIsChatVisible(!isChatVisible);
+  };
+
+
+  const handleSearchIconPress = () => {
+    router.push({
+      pathname: "/screen/search",
+      params: {
+        selectedAddress: selectedAddress
+          ? JSON.stringify(selectedAddress)
+          : null,
+      },
+    });
   };
 
   const renderChefFavoriteItem = ({ item }) => (
@@ -333,7 +357,7 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
-      <Text style={{ color: "#F8BF40" }}>{item.description}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{item.description}</Text>
     </TouchableOpacity>
   );
 
@@ -367,8 +391,8 @@ export default function Home() {
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image
-              source={require("../../assets/images/logo.png")}
-              style={{ width: 50, height: 50 }}
+              source={user ? { uri: user?.avatarUrl } : require("../../assets/images/logo.png")}
+              style={{ width: 50, height: 50, borderRadius: 30 }}
               resizeMode="cover"
             />
             <View style={{ marginLeft: 10, maxWidth: 200 }}>
@@ -405,107 +429,81 @@ export default function Home() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 10 }}
-        >
-          <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
-            <Image
-              source={require("../../assets/images/promo.png")}
-              style={{ width: "100%", height: 150, borderRadius: 30 }}
-              resizeMode="cover"
-            />
-          </View>
 
-          <View style={styles.searchContainer}>
-            <TextInput
-              placeholder={t("search")}
-              style={styles.searchInput}
-              value={query}
-              onChangeText={setQuery}
-              onSubmitEditing={() => {
-                const searchQuery = String(query || "").trim();
-                router.push({
-                  pathname: "/screen/search",
-                  params: {
-                    query: searchQuery,
-                    selectedAddress: selectedAddress
-                      ? JSON.stringify(selectedAddress)
-                      : null,
-                  },
-                });
-              }}
-              onFocus={() => {
-                router.push({
-                  pathname: "/screen/search",
-                  params: {
-                    query: String(query || "").trim(),
-                    selectedAddress: selectedAddress
-                      ? JSON.stringify(selectedAddress)
-                      : null,
-                  },
-                });
-              }}
-              returnKeyType="search"
-            />
-            <TouchableOpacity
-              onPress={handleSearchIconPress}
-              style={styles.searchIcon}
-            >
-              <Icon name="search" size={24} color="#4EA0B7" />
-            </TouchableOpacity>
-          </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
+          <Image
+            source={require("../../assets/images/promo.png")}
+            style={{ width: "100%", height: 150, borderRadius: 30 }}
+            resizeMode="cover"
+          />
+        </View>
+
+        <View style={styles.searchContainer}>
+          <TextInput
+            placeholder="Search..."
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={() => {
+              const searchQuery = String(query || "").trim();
+              router.push({
+                pathname: "/screen/search",
+                params: {
+                  query: searchQuery,
+                  selectedAddress: selectedAddress
+                    ? JSON.stringify(selectedAddress)
+                    : null,
+                },
+              });
+            }}
+            onFocus={() => {
+              router.push({
+                pathname: "/screen/search",
+                params: {
+                  query: String(query || "").trim(),
+                  selectedAddress: selectedAddress
+                    ? JSON.stringify(selectedAddress)
+                    : null,
+                },
+              });
+            }}
+            returnKeyType="search"
+          />
+          <TouchableOpacity
+            onPress={handleSearchIconPress}
+            style={styles.searchIcon}
+          >
+            <Icon name="search" size={24} color="#4EA0B7" />
+          </TouchableOpacity>
+        </View>
+
+
+        {/* đầu bếp yêu thích gần đây */}
+        {chefFavorite.length > 0 && (
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
-            {chefFavorite.length > 0 && (
-              <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
-                <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                  {t("seeAll")}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
+              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                {t("seeAll")}
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {chefFavorite.length === 0 ? (
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 10,
-                backgroundColor: "#FFF8EF",
-                padding: 20,
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: "#888" }}>
-                {t("noFavoriteChefs")}
-              </Text>
-            </View>
-          ) : filteredChefFavorite.length === 0 ? (
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 10,
-                backgroundColor: "#FFF8EF",
-                padding: 20,
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: "#888" }}>
-                {t("noFavoriteChefNearby")}
-              </Text>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 30 }}
-            >
-              {filteredChefFavorite.map((item, index) => (
+        )}
+        {chefFavorite.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {loading ? (
+              <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+            ) : (
+              chefFavorite.map((item, index) => (
                 <View
                   key={index}
                   style={{
@@ -517,31 +515,25 @@ export default function Home() {
                 >
                   {renderChefFavoriteItem({ item })}
                 </View>
-              ))}
-            </ScrollView>
-          )}
+              ))
+            )}
+          </ScrollView>
+        )}
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
-            <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                {t("seeAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {dishes.length === 0 ? (
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 10,
-                backgroundColor: "#FFF8EF",
-                padding: 20,
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: "#888" }}>
-                {t("noDishNearby")}
-              </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
+          <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
+            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+              {t("seeAll")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+        ) : (
+          dishes.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
             </View>
           ) : (
             <ScrollView
@@ -563,29 +555,25 @@ export default function Home() {
                 </View>
               ))}
             </ScrollView>
-          )}
+          )
+        )}
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
-            <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                {t("seeAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {chef.length === 0 ? (
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 10,
-                backgroundColor: "#FFF8EF",
-                padding: 20,
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: "#888" }}>
-                {t("noChefNearby")}
-              </Text>
+
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
+          <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
+            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+              {t("seeAll")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+        ) : (
+          chef.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
             </View>
           ) : (
             <ScrollView
@@ -593,68 +581,74 @@ export default function Home() {
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 30 }}
             >
-              {chef.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderChefItem({ item })}
-                </View>
-              ))}
+              {loading ? (
+                <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+              ) : (
+                chef.map((item, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: 200,
+                      alignItems: "center",
+                      marginRight: 20,
+                      marginLeft: index === 0 ? 16 : 0,
+                    }}
+                  >
+                    {renderChefItem({ item })}
+                  </View>
+                ))
+              )}
             </ScrollView>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+          ))}
 
+      </ScrollView>
       <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
         <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />
       </TouchableOpacity>
 
-      {isChatVisible && (
-        <View style={styles.chatOverlay}>
-          <View
-            style={{
-              flexDirection: "row",
-              backgroundColor: "#A9411D",
-              padding: 20,
-              alignItems: "center",
-            }}
-          >
-            <Image
-              source={require("../../assets/images/logo.png")}
+      {
+        isChatVisible && (
+          <View style={styles.chatOverlay}>
+            <View
               style={{
-                width: 50,
-                height: 50,
-                borderRadius: 25,
-                borderWidth: 1,
-                borderColor: "#EBE5DD",
+                flexDirection: "row",
+                backgroundColor: "#A9411D",
+                padding: 20,
+                alignItems: "center",
               }}
-            />
-            <Text style={{ color: "#fff", fontSize: 15, marginLeft: 15 }}>
-              VietChef Chatbot
-            </Text>
-            <TouchableOpacity
-              style={styles.closeChatButton}
-              onPress={toggleChat}
             >
-              <Ionicons name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  borderWidth: 1,
+                  borderColor: "#EBE5DD",
+                }}
+              />
+              <Text style={{ color: "#fff", fontSize: 15, marginLeft: 15 }}>
+                VietChef Chatbot
+              </Text>
+              <TouchableOpacity
+                style={styles.closeChatButton}
+                onPress={toggleChat}
+              >
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
 
-          <CustomChat
-            messages={messages}
-            onSendMessage={handleSend}
-            callApi={handleChatbot}
-            onContactAdmin={() => router.push("/screen/helpCentre")}
-          />
-        </View>
-      )}
-    </SafeAreaView>
+            <CustomChat
+              messages={messages}
+              onSendMessage={handleSend}
+              callApi={handleChatbot}
+              onContactAdmin={() => router.push("/screen/helpCentre")}
+            />
+          </View>
+        )
+      }
+
+    </SafeAreaView >
   );
 }
 
@@ -787,4 +781,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
   },
+
 });
