@@ -232,7 +232,8 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", "Failed");
+      // showModal("Error", "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -256,7 +257,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin món ăn", "Failed");
+      showModal("Error", error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -482,43 +483,50 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
+        {chefFavorite.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
+              <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
+                <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                  {t("seeAll")}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* đầu bếp yêu thích gần đây */}
-        {chefFavorite.length > 0 && (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
-            <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                {t("seeAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View style={{ minHeight: 200 }}>
+              {loading ? (
+                <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+              ) : (
+                (chefFavorite.length > 0) && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginBottom: 30 }}
+                  >
+                    {chefFavorite.map((item, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          width: 200,
+                          alignItems: "center",
+                          marginRight: 20,
+                          marginLeft: index === 0 ? 16 : 0,
+                        }}
+                      >
+                        {renderChefFavoriteItem({ item })}
+                      </View>
+                    ))}
+                  </ScrollView>
+                )
+              )}
+            </View>
+          </>
+
         )}
-        {chefFavorite.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {loading ? (
-              <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
-            ) : (
-              chefFavorite.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderChefFavoriteItem({ item })}
-                </View>
-              ))
-            )}
-          </ScrollView>
-        )}
+
+
+
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
@@ -529,7 +537,9 @@ export default function Home() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+          <View style={{ minHeight: 200 }}>
+            <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+          </View>
         ) : (
           dishes.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -557,6 +567,8 @@ export default function Home() {
             </ScrollView>
           )
         )}
+        {/* </View> */}
+
 
 
 
@@ -568,8 +580,11 @@ export default function Home() {
             </Text>
           </TouchableOpacity>
         </View>
+        {/* <View style={{ minHeight: 200 }} > */}
         {loading ? (
-          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+          <View style={{ minHeight: 200 }} >
+            <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+          </View>
         ) : (
           chef.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -600,7 +615,7 @@ export default function Home() {
               )}
             </ScrollView>
           ))}
-
+        {/* </View> */}
       </ScrollView>
       <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
         <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />

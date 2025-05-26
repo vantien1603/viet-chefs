@@ -16,7 +16,6 @@ import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import axios from "axios";
-import Toast from "react-native-toast-message";
 import { API_GEO_KEY } from "@env";
 import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
@@ -32,7 +31,7 @@ const ChooseAddressScreen = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const { showModal } = useCommonNoification();
-  const { address, setAddress, isLong } = useSelectedItems();
+  const { address, setAddress, isLong, chefLong, chefLat } = useSelectedItems();
   const MAX_DISTANCE_KM = 50;
   const [currentLocation, setCurrentLocation] = useState(null);
 
@@ -68,6 +67,9 @@ const ChooseAddressScreen = () => {
             key: API_GEO_KEY,
             language: "vi",
             components: "country:vn",
+            location: `${chefLat},${chefLong}`,
+            radius: 10000,
+            strictbounds: true,
           },
         }
       );
@@ -125,8 +127,7 @@ const ChooseAddressScreen = () => {
     if (details) {
       const { formatted_address, geometry } = details;
       const { lat, lng } = geometry.location;
-      console.log("cur", currentLocation)
-      const distance = calculateDistance(currentLocation.latitude, currentLocation.longitude, lat, lng);
+      const distance = calculateDistance(chefLat, chefLong, lat, lng);
       console.log("detial", details);
 
       if (distance > MAX_DISTANCE_KM) {
@@ -134,7 +135,7 @@ const ChooseAddressScreen = () => {
         return;
       }
 
-      setNewAddress({ ...newAddress, address: details });
+      setNewAddress({ ...newAddress, address: formatted_address });
 
       // setNewAddress({
       //   title: newAddress.title,
@@ -142,7 +143,7 @@ const ChooseAddressScreen = () => {
       //   placeId: prediction.place_id,
       // });
       setSuggestions([]);
-      setSearchQuery(details);
+      setSearchQuery(formatted_address);
     }
   };
 
@@ -196,13 +197,19 @@ const ChooseAddressScreen = () => {
     }
     const selectedAddress = addresses[selectedAddressIndex];
     setAddress(selectedAddress.address);
+    console.log(selectedAddress);
+    const distance = calculateDistance(chefLat, chefLong, selectedAddress.latitude, selectedAddress.longitude);
+    console.log(distance);
+    if (distance > 10) {
+      showModal("Error", "Địa chỉ phải nằm trong bán kính 50km", "Failed");
+      return;
+    }
     await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
     isLong ? router.replace("/screen/longTermBooking") : router.replace("/screen/booking")
   };
 
 
   useEffect(() => {
-    console.log(address);
     if (address && addresses.length > 0) {
       const index = addresses.findIndex(
         (item) =>

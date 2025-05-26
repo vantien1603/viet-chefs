@@ -71,7 +71,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
           </Text>
           <Text numberOfLines={1} ellipsizeMode="tail">
             <Text style={styles.itemContentLabel}>Address: </Text>
-            <Text style={styles.itemContent}>46/1 Tan Hoa 2, Hiep Phu, Q9</Text>
+            <Text style={styles.itemContent}>{item.bookingDetails[0].location}</Text>
           </Text>
           <Text>
             <Text style={styles.itemContentLabel}>Booking type: </Text>
@@ -103,7 +103,6 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
             </TouchableOpacity>
           </View>
         )}
-
       </View>
 
     )
@@ -182,7 +181,12 @@ const Histories = () => {
 
       if (response.status === 200) {
         const bookingData = response.data.content || response.data || [];
-        console.log(bookingData.length)
+        bookingData.forEach((booking, index) => {
+          console.log(`Booking #${index + 1}:`);
+          booking.bookingDetails.forEach((detail, i) => {
+            console.log(`  Detail #${i + 1}:`, detail);
+          });
+        });
         // setTotalPages(response.data.totalPages);
         setTotalPages(prev => ({
           ...prev,

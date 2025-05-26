@@ -336,7 +336,7 @@ const ViewDetailBookingDetails = () => {
               style={[styles.button, { backgroundColor: "#28a745" }]}
               onPress={handleCompleted}
             >
-              <Text style={styles.buttonText}>Confirm Completed</Text>
+              <Text style={styles.buttonText}>Completed</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: "#EBE5DD",
@@ -503,7 +503,8 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
   },
   button: {
-    flex: 1,
+    // flex: 1,
+    width: '40%',
     marginHorizontal: 5,
     paddingVertical: 12,
     borderRadius: 8,

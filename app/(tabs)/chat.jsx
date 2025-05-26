@@ -151,17 +151,17 @@ const Chat = () => {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchConversations();
-    }, [shouldRefetch])
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     fetchConversations();
+  //   }, [shouldRefetch])
+  // );
 
-  useEffect(() => {
-    registerNotificationCallback(() => {
-      setShouldRefetch((prev) => prev + 1);
-    });
-  }, []);
+  // useEffect(() => {
+  //   registerNotificationCallback(() => {
+  //     setShouldRefetch((prev) => prev + 1);
+  //   });
+  // }, []);
 
   const handleSearch = (text) => {
     setSearchQuery(text);

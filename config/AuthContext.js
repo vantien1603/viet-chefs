@@ -63,12 +63,14 @@ export const AuthProvider = ({ children }) => {
       const response = await axiosInstanceBase.post('/login', loginPayload);
       if (response.status === 200) {
         const { access_token, refresh_token } = response.data;
+        console.log("acdses cua Auth", access_token);
         await SecureStore.setItemAsync("refreshToken", refresh_token);
         const decoded = jwtDecode(access_token);
         console.log("decode", decoded)
         console.log("response", response.data);
         if (decoded?.roleName === "ROLE_ADMIN") return null;
         setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
+        console.log("loasd");
         const loggedUser = { fullName: response.data.fullName, token: access_token, avatarUrl: decoded.avatarUrl, ...decoded };
 
         setIsGuest(false);

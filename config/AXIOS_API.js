@@ -10,7 +10,7 @@ const useAxios = () => {
     const { isConnected } = useContext(NetworkContext);
     const { showModal } = useGlobalModal();
     const { showModalLogin } = useModalLogin();
-
+    console.log(user?.token);
     const AXIOS_API = axios.create({
         baseURL: "https://vietchef-api.ddns.net/api/v1",
         headers: {
@@ -35,11 +35,11 @@ const useAxios = () => {
         (error) => {
             if (error.response?.status === 401) {
                 if (user?.roleName === "ROLE_CHEF") {
-                    showModalLogin("Phiên đăng nhập đã hết hạn", "Vui lòng đăng nhập lại để tiếp tục.");
                     logout?.();
+                    showModalLogin("Phiên đăng nhập đã hết hạn1", "Vui lòng đăng nhập lại để tiếp tục.");
                 } else {
-                    showModalLogin("Phiên đăng nhập đã hết hạn", "Vui lòng đăng nhập lại để tiếp tục.", true);
                     logoutNoDirect?.();
+                    showModalLogin("Phiên đăng nhập đã hết hạn2", "Vui lòng đăng nhập lại để tiếp tục.", true);
                 }
 
             }

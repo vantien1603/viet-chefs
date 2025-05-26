@@ -194,7 +194,7 @@ const ChefDishes = () => {
                                 <Image source={{ uri: dish.imageUrl }} style={styles.image} defaultSource={require("../../assets/images/1.jpg")} />
                             </View>
                             <Text style={styles.title}>{dish.name}</Text>
-                            <Text style={styles.description}>{dish.description}</Text>
+                            <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>{dish.description}</Text>
                             <Text style={styles.cookTime}>~ {dish.cookTime} minutes</Text>
                         </View>
                     </TouchableOpacity>

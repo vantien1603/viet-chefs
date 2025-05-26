@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../components/header'
 import useAxios from '../../config/AXIOS_API'
@@ -12,6 +12,7 @@ import useAxiosFormData from '../../config/AXIOS_API_FORM'
 import { useCommonNoification } from '../../context/commonNoti'
 import axios from 'axios'
 import * as Location from "expo-location";
+import { AuthContext } from '../../config/AuthContext'
 
 
 const DetailsBooking = () => {
@@ -25,6 +26,7 @@ const DetailsBooking = () => {
     const { showModal } = useCommonNoification();
     const axiosInstanceForm = useAxiosFormData();
     const router = useRouter();
+    const { user } = useContext(AuthContext);
 
 
     useEffect(() => {
@@ -174,11 +176,12 @@ const DetailsBooking = () => {
     }
 
     const handleChat = () => {
+        console.log(customer)
         router.push({
             pathname: "/screen/message",
             params: {
                 contact: JSON.stringify({
-                    id: customer?.id,
+                    id: customer?.username,
                     name: customer?.fullName,
                     avatar: customer?.avatarUrl,
                 }),

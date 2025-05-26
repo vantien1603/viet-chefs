@@ -78,7 +78,6 @@ export default function LoginScreen() {
     setLoadingA(true);
     const token = await SecureStore.getItemAsync('expoPushToken');
     const result = await login(usernameOrEmail, password, token);
-    console.log("asdasd", result)
     if (result != null) {
       if (result?.roleName === "ROLE_CHEF") {
         navigation.navigate("(chef)", { screen: "home" })

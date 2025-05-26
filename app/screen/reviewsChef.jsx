@@ -18,6 +18,7 @@ import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import { FlatList } from "react-native";
 import { t } from "i18next";
+import { commonStyles } from "../../style";
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -39,10 +40,9 @@ const ReviewsChefScreen = () => {
   const [totalReviews, setTotalReviews] = useState(0);
   const [sort, setSort] = useState("newest");
   const [refresh, setRefresh] = useState(false);
-  const [totalPage, setTotalPage] = useState(0);
   const [replyTexts, setReplyTexts] = useState({});
   const { showModal } = useCommonNoification();
-
+  const [showReplies, setShowReplies] = useState({});
   const fetchReviewChef = async (page = 0, sortOption = sort, isRefresh = false) => {
     if (loading && !isRefresh) return;
     setLoading(true);
@@ -97,7 +97,7 @@ const ReviewsChefScreen = () => {
   };
 
   const loadMoreData = async () => {
-    if (!loading && pageNo + 1 <= totalPage - 1) {
+    if (!loading && pageNo + 1 <= totalPages - 1) {
       console.log("cal load more");
       const nextPage = pageNo + 1;
       setPageNo(nextPage);
@@ -166,19 +166,45 @@ const ReviewsChefScreen = () => {
     };
 
     return (
-      <View style={styles.reviewItem}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image
-            source={{ uri: review.userAvatar || "https://via.placeholder.com/50" }}
-            style={styles.avatar}
-          />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
-            <RatingStars rating={review.rating} />
+      <View key={review.id}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Image
+              source={{ uri: review.userAvatar || "https://via.placeholder.com/50" }}
+              style={styles.avatar}
+            />
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
+              <RatingStars rating={review.rating} />
+            </View>
           </View>
+
+          <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
+
         </View>
         <Text style={styles.reviewText}>{review.overallExperience}</Text>
-        <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
+        {review.replies && (
+          <TouchableOpacity
+            onPress={() =>
+              setShowReplies(prev => ({
+                ...prev,
+                [review.id]: !prev[review.id] // toggle true/false
+              }))
+            }
+          >
+            <Text style={{ alignSelf: 'flex-end' }}>
+              {showReplies[review.id] ? 'Hide replies' : 'Show replies'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {showReplies[review.id] && (
+          review.replies.map((item) => (
+            <View>
+              <Text>askdj</Text>
+            </View>
+          ))
+        )}
+
         {user.roleName === "ROLE_CHEF" && (
           <>
             <TextInput
@@ -191,13 +217,12 @@ const ReviewsChefScreen = () => {
               multiline
               numberOfLines={4}
             />
-
             <TouchableOpacity onPress={() => handleReply(review.id)}>
               <Text style={styles.replyButton}>Gửi phản hồi</Text>
             </TouchableOpacity>
           </>
         )}
-      </View>
+      </View >
     );
   };
 
@@ -213,11 +238,13 @@ const ReviewsChefScreen = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Reviews for" subtitle={`${chefName}`} />
-      <View>
+    <SafeAreaView style={commonStyles.container}>
+      <Header title={user.roleName === "ROLE_CHEF" ? "Reviews" : "Reviews for"} subtitle={user.roleName !== "ROLE_CHEF" && `${chefName}`} />
+      <View style={commonStyles.containerContent}
+      >
+
         <FlatList
-          contentContainerStyle={{ padding: 20 }}
+          contentContainerStyle={{ paddingBottom: 50 }}
           data={reviews}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
@@ -283,7 +310,7 @@ const ReviewsChefScreen = () => {
             ) : null
           }
           onEndReached={loadMoreData}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={0.3}
           refreshing={refresh}
           onRefresh={handleRefresh}
           ListEmptyComponent={
@@ -299,7 +326,7 @@ const ReviewsChefScreen = () => {
 
 const styles = StyleSheet.create({
   replyInput: {
-    borderWidth: 1,
+    borderBottomWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     padding: 8,
@@ -433,6 +460,7 @@ const styles = StyleSheet.create({
   userInfo: {
     flex: 1,
   },
+  avatar: { width: 30, height: 30, borderRadius: 20 },
   userName: {
     fontSize: 16,
     fontWeight: "bold",
@@ -442,7 +470,8 @@ const styles = StyleSheet.create({
     color: "#555",
     fontSize: 14,
     marginBottom: 10,
-    lineHeight: 20,
+    // lineHeight: 20,
+    paddingLeft: 20
   },
   reviewDate: {
     fontSize: 12,

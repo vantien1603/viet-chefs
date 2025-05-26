@@ -421,6 +421,12 @@ export default function RootLayout() {
                             headerShown: false,
                           }}
                         />
+                        <Stack.Screen
+                          name="screen/chefReviews"
+                          options={{
+                            headerShown: false,
+                          }}
+                        />
                       </Stack>
                     </SelectedItemsProvider>
                   </ConfirmModalProvider>

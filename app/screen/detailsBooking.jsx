@@ -166,7 +166,7 @@ const DetailsBooking = () => {
             pathname: "/screen/message",
             params: {
                 contact: JSON.stringify({
-                    id: booking.customer?.id,
+                    id: booking.customer?.username,
                     name: booking.customer?.fullName,
                     avatar: booking.customer?.avatarUrl,
                 }),

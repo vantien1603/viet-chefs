@@ -339,10 +339,10 @@ export default function ChefScheduleScreen() {
     return (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator style={{ alignSelf: 'center' }} size="large" color="#0000ff" />
         ) : (
           slots.length === 0 ? (
-            <Text style={{ color: "#888" }}>{t("noSlotsAvailable")}</Text>
+            <Text style={{ color: "#888", alignSelf: 'center' }}>{t("noSlotsAvailable")}</Text>
           ) : (
             slots.map((slot, index) => (
               <TouchableOpacity key={index} onPress={() => openModal(slot)} style={styles.section}>

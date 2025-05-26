@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
-import Toast from "react-native-toast-message";
 import { AuthContext } from "../../config/AuthContext";
 import useAxios from "../../config/AXIOS_API";
 import Header from "../../components/header";
@@ -19,6 +18,9 @@ import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useSelectedItems } from "../../context/itemContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Ionicons } from "@expo/vector-icons";
+import { Modalize } from "react-native-modalize";
 
 const ConfirmBookingScreen = () => {
   const { selectedMenu, selectedDishes, extraDishIds, selectedDay, specialRequest, numPeople, startTime, dishNotes, ingredientPrep, address, chefId, setTotalPrice } = useSelectedItems();
@@ -32,6 +34,18 @@ const ConfirmBookingScreen = () => {
     ...(selectedMenu?.menuItems || []),
     ...(selectedMenu ? Object.values(extraDishIds || {}) : Object.values(selectedDishes || {})),
   ];
+
+
+
+  const platformFeeModalRef = useRef(null);
+
+  const openPlatformFeeModal = () => {
+    platformFeeModalRef.current?.open();
+  };
+
+  const closePlatformFeeModal = () => {
+    platformFeeModalRef.current?.close();
+  };
 
   useEffect(() => {
     fetchCalculatorBooking();
@@ -130,211 +144,248 @@ const ConfirmBookingScreen = () => {
   }
 
   return (
-    <SafeAreaView style={commonStyles.containerContent}>
-      <Header title={t("confirmAndPayment")} onLeftPress={() => handleBack()} />
-      <ScrollView
-        style={commonStyles.containerContent}
-        contentContainerStyle={{ paddingBottom: 170 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View>
-          <Text style={{ fontSize: 18, fontWeight: "500", marginBottom: 10 }}>
-            {t("location")}
-          </Text>
-          <View
-            style={{
-              borderColor: "#BBBBBB",
-              borderWidth: 2,
-              borderRadius: 10,
-              padding: 20,
-              marginBottom: 20,
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{address?.address}</Text>
-          </View>
-        </View>
-
-        <View>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
-            {t("infor")}
-          </Text>
-          <View
-            style={{
-              borderColor: "#BBBBBB",
-              borderWidth: 2,
-              borderRadius: 10,
-              padding: 20,
-              marginBottom: 20,
-            }}
-          >
-            <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
-              <Text style={styles.details}>{selectedDay && selectedDay.format("YYYY-MM-DD")}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
-              <Text style={styles.details}>{`${startTime}`}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
-                {t("timeBeginTravel")}
-              </Text>
-              <Text style={styles.details}>
-                {calcuResult.timeBeginTravel || "N/A"}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
-                {t("timeBeginCook")}
-              </Text>
-              <Text style={styles.details}>
-                {calcuResult.timeBeginCook || "N/A"}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("cookTime")}</Text>
-              <Text style={styles.details}>
-                {`${calcuResult.cookTimeMinutes} ${t("minutes")}` || "N/A"}
-              </Text>
-            </View>
-
-            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
-              {t("jobDetails")}
+    <GestureHandlerRootView style={commonStyles.container}>
+      <SafeAreaView style={commonStyles.containerContent}>
+        <Header title={t("confirmAndPayment")} onLeftPress={() => handleBack()} />
+        <ScrollView
+          style={commonStyles.containerContent}
+          contentContainerStyle={{ paddingBottom: 170 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View>
+            <Text style={{ fontSize: 18, fontWeight: "500", marginBottom: 10 }}>
+              {t("location")}
             </Text>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
-                {t("numberOfPeople")}
+            <View
+              style={{
+                borderColor: "#BBBBBB",
+                borderWidth: 2,
+                borderRadius: 10,
+                padding: 20,
+                marginBottom: 20,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{address?.address}</Text>
+            </View>
+          </View>
+
+          <View>
+            <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
+              {t("infor")}
+            </Text>
+            <View
+              style={{
+                borderColor: "#BBBBBB",
+                borderWidth: 2,
+                borderRadius: 10,
+                padding: 20,
+                marginBottom: 20,
+              }}
+            >
+              <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
+                <Text style={styles.details}>{selectedDay && selectedDay.format("YYYY-MM-DD")}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
+                <Text style={styles.details}>{`${startTime}`}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>
+                  {t("timeBeginTravel")}
+                </Text>
+                <Text style={styles.details}>
+                  {calcuResult.timeBeginTravel || "N/A"}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>
+                  {t("timeBeginCook")}
+                </Text>
+                <Text style={styles.details}>
+                  {calcuResult.timeBeginCook || "N/A"}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("cookTime")}</Text>
+                <Text style={styles.details}>
+                  {`${calcuResult.cookTimeMinutes} ${t("minutes")}` || "N/A"}
+                </Text>
+              </View>
+
+              <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+                {t("jobDetails")}
               </Text>
-              <Text style={styles.details}>{numPeople}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("totalNumberOfDishes")}</Text>
-              <Text style={styles.details}>{allDishes.length}</Text>
-            </View>
-            {selectedMenu && (
-              <View>
-                <View style={styles.row}>
-                  <Text style={{ fontSize: 14, flex: 1 }}>{t("menu")}</Text>
-                  <Text style={styles.details}>{selectedMenu.name}</Text>
-                </View>
-                {selectedMenu.menuItems.map((item, idx) => (
-                  <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                    <Text style={styles.dishName}>{item.dishName}</Text>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>
+                  {t("numberOfPeople")}
+                </Text>
+                <Text style={styles.details}>{numPeople}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("totalNumberOfDishes")}</Text>
+                <Text style={styles.details}>{allDishes.length}</Text>
+              </View>
+              {selectedMenu && (
+                <View>
+                  <View style={styles.row}>
+                    <Text style={{ fontSize: 14, flex: 1 }}>{t("menu")}</Text>
+                    <Text style={styles.details}>{selectedMenu.name}</Text>
                   </View>
-                )
-                )}
-              </View>
-            )}
-            <View style={{ flexDirection: 'row', padding: 5, justifyContent: 'space-evenly' }}>
-              {/* <View style={styles.row}> */}
-              <Text style={{ fontSize: 14, flex: 1 }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
-              {/* </View> */}
-              <View>
-                {selectedMenu ? (
-                  Object.keys(extraDishIds).map((key, idx) => (
+                  {selectedMenu.menuItems.map((item, idx) => (
                     <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                      <Text style={styles.dishName}>{extraDishIds[key].name}</Text>
+                      <Text style={styles.dishName}>{item.dishName}</Text>
                     </View>
-                  ))) : (
-                  Object.keys(selectedDishes).map((key, idx) => (
-                    <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
-                      <Text style={styles.dishName}>{selectedDishes[key].name}</Text>
-                    </View>
-                  )))
-                }
+                  )
+                  )}
+                </View>
+              )}
+              <View style={{ flexDirection: 'row', padding: 5, justifyContent: 'space-evenly' }}>
+                {/* <View style={styles.row}> */}
+                <Text style={{ fontSize: 14, flex: 1 }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
+                {/* </View> */}
+                <View>
+                  {selectedMenu ? (
+                    Object.keys(extraDishIds).map((key, idx) => (
+                      <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                        <Text style={styles.dishName}>{extraDishIds[key].name}</Text>
+                      </View>
+                    ))) : (
+                    Object.keys(selectedDishes).map((key, idx) => (
+                      <View key={idx} style={{ alignItems: 'flex-end', paddingHorizontal: 5 }}>
+                        <Text style={styles.dishName}>{selectedDishes[key].name}</Text>
+                      </View>
+                    )))
+                  }
+                </View>
               </View>
-            </View>
 
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
-              <Text style={styles.details}>
-                {ingredientPrep === "customer" ? t("IWillPrepareIngredients") : t("chefWillPrepareIngredients")}
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
+                <Text style={styles.details}>
+                  {ingredientPrep === "customer" ? t("IWillPrepareIngredients") : t("chefWillPrepareIngredients")}
+                </Text>
+              </View>
+              <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+                {t("feeDetails")}
               </Text>
-            </View>
-            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
-              {t("feeDetails")}
-            </Text>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("chefCookingFee")}</Text>
-              <Text style={styles.details}>${calcuResult.chefCookingFee}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("priceOfDishes")}</Text>
-              <Text style={styles.details}>${calcuResult.priceOfDishes}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("arrivalFee")} ({calcuResult.distanceKm} km)</Text>
-              <Text style={styles.details}>${calcuResult.arrivalFee}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("platformFee")}</Text>
-              <Text style={styles.details}>${calcuResult.platformFee}</Text>
-            </View>
-            <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
-              {t("specialRequest")}
-            </Text>
-            <Text style={{ fontSize: 14 }}>{specialRequest}</Text>
-          </View>
-        </View>
-        <View style={{ padding: 5 }} />
-      </ScrollView>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("chefCookingFee")}</Text>
+                <Text style={styles.details}>${calcuResult.chefCookingFee}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("priceOfDishes")}</Text>
+                <Text style={styles.details}>${calcuResult.priceOfDishes}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={{ fontSize: 14, flex: 1 }}>{t("arrivalFee")} ({calcuResult.distanceKm} km)</Text>
+                <Text style={styles.details}>${calcuResult.arrivalFee}</Text>
+              </View>
+              <View style={styles.row}>
+                <View style={styles.labelWithIcon}>
+                  <Text style={{ fontSize: 14 }}>{t("platformFee")}</Text>
+                  <TouchableOpacity onPress={openPlatformFeeModal}>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={16}
+                      color="#666"
+                      style={styles.labelIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
 
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "#EBE5DD",
-          padding: 10,
-          alignItems: "center",
-        }}
-      >
+                <Text style={styles.details}>${calcuResult.platformFee}</Text>
+
+              </View>
+              <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
+                {t("specialRequest")}
+              </Text>
+              <Text style={{ fontSize: 14 }}>{specialRequest}</Text>
+            </View>
+          </View>
+          <View style={{ padding: 5 }} />
+        </ScrollView>
+
         <View
           style={{
-            width: "100%",
-            borderColor: "#BBBBBB",
-            borderWidth: 2,
-            borderRadius: 10,
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: "#EBE5DD",
             padding: 10,
-            marginBottom: 20,
-          }}
-        >
-          <View style={styles.costRow}>
-            <Text style={{ flex: 1, fontSize: 18, fontWeight: "bold" }}>
-              {t("total")}:
-            </Text>
-            <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-              {calcuResult.totalPrice && calcuResult.totalPrice?.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              }) || "$0"}
-            </Text>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={{
-            width: "100%",
-            backgroundColor: "#A64B2A",
-            padding: 15,
-            borderRadius: 10,
             alignItems: "center",
           }}
-          onPress={() => requireAuthAndNetwork(handleKeepBooking)}
-          disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              {t("confirmBooking")}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+          <View
+            style={{
+              width: "100%",
+              borderColor: "#BBBBBB",
+              borderWidth: 2,
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 20,
+            }}
+          >
+            <View style={styles.costRow}>
+              <Text style={{ flex: 1, fontSize: 18, fontWeight: "bold" }}>
+                {t("total")}:
+              </Text>
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                {calcuResult.totalPrice && calcuResult.totalPrice?.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }) || "$0"}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={{
+              width: "100%",
+              backgroundColor: "#A64B2A",
+              padding: 15,
+              borderRadius: 10,
+              alignItems: "center",
+            }}
+            onPress={() => requireAuthAndNetwork(handleKeepBooking)}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                {t("confirmBooking")}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+      <Modalize
+        ref={platformFeeModalRef}
+        adjustToContentHeight={true}
+        handlePosition="outside"
+        modalStyle={styles.modalStyle}
+      // onClose={closePlatformFeeModal}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>{t("applicationFeeTitle")}</Text>
+          <Text style={styles.modalText}>
+            Phí áp dụng là khoản phí được thu để hỗ trợ cải thiện và duy
+            trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.
+            Chúng tôi sử dụng phí này để nâng cấp tính năng, bảo trì hệ thống
+            và mang đến nhiều dịch vụ chất lượng hơn cho bạn.
+          </Text>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={closePlatformFeeModal}
+          >
+            <Text style={styles.modalButtonText}>{t("close")}</Text>
+          </TouchableOpacity>
+        </View>
+      </Modalize>
+    </GestureHandlerRootView>
   );
 };
 
@@ -374,5 +425,44 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 10,
+  },
+  labelWithIcon: {
+    flexDirection: "row",
+    justifyContent: 'space-between',
+    alignItems: "center",
+  },
+  modalStyle: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalContent: {
+    padding: 20,
+    paddingBottom: 30,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButton: {
+    backgroundColor: "#A64B2A",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

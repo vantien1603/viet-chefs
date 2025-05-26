@@ -238,7 +238,7 @@ const AllDishScreen = () => {
                 />
               </View>
               <Text style={styles.title}>{dish.name}</Text>
-              <Text style={styles.description}>{dish.description}</Text>
+              <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>{dish.description}</Text>
               <Text style={{ color: "#FFF", fontSize: 12 }}>
                 {t("timeCook")}: ~{dish.cookTime} {t("minutes")}
               </Text>

@@ -21,7 +21,7 @@ import { useFocusEffect } from "expo-router";
 import { SocketContext } from "../../config/SocketContext";
 
 const Chat = () => {
-  const { user } = useContext(AuthContext);
+  const { user, isGuest } = useContext(AuthContext);
   const { registerNotificationCallback } = useContext(SocketContext);
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState([]);
@@ -34,7 +34,7 @@ const Chat = () => {
   // console.log("call", notificationsCallback);
 
   const fetchConversations = async () => {
-    if (!user?.sub) {
+    if (!user?.sub || isGuest) {
       console.log("No username found");
       return;
     }
@@ -118,7 +118,7 @@ const Chat = () => {
                 firstDayOfYear +
                 (firstDayOfYear.getTimezoneOffset() -
                   date.getTimezoneOffset()) *
-                  60000) /
+                60000) /
               86400000;
             return Math.ceil(
               (pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7

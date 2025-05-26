@@ -36,9 +36,9 @@ export const ModalLoginProvider = ({ children }) => {
         setEmail('');
         setPassword('');
         setError('');
-        
+
         setModalContent({ title, message, isLogin });
-        
+
         setTimeout(() => {
             setIsVisible(true);
         }, 100);
@@ -49,10 +49,10 @@ export const ModalLoginProvider = ({ children }) => {
             setError("Login failed. Please check your account or password again.");
             return;
         }
-        
+
         setLoading(true);
         const result = await login(email, password, expoToken);
-        
+        console.log("resuls login modal", result);
         if (result) {
             if (result?.roleName === "ROLE_CHEF") {
                 navigation.navigate("(chef)", { screen: "home" });
@@ -61,7 +61,7 @@ export const ModalLoginProvider = ({ children }) => {
         } else {
             setError("Login failed. Please check your account or password again.");
         }
-        
+
         setLoading(false);
     };
 
@@ -90,9 +90,9 @@ export const ModalLoginProvider = ({ children }) => {
                     <View style={styles.indicator} />
                     <Text style={styles.title}>{modalContent.title}</Text>
                     <Text style={styles.message}>{modalContent.message}</Text>
-                    
+
                     {modalContent.isLogin && !showLoginForm && (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.button}
                             onPress={() => setShowLoginForm(true)}
                         >
@@ -116,7 +116,7 @@ export const ModalLoginProvider = ({ children }) => {
 
                             {error ? <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text> : null}
 
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.button}
                                 onPress={() => requireNetwork(handleLogin)}
                             >
@@ -128,9 +128,9 @@ export const ModalLoginProvider = ({ children }) => {
                             </TouchableOpacity>
                         </>
                     )}
-                    
+
                     {!showLoginForm && !modalContent.isLogin && (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.button}
                             onPress={closeModal}
                         >

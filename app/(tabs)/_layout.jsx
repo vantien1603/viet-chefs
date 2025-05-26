@@ -45,7 +45,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
   }
 
   useEffect(() => {
-    const restrictedScreens = ["chat", "history"];
+    const restrictedScreens = ["chat", "schedule"];
     const currentScreen = state.routes[state.index].name;
 
     if (isGuest && restrictedScreens.includes(currentScreen)) {

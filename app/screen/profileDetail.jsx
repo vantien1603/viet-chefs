@@ -138,8 +138,7 @@ const ProfileDetail = () => {
   const handleSaveProfile = async () => {
     const phoneRegex = /^\d{10}$/;
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    const nameRegex = /^[a-zA-Z\s]+$/;
-    console.log(updateData.dob);
+    const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÊÔƠƯàáảãạâấầẩẫậăắằẳẵặèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựýỳỷỹỵ\s]+$/; console.log(updateData.dob);
     const localErrors = {
       name: false,
       phone: false,

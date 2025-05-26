@@ -109,6 +109,7 @@ const OrderHistories = () => {
 
 
   const handleLoadMore = () => {
+    console.log("goi load more")
     if (pageNo < totalPages - 1 && !loading) {
       const currentStatus = statusMap[routes[index].key];
 
@@ -116,13 +117,13 @@ const OrderHistories = () => {
     }
   };
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
-    setBookings([]);
+    // setBookings([]);
     const currentStatus = statusMap[routes[index].key];
-
+    console.log(currentStatus);
     fetchBookingDetails(0, currentStatus, true);
-  }, []);
+  };
 
 
   const renderScene = SceneMap({
@@ -175,11 +176,12 @@ const OrderHistories = () => {
         refreshing={refreshing}
         onRefresh={onRefresh}
       />
+
     ),
   });
 
   return (
-    <SafeAreaView style={[commonStyles.containerContent, styles.container]}>
+    <SafeAreaView style={[commonStyles.container]}>
       <Header title="Order History" />
       <TabView
         navigationState={{ index, routes }}

@@ -420,37 +420,40 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
   };
 
   return (
-    <View style={styles.listContainer}>
-      <FlatList
-        data={bookings}
-        renderItem={({ item }) => {
-          return (
-            <BookingCard
-              booking={{ ...item, status: item.status || "UNKNOWN" }}
-              onCancel={(bookingId) =>
-                handleCancelBooking(bookingId, item.bookingType, onRefresh)
-              }
-              onReview={handleReview}
-              onViewReview={handleViewReview}
-              hasReview={reviewStatus[item.id] || false}
-              refreshing={refreshing}
-            />
-          );
-        }}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        onEndReached={onLoadMore}
-        onEndReachedThreshold={0.1}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="calendar-outline" size={48} color="#64748b" />
-            <Text style={styles.emptyText}>No bookings available</Text>
-          </View>
-        }
-      />
-    </View>
+    <FlatList
+      data={bookings}
+      renderItem={({ item }) => {
+        return (
+          <BookingCard
+            booking={{ ...item, status: item.status || "UNKNOWN" }}
+            onCancel={(bookingId) =>
+              handleCancelBooking(bookingId, item.bookingType, onRefresh)
+            }
+            onReview={handleReview}
+            onViewReview={handleViewReview}
+            hasReview={reviewStatus[item.id] || false}
+            refreshing={refreshing}
+          />
+
+        );
+      }}
+      keyExtractor={(item) => item.id.toString()}
+      contentContainerStyle={styles.listContent}
+      onEndReached={onLoadMore}
+      onEndReachedThreshold={0.2}
+      refreshing={refreshing}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      removeClippedSubviews={true}
+      onRefresh={onRefresh}
+      ListEmptyComponent={
+        <View style={styles.emptyContainer}>
+          <Ionicons name="calendar-outline" size={48} color="#64748b" />
+          <Text style={styles.emptyText}>No bookings available</Text>
+        </View>
+      }
+    />
   );
 };
 

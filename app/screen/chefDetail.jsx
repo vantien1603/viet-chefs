@@ -29,8 +29,6 @@ import { useModalLogin } from "../../context/modalLoginContext";
 
 
 const ChefDetail = () => {
-  const [expandedBio, setExpandedBio] = useState(false);
-  const [expandedDesc, setExpandedDesc] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [dishes, setDishes] = useState([]);
   const [chefs, setChefs] = useState(null);
@@ -41,8 +39,7 @@ const ChefDetail = () => {
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
-  const navigation = useNavigation();
-  const { setChefId, setRouteBefore, clearSelection } = useSelectedItems();
+  const { setChefId, setRouteBefore, setChefLat, setChefLong, clearSelection } = useSelectedItems();
   const [modalKey, setModalKey] = useState(1);
   const segment = useSegments();
   const { user, isGuest } = useContext(AuthContext);
@@ -70,6 +67,7 @@ const ChefDetail = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`/chefs/${chefId}`);
+      console.log(response.data)
       if (response.status === 200) {
         setChefs(response.data);
       }
@@ -438,6 +436,8 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               clearSelection();
               setChefId(chefId);
+              setChefLat(chefs.latitude);
+              setChefLong(chefs.longitude);
               setRouteBefore(segment);
               SecureStore.setItem("firstChef", chefId);
               router.replace("/screen/selectFood");
@@ -456,6 +456,8 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               clearSelection();
               setChefId(chefId);
+              setChefLat(chefs.latitude);
+              setChefLong(chefs.longitude);
               SecureStore.setItem("firstChef", chefId);
               router.replace("/screen/longTermBooking")
             }}

@@ -45,13 +45,16 @@ const Message = () => {
 
   const contact = contactString ? JSON.parse(contactString) : {};
 
+  console.log("casd", contact);
+
   useEffect(() => {
     const client = Stomp.over(() => new SockJS(WEB_SOCKET_ENDPOINT));
     stompClientRef.current = client;
+    console.log("sub", user.sub);
     client.connect(
       {},
       () => {
-        client.subscribe(`/user/${user.sub}/queue/messages`, onMessageReceived);
+        client.subscribe(`/user/${user?.sub}/queue/messages`, onMessageReceived);
         client.subscribe(`/topic/public`, onMessageReceived);
       },
       onError
@@ -100,6 +103,7 @@ const Message = () => {
 
   const onError = (error) => {
     console.error("WebSocket error:", error);
+    showModal("Error", "Không thể kết nối đến máy chủ. Vui lòng thử lại.", "Failed");
     Toast.show({
       type: "error",
       text1: "Lỗi kết nối",
@@ -109,6 +113,7 @@ const Message = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
+      console.log("gcalal")
       setLoading(true);
       try {
         const response = await axiosInstance.get(
@@ -241,6 +246,7 @@ const Message = () => {
       }
       setMessages((prev) => [...prev, newMessage]);
       client.send("/app/chat", {}, JSON.stringify(newMessage));
+      console.log("asdasdasdsad")
       setSelectedImage(null);
       setInputText("");
     } catch (error) {
@@ -383,7 +389,7 @@ const Message = () => {
           }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           keyboardShouldPersistTaps="handled"
-          // inverted
+        // inverted
         />
       )}
       <Modal

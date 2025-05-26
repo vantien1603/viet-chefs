@@ -98,7 +98,7 @@ export default function WelcomeScreen() {
   };
 
   const handleLogin = () => {
-    router.replace("screen/login");
+    router.push("screen/login");
   };
 
 
@@ -158,7 +158,7 @@ export default function WelcomeScreen() {
 
       <View>
         <TouchableOpacity
-          onPress={() => router.replace("screen/signup")}
+          onPress={() => router.push("screen/signup")}
           style={{
             padding: 13,
             marginTop: 40,

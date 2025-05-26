@@ -347,6 +347,8 @@ const BookingScreen = () => {
     </TouchableOpacity>
   );
 
+  console.log(selectedDishes);
+
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
       <Header title="Booking" onLeftPress={() => handleBack()} />
@@ -604,7 +606,7 @@ const BookingScreen = () => {
                         />
                         <View style={styles.dishText}>
                           <Text style={styles.dishName}>
-                            {dish.name || dish.dishName || "Unnamed Dish"}
+                            {dish.name || dish.dishName || dish.dish.name || "Unnamed Dish"}
                           </Text>
                           {dishNotes?.[dish.id || dish.dishId] && (
                             <Text style={styles.noteText}>

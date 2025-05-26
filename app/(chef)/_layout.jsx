@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,13 +6,16 @@ import { LinearGradient } from "expo-linear-gradient";
 function CustomTabBar({ state, descriptors, navigation }) {
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
     const axiosInstance = useAxios();
+    const { isGuest } = useContext(AuthContext);
     let interval;
 
     useEffect(() => {
-        interval = setInterval(() => {
-            fetchUnreadMessageCount();
-        }, 5000);
-        return () => clearInterval(interval);
+        if (!isGuest) {
+            interval = setInterval(() => {
+                fetchUnreadMessageCount();
+            }, 5000);
+            return () => clearInterval(interval);
+        }
     }, []);
 
     const fetchUnreadMessageCount = async () => {
@@ -60,7 +63,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
                             navigation.navigate(route.name);
                         }
                         if (route.name === "chat") {
-                            handleUpdate();
+                            !isGuest && handleUpdate();
                         }
                     };
 
@@ -102,6 +105,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
 // Tabs Layout
 import { Tabs } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
+import { AuthContext } from "../../config/AuthContext";
 
 export default function TabLayout() {
     return (

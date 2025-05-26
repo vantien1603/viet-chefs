@@ -110,7 +110,7 @@ const Schedule = () => {
     const day = new Date(date).getDay();
     return day === 0 ? 6 : day - 1;
   };
-  const statuses = ['SCHEDULED', 'SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
+  const statuses = ['SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
 
   const fetchBookingDetails = async (pageNum, isRefresh = false) => {
     if (loading && !isRefresh) return;
