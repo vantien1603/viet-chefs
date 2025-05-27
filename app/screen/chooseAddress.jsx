@@ -22,8 +22,8 @@ import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useSelectedItems } from "../../context/itemContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
-const MAX_DISTANCE_KM = 50;
 
 const ChooseAddressScreen = () => {
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
@@ -35,10 +35,11 @@ const ChooseAddressScreen = () => {
     address: "",
     placeId: "",
   });
+  const country = SecureStore.getItem('country');
   const [suggestions, setSuggestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const { showModal } = useCommonNoification();
-  const { address, setAddress, isLong } = useSelectedItems();
+  const { address, setAddress, isLong, chefLong, chefLat } = useSelectedItems();
   const MAX_DISTANCE_KM = 50;
   const [currentLocation, setCurrentLocation] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -56,7 +57,7 @@ const ChooseAddressScreen = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal(t("modal.error"), t("errors.fetchAddressesFailed"), t("modal.failed"));
+        showModal(t("modal.error"), t("errors.fetchAddressesFailed"), "Failed");
       }
     };
     fetchAddress();
@@ -83,17 +84,24 @@ const ChooseAddressScreen = () => {
       return;
     }
     try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+        location: `${chefLat},${chefLong}`,
+        radius: 10000,
+        strictbounds: true,
+      };
+
+      if (country) {
+        params.components = `country:${country}`;
+      }
+
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
-        {
-          params: {
-            input: query,
-            key: API_GEO_KEY,
-            language: "vi",
-            components: "country:vn",
-          },
-        }
+        { params }
       );
+
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
       }
@@ -134,9 +142,9 @@ const ChooseAddressScreen = () => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * (Math.PI / 180)) *
-        Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -146,21 +154,15 @@ const ChooseAddressScreen = () => {
     if (details) {
       const { formatted_address, geometry } = details;
       const { lat, lng } = geometry.location;
-      console.log("cur", currentLocation);
-      const distance = calculateDistance(
-        currentLocation.latitude,
-        currentLocation.longitude,
-        lat,
-        lng
-      );
-      console.log("detail", details);
+      const distance = calculateDistance(chefLat, chefLong, lat, lng);
+      console.log("detial", details);
 
       if (distance > MAX_DISTANCE_KM) {
-        showModal(t("modal.error"), t("errors.distanceExceeded"), t("modal.failed"));
+        showModal(t("modal.error"), t("errors.distanceExceeded"), "Failed");
         return;
       }
 
-      setNewAddress({ ...newAddress, address: details });
+      setNewAddress({ ...newAddress, address: formatted_address });
 
       // setNewAddress({
       //   title: newAddress.title,
@@ -168,7 +170,7 @@ const ChooseAddressScreen = () => {
       //   placeId: prediction.place_id,
       // });
       setSuggestions([]);
-      setSearchQuery(details);
+      setSearchQuery(formatted_address);
     }
   };
 
@@ -180,12 +182,12 @@ const ChooseAddressScreen = () => {
 
   const createAddress = async () => {
     if (!newAddress.title || !newAddress.address) {
-      showModal(t("modal.error"), t("errors.incompleteAddress"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.incompleteAddress"), "Failed");
       return;
     }
 
     if (addresses.length >= 5) {
-      showModal(t("modal.error"), t("errors.maxAddresses"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.maxAddresses"), "Failed");
       setModalVisible(false);
       return;
     }
@@ -202,7 +204,7 @@ const ChooseAddressScreen = () => {
         setNewAddress({ title: "", address: "", placeId: "" });
         setSearchQuery("");
         setSuggestions([]);
-        showModal(t("modal.success"), t("createAddressSuccess"), t("modal.success"));
+        showModal(t("modal.success"), t("createAddressSuccess"),);
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -211,28 +213,29 @@ const ChooseAddressScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.createAddressFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.createAddressFailed"), "Failed");
     }
   };
 
   const handleConfirm = async () => {
     if (selectedAddressIndex === null) {
-      showModal(t("modal.error"), t("errors.noAddressSelected"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.noAddressSelected"), "Failed");
       return;
     }
     const selectedAddress = addresses[selectedAddressIndex];
     setAddress(selectedAddress.address);
-    await AsyncStorage.setItem(
-      "selectedAddress",
-      JSON.stringify(selectedAddress)
-    );
-    isLong
-      ? router.replace("/screen/longTermBooking")
-      : router.replace("/screen/booking");
+    console.log(selectedAddress);
+    const distance = calculateDistance(chefLat, chefLong, selectedAddress.latitude, selectedAddress.longitude);
+    console.log(distance);
+    if (distance > 10) {
+      showModal("Error", "Địa chỉ phải nằm trong bán kính 50km", "Failed");
+      return;
+    }
+    await AsyncStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
+    isLong ? router.replace("/screen/longTermBooking") : router.replace("/screen/booking")
   };
 
   useEffect(() => {
-    console.log(address);
     if (address && addresses.length > 0) {
       const index = addresses.findIndex(
         (item) =>

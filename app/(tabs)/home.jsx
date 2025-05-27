@@ -24,6 +24,7 @@ import { useCommonNoification } from "../../context/commonNoti";
 import CustomChat from "../../components/CustomChat.jsx";
 import { SocketContext } from "../../config/SocketContext.js";
 
+
 export default function Home() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -36,6 +37,9 @@ export default function Home() {
   const [location, setLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [loadingChef, setLoadingChef] = useState(false);
+  const [loadingDish, setLoadingDish] = useState(false);
   const { showModal } = useCommonNoification();
 
   const [messages, setMessages] = useState([]);
@@ -68,23 +72,26 @@ export default function Home() {
     }, [])
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (location) {
-        fetchChef();
-        fetchDishes();
-        !isGuest && fetchChefFavorite();
-      }
-    }, [location])
-  );
-
   useEffect(() => {
     if (!isGuest) {
       registerNotificationCallback(() => {
         fetchUnreadCount();
       });
     }
+
   }, []);
+
+  useEffect(() => {
+    if (location) {
+      fetchChef();
+      fetchDishes();
+      if (!isGuest) {
+        fetchChefFavorite();
+      }
+    }
+  }, [location]);
+
+
 
   const fetchUnreadCount = async () => {
     setLoading(true);
@@ -98,11 +105,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(
-        t("modal.error"),
-        "Có lỗi xảy ra trong quá trình xử lý",
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xử lý", "Failed");
     } finally {
       setLoading(false);
     }
@@ -113,11 +116,7 @@ export default function Home() {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        showModal(
-          "Quyền truy cập vị trí bị từ chối",
-          "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.",
-          t("modal.failed")
-        );
+        showModal("Quyền truy cập vị trí bị từ chối", "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.", "Failed");
         return null;
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
@@ -126,11 +125,7 @@ export default function Home() {
         longitude: currentLocation.coords.longitude,
       };
     } catch (error) {
-      showModal(
-        t("modal.error"),
-        "Có lỗi xảy ra trong quá trình xác định vị trí",
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xác định vị trí", "Failed");
     } finally {
       setLoading(false);
     }
@@ -145,9 +140,8 @@ export default function Home() {
       });
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
-          addr.city || ""
-        }, ${addr.region || ""}, ${addr.country || ""}`
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
+          }, ${addr.region || ""}, ${addr.country || ""}`
           .replace(/,,/g, ",")
           .trim();
         return {
@@ -160,11 +154,7 @@ export default function Home() {
       }
       return null;
     } catch (error) {
-      showModal(
-        t("modal.error"),
-        "Có lỗi xảy ra trong quá trình reverse geocoding",
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình reverse geocoding", "Failed");
     } finally {
       setLoading(false);
     }
@@ -204,18 +194,14 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(
-        t("modal.error"),
-        "Có lỗi xảy ra trong quá trình tải địa chỉ",
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải địa chỉ", "Failed");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchChefFavorite = async () => {
-    setLoading(true);
+    setLoadingFavorite(true);
     try {
       if (!location) return;
       // const response = await axiosInstance.get("/favorite-chefs/nearby", {
@@ -240,18 +226,15 @@ export default function Home() {
       setChefFavorite(response.data.content);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(
-        t("modal.error"),
-        error.response.data.message,
-        t("modal.failed")
-      );
-    } finally {
-      setLoading(false);
+      showModal(t("modal.error"), error.response.data.message, "Failed");
+    }
+    finally {
+      setLoadingFavorite(false);
     }
   };
 
   const fetchChef = async () => {
-    setLoading(true);
+    setLoadingChef(true);
     try {
       if (!location) return;
       const response = await axiosInstance.get("/chefs/nearby", {
@@ -265,21 +248,16 @@ export default function Home() {
       });
       if (response.status === 200) setChef(response.data.content.slice(0, 7));
     } catch (error) {
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal(
-        t("modal.error"),
-        "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp",
-        t("modal.failed")
-      );
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", "Failed");
     } finally {
-      setLoading(false);
+      setLoadingChef(false);
     }
   };
 
   const fetchDishes = async () => {
-    setLoading(true);
+    setLoadingDish(true);
     try {
       if (!location) return;
       const response = await axiosInstance.get("/dishes/nearby", {
@@ -293,16 +271,10 @@ export default function Home() {
       });
       setDishes(response.data.content.slice(0, 7));
     } catch (error) {
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal(
-        t("modal.error"),
-        "Có lỗi xảy ra trong quá trình tải thông tin món ăn",
-        t("modal.failed")
-      );
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải thông tin món ăn", "Failed");
     } finally {
-      setLoading(false);
+      setLoadingDish(false);
     }
   };
 
@@ -402,13 +374,10 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="tail"
-        style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}
-      >
-        {item.description}
-      </Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{t('basePrice')}: {item.basePrice}$</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{item.description}</Text>
+      <Text style={{ color: '#F8BF40', fontSize: 12, fontFamily: "nunito-regular" }}> {t('distance')}: {item.chef.distance.toFixed(2)} km</Text>
+
     </TouchableOpacity>
   );
 
@@ -432,9 +401,9 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.user.fullName}</Text>
-      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>
-        {item.specialization}
-      </Text>
+      {/* <Text style={{ color: "#F8BF40" }}>{t('price')}: {item.price}</Text> */}
+      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{item.specialization}</Text>
+      <Text style={{ color: '#F8BF40', fontSize: 12, fontFamily: "nunito-regular" }}> {t('distance')}: {item.distance.toFixed(2)} km</Text>
     </TouchableOpacity>
   );
 
@@ -546,135 +515,79 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
-        {/* đầu bếp yêu thích gần đây/ danh sách yêu thích */}
         {chefFavorite.length > 0 && (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("favoriteList")}</Text>
-            <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
-              <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-                {t("seeAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t("favoriteList")}</Text>
+              <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
+                <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+                  {t("seeAll")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ minHeight: 200 }}>
+              {loadingFavorite ? (
+                <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+              ) : (
+                (chefFavorite.length > 0) && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginBottom: 30 }}
+                  >
+                    {chefFavorite.map((item, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          width: 200,
+                          alignItems: "center",
+                          marginRight: 20,
+                          marginLeft: index === 0 ? 16 : 0,
+                        }}
+                      >
+                        {renderChefFavoriteItem({ item })}
+                      </View>
+                    ))}
+                  </ScrollView>
+                )
+              )}
+            </View>
+          </>
+
         )}
-        {chefFavorite.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {loading ? (
-              <ActivityIndicator
-                style={{ alignSelf: "center" }}
-                size={"large"}
-                color={"white"}
-              />
-            ) : (
-              chefFavorite.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderChefFavoriteItem({ item })}
-                </View>
-              ))
-            )}
-          </ScrollView>
-        )}
+
+
+
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+            <Text style={{
+              color: "#4EA0B7", fontSize: 14, fontFamily: "nunito-regular",
+            }}>
               {t("seeAll")}
             </Text>
           </TouchableOpacity>
         </View>
-        {loading ? (
-          <ActivityIndicator
-            style={{ alignSelf: "center", paddingVertical: 20 }}
-            size={"large"}
-            color={"white"}
-          />
-        ) : dishes.length === 0 ? (
-          <View style={{ alignItems: "center", paddingVertical: 20 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                color: "#333",
-                fontFamily: "nunito-regular",
-              }}
-            >
-              {t("serviceNotNear")}
-            </Text>
+        {loadingDish ? (
+          <View style={{ minHeight: 200 }}>
+            <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {dishes.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 200,
-                  alignItems: "center",
-                  marginRight: 20,
-                  marginLeft: index === 0 ? 16 : 0,
-                }}
-              >
-                {renderDishItem({ item })}
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
-          <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
-            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
-              {t("seeAll")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {loading ? (
-          <ActivityIndicator
-            style={{ alignSelf: "center", paddingVertical: 20 }}
-            size={"large"}
-            color={"white"}
-          />
-        ) : chef.length === 0 ? (
-          <View style={{ alignItems: "center", paddingVertical: 20 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                color: "#333",
-                fontFamily: "nunito-regular",
-              }}
+          dishes.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Text style={{
+                fontSize: 16, color: '#333', fontFamily: "nunito-regular",
+              }}> {t("serviceNotNear")}</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
             >
-              {t("serviceNotNear")}
-            </Text>
-          </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 30 }}
-          >
-            {loading ? (
-              <ActivityIndicator
-                style={{ alignSelf: "center" }}
-                size={"large"}
-                color={"white"}
-              />
-            ) : (
-              chef.map((item, index) => (
+              {dishes.map((item, index) => (
                 <View
                   key={index}
                   style={{
@@ -684,12 +597,56 @@ export default function Home() {
                     marginLeft: index === 0 ? 16 : 0,
                   }}
                 >
-                  {renderChefItem({ item })}
+                  {renderDishItem({ item })}
                 </View>
-              ))
-            )}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          )
         )}
+        {/* </View> */}
+
+
+
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
+          <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
+            <Text style={{ color: "#4EA0B7", fontSize: 14, fontFamily: "nunito-regular", }}>
+              {t("seeAll")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {loadingChef ? (
+          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
+        ) : (
+          chef.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Text style={{ fontSize: 16, color: '#333',fontFamily: "nunito-regular", }}> {t("serviceNotNear")}</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 30 }}
+            >
+                {
+                chef.map((item, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: 200,
+                      alignItems: "center",
+                      marginRight: 20,
+                      marginLeft: index === 0 ? 16 : 0,
+                    }}
+                  >
+                    {renderChefItem({ item })}
+                  </View>
+                ))
+              }
+            </ScrollView>
+          ))}
+
       </ScrollView>
       <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
         <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />

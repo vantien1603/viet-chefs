@@ -77,7 +77,7 @@ const CreateChefScreen = () => {
         payload
       );
       if (response.status === 200 || response.status === 201) {
-        showModal(t("modal.success"), t("chefRegistration"), t("modal.success"));
+        showModal(t("modal.success"), t("chefRegistration"),);
       }
 
       setTimeout(() => {
@@ -90,7 +90,7 @@ const CreateChefScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("registrationFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("registrationFailed"), "Failed");
     }
   };
 

@@ -82,7 +82,7 @@ const WithdrawalScreen = () => {
           showModal(
             t("modal.error"),
             error.response.data.message,
-            t("modal.failed")
+            "Failed"
           );
         }
       }
@@ -97,11 +97,11 @@ const WithdrawalScreen = () => {
   const toggleEditing = () => {
     if (isEditing) {
       if (!email) {
-        showModal(t("modal.error"), t("emailRequired"), t("modal.failed"));
+        showModal(t("modal.error"), t("emailRequired"), "Failed");
         return;
       }
       if (!validateEmail(email)) {
-        showModal(t("modal.error"), t("emailInvalid"), t("modal.failed"));
+        showModal(t("modal.error"), t("emailInvalid"), "Failed");
         return;
       }
       handleUpdateEmail(email);
@@ -124,7 +124,7 @@ const WithdrawalScreen = () => {
       showModal(
         t("modal.error"),
         error.response.data?.message,
-        t("modal.failed")
+        "Failed"
       );
     }
   };

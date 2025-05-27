@@ -49,7 +49,7 @@ const UpdateBookingDetailScreen = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal(t("modal.error"), t("errors.fetchMenusFailed"), t("modal.failed"));
+        showModal(t("modal.error"), t("errors.fetchMenusFailed"), "Failed");
       }
     };
     fetchMenus();
@@ -84,7 +84,7 @@ const UpdateBookingDetailScreen = () => {
           if (axios.isCancel(error)) {
             return;
           }
-          showModal(t("modal.error"), t("errors.fetchDishFailed"), t("modal.failed"));
+          showModal(t("modal.error"), t("errors.fetchDishFailed"), "Failed");
           setExtraDishes([]);
         }
       } else {
@@ -108,7 +108,7 @@ const UpdateBookingDetailScreen = () => {
           if (axios.isCancel(error)) {
             return;
           }
-          showModal(t("modal.error"), t("errors.fetchDishFailed"), t("modal.failed"));
+          showModal(t("modal.error"), t("errors.fetchDishFailed"), "Failed");
           setAllDishes([]);
         }
       } else {
@@ -192,7 +192,7 @@ const UpdateBookingDetailScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.calculateFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.calculateFailed"), "Failed");
     } finally {
       setLoading(false);
     }

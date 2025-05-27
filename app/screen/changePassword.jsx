@@ -86,7 +86,7 @@ const ChangePasswordScreen = () => {
       );
 
       if (response.status === 200 || response.status === 201) {
-        showModal(t("modal.success"), "Đổi mật khẩu thành công.", t("modal.success"));
+        showModal(t("modal.success"), "Đổi mật khẩu thành công.",);
         router.back();
       }
     } catch (error) {
@@ -96,7 +96,7 @@ const ChangePasswordScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), "Có lỗi xảy ra khi thay đổi mật khẩu.", t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi xảy ra khi thay đổi mật khẩu.", "Failed");
     } finally {
       setLoading(false)
     }

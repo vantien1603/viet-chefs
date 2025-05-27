@@ -48,13 +48,16 @@ const Message = () => {
 
   const contact = contactString ? JSON.parse(contactString) : {};
 
+  console.log("casd", contact);
+
   useEffect(() => {
     const client = Stomp.over(() => new SockJS(WEB_SOCKET_ENDPOINT));
     stompClientRef.current = client;
+    console.log("sub", user?.sub);
     client.connect(
       {},
       () => {
-        client.subscribe(`/user/${user.sub}/queue/messages`, onMessageReceived);
+        client.subscribe(`/user/${user?.sub}/queue/messages`, onMessageReceived);
         client.subscribe(`/topic/public`, onMessageReceived);
       },
       onError
@@ -82,7 +85,7 @@ const Message = () => {
     const receivedMessage = JSON.parse(payload.body);
     if (
       receivedMessage.senderId === contact.id ||
-      receivedMessage.senderId === user.sub
+      receivedMessage.senderId === user?.sub
     ) {
       const timestamp = formatDate(receivedMessage.timestamp);
       console.log("time", timestamp);
@@ -106,16 +109,17 @@ const Message = () => {
     showModal(
       t("modal.error"),
       t("errors.websocketConnectionFailed"),
-      t("modal.failed")
+      "Failed"
     );
   };
 
   useEffect(() => {
     const fetchMessages = async () => {
+      console.log("gcalal")
       setLoading(true);
       try {
         const response = await axiosInstance.get(
-          `/messages/${user.sub}/${contact.id}`
+          `/messages/${user?.sub}/${contact.id}`
         );
         const sortedMessages = response.data.sort((a, b) => {
           const dateA = new Date(a.timestamp);
@@ -144,7 +148,7 @@ const Message = () => {
       showModal(
         t("modal.error"),
         t("errors.mediaLibraryPermissionDenied"),
-        t("modal.failed")
+        "Failed"
       );
       setIsPickingImage(false);
       return;
@@ -166,7 +170,7 @@ const Message = () => {
           showModal(
             t("modal.error"),
             t("errors.imageTooLarge"),
-            t("modal.failed")
+            "Failed"
           );
           return;
         }
@@ -226,7 +230,7 @@ const Message = () => {
       if (selectedImage) {
         const imageUrl = await uploadImageToCloudinary(selectedImage);
         newMessage = {
-          senderId: user.sub,
+          senderId: user?.sub,
           recipientId: contact.id,
           senderName: user.fullName,
           recipientName: contact.name,
@@ -236,7 +240,7 @@ const Message = () => {
         };
       } else {
         newMessage = {
-          senderId: user.sub,
+          senderId: user?.sub,
           recipientId: contact.id,
           senderName: user.fullName,
           recipientName: contact.name,
@@ -248,6 +252,7 @@ const Message = () => {
       }
       setMessages((prev) => [...prev, newMessage]);
       client.send("/app/chat", {}, JSON.stringify(newMessage));
+      console.log("asdasdasdsad")
       setSelectedImage(null);
       setInputText("");
     } catch (error) {
@@ -267,7 +272,7 @@ const Message = () => {
     const timestamp = now.toISOString().slice(0, -1);
 
     const likeMessage = {
-      senderId: user.sub,
+      senderId: user?.sub,
       recipientId: contact.id,
       senderName: user.fullName,
       recipientName: contact.name,
@@ -310,7 +315,7 @@ const Message = () => {
           <View
             style={[
               styles.imageContainer,
-              item.senderId === user.sub
+              item.senderId === user?.sub
                 ? styles.senderAlign
                 : styles.receiverAlign,
             ]}
@@ -354,7 +359,7 @@ const Message = () => {
           <View
             style={[
               styles.messageContainer,
-              item.senderId === user.sub ? styles.sender : styles.receiver,
+              item.senderId === user?.sub ? styles.sender : styles.receiver,
             ]}
           >
             <Text style={styles.messageText}>{item.content}</Text>
@@ -390,7 +395,7 @@ const Message = () => {
           }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           keyboardShouldPersistTaps="handled"
-          // inverted
+        // inverted
         />
       )}
       <Modal

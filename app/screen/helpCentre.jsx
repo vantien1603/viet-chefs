@@ -24,7 +24,7 @@ const HelpCentre = () => {
       showModal(
         t("modal.error"),
         t("errors.navigationFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };

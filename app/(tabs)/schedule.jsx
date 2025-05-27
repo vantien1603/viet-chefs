@@ -34,89 +34,116 @@ const CustomerSchedule = () => {
   const [bookingDetails, setBookingDetails] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const { setChefId, setRouteBefore } = useSelectedItems();
-  const routes = useMemo(
-    () => [
-      { key: "today", title: "Today" },
-      { key: "upcoming", title: "Upcoming" },
-      { key: "past", title: "Past" },
-    ],
-    []
-  );
+  // const { setChefId, setSelectedMenu, setSelectedDishes, setExtraDishIds, chefId, setRouteBefore } = useSelectedItems();
+  const [refresh, setRefresh] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(0);
+  const routes = useMemo(() => [
+    { key: "today", title: "Today" },
+    { key: "upcoming", title: "Upcoming" },
+    { key: "past", title: "Past" },
+  ], []);
 
   useEffect(() => {
     if (isGuest) return;
-    fetchBookingDetails();
-  }, [isGuest]);
+    fetchBookingDetails(0, true);
+  }, []);
 
-  const fetchBookingDetails = async (page, isRefresh = false) => {
+  console.log("user hsitasd", user);
+  const statuses = ['SCHEDULED', 'COMPLETED', 'SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
+
+  const fetchBookingDetails = async (pageNum, isRefresh = false) => {
+    if (loading && !isRefresh) return;
     setLoading(true);
     try {
-      const response = await axiosInstance.get(
-        "/bookings/booking-details/user",
-        {
+      const requests = statuses.map(status =>
+        axiosInstance.get('/bookings/booking-details/user', {
           params: {
-            pageNo: 0,
-            pageSize: 1000,
-            sortBy: "sessionDate",
-            sortDir: "desc",
+            status,
+            pageNo: pageNum,
+            pageSize: 10,
+            sortBy: 'id',
+            sortDir: 'desc',
           },
-        }
+        })
       );
-      const newBookingDetail = response.data.content;
+
+      const response = await Promise.all(requests);
+      const mergedData = response.flatMap(res => res.data?.content || []);
+      // console.log(mergedData);
+      const totalPages = Math.max(...response.map(res => res.data?.totalPages || 0));
+      setTotalPages(totalPages);
       setBookingDetails((prev) => {
-        return isRefresh ? newBookingDetail : [...prev, ...newBookingDetail];
+        return isRefresh ? mergedData : [...prev, ...mergedData];
       });
-    } catch (error) {
+    }
+    catch (error) {
+      console.log("Loi mang nayf nef cdcm nos")
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(t("modal.error"), t("fetchDataFailed"), t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
     } finally {
       setLoading(false);
+      if (isRefresh) setRefresh(false);
+    }
+  }
+
+  const loadMoreData = async () => {
+    if (!loading && page + 1 <= totalPages - 1) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      await fetchBookingDetails(nextPage);
     }
   };
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchBookingDetails();
+    setRefresh(true);
+    setPage(0);
+    await fetchBookingDetails(0, true);
   };
+  // const fetchBookingDetails = async (pageNum, isRefresh = false) => {
+  //   if (loading && !isRefresh) return;
+  //   setLoading(true);
+  //   try {
+  //     const response = await axiosInstance.get("/bookings/booking-details/user", {
+  //       params: {
+  //         pageNo: 0,
+  //         pageSize: 1000,
+  //         sortBy: "sessionDate",
+  //         sortDir: "desc",
+  //       },
+  //     });
+  //     setBookingDetails(response.data.content);
+  //   } catch (error) {
+  //     if (axios.isCancel(error) || error.response?.status === 401) return;
+  //     showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+  //   } finally {
+  //     setLoading(false);
+  //     if (isRefresh) setRefresh(false);
+  //   }
+  // };
 
   const today = useMemo(() => {
     const d = new Date();
-    d.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0); // Đặt giờ về 0h để so sánh chính xác theo ngày
     return d;
   }, []);
 
-  const filteredBookingDetails = useMemo(
-    () =>
-      bookingDetails.filter((d) =>
-        [
-          "SCHEDULED",
-          "COMPLETED",
-          "SCHEDULED_COMPLETE",
-          "WAITING_FOR_CONFIRMATION",
-        ].includes(d.status)
-      ),
-    [bookingDetails]
-  );
+  const todayDetails = useMemo(() =>
+    bookingDetails.filter((d) => {
+      const session = new Date(d.sessionDate);
+      session.setHours(0, 0, 0, 0);
+      return session.getTime() === today.getTime(); // So sánh ngày chính xác
+    }), [bookingDetails, today]);
 
-  const todayDetails = useMemo(
-    () =>
-      filteredBookingDetails.filter(
-        (d) => new Date(d.sessionDate).toDateString() === today.toDateString()
-      ),
-    [filteredBookingDetails, today]
-  );
+  const upcomingDetails = useMemo(() =>
+    bookingDetails.filter((d) => {
+      const session = new Date(d.sessionDate);
+      session.setHours(0, 0, 0, 0);
+      return session.getTime() > today.getTime();
+    }), [bookingDetails, today]);
 
-  const upcomingDetails = useMemo(
-    () => filteredBookingDetails.filter((d) => new Date(d.sessionDate) > today),
-    [filteredBookingDetails, today]
-  );
-
-  const pastDetails = useMemo(
-    () => filteredBookingDetails.filter((d) => new Date(d.sessionDate) < today),
-    [filteredBookingDetails, today]
-  );
+  const pastDetails = useMemo(() =>
+    bookingDetails.filter((d) => new Date(d.sessionDate) < today), [bookingDetails, today]);
 
   const handlePressDetail = useCallback((id) => {
     router.push({
@@ -125,49 +152,69 @@ const CustomerSchedule = () => {
     });
   }, []);
 
-  const handleRebook = useCallback((bookingDetail) => {
+  const fetchMenu = async (id, dishesFromBooking) => {
+    try {
+      const response = await axiosInstance.get(`/menus/${id}`);
+      const menu = response.data;
+
+      // setSelectedMenu(menu);
+
+      // Lọc các món không có trong menu
+      const menuDishIds = new Set(menu.menuItems.map(item => item.dishId));
+
+      const nonMenuDishes = dishesFromBooking.filter(
+        (d) => !menuDishIds.has(d.dish.id)
+      );
+
+      // setSelectedDishes(nonMenuDishes);
+    } catch (error) {
+      showModal(t("modal.error", "Không thể tải dữ liệu của menu", "Failed"));
+    }
+  };
+
+
+  const handleRebook = async (bookingDetail) => {
     if (bookingDetail.status !== "COMPLETED") {
       showModal(
         t("modal.error"),
-        t("rebookOnlyWhenCompleted"),
-        t("modal.failed")
+        "Rebook is only allowed when status is COMPLETED",
+        "Failed"
       );
       return;
     }
+    console.log("dish", bookingDetail.dishes);
+    // if (bookingDetail.menuId) {
+    //   const menu = await fetchMenu(bookingDetail.menuId);
 
-    const selectedMenu = bookingDetail.menuId
-      ? {
-          id: bookingDetail.menuId,
-          name: `Menu ${bookingDetail.menuId}`,
-          menuItems: [],
-        }
-      : null;
+    //   const menuDishIds = new Set(menu.menuItems.map((item) => item.dishId));
 
-    const selectDishes = bookingDetail.dishes.map(({ dish }) => ({
-      id: dish.id,
-      name: dish.name,
-      imageUrl: dish.imageUrl,
-    }));
+    //   const nonMenuDishes = bookingDetail.dishes.filter(
+    //     (d) => !menuDishIds.has(d.dish.id)
+    //   );
 
+    //   setExtraDishIds(nonMenuDishes);
+    // } else {
+    //   setSelectedDishes(bookingDetail.dishes);
+    // }
+    // setSelectedDishes(bookingDetail.dishes);
     const dishNotes = {};
-    bookingDetail.dishes.forEach(({ dish, notes }) => {
-      dishNotes[dish.id] = notes || "";
-    });
-    setChefId(bookingDetail.booking?.chef?.id);
-    setRouteBefore(segment);
-    router.push({
-      pathname: "/screen/booking",
-      params: {
-        chefId: bookingDetail.booking?.chef?.id,
-        selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-        selectedDishes:
-          selectDishes.length > 0 ? JSON.stringify(selectDishes) : null,
-        dishNotes:
-          Object.keys(dishNotes).length > 0 ? JSON.stringify(dishNotes) : null,
-        address: bookingDetail.location,
-      },
-    });
-  }, []);
+    // bookingDetail.dishes.forEach(({ dish, notes }) => {
+    //   dishNotes[dish.id] = notes || "";
+    // });
+    // setChefId(bookingDetail.booking?.chef?.id);
+    // setRouteBefore(segment);
+    router.push("/screen/booking");
+    // router.push({
+    //   pathname: "/screen/booking",
+    //   params: {
+    //     chefId: bookingDetail.booking?.chef?.id,
+    //     selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
+    //     selectedDishes: selectDishes.length > 0 ? JSON.stringify(selectDishes) : null,
+    //     dishNotes: Object.keys(dishNotes).length > 0 ? JSON.stringify(dishNotes) : null,
+    //     address: bookingDetail.location,
+    //   },
+    // });
+  };
 
   const renderBookingItem = useCallback(
     ({ item: detail }) => (
@@ -201,10 +248,10 @@ const CustomerSchedule = () => {
                     detail.status === "COMPLETED"
                       ? "green"
                       : ["SCHEDULED", "SCHEDULED_COMPLETE"].includes(
-                          detail.status
-                        )
-                      ? "orange"
-                      : "black",
+                        detail.status
+                      )
+                        ? "orange"
+                        : "black",
                 },
               ]}
             >
@@ -244,9 +291,12 @@ const CustomerSchedule = () => {
         data={details}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderBookingItem}
-        ListEmptyComponent={
-          <Text style={styles.noData}>{t("noBookings")}</Text>
-        }
+        onRefresh={handleRefresh}
+        refreshing={refresh}
+        onEndReached={loadMoreData}
+        onEndReachedThreshold={0.2}
+        initialNumToRender={5}
+        ListEmptyComponent={<Text style={styles.noData}>{t("noBookings")}</Text>}
         contentContainerStyle={{ padding: 10 }}
       />
     );

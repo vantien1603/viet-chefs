@@ -116,7 +116,7 @@ const ReviewBookingScreen = () => {
         showModal(
           t("modal.error"),
           t("errors.chefNotEligible"),
-          t("modal.failed")
+          "Failed"
         );
       }
       setError(error.response.data.message);
@@ -174,8 +174,7 @@ const ReviewBookingScreen = () => {
       console.log(payload);
       const response = await axiosInstance.post("/bookings/long-term", payload);
       if (response.status === 200 || response.status === 201) {
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("confirmBookingSuccess"),
           t("modal.succeeded")
         );
@@ -195,7 +194,7 @@ const ReviewBookingScreen = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.confirmBookingFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);

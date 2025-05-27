@@ -97,7 +97,7 @@ const ChooseFoodForLongterm = () => {
 
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status !== 401) return
-      showModal(t("modal.error"), t("errors.fetchMenusFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.fetchMenusFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ const ChooseFoodForLongterm = () => {
       setDishes(res.data.content || []);
     } catch (error) {
       if (!axios.isCancel(error) && error.response?.status !== 401) return;
-      showModal(t("modal.error"), "Có lỗi khi tải món ăn.", t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi khi tải món ăn.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ const ChooseFoodForLongterm = () => {
   const handleSelectMenu = useCallback((menu) => {
     const dishCount = selectedDishes[selectedDay] ? Object.keys(selectedDishes[selectedDay])?.length : 0;
     if (dishCount > 0) {
-      showModal(t("modal.error"), t("errors.dishesSelectedWithMenu"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.dishesSelectedWithMenu"), "Failed");
       return;
     }
 
@@ -224,7 +224,7 @@ const ChooseFoodForLongterm = () => {
 
   const handleConfirm = () => {
     if (!selectedMenuLong[selectedDay] && !selectedDishes[selectedDay]) {
-      showModal(t("modal.error"), t("errors.noSelection"), t("modal.failed"))
+      showModal(t("modal.error"), t("errors.noSelection"), "Failed")
       return;
     }
     router.replace("/screen/longTermSelect");

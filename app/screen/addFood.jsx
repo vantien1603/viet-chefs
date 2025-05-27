@@ -110,7 +110,7 @@ const AddNewFoodScreen = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal(t("modal.error"), t("errors.dataLoadError"), t("modal.failed"));
+        showModal(t("modal.error"), t("errors.dataLoadError"), "Failed");
       } finally {
         setLoading(false);
       }
@@ -131,7 +131,7 @@ const AddNewFoodScreen = () => {
 
     if (Object.keys(newError).length > 0) {
       setErrors(newError);
-      showModal(t("modal.error"), t("errors.failedToAdd"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.failedToAdd"), "Failed");
       return;
     }
 
@@ -163,7 +163,7 @@ const AddNewFoodScreen = () => {
       const response = await axiosInstanceForm.post("/dishes", formData);
       console.log("tao toa");
       if (response.status === 201 || response.status === 200) {
-        showModal(t("modal.success"), t("addedDish"), t("modal.success"));
+        showModal(t("modal.success"), t("addedDish"),);
         setTimeout(() => {
           router.back();
         }, 1000);
@@ -185,7 +185,7 @@ const AddNewFoodScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.failedToAdd"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.failedToAdd"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -370,6 +370,7 @@ const AddNewFoodScreen = () => {
           borderRadius: 10,
           alignItems: "center",
           elevation: 5,
+          zIndex: 20
         }}
       >
         {loading ? (

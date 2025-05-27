@@ -34,7 +34,7 @@ const DepositScreen = () => {
 
   const handleDeposit = async () => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      showModal(t("modal.error"), t("errors.invalidAmount"), t("modal.failed"))
+      showModal(t("modal.error"), t("errors.invalidAmount"), "Failed")
       return;
     }
 
@@ -48,7 +48,7 @@ const DepositScreen = () => {
         setPaymentUrl(response.data);
         setShowWebView(true);
       } else {
-        showModal(t("modal.error"), t("errors.noPaymentUrl"), t("modal.failed"))
+        showModal(t("modal.error"), t("errors.noPaymentUrl"), "Failed")
         return;
       }
     } catch (error) {
@@ -58,7 +58,7 @@ const DepositScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.createTransactionFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.createTransactionFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ const DepositScreen = () => {
   const onNavigationStateChange = (navState) => {
     const { url } = navState;
     if (url.includes(t("modal.success"))) {
-      showModal(t("modal.success"), t("topUpSuccess"), t("modal.success"));
+      showModal(t("modal.success"), t("topUpSuccess"),);
       setShowWebView(false);
       router.replace({
         pathname: "/screen/wallet",
@@ -77,7 +77,7 @@ const DepositScreen = () => {
         },
       });
     } else if (url.includes("cancel")) {
-      showModal(t("modal.error"), t("errors.transactionCancelled"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.transactionCancelled"), "Failed");
 
       setShowWebView(false);
     }

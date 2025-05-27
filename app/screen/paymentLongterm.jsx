@@ -70,7 +70,7 @@ const PaymentLongterm = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchBalanceFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -139,7 +139,7 @@ const PaymentLongterm = () => {
       showModal(
         t("modal.error"),
         t("errors.notEnoughBalance"),
-        t("modal.failed"),
+        "Failed",
         null,
         [
           {
@@ -176,7 +176,7 @@ const PaymentLongterm = () => {
         showModal(
           t("modal.error"),
           t("errors.insufficientBalance"),
-          t("modal.failed"),
+          "Failed",
           null,
           [
             {
@@ -192,7 +192,7 @@ const PaymentLongterm = () => {
           ]
         );
       } else {
-        showModal(t("modal.error"), t("errors.depositFailed"), t("modal.failed"));
+        showModal(t("modal.error"), t("errors.depositFailed"), "Failed");
       }
     } finally {
       setLoading(false);

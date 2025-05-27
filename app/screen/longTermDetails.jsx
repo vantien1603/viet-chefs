@@ -82,7 +82,7 @@ const LongTermDetailsScreen = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchDetailsFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -94,7 +94,7 @@ const LongTermDetailsScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.pinLengthInvalid"),
-        t("modal.failed")
+        "Failed"
       );
       return;
     }
@@ -112,7 +112,7 @@ const LongTermDetailsScreen = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.invalidPin"),
-        t("modal.failed")
+        "Failed"
       );
       setError(t("errors.invalidPin")); // pinInputRefs[0].current?.focus();
     } finally {
@@ -132,8 +132,7 @@ const LongTermDetailsScreen = () => {
         response.status === 200 || response.data?.status === "PAID";
 
       if (paymentSuccessful) {
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("paymentSuccess"),
           t("modal.succeeded")
         );
@@ -143,7 +142,7 @@ const LongTermDetailsScreen = () => {
         showModal(
           t("modal.error"),
           t("errors.paymentFailed"),
-          t("modal.failed")
+          "Failed"
         );
       }
     } catch (error) {
@@ -156,7 +155,7 @@ const LongTermDetailsScreen = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.paymentProcessingFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);

@@ -51,7 +51,7 @@ const DetailsBooking = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchBookingFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -116,7 +116,7 @@ const DetailsBooking = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.rejectFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.rejectFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ const DetailsBooking = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.confirmFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.confirmFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ const DetailsBooking = () => {
         showModal(
           t("modal.error"),
           t("errors.cancelFailed"),
-          t("modal.failed")
+          "Failed"
         );
       } finally {
         setLoading(false);
@@ -173,19 +173,19 @@ const DetailsBooking = () => {
     });
   };
 
-  const handleChat = () => {
-    console.log(booking.customer);
-    router.push({
-      pathname: "/screen/message",
-      params: {
-        contact: JSON.stringify({
-          id: booking.customer?.id,
-          name: booking.customer?.fullName,
-          avatar: booking.customer?.avatarUrl,
-        }),
-      },
-    });
-  };
+    const handleChat = () => {
+        console.log(booking.customer);
+        router.push({
+            pathname: "/screen/message",
+            params: {
+                contact: JSON.stringify({
+                    id: booking.customer?.username,
+                    name: booking.customer?.fullName,
+                    avatar: booking.customer?.avatarUrl,
+                }),
+            },
+        });
+    };
 
   return (
     <SafeAreaView style={commonStyles.container}>

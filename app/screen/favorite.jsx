@@ -1,13 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,117 +13,140 @@ import Header from "../../components/header";
 import { commonStyles } from "../../style";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { t } from "i18next";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import { FlatList } from "react-native";
+import { useCommonNoification } from "../../context/commonNoti";
 
 const FavoriteScreen = () => {
   const axiosInstance = useAxios();
   const [favorites, setFavorites] = useState([]);
-  const [favoriteLoading, setFavoriteLoading] = useState({});
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const { user } = useContext(AuthContext);
-
-  // Fetch favorite chefs
-  const fetchFavorite = async () => {
-    try {
-      if (!user?.userId) {
-        setFavorites([]);
-        await AsyncStorage.removeItem("favorites");
-        return;
-      }
-      const response = await axiosInstance.get(
-        `/favorite-chefs/${user.userId}`
-      );
-      const favoriteChefs = response.data.content;
-      setFavorites(favoriteChefs);
-      const chefIds = favoriteChefs.map((chef) => chef.chefId.toString());
-      await AsyncStorage.setItem("favorites", JSON.stringify(chefIds));
-    } catch (error) {
-      console.log("Error fetching favorites:", error.response?.data || error);
-    }
-  };
-
-  const handleRemoveFavorite = async (chefId) => {
-    if (!user?.userId) {
-      return;
-    }
-
-    const updatedFavorites = favorites.filter((chef) => chef.chefId !== chefId);
-    setFavorites(updatedFavorites);
-
-    setFavoriteLoading((prev) => ({ ...prev, [chefId]: true }));
-
-    try {
-      await axiosInstance.delete(
-        `/favorite-chefs/${user.userId}/chefs/${chefId}`
-      );
-
-      const storedFavorites = await AsyncStorage.getItem("favorites");
-      let favoriteIds = storedFavorites ? JSON.parse(storedFavorites) : [];
-      favoriteIds = favoriteIds.filter((id) => id !== chefId.toString());
-      await AsyncStorage.setItem("favorites", JSON.stringify(favoriteIds));
-
-      Alert.alert(t(t("modal.success")), t("removedFromFavorites"));
-    } catch (error) {
-      console.log(
-        "Error removing favorite:",
-        error.response?.data?.message || error
-      );
-
-      // 4. Nếu lỗi -> rollback UI (thêm chef vừa xóa lại vào favorites)
-      setFavorites((prevFavorites) =>
-        [...prevFavorites, favorites.find((c) => c.chefId === chefId)].filter(
-          Boolean
-        )
-      );
-
-    } finally {
-      setFavoriteLoading((prev) => ({ ...prev, [chefId]: false }));
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
+  const router = useRouter();
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const { showModal } = useCommonNoification();
 
   useEffect(() => {
-    fetchFavorite();
+    fetchFavorite(0, true);
   }, []);
+
+  const fetchFavorite = async (pageNum, isRefresh = false) => {
+    if (loading && !isRefresh) return;
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(
+        `/favorite-chefs/${user.userId}`, {
+        params: {
+          pageNo: pageNum,
+          pageSize: 10,
+          sortBy: 'createdAt',
+          sortDir: 'desc',
+        },
+      });
+      setTotalPages(response.data.totalPages);
+      const favoriteChefs = response.data.content || [];
+      setFavorites((prev) => {
+        return isRefresh ? favoriteChefs : [...prev, ...favoriteChefs];
+      });
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal("Error", error.response.data.message, "Failed");
+    } finally {
+      setLoading(false);
+      setRefresh(false);
+    }
+
+  };
+
+  const handleRemoveFavorite = async (chef) => {
+    console.log("cc", chef);
+    setFavoriteLoading(true);
+    try {
+      await axiosInstance.delete(
+        `/favorite-chefs/${user.userId}/chefs/${chef.chefId}`
+      );
+      fetchFavorite(0, true);
+      showModal(t("modal.success"), `${chef.chefName} ${t("removedFromFavorites")}`);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal("Error", error.response.data.message, "Failed");
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  const loadMoreData = async () => {
+    if (!loading && page + 1 <= totalPages - 1) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      await fetchFavorite(nextPage);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefresh(true);
+    setPage(0);
+    await fetchFavorite(0, true);
+  };
+
+  const renderItem = ({ item: chef }) => (
+    <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.favoriteIcon}
+        onPress={() => handleRemoveFavorite(chef)}
+        disabled={favoriteLoading[chef.chefId]}
+        hitSlop={10}
+      >
+        <Ionicons name="heart" size={24} color="#e74c3c" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => router.push({
+          pathname: "/screen/chefDetail",
+          params: { chefId: chef.chefId },
+        })}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={{ uri: chef?.chefAvatar }}
+          style={styles.avatar}
+          resizeMode="cover"
+        />
+        <View style={styles.infoContainer}>
+          <Text style={styles.chefName}>{chef.chefName}</Text>
+          <Text style={styles.specification}>{chef.chefSpecialization}</Text>
+          <Text style={styles.address}>{chef.chefAddress}</Text>
+          <Text style={styles.createdAt}>
+            {t("addedOn")}: {new Date(chef.createdAt).toLocaleDateString()}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+
+
+  );
+
 
   return (
     <SafeAreaView style={commonStyles.container}>
       <Header title={t("favoriteList")} />
-      <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContainer}>
-        {favorites.length > 0 ? (
-          favorites.map((chef) => (
-            <View key={chef.chefId} style={styles.card}>
-              <TouchableOpacity
-                style={styles.favoriteIcon}
-                onPress={() => handleRemoveFavorite(chef.chefId)}
-                disabled={favoriteLoading[chef.chefId]}
-              >
-                <Ionicons name="heart" size={24} color="#e74c3c" />
-              </TouchableOpacity>
-
-              <View style={styles.row}>
-                <Image
-                  source={{ uri: chef?.chefAvatar }}
-                  style={styles.avatar}
-                  resizeMode="cover"
-                />
-                <View style={styles.infoContainer}>
-                  <Text style={styles.chefName}>{chef.chefName}</Text>
-                  <Text style={styles.specification}>
-                    {chef.chefSpecialization}
-                  </Text>
-                  <Text style={styles.address}>{chef.chefAddress}</Text>
-                  <Text style={styles.createdAt}>
-                    {t("addedOn")}:{" "}
-                    {new Date(chef.createdAt).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>{t("noFavoriteChefs")}</Text>
-        )}
-      </ScrollView>
+      <FlatList
+        data={favorites}
+        onRefresh={handleRefresh}
+        refreshing={refresh}
+        onEndReached={loadMoreData}
+        onEndReachedThreshold={0.2}
+        keyExtractor={(item) => item.chefId.toString()}
+        renderItem={renderItem}
+        style={commonStyles.containerContent}
+        contentContainerStyle={styles.scrollContainer}
+      />
     </SafeAreaView>
   );
 };
@@ -193,8 +214,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 16,
     right: 16,
-    padding: 4,
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
   },
+
 });
 
 export default FavoriteScreen;

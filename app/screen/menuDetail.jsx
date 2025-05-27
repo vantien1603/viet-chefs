@@ -41,7 +41,7 @@ const MenuDetails = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", t("modal.failed"));
+        showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
       } finally {
         setLoading(false);
       }

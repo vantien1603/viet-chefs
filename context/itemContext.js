@@ -23,7 +23,8 @@ export const SelectedItemsProvider = ({ children }) => {
     const [selectedDates, setSelectedDates] = useState([]);
     const [isSelected, setIsSelected] = useState({});
     const [routeBefore, setRouteBefore] = useState("");
-
+    const [chefLong, setChefLong] = useState(null);
+    const [chefLat, setChefLat] = useState(null);
     const clearSelection = () => {
         setSelectedMenu(null);
         setSelectedDishes({});
@@ -45,6 +46,8 @@ export const SelectedItemsProvider = ({ children }) => {
         setIsSelected({});
         setLocation("");
         setRouteBefore("")
+        setChefLat(null);
+        setChefLong(null);
         console.log("Clear")
     };
 
@@ -90,7 +93,11 @@ export const SelectedItemsProvider = ({ children }) => {
             location,
             setLocation,
             routeBefore,
-            setRouteBefore
+            setRouteBefore,
+            chefLat,
+            setChefLat,
+            chefLong,
+            setChefLong
         }}>
             {children}
         </SelectedItemsContext.Provider>

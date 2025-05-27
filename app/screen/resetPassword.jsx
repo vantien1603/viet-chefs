@@ -42,7 +42,7 @@ const ResetPasswordScreen = () => {
 
   const handleReset = async () => {
     if (!newPassword || !confirmPassword) {
-      showModal(t("modal.error"), t("errors.emptyPassword"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.emptyPassword"), "Failed");
       return;
     }
 
@@ -50,7 +50,7 @@ const ResetPasswordScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.passwordMismatch"),
-        t("modal.failed")
+        "Failed"
       );
       return;
     }
@@ -61,7 +61,7 @@ const ResetPasswordScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.invalidToken"),
-        t("modal.failed")
+        "Failed"
       );
 
       return;
@@ -75,8 +75,7 @@ const ResetPasswordScreen = () => {
         token,
       });
       if (response.status === 200) {
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("resetPasswordSuccess"),
           t("modal.succeeded")
         );
@@ -93,7 +92,7 @@ const ResetPasswordScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.resetPasswordFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };

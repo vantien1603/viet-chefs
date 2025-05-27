@@ -43,7 +43,7 @@ const BookingDetailScreen = () => {
             );
             return { dishId: dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            showModal(t("modal.error"), `Error fetching dish ${dish.dish.id}`, t("modal.failed"));
+            showModal(t("modal.error"), `Error fetching dish ${dish.dish.id}`, "Failed");
             return { dishId: dish.dish.id, dishName: `Dish ${dish.dish.id}` };
           }
         });
@@ -61,7 +61,7 @@ const BookingDetailScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("failedToLoadBookingDetail"), t("modal.failed"));
+      showModal(t("modal.error"), t("failedToLoadBookingDetail"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ const BookingDetailScreen = () => {
         parsedUpdateData
       );
 
-      showModal(t("modal.success"), t("bookingDetailUpdated"), t("modal.success"));
+      showModal(t("modal.success"), t("bookingDetailUpdated"),);
 
 
       if (parsedUpdateData.dishes && parsedUpdateData.dishes.length > 0) {
@@ -122,7 +122,7 @@ const BookingDetailScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("failedToUpdateBookingDetail"), t("modal.failed"));
+      showModal(t("modal.error"), t("failedToUpdateBookingDetail"), "Failed");
     } finally {
       setUpdating(false);
     }

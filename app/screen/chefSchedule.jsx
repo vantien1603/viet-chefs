@@ -216,7 +216,7 @@ export default function ChefScheduleScreen() {
         if (result.status === "fulfilled") {
           successCount++;
           console.log(` Slot ${index + 1} thành công`, result.value.data);
-          showModal(t("modal.success"), t("modal.success"));
+          showModal(t("modal.success"),);
         } else {
           errorCount++;
           console.error(` Tạo slot ở ${dayName} thất bại`, result.reason);
@@ -224,9 +224,9 @@ export default function ChefScheduleScreen() {
       });
 
       if (successCount === results.length) {
-        showModal(t("modal.success"), t("addAllSuccess"), t("modal.success"));
+        showModal(t("modal.success"), t("addAllSuccess"),);
       } else if (errorCount === results.length) {
-        showModal(t("modal.error"), t("addAllFailed"), t("modal.failed"));
+        showModal(t("modal.error"), t("addAllFailed"), "Failed");
       } else {
         showModal(
           "Warning",
@@ -244,7 +244,7 @@ export default function ChefScheduleScreen() {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.addAllFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -265,7 +265,7 @@ export default function ChefScheduleScreen() {
         setShowPicker(false);
         setSelectedSlot(null);
         modalizeRef.current?.close();
-        showModal(t("modal.success"), t("updateSuccess"), t("modal.success"));
+        showModal(t("modal.success"), t("updateSuccess"),);
         fetchSchedule();
       }
     } catch (error) {
@@ -275,7 +275,7 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.updateFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.updateFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -291,7 +291,7 @@ export default function ChefScheduleScreen() {
         setSelectedSlot(null);
         modalizeRef.current?.close();
         console.log("xoa roi nha");
-        showModal(t("modal.success"), t("deleteSuccess"), t("modal.success"));
+        showModal(t("modal.success"), t("deleteSuccess"),);
         fetchSchedule();
       }
     } catch (error) {
@@ -301,7 +301,7 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.deleteFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.deleteFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -326,12 +326,12 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải lịch làm việc", t("modal.failed"));
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
       showModal(
         t("modal.error"),
         error.response?.data?.message ||
           t("errors.fetchScheduleFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -354,7 +354,7 @@ export default function ChefScheduleScreen() {
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : slots.length === 0 ? (
-          <Text style={{ color: "#888", fontFamily: "nunito-regular" }}>{t("noSlotsAvailable")}</Text>
+          <Text style={{ color: "#888" ,fontFamily: "nunito-regular"}}>{t("noSlotsAvailable")}</Text>
         ) : (
           slots.map((slot, index) => (
             <TouchableOpacity
@@ -368,10 +368,10 @@ export default function ChefScheduleScreen() {
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ fontFamily: "nunito-bold", fontSize: 16 }}>
+                <Text style={{ fontWeight: "bold", fontSize: 16 }}>
                   {t("timeStart")}
                 </Text>
-                <Text style={{ fontFamily: "nunito-bold", fontSize: 16 }}>
+                <Text style={{ fontWeight: "bold", fontSize: 16 }}>
                   {t("timeEnd")}
                 </Text>
               </View>
@@ -382,11 +382,11 @@ export default function ChefScheduleScreen() {
                   paddingHorizontal: 5,
                 }}
               >
-                <Text style={{fontFamily: "nunito-bold"}}>{slot.startTime}</Text>
+                <Text style={styles.slotText}>{slot.startTime}</Text>
                 <Text style={styles.slotText}>
                   ----------------------------
                 </Text>
-                <Text style={{fontFamily: "nunito-bold"}}>{slot.endTime}</Text>
+                <Text style={styles.slotText}>{slot.endTime}</Text>
               </View>
             </TouchableOpacity>
           ))

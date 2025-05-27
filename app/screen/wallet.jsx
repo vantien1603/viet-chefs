@@ -117,11 +117,7 @@ const WalletScreen = () => {
       });
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      console.log(
-        t("error"),
-        error.response.data.message || "Có lỗi xảy ra khi tải dữ liệu",
-        t("modal.failed")
-      );
+      console.log(t('error'), error.response.data.message || "Có lỗi xảy ra khi tải dữ liệu", "Failed");
     } finally {
       setLoading(false);
       if (isRefresh) setRefresh(false);
@@ -236,7 +232,7 @@ const WalletScreen = () => {
         `/users/profile/my-wallet/access?password=${oldPin}`
       );
       if (accessResponse.data !== true) {
-        showModal(t(t("modal.error")), t("oldPinIncorrect"), t("modal.failed"));
+        showModal(t(t("modal.error")), t("oldPinIncorrect"), "Failed");
         return;
       }
 
@@ -245,20 +241,12 @@ const WalletScreen = () => {
       );
       if (setResponse.status === 200 || setResponse.status === 201) {
         closeChangePinModal();
-        showModal(
-          t(t("modal.success")),
-          t("pinChangedSuccessfully"),
-          t("modal.success")
-        );
+        showModal(t("modal.success"), t("pinChangedSuccessfully"),);
         setError("");
       }
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(
-        t("modal.error"),
-        error.response.data.message,
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -272,7 +260,7 @@ const WalletScreen = () => {
         params: { id: walletId, balance },
       });
     } else {
-      showModal(t(t("modal.error")), t("walletIdNotFound"), t("modal.failed"));
+      showModal(t("modal.error"), t("walletIdNotFound"), "Failed");
     }
   };
 
@@ -356,17 +344,9 @@ const WalletScreen = () => {
       const response = await axiosInstance.post(
         "/users/profile/my-wallet/forgot-wallet-password"
       );
-      showModal(
-        t(t("modal.success")),
-        t("newPinSentToEmail"),
-        t("modal.success")
-      );
+      showModal(t(t("modal.success")), t("newPinSentToEmail"));
     } catch (error) {
-      showModal(
-        t(t("modal.error")),
-        t("errors.failedToRequestNewPin"),
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), t("errors.failedToRequestNewPin"), "Failed");
     }
   };
 

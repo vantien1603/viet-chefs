@@ -79,7 +79,7 @@ const ViewBookingDetailsScreen = () => {
       setBookingDetails(response.data.content || []);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(t("modal.error"), t("fetchBookingFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("fetchBookingFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ const ViewBookingDetailsScreen = () => {
       setBookingStatus(response.data.status);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(t("modal.error"), t("fetchStatusFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("fetchStatusFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -136,7 +136,7 @@ const ViewBookingDetailsScreen = () => {
         `/bookings/${bookingId}/deposit`
       );
       if (response.status === 200) {
-        showModal(t("modal.success"), t("depositSuccessMsg"), t("modal.success"));
+        showModal(t("modal.success"), t("depositSuccessMsg"),);
         fetchBookingDetails();
       }
     } catch (error) {
@@ -146,8 +146,8 @@ const ViewBookingDetailsScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal(t("modal.error"), "Failed to process deposit", t("modal.failed"));
-      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+      // showModal(t("modal.error"), "Failed to process deposit", "Failed");
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setPayLoading(false);
     }
@@ -161,13 +161,13 @@ const ViewBookingDetailsScreen = () => {
         `/bookings/${bookingId}/payment`
       );
       if (response.status === 200) {
-        showModal(t(t("modal.success")), t("paymentSuccessful"), t("modal.success"));
+        showModal(t("modal.success"), t("paymentSuccessful"),);
         fetchBookingDetails();
       }
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
       if (error.response.data.message === "Insufficient balance in the wallet.") {
-        showModal(t(t("modal.error")), error.response?.data.message, t("modal.failed"), null, [
+        showModal(t("modal.error"), error.response?.data.message, "Failed", null, [
           {
             label: "Cancel",
             onPress: () => console.log("Cancel pressed"),
@@ -180,7 +180,7 @@ const ViewBookingDetailsScreen = () => {
           }
         ])
       } else {
-        showModal(t(t("modal.error")), error.response?.data.message, t("modal.failed"));
+        showModal(t(t("modal.error")), error.response?.data.message, "Failed");
       }
 
     } finally {

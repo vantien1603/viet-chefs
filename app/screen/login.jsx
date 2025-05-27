@@ -18,20 +18,19 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { Ionicons } from "@expo/vector-icons";
 import { t } from "i18next";
-import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { WebView } from "react-native-webview";
 import { Modal } from "react-native";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
 import useActionCheckNetwork from "../../hooks/useAction";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState(null);
   const navigation = useNavigation();
   const { user, login, loading, setUser, setIsGuest } = useContext(AuthContext);
   const modalRef = useRef(null);
@@ -41,6 +40,7 @@ export default function LoginScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [oauthUrl, setOauthUrl] = useState(null);
   const requireNetwork = useActionCheckNetwork();
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (user?.token !== undefined && !hasNavigated && !loading) {
@@ -73,7 +73,7 @@ export default function LoginScreen() {
       showModal(
         t("modal.error"),
         t("errors.saveDeviceTokenFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -84,19 +84,19 @@ export default function LoginScreen() {
       return;
     }
     setLoadingA(true);
-    const token = await SecureStore.getItemAsync("expoPushToken");
+    setErrorMessage("");
+    const token = SecureStore.getItem("expoPushToken");
+    console.log("token luc login", token);
     const result = await login(usernameOrEmail, password, token);
-    console.log("token", token);
-    console.log("asdasd", result);
-    if (result != null) {
+    console.log("reas asd", result);
+    if (result != null && result.error === undefined) {
       if (result?.roleName === "ROLE_CHEF") {
         navigation.navigate("(chef)", { screen: "home" });
       } else if (result?.roleName === "ROLE_CUSTOMER") {
         navigation.navigate("(tabs)", { screen: "home" });
       }
-      console.log("roi voday");
     } else {
-      console.log("roi xuong day1");
+      setErrorMessage(result?.error || t("loginFailedMessage"));
       if (modalRef.current) {
         modalRef.current.open();
       }
@@ -123,7 +123,7 @@ export default function LoginScreen() {
       showModal(
         t("modal.error"),
         t("errors.googleLoginFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setGoogleLoading(false);
@@ -199,6 +199,8 @@ export default function LoginScreen() {
           placeholderTextColor="#968B7B"
           value={usernameOrEmail}
           onChangeText={setUsernameOrEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
         <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
         <View
@@ -301,8 +303,9 @@ export default function LoginScreen() {
             {t("loginFailed")}
           </Text>
           <Ionicons name="close-circle" size={60} color="red" />
-          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: "center", fontFamily: "nunito-regular" }}>
-            {t("loginFailedMessage")}
+          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: "center" }}>
+            {/* {t("loginFailedMessage")} */}
+            {errorMessage}
           </Text>
           <TouchableOpacity
             style={{

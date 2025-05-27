@@ -72,7 +72,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
           </Text>
           <Text numberOfLines={1} ellipsizeMode="tail">
             <Text style={styles.itemContentLabel}>{t("address")}: </Text>
-            <Text style={styles.itemContent}>46/1 Tan Hoa 2, Hiep Phu, Q9</Text>
+            <Text style={styles.itemContent}>{item.bookingDetails[0].location}</Text>
           </Text>
           <Text>
             <Text style={styles.itemContentLabel}>{t("bookingType")}: </Text>
@@ -104,7 +104,6 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
             </TouchableOpacity>
           </View>
         )}
-
       </View>
 
     )
@@ -183,7 +182,12 @@ const Histories = () => {
 
       if (response.status === 200) {
         const bookingData = response.data.content || response.data || [];
-        console.log(bookingData.length)
+        bookingData.forEach((booking, index) => {
+          console.log(`Booking #${index + 1}:`);
+          booking.bookingDetails.forEach((detail, i) => {
+            console.log(`  Detail #${i + 1}:`, detail);
+          });
+        });
         // setTotalPages(response.data.totalPages);
         setTotalPages(prev => ({
           ...prev,
@@ -201,7 +205,7 @@ const Histories = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("fetchDataFailed"), t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -292,7 +296,7 @@ const Histories = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), mes, t("modal.failed"));
+      showModal(t("modal.error"), mes, "Failed");
     } finally {
       setLoading(false);
     }
@@ -317,7 +321,7 @@ const Histories = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), mes, t("modal.failed"));
+      showModal(t("modal.error"), mes, "Failed");
     } finally {
       setLoading(false);
     }
@@ -342,7 +346,7 @@ const Histories = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal(t("modal.error"), mes, t("modal.failed"))
+        showModal(t("modal.error"), mes, "Failed")
       } finally {
         setLoading(false);
       }

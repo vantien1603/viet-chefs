@@ -23,6 +23,7 @@ import { useModalLogin } from "../../context/modalLoginContext";
 import { useConfirmModal } from "../../context/commonConfirm";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import * as SecureStore from "expo-secure-store";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -39,6 +40,7 @@ const EditAddress = () => {
   const { showConfirm } = useConfirmModal();
   const { showModal } = useCommonNoification();
   const [isEdit, setIsEdit] = useState(false);
+  const country = SecureStore.getItem('country');
 
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const fetchAddressSuggestions = async (query) => {
@@ -47,17 +49,21 @@ const EditAddress = () => {
       return;
     }
     try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+      };
+
+      if (country) {
+        params.components = `country:${country}`;
+      }
+
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
-        {
-          params: {
-            input: query,
-            key: process.env.API_GEO_KEY,
-            language: "vi",
-            components: "country:vn",
-          },
-        }
+        { params }
       );
+
       console.log("Suggestions response:", response.data);
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
@@ -66,7 +72,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchSuggestionsFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -89,7 +95,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchPlaceDetailsFailed"),
-        t("modal.failed")
+        "Failed"
       );
       return null;
     }
@@ -128,7 +134,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.loadSelectedAddressFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -140,7 +146,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.saveSelectedAddressFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -157,7 +163,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchAddressesFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -170,7 +176,7 @@ const EditAddress = () => {
         showModal(
           t("modal.error"),
           t("errors.locationPermissionDenied"),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }
@@ -183,9 +189,8 @@ const EditAddress = () => {
 
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
-          addr.city || ""
-        }, ${addr.region || ""}, ${addr.country || ""}`;
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
+          }, ${addr.region || ""}, ${addr.country || ""}`;
 
         const existingCurrentLocation = addresses.find(
           (addr) => addr.title === t("currentLocation")
@@ -209,7 +214,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchLocationFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -227,10 +232,8 @@ const EditAddress = () => {
               : addr
           )
         );
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("updateCurrentLocationSuccess"),
-          t("modal.succeeded")
         );
       }
     } catch (error) {
@@ -240,7 +243,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.updateCurrentLocationFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -250,7 +253,7 @@ const EditAddress = () => {
       showModal(
         t("modal.warning"),
         t("errors.maxAddresses"),
-        t("modal.warning")
+        t("Warning")
       );
       setModalVisible(false);
       return;
@@ -262,10 +265,8 @@ const EditAddress = () => {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
         setNewAddress({ title: "", address: "" });
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("saveAddressSuccess"),
-          t("modal.succeeded")
         );
       }
     } catch (error) {
@@ -275,7 +276,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.saveAddressFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -286,7 +287,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.incompleteAddress"),
-        t("modal.failed")
+        "Failed"
       );
 
       return;
@@ -302,10 +303,8 @@ const EditAddress = () => {
         setModalVisible(false);
         setIsEdit(false);
         setEditingAddress(null);
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("updateAddressSuccess"),
-          t("modal.succeeded")
         );
       }
     } catch (error) {
@@ -318,7 +317,7 @@ const EditAddress = () => {
       showModal(
         t("modal.error"),
         t("errors.updateAddressFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -336,10 +335,8 @@ const EditAddress = () => {
               setSelectedId(null);
               await AsyncStorage.removeItem("selectedAddress");
             }
-            showModal(
-              t("modal.success"),
+            showModal(t("modal.success"),
               t("deleteAddressSuccess"),
-              t("modal.succeeded")
             );
           }
         } catch (error) {
@@ -352,7 +349,7 @@ const EditAddress = () => {
           showModal(
             t("modal.error"),
             t("errors.deleteAddressFailed"),
-            t("modal.failed")
+            "Failed"
           );
         }
       })
@@ -397,8 +394,8 @@ const EditAddress = () => {
             item.type === "home"
               ? "home"
               : item.type === "work"
-              ? "business"
-              : "location-outline"
+                ? "business"
+                : "location-outline"
           }
           size={20}
           color="black"

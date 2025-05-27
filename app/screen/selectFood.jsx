@@ -110,7 +110,7 @@ const SelectFood = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("fetchMenusFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("fetchMenusFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ const SelectFood = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("fetchDishesFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("fetchDishesFailed"), "Failed");
       setDishes([]);
     } finally {
       setLoading(false);
@@ -177,7 +177,7 @@ const SelectFood = () => {
     const selectedDishesCount =
       Object.values(selectedDishes).filter(Boolean).length;
     if (selectedDishesCount > 0) {
-      showModal(t("modal.error"), t("menuSelectError"), t("modal.failed"));
+      showModal(t("modal.error"), t("menuSelectError"), "Failed");
       return;
     }
     setSelectedMenu((prev) => (prev?.id === menu.id ? null : menu));
@@ -187,7 +187,7 @@ const SelectFood = () => {
 
   const handleContinue = () => {
     if (!selectedMenu && selectedDishes.length === 0) {
-      showModal(t("modal.error"), t("selectionRequired"), t("modal.failed"));
+      showModal(t("modal.error"), t("selectionRequired"), "Failed");
       return;
     }
     // router.push("/screen/booking");

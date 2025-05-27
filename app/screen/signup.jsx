@@ -64,8 +64,8 @@ export default function SignUpScreen() {
             if (axios.isCancel(error)) {
                 return;
             }
-            // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình đăng ký.", t("modal.failed").failed"));
-            showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+            // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình đăng ký.", "Failed".failed"));
+            showModal(t("modal.error"), error.response.data.message, "Failed");
         }
     };
 

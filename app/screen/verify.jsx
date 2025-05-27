@@ -64,7 +64,7 @@ const VerifyScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("verifyFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("verifyFailed"), "Failed");
     }
   };
 
@@ -74,7 +74,7 @@ const VerifyScreen = () => {
         `/resend-code?email=${encodeURIComponent(mail)}`
       );
       if (response.status === 200) {
-        showModal(t("modal.success"), t("resendCode"), t("modal.success"));
+        showModal(t("modal.success"), t("resendCode"),);
 
       }
     } catch (error) {

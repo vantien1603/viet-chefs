@@ -8,6 +8,8 @@ import { AuthContext } from '../config/AuthContext';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCommonNoification } from '../context/commonNoti';
 
 async function registerForPushNotificationsAsync() {
   try {
@@ -37,20 +39,22 @@ async function registerForPushNotificationsAsync() {
 export default function WelcomeScreen() {
   const navigation = useNavigation();
   const [isCheckingUser, setIsCheckingUser] = useState(false);
-
   const [expoPushToken, setExpoPushToken] = useState('');
   const [channels, setChannels] = useState([]);
   const [notification, setNotification] = useState();
   const notificationListener = useRef();
   const responseListener = useRef();
-  const { user, loading } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
+  const { showModal } = useCommonNoification();
 
   const setupNotifications = async () => {
     try {
       const token = await registerForPushNotificationsAsync();
+      console.log("token o index", token);
       if (token) {
         setExpoPushToken(token);
-        SecureStore.setItem('expoPushToken', token);
+        SecureStore.setItemAsync('expoPushToken', token);
+        // AsyncStorage.setItem('expoPushToken', token);
         console.log('Expo Push Token:', token);
       }
 
@@ -92,6 +96,7 @@ export default function WelcomeScreen() {
         'Quyền truy cập vị trí bị từ chối',
         'Ứng dụng cần quyền truy cập vị trí để hoạt động chính xác. Vui lòng cấp quyền trong cài đặt.'
       );
+
       return;
     }
 
@@ -99,7 +104,7 @@ export default function WelcomeScreen() {
   };
 
   const handleLogin = () => {
-    router.replace("screen/login");
+    router.push("screen/login");
   };
 
 
@@ -158,7 +163,7 @@ export default function WelcomeScreen() {
 
       <View>
         <TouchableOpacity
-          onPress={() => router.replace("screen/signup")}
+          onPress={() => router.push("screen/signup")}
           style={{
             padding: 13,
             marginTop: 40,

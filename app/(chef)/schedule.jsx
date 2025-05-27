@@ -111,7 +111,7 @@ const Schedule = () => {
     const day = new Date(date).getDay();
     return day === 0 ? 6 : day - 1;
   };
-  const statuses = ['SCHEDULED', 'SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
+  const statuses = ['SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
 
   const fetchBookingDetails = async (pageNum, isRefresh = false) => {
     if (loading && !isRefresh) return;
@@ -155,8 +155,8 @@ const Schedule = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", t("modal.failed"));
-      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);

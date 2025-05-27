@@ -28,7 +28,7 @@ const ForgotPasswordScreen = () => {
     try {
       const response = await AXIOS_BASE.post(`/forgot-password?email=${email}`);
       if (response.status === 200) {
-        showModal(t("modal.success"), t("sendResetTokenSuccess"), t("modal.success"));
+        showModal(t("modal.success"), t("sendResetTokenSuccess"),);
         router.push({
           pathname: "/screen/resetPassword",
           params: { email },
@@ -39,7 +39,7 @@ const ForgotPasswordScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.sendResetTokenFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.sendResetTokenFailed"), "Failed");
     }
   };
 

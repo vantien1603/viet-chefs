@@ -48,74 +48,74 @@ export const ModalLoginProvider = ({ children }) => {
     getToken();
   }, []);
 
-  const showModalLogin = useCallback((title, message, isLogin = false) => {
-    setShowLoginForm(false);
-    setEmail("");
-    setPassword("");
-    setError("");
+    const showModalLogin = useCallback((title, message, isLogin = false) => {
+        setShowLoginForm(false);
+        setEmail('');
+        setPassword('');
+        setError('');
 
-    setModalContent({ title, message, isLogin });
+        setModalContent({ title, message, isLogin });
 
-    setTimeout(() => {
-      setIsVisible(true);
-    }, 100);
-  }, []);
+        setTimeout(() => {
+            setIsVisible(true);
+        }, 100);
+    }, []);
 
-  const handleLogin = async () => {
-    if (email.trim().length === 0 || password.trim().length === 0) {
-      setError(t("loginfailMessage"));
-      return;
-    }
+    const handleLogin = async () => {
+        if (email.trim().length === 0 || password.trim().length === 0) {
+            setError(t("loginfailMessage"));
+            return;
+        }
 
-    setLoading(true);
-    const result = await login(email, password, expoToken);
+        setLoading(true);
+        const result = await login(email, password, expoToken);
+        console.log("resuls login modal", result);
+        if (result) {
+            if (result?.roleName === "ROLE_CHEF") {
+                navigation.navigate("(chef)", { screen: "home" });
+            }
+            setIsVisible(false);
+        } else {
+            setError(t("loginfailMessage"));
+        }
 
-    if (result) {
-      if (result?.roleName === "ROLE_CHEF") {
-        navigation.navigate("(chef)", { screen: "home" });
-      }
-      setIsVisible(false);
-    } else {
-      setError(t("loginfailMessage"));
-    }
-
-    setLoading(false);
-  };
+        setLoading(false);
+    };
 
   const closeModal = () => {
     setIsVisible(false);
   };
 
-  return (
-    <ModalContextLogin.Provider value={{ showModalLogin }}>
-      {children}
-      <Modal
-        isVisible={isVisible}
-        onBackdropPress={closeModal}
-        onBackButtonPress={closeModal}
-        swipeDirection="down"
-        onSwipeComplete={closeModal}
-        style={styles.modal}
-        backdropOpacity={0.5}
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        useNativeDriver={true}
-        statusBarTranslucent
-        propagateSwipe={true}
-      >
-        <View style={styles.modalContent}>
-          <View style={styles.indicator} />
-          <Text style={styles.title}>{modalContent.title}</Text>
-          <Text style={styles.message}>{modalContent.message}</Text>
-
-          {modalContent.isLogin && !showLoginForm && (
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setShowLoginForm(true)}
+    return (
+        <ModalContextLogin.Provider value={{ showModalLogin }}>
+            {children}
+            <Modal
+                isVisible={isVisible}
+                onBackdropPress={closeModal}
+                onBackButtonPress={closeModal}
+                swipeDirection="down"
+                onSwipeComplete={closeModal}
+                style={styles.modal}
+                backdropOpacity={0.5}
+                animationIn="slideInUp"
+                animationOut="slideOutDown"
+                useNativeDriver={true}
+                statusBarTranslucent
+                propagateSwipe={true}
             >
-              <Text style={styles.buttonText}>{t("login")}</Text>
-            </TouchableOpacity>
-          )}
+                <View style={styles.modalContent}>
+                    <View style={styles.indicator} />
+                    <Text style={styles.title}>{modalContent.title}</Text>
+                    <Text style={styles.message}>{modalContent.message}</Text>
+
+                    {modalContent.isLogin && !showLoginForm && (
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={() => setShowLoginForm(true)}
+                        >
+                            <Text style={styles.buttonText}>{t("login")}</Text>
+                        </TouchableOpacity>
+                    )}
 
           {showLoginForm && (
             <>
@@ -138,28 +138,31 @@ export const ModalLoginProvider = ({ children }) => {
                 <Text style={{ color: "red", marginBottom: 10 }}>{error}</Text>
               ) : null}
 
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => requireNetwork(handleLogin)}
-              >
-                {loading ? (
-                  <ActivityIndicator size={"small"} color={"white"} />
-                ) : (
-                  <Text style={styles.buttonText}>{t("login")}</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => requireNetwork(handleLogin)}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size={'small'} color={'white'} />
+                                ) : (
+                                    <Text style={styles.buttonText}>{t("login")}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </>
+                    )}
 
-          {!showLoginForm && !modalContent.isLogin && (
-            <TouchableOpacity style={styles.button} onPress={closeModal}>
-              <Text style={styles.buttonText}>{t("close")}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Modal>
-    </ModalContextLogin.Provider>
-  );
+                    {!showLoginForm && !modalContent.isLogin && (
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={closeModal}
+                        >
+                            <Text style={styles.buttonText}>{t("close")}</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </Modal>
+        </ModalContextLogin.Provider>
+    );
 };
 
 export const useModalLogin = () => useContext(ModalContextLogin);

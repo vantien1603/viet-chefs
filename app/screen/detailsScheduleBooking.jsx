@@ -1,39 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../components/header";
-import useAxios from "../../config/AXIOS_API";
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Text,
-  Image,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
-import { useRoute } from "@react-navigation/native";
-import { useRouter } from "expo-router";
-import { commonStyles } from "../../style";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import React, { useContext, useEffect, useState } from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import Header from '../../components/header'
+import useAxios from '../../config/AXIOS_API'
+import { View, ScrollView, TouchableOpacity, StyleSheet, Text, Image, ActivityIndicator } from 'react-native'
+import { useRoute } from '@react-navigation/native'
+import { useRouter } from 'expo-router'
+import { commonStyles } from '../../style'
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from "expo-image-picker";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import * as Location from "expo-location";
 import { t } from "i18next";
+import { AuthContext } from '../../config/AuthContext'
+
 
 const DetailsBooking = () => {
-  const [loading, setLoading] = useState(false);
-  const axiosInstance = useAxios();
-  const route = useRoute();
-  const { bookingId } = route.params;
-  const [detail, setDetail] = useState({});
-  const [customer, setCustomer] = useState({});
-  const [images, setImages] = useState([]);
-  const { showModal } = useCommonNoification();
-  const axiosInstanceForm = useAxiosFormData();
-  const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const axiosInstance = useAxios();
+    const route = useRoute();
+    const { bookingId } = route.params;
+    const [detail, setDetail] = useState({});
+    const [customer, setCustomer] = useState({});
+    const [images, setImages] = useState([]);
+    const { showModal } = useCommonNoification();
+    const axiosInstanceForm = useAxiosFormData();
+    const router = useRouter();
+    const { user } = useContext(AuthContext);
+
 
   useEffect(() => {
     fetchBooking();
@@ -59,7 +54,7 @@ const DetailsBooking = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchBookingFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -183,25 +178,26 @@ const DetailsBooking = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.checkoutFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChat = () => {
-    router.push({
-      pathname: "/screen/message",
-      params: {
-        contact: JSON.stringify({
-          id: customer?.id,
-          name: customer?.fullName,
-          avatar: customer?.avatarUrl,
-        }),
-      },
-    });
-  };
+    const handleChat = () => {
+        console.log(customer)
+        router.push({
+            pathname: "/screen/message",
+            params: {
+                contact: JSON.stringify({
+                    id: customer?.username,
+                    name: customer?.fullName,
+                    avatar: customer?.avatarUrl,
+                }),
+            },
+        });
+    };
 
   return (
     <SafeAreaView style={commonStyles.container}>

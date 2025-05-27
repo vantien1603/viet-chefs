@@ -30,7 +30,7 @@ const SetPassword = () => {
 
     const handleSetPassword = async () => {
         if (password !== rePassword) {
-            showModal(t("modal.error"), t("passwordMismatch"), t("modal.failed"))
+            showModal(t("modal.error"), t("passwordMismatch"), "Failed")
             return;
         }
 
@@ -43,18 +43,18 @@ const SetPassword = () => {
             console.log('data', setPasswordPayload);
             const response = await axiosInstanceBase.post('/set-password', setPasswordPayload);
             if (response.status === 200) {
-                showModal(t("modal.success"), "Quá trình đăng kí hoàn tất. Vui lòng đăng nhập lại.", t("modal.success"));
+                showModal(t("modal.success"), "Quá trình đăng kí hoàn tất. Vui lòng đăng nhập lại.",);
                 console.log('Register success');
                 router.push('/screen/login')
             } else {
-                showModal(t("modal.error"), t("fetchSetPwFailed"), t("modal.failed"));
+                showModal(t("modal.error"), t("fetchSetPwFailed"), "Failed");
             }
         } catch (error) {
             if (axios.isCancel(error)) {
                 return;
             }
-            // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình đặt mật khẩu.", t("modal.failed").failed"));
-            showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+            // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình đặt mật khẩu.", "Failed".failed"));
+            showModal(t("modal.error"), error.response.data.message, "Failed");
         }
     }
     return (

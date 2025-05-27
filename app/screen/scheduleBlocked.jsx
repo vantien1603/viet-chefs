@@ -19,7 +19,9 @@ import Header from "../../components/header";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useCommonNoification } from "../../context/commonNoti";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useConfirmModal } from "../../context/commonConfirm";
 import { t } from "i18next";
+import axios from "axios";
 
 const ScheduleBlocked = () => {
   const [schedule, setSchedule] = useState({});
@@ -28,14 +30,15 @@ const ScheduleBlocked = () => {
   const [loading, setLoading] = useState(true);
   const axiosInstance = useAxios();
   const [showPicker, setShowPicker] = useState(false);
-  const [currentField, setCurrentField] = useState({
-    date: "",
-    index: 0,
-    field: "",
-  });
+  const [currentField, setCurrentField] = useState({ date: "", index: 0, field: "" });
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const [existingDates, setExistingDates] = useState({});
   const { showModal } = useCommonNoification();
+  const { showConfirm } = useConfirmModal();
+  const [initialPickerTime, setInitialPickerTime] = useState(new Date());
+  const [originalSchedule, setOriginalSchedule] = useState({});
+  const [editableBlocks, setEditableBlocks] = useState({});
+  const makeKey = (date, index) => `${date}_${index}`;
 
   const handleTimeChange = (event, selectedDate) => {
     setShowPicker(false);
@@ -57,10 +60,24 @@ const ScheduleBlocked = () => {
     }));
   };
 
+  // const openTimePicker = (date, index, field) => {
+  //     setCurrentField({ date, index, field });
+  //     setShowPicker(true);
+  // };
   const openTimePicker = (date, index, field) => {
+    const timeString = schedule[date][index][field];
+    const [hours, minutes, seconds] = timeString.split(":").map(Number);
+    const currentDate = new Date();
+    currentDate.setHours(hours || 0);
+    currentDate.setMinutes(minutes || 0);
+    currentDate.setSeconds(seconds || 0);
+
+    setInitialPickerTime(currentDate);
     setCurrentField({ date, index, field });
     setShowPicker(true);
   };
+
+
 
   useEffect(() => {
     fetchSchedule();
@@ -71,20 +88,24 @@ const ScheduleBlocked = () => {
     try {
       const response = await axiosInstance.get("/chef-blocked-dates/me");
       const data = response.data;
+      console.log(data);
 
       const grouped = {};
-      data.forEach((item) => {
+      data.forEach(item => {
         if (!grouped[item.blockedDate]) {
           grouped[item.blockedDate] = [];
         }
         grouped[item.blockedDate].push({
+          id: item.blockId,
           startTime: item.startTime,
           endTime: item.endTime,
-          reason: item.reason,
+          reason: item.reason
         });
+
       });
 
       setSchedule(grouped);
+      setOriginalSchedule(grouped);
       setExistingDates({ ...grouped });
 
       const marks = {};
@@ -101,7 +122,7 @@ const ScheduleBlocked = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchBlockScheduleFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -164,72 +185,83 @@ const ScheduleBlocked = () => {
     }));
   };
 
-  // const handleSave = async () => {
-  //     const allBlocks = [];
-  //     Object.keys(selectedDates).forEach(date => {
-  //         if (!existingDates[date] && schedule[date]) {
-  //             const validBlocks = schedule[date]
-  //                 .filter(item => item.startTime && item.endTime)
-  //                 .map(item => ({
-  //                     blockedDate: date,
-  //                     startTime: item.startTime,
-  //                     endTime: item.endTime,
-  //                     reason: item.reason,
-  //                 }));
-  //             allBlocks.push(...validBlocks);
-  //         }
-  //     });
+  const handleDelete = async (id) => {
+    showConfirm("Delete confirm", "Bạn có chắc muốn xóa lịch bận này không?", async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.delete(`/chef-blocked-dates/${id}`);
+        if (response.status === 200) {
+          showModal(t("success"), "Xóa lịch bận thành công");
+          fetchSchedule();
+        }
+      } catch (error) {
 
-  //     if (allBlocks.length === 0) {
-  //         showModal("Thông báo", "Không có lịch mới để lưu!");
-  //         return;
-  //     }
+      } finally {
+        setLoading(false);
+      }
+    })
+  }
 
-  //     console.log(allBlocks);
-  //     // return;
+  const handleUpdate = async (item) => {
+    setLoading(true);
+    try {
+      const payload = {};
+      const response = await axiosInstance.put(`/chef-blocked-dates`, payload);
 
-  //     try {
-  //         setLoading(true);
-  //         // const promises = allBlocks.map(block =>
-  //         //     axiosInstance.post("/chef-blocked-dates", block)
-  //         // );
-
-  //         // const response = await Promise.allSettled(promises);
-  //         const response = await Promise.all(allBlocks.map(block =>
-  //             axiosInstance.post("/chef-blocked-dates", block)
-  //         ));
-
-  //         console.log(response);
-  //         // showModal("Thành công", "Đã lưu lịch chặn!");
-  //         fetchSchedule();
-  //     } catch (error) {
-  //         showModal("Error ", error.response?.data?.message || "Đã có lỗi xảy ra!", t("modal.failed"));
-  //     } finally {
-  //         setLoading(false);
-  //     }
-  // };
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(t("error"), error.response.data.message, "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleSave = async () => {
     const allBlocks = [];
-    Object.keys(selectedDates).forEach((date) => {
-      if (!existingDates[date] && schedule[date]) {
+    // Object.keys(selectedDates).forEach(date => {
+    //     if (!existingDates[date] && schedule[date]) {
+    //         const validBlocks = schedule[date]
+    //             .filter(item => item.startTime && item.endTime)
+    //             .map(item => ({
+    //                 blockedDate: date,
+    //                 startTime: item.startTime,
+    //                 endTime: item.endTime,
+    //                 reason: item.reason,
+    //             }));
+    //         allBlocks.push(...validBlocks);
+    //     }
+    // });
+
+
+    Object.keys(selectedDates).forEach(date => {
+      if (schedule[date]) {
+        const existingIndexes = existingDates[date]?.map((_, idx) => idx) || [];
+        console.log("cc");
+
         const validBlocks = schedule[date]
-          .filter((item) => item.startTime && item.endTime)
-          .map((item) => ({
+          .map((item, index) => ({ ...item, index }))
+          .filter(item =>
+            item.startTime && item.endTime && !existingIndexes.includes(item.index)
+          )
+          .map(item => ({
             blockedDate: date,
             startTime: item.startTime,
             endTime: item.endTime,
             reason: item.reason,
           }));
+
         allBlocks.push(...validBlocks);
       }
     });
+
+
+
 
     if (allBlocks.length === 0) {
       showModal(
         t("modal.notification"),
         t("errors.noNewSchedule"),
-        t("modal.failed")
+        "Failed"
       );
       return;
     }
@@ -263,8 +295,7 @@ const ScheduleBlocked = () => {
         throw new Error(`Một số ngày bị lỗi:\n${messages}`);
       }
 
-      showModal(
-        t("modal.success"),
+      showModal(t("modal.success"),
         t("saveScheduleSuccess"),
         t("modal.succeeded")
       );
@@ -273,7 +304,7 @@ const ScheduleBlocked = () => {
       showModal(
         t("modal.error"),
         error.message || t("errors.saveScheduleFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -317,76 +348,104 @@ const ScheduleBlocked = () => {
               />
             </View>
 
-            {Object.keys(selectedDates).map((date) => {
-              const isExisting = !!existingDates[date];
+            {Object.keys(selectedDates).map(date => {
               return (
                 <View style={styles.card} key={date}>
                   <Text style={styles.dateTitle}>
                     {moment(date).format("DD/MM/YYYY")}
-                    {isExisting && (
-                      <Text style={styles.viewOnlyTag}> {t("viewOnly")}</Text>
-                    )}
+                    <Text style={styles.viewOnlyTag}> {t("viewOnly")}</Text>
                   </Text>
-                  {schedule[date]?.map((item, index) => (
-                    <View key={index} style={styles.fieldGroup}>
-                      <TouchableOpacity
-                        // disabled={isExisting}
-                        onPress={() => openTimePicker(date, index, "startTime")}
-                        style={styles.inputContainer}
-                      >
-                        <TextInput
-                          placeholder={t("startTimePlaceholder")}
-                          value={item.startTime}
-                          editable={false}
-                          style={[
-                            styles.input,
-                            isExisting && styles.disabledInput,
-                          ]}
-                        />
-                      </TouchableOpacity>
 
-                      <TouchableOpacity
-                        // disabled={isExisting}
-                        onPress={() => openTimePicker(date, index, "endTime")}
-                        style={styles.inputContainer}
-                      >
-                        <TextInput
-                          placeholder={t("endTimePlaceholder")}
-                          value={item.endTime}
-                          editable={false}
-                          style={[
-                            styles.input,
-                            isExisting && styles.disabledInput,
-                          ]}
-                        />
-                      </TouchableOpacity>
+                  {schedule[date]?.map((item, index) => {
+                    const isDisabled = !!existingDates[date]?.[index];
+                    const isEditing = editableBlocks[makeKey(date, index)];
+                    console.log(editableBlocks);
+                    return (
+                      <View key={index} style={styles.fieldGroup}>
+                        <Text style={styles.blockLabel}>Khung giờ {index + 1}</Text>
 
-                      <View style={styles.inputContainer}>
-                        <TextInput
-                          placeholder={t("reasonPlaceholder")}
-                          value={item.reason}
-                          onChangeText={(text) =>
-                            handleFieldChange(date, index, "reason", text)
-                          }
-                          editable={!isExisting}
-                          style={[
-                            styles.input,
-                            isExisting && styles.disabledInput,
-                          ]}
-                        />
-                      </View>
-
-                      {!isExisting && (
                         <TouchableOpacity
-                          onPress={() => handleRemoveField(date, index)}
-                          style={styles.removeButton}
+                          disabled={isDisabled && !isEditing}
+                          onPress={() => openTimePicker(date, index, "startTime")}
+                          style={[styles.inputContainer, isDisabled && !isEditing && styles.disabledInput]}
                         >
-                          <Icon name="delete" size={20} color="#FFFFFF" />
+                          <TextInput
+                          placeholder={t("startTimePlaceholder")}
+                            value={item.startTime}
+                            editable={false}
+                            style={[styles.input, isDisabled && !isEditing && styles.disabledInput]}
+                          />
                         </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
 
+                        <TouchableOpacity
+                          disabled={isDisabled && !isEditing}
+                          onPress={() => openTimePicker(date, index, "endTime")}
+                          style={[styles.inputContainer, isDisabled && !isEditing && styles.disabledInput]}
+                        >
+                          <TextInput
+                          placeholder={t("endTimePlaceholder")}
+                            value={item.endTime}
+                            editable={false}
+                            style={[styles.input, isDisabled && !isEditing && styles.disabledInput]}
+                          />
+                        </TouchableOpacity>
+
+                        <View style={[styles.inputContainer, isDisabled && !isEditing && styles.disabledInput]}>
+                          <TextInput
+                          placeholder={t("reasonPlaceholder")}
+                            value={item.reason}
+                            onChangeText={(text) => handleFieldChange(date, index, "reason", text)}
+                            editable={
+                              !existingDates[date]?.[index] ||
+                              editableBlocks[makeKey(date, index)] === true
+                            } style={[styles.input, isDisabled && !isEditing && styles.disabledInput]}
+                          />
+                        </View>
+
+                        <View style={styles.buttonContainer}>
+                          {isDisabled && !isEditing && (
+                            <TouchableOpacity
+                              style={styles.editButton}
+                              onPress={() => setEditableBlocks(prev => ({ ...prev, [makeKey(date, index)]: true }))}
+                            >
+                              <Icon name="edit" size={18} color="white" />
+                            </TouchableOpacity>
+                          )}
+
+                          {isDisabled && isEditing && (
+                            <>
+                              <TouchableOpacity onPress={() => {
+                                handleUpdate(item); // gọi API cập nhật
+                                setEditableBlocks(prev => ({ ...prev, [makeKey(date, index)]: false }));
+                              }}>
+                                <Text>Save</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity onPress={() => {
+                                setEditableBlocks(prev => ({ ...prev, [makeKey(date, index)]: false }));
+                                handleResetField(date, index); // nếu có logic revert
+                              }}>
+                                <Text>Cancel</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
+
+                          <TouchableOpacity
+                            style={styles.removeButton}
+                            onPress={() => {
+                              if (item.id) {
+                                handleDelete(item.id);
+                              } else {
+                                handleRemoveField(date, index);
+                              }
+                            }}
+                          >
+                            <Icon name="delete" size={18} color="white" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
                   {/* {!isExisting && ( */}
                   <TouchableOpacity
                     style={styles.addButton}
@@ -403,16 +462,8 @@ const ScheduleBlocked = () => {
             {showPicker && (
               <DateTimePicker
                 value={
-                  schedule[currentField.date]?.[currentField.index]?.[
-                    currentField.field
-                  ]
-                    ? new Date(
-                        `1970-01-01T${
-                          schedule[currentField.date][currentField.index][
-                            currentField.field
-                          ]
-                        }:00`
-                      )
+                  schedule[currentField.date]?.[currentField.index]?.[currentField.field]
+                    ? new Date(`1970-01-01T${schedule[currentField.date][currentField.index][currentField.field]}:00`)
                     : new Date()
                 }
                 mode="time"
@@ -497,10 +548,10 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     marginBottom: 16,
     position: "relative",
-    padding: 10,
+    padding: 10
   },
   inputContainer: {
     flexDirection: "row",

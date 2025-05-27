@@ -169,7 +169,7 @@ const Packages = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchPackagesFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -190,7 +190,7 @@ const Packages = () => {
   };
 
   const selectAll = () => {
-    const allIds = packages.map((d) => d.id);
+    const allIds = index === 0 ? packages.map((d) => d.id) : unsubscribes.map((d) => d.id);
     setSelectedPackages(allIds);
   };
 
@@ -233,7 +233,6 @@ const Packages = () => {
                 t(`success.${type}Success`, {
                   count: mode === 'single' ? 1 : selectedPackages.length,
                 }),
-                t('modal.succeeded')
               );
               setSelectedPackages([]);
             }
@@ -249,7 +248,7 @@ const Packages = () => {
               t(`errors.${type}Failed`, {
                 count: mode === 'single' ? 1 : selectedPackages.length,
               }),
-              t('modal.failed')
+              "Failed"
             );
           } finally {
             setLoading(false);

@@ -11,11 +11,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../../style";
-import { useRouter, useFocusEffect } from "expo-router"; // Thêm useFocusEffect
+import { useRouter, useFocusEffect } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
-import { Feather } from "@expo/vector-icons";
+import { createIconSet, Feather } from "@expo/vector-icons";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
 import * as ImagePicker from "expo-image-picker";
@@ -23,6 +23,7 @@ import { TabBar, TabView } from "react-native-tab-view";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { t } from "i18next";
+import * as SecureStore from "expo-secure-store";
 
 const ProfileDetail = () => {
   const [loading, setLoading] = useState();
@@ -36,6 +37,9 @@ const ProfileDetail = () => {
   const axiosInstanceForm = useAxiosFormData();
   const { showModal } = useCommonNoification();
   const [index, setIndex] = useState(0);
+  const country = SecureStore.getItem('country');
+  const [suggestions, setSuggestions] = useState([]);
+
   const [routes] = useState([
     { key: "profile", title: t("personalInformation") },
     { key: "chef", title: t("chefInformation") },
@@ -65,7 +69,7 @@ const ProfileDetail = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchProfileFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -76,6 +80,7 @@ const ProfileDetail = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`/chefs/${user.chefId}`);
+      console.log(user.chefId);
       if (response.status === 200) {
         setDataChef(response.data);
         setUpdateDataChef(response.data);
@@ -90,7 +95,6 @@ const ProfileDetail = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchChefProfileFailed"),
-        t("modal.failed")
       );
     } finally {
       setLoading(false);
@@ -111,7 +115,7 @@ const ProfileDetail = () => {
       showModal(
         t("modal.warning"),
         t("errors.imagePermissionRequired"),
-        t("modal.warning")
+        t("Warning")
       );
       return;
     }
@@ -149,9 +153,7 @@ const ProfileDetail = () => {
   const handleSaveProfile = async () => {
     const phoneRegex = /^\d{10}$/;
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    const nameRegex =
-      /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÊÔƠƯàáảãạâấầẩẫậăắằẳẵặèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựýỳỷỹỵ\s]+$/;
-    console.log(updateData.dob);
+    const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÊÔƠƯàáảãạâấầẩẫậăắằẳẵặèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựýỳỷỹỵ\s]+$/; console.log(updateData.dob);
     const localErrors = {
       name: false,
       phone: false,
@@ -171,7 +173,7 @@ const ProfileDetail = () => {
     setErrors(localErrors);
     const hasAnyError = Object.values(localErrors).some((v) => v === true);
     if (hasAnyError) {
-      showModal(t("modal.error"), t("errors.invalidData"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.invalidData"), "Failed");
       return;
     }
 
@@ -203,10 +205,8 @@ const ProfileDetail = () => {
           fullName: response.data.fullName,
           avatarUrl: response.data.avatarUrl,
         }));
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("updateProfileSuccess"),
-          t("modal.succeeded")
         );
       }
     } catch (error) {
@@ -220,13 +220,13 @@ const ProfileDetail = () => {
       showModal(
         t("modal.error"),
         t("errors.updateProfileFailed"),
-        t("modal.failed")
+        t("Failed")
       );
       if (error.response?.data?.message) {
         showModal(
           t("modal.error"),
           error.response.data.message,
-          t("modal.failed")
+          t("Failed")
         );
       }
     } finally {
@@ -261,15 +261,15 @@ const ProfileDetail = () => {
         yearsOfExperience: updateDataChef.yearsOfExperience,
         certification: updateDataChef.certification,
       };
+
+      console.log(payload);
       const response = await axiosInstance.put(
-        `/chefs/${user.chefId}`,
+        `chefs/my-chef`,
         payload
       );
       if (response.status === 200) {
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("updateChefProfileSuccess"),
-          t("modal.succeeded")
         );
         setIsEditing(false);
       }
@@ -280,13 +280,55 @@ const ProfileDetail = () => {
       if (axios.isCancel(error)) {
         return;
       }
+      console.log(error.response.data);
       showModal(
-        t("modal.error"),
-        t("errors.updateChefProfileFailed"),
-        t("modal.failed")
-      );
+        // t("modal.error"), t("errors.updateChefProfileFailed"), "Failed");
+        t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = (query) => {
+    setUpdateDataChef((prev) => ({ ...prev, address: query }))
+    fetchAddressSuggestions(query);
+  };
+
+
+  const fetchAddressSuggestions = async (query) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+      };
+
+
+      if (country) {
+        params.components = `country:${country}`;
+      }
+
+      console.log(params)
+
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+        { params }
+      );
+
+      console.log("Suggestions response:", response.data);
+      if (response.data.status === "OK") {
+        setSuggestions(response.data.predictions);
+      }
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        t("errors.fetchSuggestionsFailed"),
+        "Failed"
+      );
     }
   };
 
@@ -500,8 +542,17 @@ const ProfileDetail = () => {
     >
       <Text style={styles.label}>{t("bio")}</Text>
       {isEditing ? (
+        // <TextInput
+        //   style={styles.input}
+        //   value={updateDataChef.bio}
+        //   onChangeText={(text) =>
+        //     setUpdateDataChef((prev) => ({ ...prev, bio: text }))
+        //   }
+        // />
         <TextInput
-          style={styles.input}
+          multiline
+          numberOfLines={3}
+          style={styles.textArea}
           value={updateDataChef.bio}
           onChangeText={(text) =>
             setUpdateDataChef((prev) => ({ ...prev, bio: text }))
@@ -524,6 +575,43 @@ const ProfileDetail = () => {
         />
       ) : (
         <Text style={styles.text}>{updateDataChef.description}</Text>
+      )}
+
+      <Text style={styles.label}>{t("address")}</Text>
+      {isEditing ? (
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            style={styles.input}
+            value={updateDataChef.address}
+            onChangeText={handleSearch}
+            onSubmitEditing={(event) => {
+              event.persist();
+              fetchAddressSuggestions(event.nativeEvent.text);
+            }}
+            returnKeyType="search"
+          />
+          {suggestions.length > 0 && (
+            <View style={styles.suggestionContainer}>
+              <ScrollView nestedScrollEnabled={true}>
+                {suggestions.map((item, index) => (
+                  <TouchableOpacity
+                    key={`${item.place_id}-${index}`}
+                    onPress={() => selectAddress(item)}
+                    style={styles.suggestionItem}
+                  >
+                    <Text style={styles.suggestionText}>
+                      {item.description}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
+
+      ) : (
+        <Text style={styles.text}>{updateDataChef.address}</Text>
       )}
 
       <Text style={styles.label}>{t("country")}</Text>
@@ -795,7 +883,8 @@ const ProfileDetail = () => {
               <TouchableOpacity
                 style={[
                   styles.genderButton,
-                  updateData.gender === "Male" && styles.genderSelected,
+                  mapGenderToDisplay(updateData.gender) === "Nam" &&
+                  styles.genderSelected,
                 ]}
                 onPress={() =>
                   setUpdateData((prev) => ({ ...prev, gender: "Male" }))
@@ -814,7 +903,8 @@ const ProfileDetail = () => {
               <TouchableOpacity
                 style={[
                   styles.genderButton,
-                  updateData.gender === "Female" && styles.genderSelected,
+                  mapGenderToDisplay(updateData.gender) === "Nữ" &&
+                  styles.genderSelected,
                 ]}
                 onPress={() =>
                   setUpdateData((prev) => ({ ...prev, gender: "Female" }))
@@ -913,6 +1003,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     color: "#333",
+    zIndex: 10,
     fontFamily: "nunito-regular",
   },
   errorInput: {
@@ -963,6 +1054,34 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+  },
+  suggestionContainer: {
+    position: 'absolute',
+    top: 45, // hoặc bằng height của TextInput + margin
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    maxHeight: 200,
+    zIndex: 20,
+    elevation: 5, // Android
+    shadowColor: '#000', // iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+
+  suggestionItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+
+  suggestionText: {
+    fontSize: 14,
+    color: '#333',
   },
 });
 

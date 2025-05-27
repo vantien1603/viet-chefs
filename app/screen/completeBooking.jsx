@@ -129,7 +129,7 @@ const ScheduleCompleted = () => {
         } catch (error) {
             if (error.response?.status === 401) return;
             if (axios.isCancel(error)) return;
-            showModal(t("modal.error"), t('errors.fetchBookingsFailed'), t("modal.failed"));
+            showModal(t("modal.error"), t('errors.fetchBookingsFailed'), "Failed");
         } finally {
             setLoading(false);
             setRefresh(false);

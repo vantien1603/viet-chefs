@@ -183,7 +183,7 @@
 //           await AsyncStorage.setItem("@avatar", avatar);
 //         }
 
-//         showModal(t("modal.success"), "Cập nhật hồ sơ thành công!", t("modal.success"))
+//         showModal(t("modal.success"), "Cập nhật hồ sơ thành công!",)
 
 //         setTimeout(() => {
 //           router.back();

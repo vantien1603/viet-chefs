@@ -28,7 +28,6 @@ import { Modalize } from "react-native-modalize";
 import axios from "axios";
 import { AuthContext } from "../../config/AuthContext";
 import { t } from "i18next";
-
 const SearchResultScreen = () => {
   const {
     query,
@@ -333,7 +332,7 @@ const SearchResultScreen = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchDataFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);

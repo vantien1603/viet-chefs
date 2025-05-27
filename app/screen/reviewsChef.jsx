@@ -18,6 +18,7 @@ import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import { FlatList } from "react-native";
 import { t } from "i18next";
+import { commonStyles } from "../../style";
 
 const ReviewsChefScreen = () => {
   const { chefId, chefName } = useLocalSearchParams();
@@ -39,15 +40,10 @@ const ReviewsChefScreen = () => {
   const [totalReviews, setTotalReviews] = useState(0);
   const [sort, setSort] = useState("newest");
   const [refresh, setRefresh] = useState(false);
-  const [totalPage, setTotalPage] = useState(0);
   const [replyTexts, setReplyTexts] = useState({});
   const { showModal } = useCommonNoification();
-
-  const fetchReviewChef = async (
-    page = 0,
-    sortOption = sort,
-    isRefresh = false
-  ) => {
+  const [showReplies, setShowReplies] = useState({});
+  const fetchReviewChef = async (page = 0, sortOption = sort, isRefresh = false) => {
     if (loading && !isRefresh) return;
     setLoading(true);
     try {
@@ -75,7 +71,7 @@ const ReviewsChefScreen = () => {
       const calculatedAvg =
         response.data.reviews.length > 0
           ? response.data.reviews.reduce((sum, r) => sum + r.rating, 0) /
-            response.data.reviews.length
+          response.data.reviews.length
           : 0;
 
       setAverageRating(response.data.averageRating || calculatedAvg);
@@ -84,8 +80,8 @@ const ReviewsChefScreen = () => {
       setPageNo(page);
       setTotalReviews(response.data.totalReviews || 0);
     } catch (error) {
-      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", t("modal.failed"));
-      showModal(t("modal.error"), error.response.data.nessage, t("modal.failed"));
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal(t("modal.error"), error.response.data.nessage, "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -105,7 +101,7 @@ const ReviewsChefScreen = () => {
   };
 
   const loadMoreData = async () => {
-    if (!loading && pageNo + 1 <= totalPage - 1) {
+    if (!loading && pageNo + 1 <= totalPages - 1) {
       console.log("cal load more");
       const nextPage = pageNo + 1;
       setPageNo(nextPage);
@@ -128,7 +124,7 @@ const ReviewsChefScreen = () => {
       );
       console.log(response.data);
     } catch (error) {
-      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -176,16 +172,45 @@ const ReviewsChefScreen = () => {
     };
 
     return (
-      <View style={styles.reviewItem}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image source={{ uri: review.userAvatar }} style={styles.avatar} />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.userName}>{review.userName}</Text>
-            <RatingStars rating={review.rating} />
+      <View key={review.id}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Image
+              source={{ uri: review.userAvatar || "https://via.placeholder.com/50" }}
+              style={styles.avatar}
+            />
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.userName}>{review.userName || "Anonymous"}</Text>
+              <RatingStars rating={review.rating} />
+            </View>
           </View>
+
+          <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
+
         </View>
         <Text style={styles.reviewText}>{review.overallExperience}</Text>
-        <Text style={styles.reviewDate}>{timeAgo(review.createAt)}</Text>
+        {review.replies && (
+          <TouchableOpacity
+            onPress={() =>
+              setShowReplies(prev => ({
+                ...prev,
+                [review.id]: !prev[review.id] // toggle true/false
+              }))
+            }
+          >
+            <Text style={{ alignSelf: 'flex-end' }}>
+              {showReplies[review.id] ? 'Hide replies' : 'Show replies'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {showReplies[review.id] && (
+          review.replies.map((item) => (
+            <View>
+              <Text>askdj</Text>
+            </View>
+          ))
+        )}
+
         {user.roleName === "ROLE_CHEF" && (
           <>
             <TextInput
@@ -198,13 +223,12 @@ const ReviewsChefScreen = () => {
               multiline
               numberOfLines={4}
             />
-
             <TouchableOpacity onPress={() => handleReply(review.id)}>
               <Text style={styles.replyButton}>Gửi phản hồi</Text>
             </TouchableOpacity>
           </>
         )}
-      </View>
+      </View >
     );
   };
 
@@ -220,11 +244,13 @@ const ReviewsChefScreen = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Reviews for" subtitle={`${chefName}`} />
-      <View>
+    <SafeAreaView style={commonStyles.container}>
+      <Header title={user.roleName === "ROLE_CHEF" ? "Reviews" : "Reviews for"} subtitle={user.roleName !== "ROLE_CHEF" && `${chefName}`} />
+      <View style={commonStyles.containerContent}
+      >
+
         <FlatList
-          contentContainerStyle={{ padding: 20 }}
+          contentContainerStyle={{ paddingBottom: 50 }}
           data={reviews}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
@@ -275,7 +301,7 @@ const ReviewsChefScreen = () => {
                           style={[
                             styles.sortButtonText,
                             sort === option.value &&
-                              styles.sortButtonTextActive,
+                            styles.sortButtonTextActive,
                           ]}
                         >
                           {t(option.key)}
@@ -297,7 +323,7 @@ const ReviewsChefScreen = () => {
             ) : null
           }
           onEndReached={loadMoreData}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={0.3}
           refreshing={refresh}
           onRefresh={handleRefresh}
           ListEmptyComponent={
@@ -337,8 +363,8 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
   },
   replyInput: {
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderBottomWidth: 1,
+    borderColor: "#ccc",
     borderRadius: 8,
     padding: 10,
     marginTop: 10,
@@ -463,7 +489,37 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: "right",
     fontFamily: "nunito-regular"
+
   },
+  bar: {
+    height: "100%",
+    backgroundColor: "#666",
+    borderRadius: 4,
+  },
+  reviewCard: {
+    padding: 5,
+    marginBottom: 15,
+    backgroundColor: "#EBE5DD",
+    borderBottomWidth: 1,
+    borderBottomColor: "#CCCCCC",
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#CCCCCC",
+  },
+  userInfo: {
+    flex: 1,
+  },
+  avatar: { width: 30, height: 30, borderRadius: 20 },
   userName: {
     fontSize: 16,
     fontFamily: "nunito-bold",

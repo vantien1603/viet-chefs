@@ -124,6 +124,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around'
   },
   button: {
+    alignItems:'center',
+    width: '40%',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,

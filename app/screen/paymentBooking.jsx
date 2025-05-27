@@ -78,7 +78,7 @@ const PaymentBookingScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchBalanceFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -119,7 +119,7 @@ const PaymentBookingScreen = () => {
      showModal(
         t("modal.error"),
         t("errors.notEnoughBalance"),
-        t("modal.failed"),
+        "Failed",
         null,
         [
           {
@@ -145,7 +145,7 @@ const PaymentBookingScreen = () => {
       console.log("Payment Response:", response.data);
       if (response.status === 200) {
         await fetchBalanceInWallet();
-        showModal(t("modal.success"), t("success.paymentSuccess"), t("modal.succeeded"));
+        showModal(t("modal.success"), t("success.paymentSuccess"));
         setIsPaySuccess(true);
         // clearSelection();
       }
@@ -156,7 +156,7 @@ const PaymentBookingScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.paymentFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.paymentFailed"), "Failed");
     } finally {
       setLoading(false);
     }

@@ -133,7 +133,7 @@ const BookingScreen = () => {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.unavailableDatesLoadError"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.unavailableDatesLoadError"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -194,8 +194,8 @@ const BookingScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải danh sách availability", t("modal.failed"));
-      showModal(t("modal.error"), error.response.data.message || t("errors.availabilityLoadError"), t("modal.failed"));
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải danh sách availability", "Failed");
+      showModal(t("modal.error"), error.response.data.message || t("errors.availabilityLoadError"), "Failed");
     } finally {
       setIsFetchingAvailability(false);
     }
@@ -288,7 +288,7 @@ const BookingScreen = () => {
       if (!address) {
         setErrors((prev) => ({ ...prev, address: true }));
       }
-      showModal("Thiếu thông tin", t("errors.missingInformation"), t("modal.failed"));
+      showModal("Thiếu thông tin", t("errors.missingInformation"), "Failed");
       return;
     }
     // setRouteBefore(segment);
@@ -346,6 +346,8 @@ const BookingScreen = () => {
       <FontAwesome name="remove" size={22} color="red" />
     </TouchableOpacity>
   );
+
+  console.log(selectedDishes);
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
@@ -604,7 +606,7 @@ const BookingScreen = () => {
                         />
                         <View style={styles.dishText}>
                           <Text style={styles.dishName}>
-                            {dish.name || dish.dishName || "Unnamed Dish"}
+                            {dish.name || dish.dishName || dish.dish.name || "Unnamed Dish"}
                           </Text>
                           {dishNotes?.[dish.id || dish.dishId] && (
                             <Text style={styles.noteText}>

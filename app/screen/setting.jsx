@@ -9,16 +9,17 @@ import Header from "../../components/header";
 import { AuthContext } from "../../config/AuthContext";
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 
 const Setting = () => {
   const { t, i18n } = useTranslation();
   const modalLangRef = useRef(null);
   const modalCountryRef = useRef(null);
   const [selectedLang, setSelectedLang] = useState(i18n.language);
-  const [selectedCountry, setSelectedCountry] = useState("my");
+  const country = SecureStore.getItem('country');
+  const [selectedCountry, setSelectedCountry] = useState(country || "us");
   const [langModalKey, setLangModalKey] = useState(0);
-
+  const [counModalKey, setCounModalKey] = useState(0);
 
   const openModalLang = () => {
     setLangModalKey(prev => prev + 1);
@@ -27,7 +28,12 @@ const Setting = () => {
     }, 100);
   };
   const closeModalLang = () => modalLangRef.current?.close();
-  const openModalCountry = () => modalCountryRef.current?.open();
+  const openModalCountry = () => {
+    setCounModalKey(pre => pre + 1);
+    setTimeout(() => {
+      modalCountryRef.current?.open()
+    }, 100);
+  };
   const closeModalCountry = () => modalCountryRef.current?.close();
 
   const { isGuest, logout } = useContext(AuthContext);
@@ -39,14 +45,17 @@ const Setting = () => {
   };
   const selectCountry = (id) => {
     setSelectedCountry(id);
+    SecureStore.setItemAsync('country', id);
     closeModalCountry();
   };
+
+
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
       <Header title={'Setting'} />
       <View style={styles.menuCard}>
-        {/* <TouchableOpacity
+        <TouchableOpacity
           onPress={() => openModalCountry()}
           style={styles.menuItem}
         >
@@ -58,12 +67,12 @@ const Setting = () => {
             borderRadius: 12,
             marginRight: 8
           }}>
-            <Text style={{ color: 'white', fontFamily: "nunito-bold" }}>{(selectedCountry == 'my' ? 'American' : 'Việt Nam')}</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold' ,fontFamily: "nunito-bold"}}>{(selectedCountry == 'us' ? 'American' : 'Việt Nam')}</Text>
           </View>
 
 
           <Ionicons name="chevron-forward" size={20} color="gray" />
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => openModalLang()}
@@ -102,7 +111,7 @@ const Setting = () => {
       </View>
 
 
-      <Modalize ref={modalLangRef} adjustToContentHeight key={langModalKey}>
+      <Modalize ref={modalLangRef} adjustToContentHeight key={'country' + langModalKey}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>{t("selectLanguage")}</Text>
 
@@ -120,7 +129,7 @@ const Setting = () => {
             style={styles.languageItem}
             onPress={() => selectLanguage('en')}
           >
-            <Text style={styles.flag}>🇬🇧</Text>
+            <Text style={styles.flag}>🇺🇸</Text>
             <Text style={styles.languageName}>{t("english")}</Text>
             {selectedLang === 'en' && (
               <AntDesign name="check" size={18} color="green" />
@@ -129,27 +138,27 @@ const Setting = () => {
         </View>
       </Modalize>
 
-      <Modalize ref={modalCountryRef} adjustToContentHeight>
+      <Modalize ref={modalCountryRef} adjustToContentHeight key={counModalKey}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>{t("selectCountry")}</Text>
 
           <TouchableOpacity
             style={styles.languageItem}
-            onPress={() => selectCountry('vi')}
+            onPress={() => selectCountry('vn')}
           >
             <Text style={styles.flag}>🇻🇳</Text>
             <Text style={styles.languageName}>{t("vietnam")}</Text>
-            {selectedCountry === 'vi' && (
+            {selectedCountry === 'vn' && (
               <AntDesign name="check" size={18} color="green" />
             )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.languageItem}
-            onPress={() => selectCountry('my')}
+            onPress={() => selectCountry('us')}
           >
-            <Text style={styles.flag}>🇬🇧</Text>
+            <Text style={styles.flag}>🇺🇸</Text>
             <Text style={styles.languageName}>{t("america")}</Text>
-            {selectedCountry === 'my' && (
+            {selectedCountry === 'us' && (
               <AntDesign name="check" size={18} color="green" />
             )}
           </TouchableOpacity>

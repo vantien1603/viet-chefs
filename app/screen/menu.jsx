@@ -55,7 +55,7 @@ const ChefMenu = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchMenusFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -112,8 +112,7 @@ const ChefMenu = () => {
               }
             });
             if (successCount === results.length) {
-              showModal(
-                t("modal.success"),
+              showModal(t("modal.success"),
                 t("success.deleteMenusSuccess"),
                 t("modal.succeeded")
               );
@@ -121,7 +120,7 @@ const ChefMenu = () => {
               showModal(
                 t("modal.error"),
                 t("errors.deleteMenusFailed"),
-                t("modal.failed")
+                "Failed"
               );
             } else {
               showModal(
@@ -130,7 +129,7 @@ const ChefMenu = () => {
                   successCount,
                   errorCount,
                 }),
-                t("modal.failed")
+                "Failed"
               );
             }
           } catch (error) {
@@ -141,7 +140,7 @@ const ChefMenu = () => {
             showModal(
               t("modal.error"),
               t("errors.deleteMenusFailed"),
-              t("modal.failed")
+              "Failed"
             );
           } finally {
             setLoading(false);
@@ -245,7 +244,7 @@ const ChefMenu = () => {
                   <Text style={styles.itemContent}>{item.description}</Text>
                 </Text>
                 <Text numberOfLines={1} ellipsizeMode="tail">
-                  <Text style={styles.itemContentLabel}>{t("price")}: </Text>
+                  <Text style={styles.itemContentLabel}>{t("priceMenu")}: </Text>
                   {item.hasDiscount ? (
                     <Text>
                       <Text

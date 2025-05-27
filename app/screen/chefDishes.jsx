@@ -56,7 +56,7 @@ const ChefDishes = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.fetchDishesError"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.fetchDishesError"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -125,9 +125,9 @@ const ChefDishes = () => {
               }
             });
             if (successCount === results.length) {
-              showModal(t("modal.success"), t("success.deleteAllSuccess"), t("modal.success"));
+              showModal(t("modal.success"), t("success.deleteAllSuccess"),);
             } else if (errorCount === results.length) {
-              showModal(t("modal.error"), t("errors.deleteAllFailed"), t("modal.failed"));
+              showModal(t("modal.error"), t("errors.deleteAllFailed"), "Failed");
             } else {
               showModal(
                 "Warning",
@@ -142,7 +142,7 @@ const ChefDishes = () => {
             if (axios.isCancel(error)) {
               return;
             }
-            showModal(t("modal.error"), t("errors.deleteDishesError"), t("modal.failed"));
+            showModal(t("modal.error"), t("errors.deleteDishesError"), "Failed");
           } finally {
             setLoading(false);
           }
@@ -230,34 +230,22 @@ const ChefDishes = () => {
         }
         renderItem={({ item: dish }) => (
           <TouchableOpacity
-            style={[
-              styles.cardContainer,
-              selectedDishes.includes(dish.id) && styles.selectedCard,
-            ]}
-            onLongPress={() =>
-              user.roleName === "ROLE_CHEF" && handleLongPress(dish.id)
-            }
+            style={[styles.cardContainer, selectedDishes.includes(dish.id) && styles.selectedCard]}
+            onLongPress={() => user.roleName === "ROLE_CHEF" && handleLongPress(dish.id)}
             onPress={() => {
               if (selectionMode) {
                 toggleSelection(dish.id);
               } else {
-                router.push({
-                  pathname: "/screen/dishDetails",
-                  params: { dishId: dish.id },
-                });
+                router.push({ pathname: "/screen/dishDetails", params: { dishId: dish.id } });
               }
             }}
           >
             <View style={styles.card}>
               <View style={styles.imageContainer}>
-                <Image
-                  source={{ uri: dish.imageUrl }}
-                  style={styles.image}
-                  defaultSource={require("../../assets/images/1.jpg")}
-                />
+                <Image source={{ uri: dish.imageUrl }} style={styles.image} defaultSource={require("../../assets/images/1.jpg")} />
               </View>
               <Text style={styles.title}>{dish.name}</Text>
-              <Text style={styles.description}>{dish.description}</Text>
+              <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>{dish.description}</Text>
               <Text style={styles.cookTime}>~ {dish.cookTime} {t("minutes")}</Text>
             </View>
           </TouchableOpacity>

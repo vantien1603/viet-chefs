@@ -40,7 +40,7 @@ const Home = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), t("fetchDataFailed"), t("modal.failed"));
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
         } finally {
             setLoading(false);
         }
@@ -62,7 +62,7 @@ const Home = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), t("fetchDataFailed"), t("modal.failed"));
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
         } finally {
             setLoading(false);
         }
@@ -130,7 +130,7 @@ const Home = () => {
                         { label: t('dishes'), path: '/screen/chefDishes' },
                         { label: t('menu'), path: '/screen/menu' },
                         { label: t('packages'), path: '/screen/packages' },
-                        { label: t('review'), path: '/screen/reviewsChef' },
+                        { label: t('review'), path: '/screen/chefReviews' },
                     ].map((item, index) => (
                         <TouchableOpacity
                             key={index}

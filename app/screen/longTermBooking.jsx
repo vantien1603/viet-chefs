@@ -56,7 +56,7 @@ const LongTermBookingScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.loadAddressFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -78,7 +78,7 @@ const LongTermBookingScreen = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchPackagesFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -108,7 +108,7 @@ const LongTermBookingScreen = () => {
         showModal(
           t("modal.error"),
           t("errors.noPackageSelected"),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }
@@ -116,7 +116,7 @@ const LongTermBookingScreen = () => {
         showModal(
           t("modal.error"),
           t("errors.noAddressSelected"),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }

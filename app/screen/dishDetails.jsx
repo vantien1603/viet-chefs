@@ -94,7 +94,7 @@ const DishDetails = () => {
         showModal(
           t("modal.error"),
           t("errors.fetchFoodTypesFailed"),
-          t("modal.failed")
+          "Failed"
         );
       } finally {
         setLoading(false);
@@ -126,7 +126,7 @@ const DishDetails = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchDishFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -151,7 +151,7 @@ const DishDetails = () => {
           showModal(
             t("modal.error"),
             t("errors.fetchChefFailed"),
-            t("modal.failed")
+            "Failed"
           );
         }
       }
@@ -324,14 +324,14 @@ const DishDetails = () => {
         showModal(
           t("modal.error"),
           t("errors.imageTooLarge"),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.updateDishFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setIsEditing(false);
@@ -357,7 +357,7 @@ const DishDetails = () => {
       showModal(
         t("modal.error"),
         t("errors.deleteDishFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);

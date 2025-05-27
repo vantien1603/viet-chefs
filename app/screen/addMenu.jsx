@@ -66,7 +66,7 @@ const AddMenu = () => {
       showModal(
         t("modal.error"),
         "Có lỗi xảy ra trong quá trình tải danh sách món ăn.",
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -103,7 +103,7 @@ const AddMenu = () => {
     if (!image) errors.image = t("errors.image");
     if (!name.trim()) errors.name = t("errors.name");
     if (!description.trim()) errors.description = t("errors.description");
-    if (seletedDishes.length === 0) errors.dishes = t("errors.dishes");
+    if (seletedDishes.length <= 0) errors.dishes = t("errors.dishes");
 
     if (hasDiscount) {
       if (!discountPercentage || isNaN(discountPercentage)) {
@@ -115,7 +115,7 @@ const AddMenu = () => {
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      showModal(t("modal.error"), t("errors.failedToAdd"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.failedToAdd"), "Failed");
       return;
     }
 
@@ -144,7 +144,7 @@ const AddMenu = () => {
       console.log("res", response.data);
       if (response.status === 200 || response.status === 201) {
         console.log("1111");
-        showModal(t("modal.success"), t("createdMenu"), t("modal.success"));
+        showModal(t("modal.success"), t("createdMenu"),);
         setTimeout(() => {
           router.back();
         }, 1000);
@@ -156,11 +156,7 @@ const AddMenu = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(
-        t("modal.error"),
-        error.response.data.message || t("errors.failedToAdd"),
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), error.response.data.message || t("errors.failedToAdd"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -256,13 +252,16 @@ const AddMenu = () => {
             <TouchableOpacity
               onPress={() => modalizeRef.current?.open()}
               activeOpacity={0.7}
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                borderRadius: 8,
-                backgroundColor: "#FFF8EF",
-              }}
+              style={[
+                {
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 8,
+                  backgroundColor: "#FFF8EF"
+                },
+                fieldErrors.dishes && { borderColor: 'red' }
+              ]}
             >
               <Text
                 style={{
@@ -283,9 +282,9 @@ const AddMenu = () => {
               >
                 {seletedDishes.length > 0
                   ? dishes
-                      .filter((dish) => seletedDishes.includes(dish.id))
-                      .map((dish) => dish.name)
-                      .join(", ")
+                    .filter((dish) => seletedDishes.includes(dish.id))
+                    .map((dish) => dish.name)
+                    .join(", ")
                   : t("noDishesSelected")}
               </Text>
             </TouchableOpacity>

@@ -95,7 +95,7 @@ const OrderHistories = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchBookingsFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
@@ -111,6 +111,7 @@ const OrderHistories = () => {
   }, [index]);
 
   const handleLoadMore = () => {
+    console.log("goi load more")
     if (pageNo < totalPages - 1 && !loading) {
       const currentStatus = statusMap[routes[index].key];
 
@@ -118,13 +119,14 @@ const OrderHistories = () => {
     }
   };
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
-    setBookings([]);
+    // setBookings([]);
     const currentStatus = statusMap[routes[index].key];
-
+    console.log(currentStatus);
     fetchBookingDetails(0, currentStatus, true);
-  }, []);
+  };
+
 
   const renderScene = SceneMap({
     pending: () => (
@@ -176,6 +178,7 @@ const OrderHistories = () => {
         refreshing={refreshing}
         onRefresh={onRefresh}
       />
+
     ),
   });
 

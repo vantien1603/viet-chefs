@@ -57,12 +57,12 @@ const EditFoodScreen = () => {
       description,
     });
 
-    Toast.show({
-      type: t("modal.success"),
-      text1: t("modal.success"),
-      text2: "Food updated successfully",
-      position: "top",
-    });
+    // Toast.show({
+    //   type:,
+    //   text1:,
+    //   text2: "Food updated successfully",
+    //   position: "top",
+    // });
     setErrors({});
   };
 

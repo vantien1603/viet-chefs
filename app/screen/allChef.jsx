@@ -19,6 +19,7 @@ import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../../config/AuthContext";
+import Icon from "react-native-vector-icons/Ionicons";
 
 const AllChefs = () => {
   const [chefs, setChefs] = useState([]);
@@ -66,7 +67,7 @@ const AllChefs = () => {
       }
       setLocation(newLocation);
     } catch (error) {
-      showModal(t("modal.error"), "Có lỗi khi tải địa chỉ.", t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi khi tải địa chỉ.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,7 @@ const AllChefs = () => {
       const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`);
       if (response.status === 200) setFavorite(response.data.content);
     } catch (error) {
-      showModal(t("modal.error"), "Có lỗi khi tải danh sách đầu bếp yêu thích", t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách đầu bếp yêu thích", "Failed");
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ const AllChefs = () => {
 
     } catch (error) {
       if (!axios.isCancel(error)) return;
-      showModal(t("modal.error"), "Có lỗi khi tải danh sách đầu bếp gần bạn.", t("modal.failed"));
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách đầu bếp gần bạn.", "Failed");
     } finally {
       setLoading(false);
       if (isRefresh) setRefresh(false);
@@ -152,22 +153,24 @@ const AllChefs = () => {
           style={styles.chefAvatar}
         />
         <View style={styles.chefMeta}>
-          {[...Array(5)].map((_, index) => {
-            const full = index + 1 <= item.averageRating;
-            const half = item.averageRating >= index + 0.5 && item.averageRating < index + 1;
+          {Array(5).fill().map((_, i) => {
+            const rating = item?.averageRating || 0;
+            let iconName = "star";
+            let color = "#ccc";
+
+            if (i < Math.floor(rating)) {
+              color = "#f5a623";
+            } else if (i < rating) {
+              iconName = "star-half";
+              color = "#f5a623";
+            }
 
             return (
-              <Ionicons
-                key={index}
-                name={
-                  full
-                    ? "star"
-                    : half
-                      ? "star-half"
-                      : "star-outline"
-                }
-                size={16}
-                color="#f5b50a"
+              <Icon
+                key={i}
+                name={iconName}
+                size={15}
+                color={color}
               />
             );
           })}

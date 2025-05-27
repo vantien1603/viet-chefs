@@ -155,7 +155,7 @@ const LongTermSelectBooking = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchBookingFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -200,7 +200,7 @@ const LongTermSelectBooking = () => {
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.fetchAvailabilityFailed"),
-        t("modal.failed")
+        "Failed"
       );
       setAvailability({});
     } finally {
@@ -211,7 +211,7 @@ const LongTermSelectBooking = () => {
       showModal(
         t("modal.error"),
         t("errors.selectAtLeastOneWeekday"),
-        t("modal.failed")
+        "Failed"
       );
       return;
     }
@@ -241,15 +241,14 @@ const LongTermSelectBooking = () => {
         showModal(
           t("modal.error"),
           t("errors.cannotSelectEnoughDays"),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }
     }
 
     setSelectedDates(resultDates);
-    showModal(
-      t("modal.success"),
+    showModal(t("modal.success"),
       t("datesSelectedWithRepeat", { count: resultDates.length }),
       t("modal.succeeded")
     );
@@ -379,7 +378,7 @@ const LongTermSelectBooking = () => {
           showModal(
             t("modal.error"),
             t("errors.selectDishesForAllDays"),
-            t("modal.failed")
+            "Failed"
           );
           return;
         }
@@ -389,7 +388,7 @@ const LongTermSelectBooking = () => {
         showModal(
           t("modal.error"),
           t("errors.selectStartTime"),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }
@@ -398,7 +397,7 @@ const LongTermSelectBooking = () => {
         showModal(
           t("modal.error"),
           t("errors.timeNotAvailable", { time: startTime[day], date: day }),
-          t("modal.failed")
+          "Failed"
         );
         return;
       }

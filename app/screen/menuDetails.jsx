@@ -67,7 +67,7 @@ const MenuDetails = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", t("modal.failed"));
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -88,7 +88,7 @@ const MenuDetails = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải danh sách món ăn.", t("modal.failed"));
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải danh sách món ăn.", "Failed");
         } finally {
             setLoading(false);
         }
@@ -126,7 +126,7 @@ const MenuDetails = () => {
             // console.log("payload", payload);
             const response = await axiosInstanceForm.put(`/menus/${id}`, formData);
             if (response.status === 200) {
-                showModal(t("modal.success"), "Cập nhật menu hành công", t("modal.success"));
+                showModal(t("modal.success"), "Cập nhật menu hành công",);
             }
 
             await fetchMenuDetails();
@@ -139,7 +139,7 @@ const MenuDetails = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình cập nhật.", t("modal.failed"));
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình cập nhật.", "Failed");
         } finally {
             setLoadingAction(false);
         }
@@ -170,7 +170,7 @@ const MenuDetails = () => {
         try {
             const response = await axiosInstance.delete(`/menus/${id}`);
             if (response.status === 204) {
-                showModal(t("modal.success"), "Delete menu successfully", t("modal.success"));
+                showModal(t("modal.success"), "Delete menu successfully",);
                 router.replace("screen/menu")
             }
         } catch (error) {
@@ -180,7 +180,7 @@ const MenuDetails = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xóa menu.", t("modal.failed"));
+            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xóa menu.", "Failed");
         } finally {
             setLoadingAction(false);
         }

@@ -53,11 +53,7 @@ const ViewDetailBookingDetails = () => {
         `/bookings/booking-details/${bookingDetailsId}/complete-customer`
       );
       if (response.status === 200) {
-        Toast.show({
-          type: t("modal.success"),
-          text1: t("modal.success"),
-          text2: "Confirm success",
-        });
+        showModal(t("modal.success"),t("modal.success"))
         setBookingDetails({ ...bookingDetails, status: "COMPLETED" });
       }
     } catch (error) {
@@ -65,11 +61,7 @@ const ViewDetailBookingDetails = () => {
         "Error confirming completion:",
         error?.response?.data?.message
       );
-      Toast.show({
-        type: t("modal.error"),
-        text1: t("modal.error"),
-        text2: error?.response?.data?.message || "Failed to confirm",
-      });
+      showModal(t("modal.error"), error?.response?.data?.message || "Failed to confirm" , "Failed")
     }
   };
 
@@ -116,10 +108,9 @@ const ViewDetailBookingDetails = () => {
       );
 
       if (response.status === 200) {
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("reportSuccess"),
-          t("modal.success")
+         
         );
 
         try {
@@ -137,7 +128,7 @@ const ViewDetailBookingDetails = () => {
           if (axios.isCancel(fetchError)) {
             return;
           }
-          showModal(t("modal.error"), t("fetchBookingFailed"), t("modal.failed"));
+          showModal(t("modal.error"), t("fetchBookingFailed"), "Failed");
         }
 
         closeReportModal();
@@ -147,7 +138,7 @@ const ViewDetailBookingDetails = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("fetchReportFailed"), t("modal.failed"));
+      showModal(t("modal.error"), t("fetchReportFailed"), "Failed");
     }
   };
 
@@ -499,7 +490,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: "#EBE5DD",
@@ -507,7 +498,8 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
   },
   button: {
-    flex: 1,
+    // flex: 1,
+    width: '40%',
     marginHorizontal: 5,
     paddingVertical: 12,
     borderRadius: 8,

@@ -38,8 +38,7 @@ const ChefDetail = () => {
   const modalizeRef = useRef(null);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
-  const navigation = useNavigation();
-  const { setChefId, setRouteBefore, clearSelection } = useSelectedItems();
+  const { setChefId, setRouteBefore, setChefLat, setChefLong, clearSelection } = useSelectedItems();
   const [modalKey, setModalKey] = useState(1);
   const segment = useSegments();
   const { user, isGuest } = useContext(AuthContext);
@@ -69,6 +68,7 @@ const ChefDetail = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`/chefs/${chefId}`);
+      console.log(response.data)
       if (response.status === 200) {
         setChefs(response.data);
         console.log("chef data", response.data);
@@ -78,11 +78,7 @@ const ChefDetail = () => {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
-      showModal(
-        t("modal.error"),
-        t("errors.fetchChefError"),
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), t("errors.fetchChefError"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -100,11 +96,8 @@ const ChefDetail = () => {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
-      showModal(
-        t("modal.error"),
-        t("errors.fetchDishesError"),
-        t("modal.failed")
-      );
+      showModal(t("modal.error"), t("errors.fetchDishesError"), "Failed");
+
     } finally {
       setLoading(false);
     }
@@ -157,7 +150,7 @@ const ChefDetail = () => {
       const errorMessage =
         err.response?.data?.message ||
         t("errors.toggleFavoriteError", { action, preposition });
-      showModal(t("modal.error"), errorMessage, t("modal.failed"));
+      showModal(t("modal.error"), errorMessage, "Failed");
     } finally {
       setFavoriteLoading(false);
     }
@@ -253,12 +246,12 @@ const ChefDetail = () => {
                               let iconName = "star";
                               let color = "#ccc";
 
-                              if (i < Math.floor(rating)) {
-                                color = "#f5a623";
-                              } else if (i < rating) {
-                                iconName = "star-half-full";
-                                color = "#f5a623";
-                              }
+                            if (i < Math.floor(rating)) {
+                              color = "#f5a623";
+                            } else if (i < rating) {
+                              iconName = "star-half";
+                              color = "#f5a623";
+                            }
 
                               return (
                                 <Icon
@@ -308,6 +301,7 @@ const ChefDetail = () => {
                       <Text style={styles.label}>{t("address")}: </Text>
                       <Text style={styles.value}>{chefs?.address}</Text>
                     </Text>
+
                     <Text style={styles.section}>
                       <Text style={styles.label}>Email: </Text>
                       <Text style={styles.value}>{chefs?.user?.email}</Text>
@@ -446,9 +440,7 @@ const ChefDetail = () => {
                       {t("tooltip.title")}
                     </Text>
                     <Text style={{ marginBottom: 4 }}>
-                      <Text style={{ fontFamily: "nunito-bold" }}>
-                        {t("tooltip.regularBooking")}
-                      </Text>
+                      <Text style={{ fontWeight: 'bold' ,fontFamily: "nunito-bold" }}>{t("tooltip.regularBooking")}</Text> 
                     </Text>
                     <Text>
                       <Text style={{ fontFamily: "nunito-bold" }}>
@@ -483,6 +475,8 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               clearSelection();
               setChefId(chefId);
+              setChefLat(chefs.latitude);
+              setChefLong(chefs.longitude);
               setRouteBefore(segment);
               SecureStore.setItem("firstChef", chefId);
               router.replace("/screen/selectFood");
@@ -501,6 +495,8 @@ const ChefDetail = () => {
               modalizeRef.current?.close();
               clearSelection();
               setChefId(chefId);
+              setChefLat(chefs.latitude);
+              setChefLong(chefs.longitude);
               SecureStore.setItem("firstChef", chefId);
               router.replace("/screen/longTermBooking");
             }}

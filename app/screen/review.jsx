@@ -51,7 +51,7 @@ const ReviewScreen = () => {
       showModal(
         t("modal.error"),
         t("errors.fetchCriteriaFailed"),
-        t("modal.failed")
+        "Failed"
       );
     }
   };
@@ -74,7 +74,7 @@ const ReviewScreen = () => {
     );
 
     if (!hasAnyRating) {
-      showModal(t("modal.error"), t("errors.noRating"), t("modal.failed"));
+      showModal(t("modal.error"), t("errors.noRating"), "Failed");
       setLoading(false);
       return;
     }
@@ -89,8 +89,7 @@ const ReviewScreen = () => {
       };
       const response = await axiosInstance.post("/reviews", payload);
       if (response.status === 200)
-        showModal(
-          t("modal.success"),
+        showModal(t("modal.success"),
           t("submitReviewSuccess"),
           t("modal.succeeded")
         );
@@ -102,11 +101,11 @@ const ReviewScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình nộp đánh giá.", t("modal.failed"));
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình nộp đánh giá.", "Failed");
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.submitReviewFailed"),
-        t("modal.failed")
+        "Failed"
       );
     } finally {
       setLoading(false);
