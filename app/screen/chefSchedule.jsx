@@ -12,9 +12,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { TabView, TabBar } from 'react-native-tab-view';
+import { TabView, TabBar } from "react-native-tab-view";
 import useAxios from "../../config/AXIOS_API";
 import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -24,7 +24,6 @@ import { useRouter } from "expo-router";
 import { t } from "i18next";
 import axios from "axios";
 import { useConfirmModal } from "../../context/commonConfirm";
-
 
 const dayInWeek = [
   { id: 0, label: "Mon", full: "Monday" },
@@ -36,7 +35,6 @@ const dayInWeek = [
   { id: 6, label: "Sun", full: "Sunday" },
 ];
 
-
 export default function ChefScheduleScreen() {
   const [selectedDays, setSelectedDays] = useState([]);
   const [slots, setSlots] = useState({});
@@ -46,7 +44,12 @@ export default function ChefScheduleScreen() {
   const [selectedSlot, setSelectedSlot] = useState({});
   const [showPicker, setShowPicker] = useState(false);
   const [currentField, setCurrentField] = useState(null);
-  const [pickerState, setPickerState] = useState({ show: false, mode: "start", dayId: null, index: null });
+  const [pickerState, setPickerState] = useState({
+    show: false,
+    mode: "start",
+    dayId: null,
+    index: null,
+  });
   const { showModal } = useCommonNoification();
   const [addModalKey, setAddModalKey] = useState(0);
   const [updateModalKey, setUpdateModalKey] = useState(0);
@@ -55,21 +58,20 @@ export default function ChefScheduleScreen() {
   const { showConfirm } = useConfirmModal();
 
   const openModal = (slot) => {
-    setUpdateModalKey(prev => prev + 1);
+    setUpdateModalKey((prev) => prev + 1);
     setSelectedSlot(slot);
     setShowPicker(false);
     setTimeout(() => {
       modalizeRef.current?.open();
     }, 100);
-
   };
 
   const openModalAdd = () => {
-    setAddModalKey(prev => prev + 1);
+    setAddModalKey((prev) => prev + 1);
     setTimeout(() => {
       modalizeAddRef.current?.open();
     }, 100);
-  }
+  };
 
   const toggleDay = (dayId) => {
     setSelectedDays((prev) => {
@@ -90,16 +92,19 @@ export default function ChefScheduleScreen() {
   };
 
   const handleAddSlot = (dayId) => {
-    const existing = schedules.filter(c => c.dayOfWeek === dayId).length || 0;
+    const existing = schedules.filter((c) => c.dayOfWeek === dayId).length || 0;
     const currentSlots = slots[dayId];
     console.log("slott", slots);
     if (currentSlots.length + existing >= 3) {
-      Alert.alert("Thông báo", "Tối đa 3 slot cho mỗi ngày.");
+      Alert.alert(t("maxSlotsAlertTitle"), t("maxSlotsAlertMessage"));
       return;
     }
     setSlots((prev) => ({
       ...prev,
-      [dayId]: [...currentSlots, { startTime: new Date(), endTime: new Date() }],
+      [dayId]: [
+        ...currentSlots,
+        { startTime: new Date(), endTime: new Date() },
+      ],
     }));
   };
 
@@ -111,10 +116,7 @@ export default function ChefScheduleScreen() {
 
   const showPickerAdd = (dayId, index, mode) => {
     setPickerState({ show: true, mode, dayId, index });
-
   };
-
-
 
   const onTimeChangeAdd = (event, selectedDate) => {
     if (event.type === "dismissed") {
@@ -124,7 +126,8 @@ export default function ChefScheduleScreen() {
 
     const { dayId, index, mode } = pickerState;
     const updated = [...slots[dayId]];
-    updated[index][mode === "start" ? "startTime" : "endTime"] = selectedDate || new Date();
+    updated[index][mode === "start" ? "startTime" : "endTime"] =
+      selectedDate || new Date();
     setSlots((prev) => ({ ...prev, [dayId]: updated }));
     setPickerState({ ...pickerState, show: false });
   };
@@ -166,12 +169,11 @@ export default function ChefScheduleScreen() {
     setCurrentField(null);
   };
 
-
   const convertToPayload = (slott) => {
     const result = [];
 
     Object.entries(slott).forEach(([day, slots]) => {
-      slots.forEach(slot => {
+      slots.forEach((slot) => {
         const start = new Date(slot.startTime);
         const end = new Date(slot.endTime);
 
@@ -185,7 +187,7 @@ export default function ChefScheduleScreen() {
           });
 
         result.push({
-          dayOfWeek: (day),
+          dayOfWeek: day,
           startTime: formatTime(start),
           endTime: formatTime(end),
         });
@@ -195,7 +197,6 @@ export default function ChefScheduleScreen() {
     return result;
   };
 
-
   const handleAddNewSlot = async () => {
     try {
       let successCount = 0;
@@ -203,7 +204,9 @@ export default function ChefScheduleScreen() {
       if (!slots) return;
       const payloads = convertToPayload(slots);
       console.log(payloads);
-      const promises = payloads.map((item) => axiosInstance.post("/chef-schedules", item));
+      const promises = payloads.map((item) =>
+        axiosInstance.post("/chef-schedules", item)
+      );
       const results = await Promise.allSettled(promises);
       results.forEach((result, index) => {
         const payload = payloads[index];
@@ -213,7 +216,7 @@ export default function ChefScheduleScreen() {
         if (result.status === "fulfilled") {
           successCount++;
           console.log(` Slot ${index + 1} thành công`, result.value.data);
-          showModal("Success", "Success")
+          showModal(t("modal.success"),);
         } else {
           errorCount++;
           console.error(` Tạo slot ở ${dayName} thất bại`, result.reason);
@@ -221,13 +224,16 @@ export default function ChefScheduleScreen() {
       });
 
       if (successCount === results.length) {
-        showModal("Success", "All slot created successfully.", "Success");
+        showModal(t("modal.success"), t("addAllSuccess"),);
       } else if (errorCount === results.length) {
-        showModal("Error", "All slot created failed.", "Failed");
+        showModal(t("modal.error"), t("addAllFailed"), "Failed");
       } else {
-        showModal("Warning", `Some slot created failed. Number of slot success: ${successCount}, TNumber of slot failed: ${errorCount}`, "Warning");
+        showModal(
+          "Warning",
+          t("errors.addSomeFailed", { successCount, errorCount }),
+          "Warning"
+        );
       }
-
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -235,31 +241,33 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", error.response.data, "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.addAllFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
-  }
-
+  };
 
   const handleUpdateSlot = async () => {
     console.log("seleceeteeteeet", selectedSlot);
     try {
       const updateData = {
-        "id": selectedSlot.id,
-        "dayOfWeek": selectedSlot.dayOfWeek,
-        "startTime": selectedSlot.startTime,
-        "endTime": selectedSlot.endTime
-      }
+        id: selectedSlot.id,
+        dayOfWeek: selectedSlot.dayOfWeek,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+      };
       const response = await axiosInstance.put("/chef-schedules", updateData);
       if (response.status === 200) {
         setShowPicker(false);
         setSelectedSlot(null);
         modalizeRef.current?.close();
-        showModal("Success", "Cập nhật lịch làm việc thành công.", "Success");
+        showModal(t("modal.success"), t("updateSuccess"),);
         fetchSchedule();
       }
-
     } catch (error) {
       if (error.response?.status === 401) {
         return;
@@ -267,21 +275,23 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật lịch làm việc", "Failed");
+      showModal(t("modal.error"), t("errors.updateFailed"), "Failed");
     } finally {
       setLoading(false);
     }
-  }
-
+  };
 
   const handleDeleteSlot = async () => {
     try {
-      const response = await axiosInstance.delete(`/chef-schedules/${selectedSlot.id}`);
+      const response = await axiosInstance.delete(
+        `/chef-schedules/${selectedSlot.id}`
+      );
       if (response.status === 200) {
         setShowPicker(false);
         setSelectedSlot(null);
         modalizeRef.current?.close();
         console.log("xoa roi nha");
+        showModal(t("modal.success"), t("deleteSuccess"),);
         fetchSchedule();
       }
     } catch (error) {
@@ -291,11 +301,11 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xóa lịch làm việc", "Failed");
+      showModal(t("modal.error"), t("errors.deleteFailed"), "Failed");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const [schedules, setSchedules] = useState({});
   const [loading, setLoading] = useState(false);
@@ -303,8 +313,6 @@ export default function ChefScheduleScreen() {
   const [routes] = useState(
     dayInWeek.map((day) => ({ key: day.full, title: day.full }))
   );
-
-
 
   const fetchSchedule = async () => {
     setLoading(true);
@@ -318,8 +326,13 @@ export default function ChefScheduleScreen() {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal("Error", "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải lịch làm việc", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message ||
+          t("errors.fetchScheduleFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -333,7 +346,7 @@ export default function ChefScheduleScreen() {
     const day = dayInWeek.find((d) => d.full === route.title);
     const dayId = day?.id;
     const slots = (Array.isArray(schedules) ? schedules : []).filter(
-      slot => slot.dayOfWeek === dayId
+      (slot) => slot.dayOfWeek === dayId
     );
 
     return (
@@ -379,11 +392,19 @@ export default function ChefScheduleScreen() {
   }
 
   return (
-    <GestureHandlerRootView >
+    <GestureHandlerRootView>
       <SafeAreaView style={commonStyles.container}>
-        <Header title={"Schedule"} rightIcon={"add"} onRightPress={() => openModalAdd()} />
+        <Header
+          title={t("schedule")}
+          rightIcon={"add"}
+          onRightPress={() => openModalAdd()}
+        />
         {loading ? (
-          <ActivityIndicator size="large" color="#A9411D" style={{ marginTop: 20 }} />
+          <ActivityIndicator
+            size="large"
+            color="#A9411D"
+            style={{ marginTop: 20 }}
+          />
         ) : (
           <TabView
             navigationState={{ index, routes }}
@@ -397,10 +418,10 @@ export default function ChefScheduleScreen() {
                 activeColor="#9C583F"
                 indicatorStyle={{ backgroundColor: "#A9411D" }}
                 style={{
-                  backgroundColor: '#EBE5DD',
+                  backgroundColor: "#EBE5DD",
                   elevation: 0,
                   shadowOpacity: 0,
-                  borderBottomWidth: 0
+                  borderBottomWidth: 0,
                 }}
                 labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
                 tabStyle={{ paddingVertical: 0, width: 130 }}
@@ -409,26 +430,55 @@ export default function ChefScheduleScreen() {
           />
         )}
         <View style={styles.floatingActions}>
-          <TouchableOpacity style={[styles.floatingButton, { backgroundColor: "#FFCDD2", flexDirection: 'row', alignItems: 'center' }]} onPress={() => route.push("/screen/scheduleBlocked")}>
+          <TouchableOpacity
+            style={[
+              styles.floatingButton,
+              {
+                backgroundColor: "#FFCDD2",
+                flexDirection: "row",
+                alignItems: "center",
+              },
+            ]}
+            onPress={() => route.push("/screen/scheduleBlocked")}
+          >
             <MaterialIcons name="event-busy" size={30} color="red" />
-            <Text>Busy date</Text>
+            <Text>{t("busyDate")}</Text>
           </TouchableOpacity>
         </View>
 
-
-        <Modalize ref={modalizeRef} adjustToContentHeight key={`update-${updateModalKey}`}>
+        <Modalize
+          ref={modalizeRef}
+          adjustToContentHeight
+          key={`update-${updateModalKey}`}
+        >
           <View style={styles.modalContent}>
             {selectedSlot ? (
               <>
                 <View style={styles.section1}>
                   <Text style={styles.sectionTitle}>{t("update")}</Text>
 
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeStart")}</Text>
-                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeEnd")}</Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                      {t("timeStart")}
+                    </Text>
+                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                      {t("timeEnd")}
+                    </Text>
                   </View>
 
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5, marginVertical: 10 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      paddingHorizontal: 5,
+                      marginVertical: 10,
+                    }}
+                  >
                     <TouchableOpacity
                       onPress={() => handleOpenPicker("startTime")}
                       style={styles.timeBox}
@@ -440,13 +490,10 @@ export default function ChefScheduleScreen() {
                       />
                     </TouchableOpacity>
 
-                    <Text >
-                      ----------------------------
-                    </Text>
+                    <Text>----------------------------</Text>
 
                     <TouchableOpacity
                       onPress={() => handleOpenPicker("endTime")}
-
                       style={styles.timeBox}
                     >
                       <TextInput
@@ -454,20 +501,32 @@ export default function ChefScheduleScreen() {
                         value={selectedSlot.endTime}
                         editable={false}
                       />
-
                     </TouchableOpacity>
                   </View>
 
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-evenly",
+                    }}
+                  >
                     <TouchableOpacity
                       style={styles.updateButton}
-                      onPress={() => requireAuthAndNetWork(() => handleUpdateSlot())}
+                      onPress={() =>
+                        requireAuthAndNetWork(() => handleUpdateSlot())
+                      }
                     >
                       <Text style={styles.buttonText}>{t("save")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.deleteButton}
-                      onPress={() => showConfirm("Confirm delete", "Are you sure want to delete this slot", () => requireAuthAndNetWork(() => handleDeleteSlot()))}
+                      onPress={() =>
+                        showConfirm(
+                          "Confirm delete",
+                          "Are you sure want to delete this slot",
+                          () => requireAuthAndNetWork(() => handleDeleteSlot())
+                        )
+                      }
                     >
                       <Text style={styles.buttonText}>{t("delete")}</Text>
                     </TouchableOpacity>
@@ -494,9 +553,16 @@ export default function ChefScheduleScreen() {
           )}
         </Modalize>
 
-        <Modalize ref={modalizeAddRef} adjustToContentHeight key={`add-${addModalKey}`} >
+        <Modalize
+          ref={modalizeAddRef}
+          adjustToContentHeight
+          key={`add-${addModalKey}`}
+        >
           <View style={styles.modalContentAdd}>
-            <ScrollView style={{ padding: 10 }} contentContainerStyle={{ paddingBottom: 100 }}>
+            <ScrollView
+              style={{ padding: 10 }}
+              contentContainerStyle={{ paddingBottom: 100 }}
+            >
               <View style={{ marginBottom: 20 }}>
                 <View style={styles.daySelector}>
                   {dayInWeek.map((day) => (
@@ -505,10 +571,18 @@ export default function ChefScheduleScreen() {
                       onPress={() => toggleDay(day.id)}
                       style={[
                         styles.dayButton,
-                        selectedDays.includes(day.id) && styles.dayButtonSelected,
+                        selectedDays.includes(day.id) &&
+                          styles.dayButtonSelected,
                       ]}
                     >
-                      <Text style={{ fontWeight: "bold", color: selectedDays.includes(day.id) ? "white" : "black" }}>
+                      <Text
+                        style={{
+                          fontWeight: "bold",
+                          color: selectedDays.includes(day.id)
+                            ? "white"
+                            : "black",
+                        }}
+                      >
                         {day.label}
                       </Text>
                     </TouchableOpacity>
@@ -518,16 +592,20 @@ export default function ChefScheduleScreen() {
 
               {selectedDays.map((dayId) => {
                 const dayLabel = dayInWeek.find((d) => d.id === dayId)?.full;
-                const oldSlots = schedules?.filter(c => c.dayOfWeek === dayId) || [];
+                const oldSlots =
+                  schedules?.filter((c) => c.dayOfWeek === dayId) || [];
 
                 return (
                   <View key={dayId} style={styles.section2}>
                     <Text style={styles.sectionTitle}>{dayLabel}</Text>
                     {oldSlots.map((slot, index) => (
                       <View key={`old-${index}`} style={styles.slotRow}>
-
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>{t("startTime")}</Text>
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
+                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>
+                            {t("startTime")}
+                          </Text>
 
                           <TextInput
                             style={{ fontWeight: "bold", fontSize: 15 }}
@@ -537,22 +615,28 @@ export default function ChefScheduleScreen() {
                         </View>
                         <Text>~</Text>
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
                           <TextInput
                             style={{ fontWeight: "bold", fontSize: 15 }}
-                            value={(slot.endTime)}
+                            value={slot.endTime}
                             editable={false}
                           />
-                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>{t("endTime")}</Text>
-
+                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>
+                            {t("endTime")}
+                          </Text>
                         </View>
                       </View>
                     ))}
                     {slots[dayId]?.map((slot, index) => (
                       <View key={index} style={styles.slotRow}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>{t("startTime")}</Text>
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
+                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>
+                            {t("startTime")}
+                          </Text>
                           <TouchableOpacity
                             onPress={() => showPickerAdd(dayId, index, "start")}
                           >
@@ -564,9 +648,10 @@ export default function ChefScheduleScreen() {
                           </TouchableOpacity>
                         </View>
 
-
                         <Text>~</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
                           <TouchableOpacity
                             onPress={() => showPickerAdd(dayId, index, "end")}
                           >
@@ -576,14 +661,20 @@ export default function ChefScheduleScreen() {
                               editable={false}
                             />
                           </TouchableOpacity>
-                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>{t("endTime")}</Text>
-
+                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>
+                            {t("endTime")}
+                          </Text>
                         </View>
 
-
                         {slots[dayId].length > 1 && (
-                          <TouchableOpacity onPress={() => handleRemoveSlot(dayId, index)}>
-                            <MaterialIcons name="cancel" size={24} color="black" />
+                          <TouchableOpacity
+                            onPress={() => handleRemoveSlot(dayId, index)}
+                          >
+                            <MaterialIcons
+                              name="cancel"
+                              size={24}
+                              color="black"
+                            />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -593,7 +684,9 @@ export default function ChefScheduleScreen() {
                         style={styles.addSlotButton}
                         onPress={() => handleAddSlot(dayId)}
                       >
-                        <Text style={{ color: "white", fontWeight: "bold" }}>+ {t("addSlot")}</Text>
+                        <Text style={{ color: "white", fontWeight: "bold" }}>
+                          + {t("addSlot")}
+                        </Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -604,7 +697,7 @@ export default function ChefScheduleScreen() {
                 <DateTimePicker
                   value={
                     slots[pickerState.dayId][pickerState.index][
-                    pickerState.mode === "start" ? "startTime" : "endTime"
+                      pickerState.mode === "start" ? "startTime" : "endTime"
                     ]
                   }
                   mode="time"
@@ -631,7 +724,9 @@ export default function ChefScheduleScreen() {
               {loading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                <Text
+                  style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+                >
                   {t("save")}
                 </Text>
               )}
@@ -640,7 +735,6 @@ export default function ChefScheduleScreen() {
         </Modalize>
       </SafeAreaView>
     </GestureHandlerRootView>
-
   );
 }
 
@@ -708,14 +802,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
-    textAlign: "center"
+    textAlign: "center",
   },
   slotRow: {
     paddingHorizontal: 10,
     flexDirection: "row",
     marginBottom: 20,
     alignItems: "center",
-    justifyContent: 'space-between'
+    justifyContent: "space-between",
   },
   input: {
     // flex: 1,
@@ -742,7 +836,6 @@ const styles = StyleSheet.create({
   },
   modalContentAdd: {
     height: 800,
-
   },
   slotDetailText: {
     fontSize: 18,
@@ -784,7 +877,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 6,
-    alignItems: 'center'
+    alignItems: "center",
   },
 
   floatingText: {

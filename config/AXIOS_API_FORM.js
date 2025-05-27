@@ -35,16 +35,6 @@ const useAxiosFormData = () => {
 
   axiosInstance.interceptors.request.use(
     async (config) => {
-      if (config.data instanceof FormData) {
-        config.headers["Content-Type"] = "multipart/form-data";
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
-
-  axiosInstance.interceptors.request.use(
-    async (config) => {
       if (!isConnected) {
         showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại kết nối và khởi động lại ứng dụng.");
         throw new axios.Cancel("Không có mạng");
@@ -66,14 +56,6 @@ const useAxiosFormData = () => {
         const originalRequest = error.config;
         return retryRequest(originalRequest);
       }
-      return Promise.reject(error);
-    }
-  );
-
-
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
       if (error.response?.status === 401) {
         showModalLogin("Phiên đăng nhập đã hết hạn", "Vui lòng đăng nhập lại để tiếp tục.", true);
         logoutNoDirect?.();
@@ -81,8 +63,6 @@ const useAxiosFormData = () => {
       return Promise.reject(error);
     }
   );
-
-
 
   return axiosInstance;
 };

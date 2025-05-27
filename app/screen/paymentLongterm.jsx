@@ -56,7 +56,7 @@ const PaymentLongterm = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const fetchBalanceInWallet = async () => {
     setLoading(true);
@@ -66,7 +66,11 @@ const PaymentLongterm = () => {
       setBalance(wallet.balance);
     } catch (error) {
       if (axios.isCancel(error) || error.response.status === 401) return;
-      showModal("Error", t("errorFetchingBalance"), "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchBalanceFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -90,7 +94,6 @@ const PaymentLongterm = () => {
       pinInputRefs[0].current?.focus();
     }
   };
-
 
   const handleOpenPinModal = () => {
     modalizeRef.current?.open();
@@ -131,49 +134,64 @@ const PaymentLongterm = () => {
   };
 
   const handleConfirmDeposit = async () => {
-
     if (balance < totalPrice) {
-      showModal("Error", t("notEnoughBalance"), "Failed", null,
+      showModal(
+        t("modal.error"),
+        t("errors.notEnoughBalance"),
+        "Failed",
+        null,
         [
           {
             label: "Cancel",
             onPress: () => console.log("Cancel pressed"),
-            style: { backgroundColor: "#ccc", borderColor: "#ccc" }
+            style: { backgroundColor: "#ccc", borderColor: "#ccc" },
           },
           {
             label: "Deposit",
             onPress: () => router.push("/screen/wallet"),
-            style: { backgroundColor: "#383737", borderColor: "#383737" }
-          }
-        ]);
+            style: { backgroundColor: "#383737", borderColor: "#383737" },
+          },
+        ]
+      );
       return;
     }
     setLoading(true);
     try {
-      const response = await axiosInstance.post(`/bookings/${bookingId}/deposit`);
+      const response = await axiosInstance.post(
+        `/bookings/${bookingId}/deposit`
+      );
       if (response.status === 200 || response.status === 201) {
-        showModal("Success", "Đặt cọc đã được xác nhận!", "Success");
+        await fetchBalanceInWallet();
+        showModal(t("modal.success"), t("depositSuccess"), t("modal.succeeded"));
         setIsPaySuccess(true);
       }
     } catch (error) {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      if (error.response.data.message === "Insufficient balance in the wallet.") {
-        showModal(t("error"), error.response?.data.message, "Failed", null, [
-          {
-            label: "Cancel",
-            onPress: () => console.log("Cancel pressed"),
-            style: { backgroundColor: "#ccc" }
-          },
-          {
-            label: "Top up",
-            onPress: () => router.push("/screen/wallet"),
-            style: { backgroundColor: "#A64B2A" }
-          }
-        ])
+      if (
+        error.response.data.message === "Insufficient balance in the wallet."
+      ) {
+        showModal(
+          t("modal.error"),
+          t("errors.insufficientBalance"),
+          "Failed",
+          null,
+          [
+            {
+              label: t("cancel"),
+              onPress: () => console.log("Cancel pressed"),
+              style: { backgroundColor: "#ccc" },
+            },
+            {
+              label: t("topUp"),
+              onPress: () => router.push("/screen/wallet"),
+              style: { backgroundColor: "#A64B2A" },
+            },
+          ]
+        );
       } else {
-        showModal(t("error"), error.response?.data.message, "Failed");
+        showModal(t("modal.error"), t("errors.depositFailed"), "Failed");
       }
     } finally {
       setLoading(false);
@@ -181,28 +199,28 @@ const PaymentLongterm = () => {
   };
 
   const handleBack = () => {
-    router.replace('/screen/reviewBooking');
-  }
+    router.replace("/screen/reviewBooking");
+  };
 
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={commonStyles.container}>
-        <Header title="Thanh toán đặt cọc" onLeftPress={() => handleBack()} />
+        <Header title={t("depositPayment")} onLeftPress={() => handleBack()} />
         <ScrollView style={commonStyles.containerContent}>
-          <Text style={styles.title}>Xác nhận đặt cọc</Text>
+          <Text style={styles.title}>{t("confirmDeposit")}</Text>
           <View style={styles.summaryContainer}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tổng tiền đặt chỗ:</Text>
+              <Text style={styles.summaryLabel}>{t("totalBookingAmount")}:</Text>
               <Text style={styles.summaryValue}>${totalPrice.toFixed(2)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Số tiền đặt cọc (5%):</Text>
+              <Text style={styles.summaryLabel}>{t("depositAmount")}:</Text>
               <Text style={[styles.summaryValue, styles.depositValue]}>
                 ${depositAmount.toFixed(2)}
               </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Số tiền còn lại:</Text>
+              <Text style={styles.summaryLabel}>{t("remainingAmount")}:</Text>
               <Text style={styles.summaryValue}>
                 ${(totalPrice - depositAmount).toFixed(2)}
               </Text>
@@ -210,12 +228,10 @@ const PaymentLongterm = () => {
           </View>
 
           <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>Thông tin đặt chỗ:</Text>
+            <Text style={styles.infoLabel}>{t("bookingInfo")}:</Text>
+            <Text style={styles.infoValue}>{t("location")}: {location || "N/A"}</Text>
             <Text style={styles.infoValue}>
-              Địa điểm: {location || "N/A"}
-            </Text>
-            <Text style={styles.infoValue}>
-              Số ngày: {selectedDates?.length || 0}
+              {t("numberOfDays")}: {selectedDates?.length || 0}
             </Text>
           </View>
 
@@ -227,17 +243,21 @@ const PaymentLongterm = () => {
             style={styles.confirmButton}
             onPress={() => router.replace("/(tabs)/home")}
           >
-            <Text style={styles.confirmButtonText}>Quay về trang chủ</Text>
+            <Text style={styles.confirmButtonText}>{t("backToHome")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.confirmButton}
             // onPress={handleConfirmDeposit}
             onPress={() =>
-              showConfirm("Complete payment", "Are you sure you want to pay?", () => hasPassword ? handleOpenPinModal() : handleConfirmDeposit())
+              showConfirm(
+                t("confirmDepositTitle"),
+                t("confirmDepositMessage"),
+                () => (hasPassword ? handleOpenPinModal() : handleConfirmDeposit())
+              )
             }
             disabled={loading || isPaySuccess}
           >
-            <Text style={styles.confirmButtonText}>Xác nhận đặt cọc</Text>
+            <Text style={styles.confirmButtonText}>{t("confirmDepositButton")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -287,8 +307,20 @@ const PaymentLongterm = () => {
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
-            <TouchableOpacity style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#A64B2A', borderRadius: 20 }} onPress={() => accessWallet()}>
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}>Thanh toán</Text>
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                backgroundColor: "#A64B2A",
+                borderRadius: 20,
+              }}
+              onPress={() => accessWallet()}
+            >
+              <Text
+                style={{ fontSize: 16, color: "white", fontWeight: "bold" }}
+              >
+                {t("pay")}
+              </Text>
             </TouchableOpacity>
           </View>
         </Modalize>

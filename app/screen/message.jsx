@@ -22,6 +22,8 @@ import * as ImagePicker from "expo-image-picker";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
 import { t } from "i18next";
+import { useCommonNoification } from "../../context/commonNoti";
+
 
 const Message = () => {
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ const Message = () => {
   const CLOUDINARY_URL =
     "https://api.cloudinary.com/v1_1/deczpzvro/image/upload";
   const CLOUDINARY_UPLOAD_PRESET = "vietchef_image";
+  const { showModal } = useCommonNoification();
 
   const contact = contactString ? JSON.parse(contactString) : {};
 
@@ -50,7 +53,7 @@ const Message = () => {
   useEffect(() => {
     const client = Stomp.over(() => new SockJS(WEB_SOCKET_ENDPOINT));
     stompClientRef.current = client;
-    console.log("sub", user.sub);
+    console.log("sub", user?.sub);
     client.connect(
       {},
       () => {
@@ -82,7 +85,7 @@ const Message = () => {
     const receivedMessage = JSON.parse(payload.body);
     if (
       receivedMessage.senderId === contact.id ||
-      receivedMessage.senderId === user.sub
+      receivedMessage.senderId === user?.sub
     ) {
       const timestamp = formatDate(receivedMessage.timestamp);
       console.log("time", timestamp);
@@ -103,12 +106,11 @@ const Message = () => {
 
   const onError = (error) => {
     console.error("WebSocket error:", error);
-    showModal("Error", "Không thể kết nối đến máy chủ. Vui lòng thử lại.", "Failed");
-    Toast.show({
-      type: "error",
-      text1: "Lỗi kết nối",
-      text2: "Không thể kết nối đến máy chủ. Vui lòng thử lại.",
-    });
+    showModal(
+      t("modal.error"),
+      t("errors.websocketConnectionFailed"),
+      "Failed"
+    );
   };
 
   useEffect(() => {
@@ -117,7 +119,7 @@ const Message = () => {
       setLoading(true);
       try {
         const response = await axiosInstance.get(
-          `/messages/${user.sub}/${contact.id}`
+          `/messages/${user?.sub}/${contact.id}`
         );
         const sortedMessages = response.data.sort((a, b) => {
           const dateA = new Date(a.timestamp);
@@ -143,12 +145,11 @@ const Message = () => {
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Toast.show({
-        type: "error",
-        text1: "Quyền truy cập bị từ chối",
-        text2:
-          "Vui lòng cấp quyền truy cập thư viện ảnh trong cài đặt thiết bị.",
-      });
+      showModal(
+        t("modal.error"),
+        t("errors.mediaLibraryPermissionDenied"),
+        "Failed"
+      );
       setIsPickingImage(false);
       return;
     }
@@ -166,12 +167,17 @@ const Message = () => {
         console.log("Selected image URI:", uri); // Log để gỡ lỗi
         if (fileSize && fileSize > 10 * 1024 * 1024) {
           setIsPickingImage(false);
+          showModal(
+            t("modal.error"),
+            t("errors.imageTooLarge"),
+            "Failed"
+          );
           return;
         }
         setSelectedImage(uri);
       }
     } catch (error) {
-      console.error("Error picking image:", error);
+      console.log("Error picking image:", error);
     } finally {
       setIsPickingImage(false);
     }
@@ -198,12 +204,12 @@ const Message = () => {
       });
       const result = await response.json();
       if (result.error) {
-        console.error("Cloudinary error:", result.error);
+        console.log("Cloudinary error:", result.error);
         return null;
       }
       return result.secure_url;
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.log("Error uploading image:", error);
       return null;
     }
   };
@@ -224,7 +230,7 @@ const Message = () => {
       if (selectedImage) {
         const imageUrl = await uploadImageToCloudinary(selectedImage);
         newMessage = {
-          senderId: user.sub,
+          senderId: user?.sub,
           recipientId: contact.id,
           senderName: user.fullName,
           recipientName: contact.name,
@@ -234,7 +240,7 @@ const Message = () => {
         };
       } else {
         newMessage = {
-          senderId: user.sub,
+          senderId: user?.sub,
           recipientId: contact.id,
           senderName: user.fullName,
           recipientName: contact.name,
@@ -250,7 +256,7 @@ const Message = () => {
       setSelectedImage(null);
       setInputText("");
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.log("Error sending message:", error);
     }
     setIsSending(false);
   };
@@ -266,7 +272,7 @@ const Message = () => {
     const timestamp = now.toISOString().slice(0, -1);
 
     const likeMessage = {
-      senderId: user.sub,
+      senderId: user?.sub,
       recipientId: contact.id,
       senderName: user.fullName,
       recipientName: contact.name,
@@ -309,7 +315,7 @@ const Message = () => {
           <View
             style={[
               styles.imageContainer,
-              item.senderId === user.sub
+              item.senderId === user?.sub
                 ? styles.senderAlign
                 : styles.receiverAlign,
             ]}
@@ -353,7 +359,7 @@ const Message = () => {
           <View
             style={[
               styles.messageContainer,
-              item.senderId === user.sub ? styles.sender : styles.receiver,
+              item.senderId === user?.sub ? styles.sender : styles.receiver,
             ]}
           >
             <Text style={styles.messageText}>{item.content}</Text>

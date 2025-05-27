@@ -50,7 +50,6 @@ const LongTermDetailsScreen = () => {
 
   const pin = pinValues.join("");
 
-
   useEffect(() => {
     if (bookingId) {
       fetchLongTermDetails();
@@ -80,7 +79,11 @@ const LongTermDetailsScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchDetailsFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -88,7 +91,11 @@ const LongTermDetailsScreen = () => {
 
   const accessWallet = async () => {
     if (pin.length !== 4) {
-      showModal("Error", "PIN must be 4 digits", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.pinLengthInvalid"),
+        "Failed"
+      );
       return;
     }
     setLoading(true);
@@ -102,12 +109,13 @@ const LongTermDetailsScreen = () => {
       await handlePayment(selectedPaymentCycleId);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", error.response?.data.message, "Failed");
-      setError("Invalid PIN");
-      // pinInputRefs[0].current?.focus();
-
-    }
-    finally {
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.invalidPin"),
+        "Failed"
+      );
+      setError(t("errors.invalidPin")); // pinInputRefs[0].current?.focus();
+    } finally {
       setLoading(false);
       setPinValues(["", "", "", ""]);
     }
@@ -124,11 +132,18 @@ const LongTermDetailsScreen = () => {
         response.status === 200 || response.data?.status === "PAID";
 
       if (paymentSuccessful) {
-        showModal("Success", "Thanh toán thành công", "Success");
+        showModal(t("modal.success"),
+          t("paymentSuccess"),
+          t("modal.succeeded")
+        );
         await fetchLongTermDetails();
         // router.push("/screen/history");
       } else {
-        showModal("Error", "Thanh toán thất bại", "Failed");
+        showModal(
+          t("modal.error"),
+          t("errors.paymentFailed"),
+          "Failed"
+        );
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -137,7 +152,11 @@ const LongTermDetailsScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xử lí thanh toán.", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.paymentProcessingFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
       setSelectedPaymentCycleId(null);
@@ -180,7 +199,6 @@ const LongTermDetailsScreen = () => {
     }
   };
 
-
   const renderCycleItem = (cycle) => {
     const sortedBookingDetails = [...cycle.bookingDetails].sort((a, b) => {
       const dateA = new Date(a.sessionDate);
@@ -202,8 +220,8 @@ const LongTermDetailsScreen = () => {
                     ? "#2ECC71"
                     : cycle.status === "CONFIRMED" ||
                       cycle.status === "PENDING_FIRST_CYCLE"
-                      ? "#A64B2A"
-                      : "#E74C3C",
+                    ? "#A64B2A"
+                    : "#E74C3C",
               },
             ]}
           >
@@ -246,8 +264,8 @@ const LongTermDetailsScreen = () => {
                         detail.status === "COMPLETED"
                           ? "#2ECC71"
                           : detail.status === "PENDING"
-                            ? "#A64B2A"
-                            : "#E74C3C",
+                          ? "#A64B2A"
+                          : "#E74C3C",
                     },
                   ]}
                 >
@@ -268,28 +286,28 @@ const LongTermDetailsScreen = () => {
         </View>
         {(bookingStatus === "PENDING_FIRST_CYCLE" ||
           bookingStatus === "CONFIRMED") && (
-            <TouchableOpacity
-              style={[styles.paymentButton, loading && styles.disabledButton]}
-              onPress={() => handleOpenPinModal(cycle.id)}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <View style={styles.paymentButtonContent}>
-                  <MaterialIcons name="payment" size={16} color="#FFF" />
-                  <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[styles.paymentButton, loading && styles.disabledButton]}
+            onPress={() => handleOpenPinModal(cycle.id)}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <View style={styles.paymentButtonContent}>
+                <MaterialIcons name="payment" size={16} color="#FFF" />
+                <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
 
   return (
-    <GestureHandlerRootView >
-      <SafeAreaView style={commonStyles.container} >
+    <GestureHandlerRootView>
+      <SafeAreaView style={commonStyles.container}>
         <Header title={t("paymentCycles")} />
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -297,7 +315,10 @@ const LongTermDetailsScreen = () => {
             <Text style={styles.loadingText}>{t("loading")}</Text>
           </View>
         ) : (
-          <ScrollView style={commonStyles.containerContent} contentContainerStyle={styles.scrollContainer}>
+          <ScrollView
+            style={commonStyles.containerContent}
+            contentContainerStyle={styles.scrollContainer}
+          >
             {longTermDetails.length > 0 ? (
               <>{longTermDetails.map(renderCycleItem)}</>
             ) : (
@@ -338,7 +359,9 @@ const LongTermDetailsScreen = () => {
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{t("enterWalletPin")}</Text>
-            <Text style={styles.modalSubtitle}>{t("pleaseEnter4DigitPin")}</Text>
+            <Text style={styles.modalSubtitle}>
+              {t("pleaseEnter4DigitPin")}
+            </Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
                 <View style={styles.pinBox} key={index}>
@@ -355,7 +378,6 @@ const LongTermDetailsScreen = () => {
                     selectionColor="transparent"
                   />
                 </View>
-
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}

@@ -243,7 +243,7 @@ export default function ChefReviews() {
     return (
         <SafeAreaView style={commonStyles.container}>
             <Header title={user.roleName === "ROLE_CHEF" ? "Reviews" : "Reviews for"} subtitle={user.roleName !== "ROLE_CHEF" && `${chefName}`} />
-            <ScrollView style={commonStyles.containerContent}
+            <ScrollView contentContainerStyle={{ paddingBottom: 100 }} style={commonStyles.containerContent}
                 refreshControl={
                     <RefreshControl refreshing={refresh} onRefresh={handleRefresh} />
                 }
@@ -326,7 +326,7 @@ export default function ChefReviews() {
             </ScrollView>
 
 
-        </SafeAreaView>
+        </SafeAreaView >
     )
 
 

@@ -145,7 +145,7 @@
 
 //     if (!validateForm()) {
 //       Toast.show({
-//         type: "error",
+//         type: t("modal.error"),
 //         text1: "Lỗi",
 //         text2: "Vui lòng kiểm tra và điền đầy đủ thông tin hợp lệ!",
 //       });
@@ -183,7 +183,7 @@
 //           await AsyncStorage.setItem("@avatar", avatar);
 //         }
 
-//         showModal("Success", "Cập nhật hồ sơ thành công!", "Success")
+//         showModal(t("modal.success"), "Cập nhật hồ sơ thành công!",)
 
 //         setTimeout(() => {
 //           router.back();
@@ -192,7 +192,7 @@
 //     } catch (error) {
 //       console.log("Lỗi cập nhật hồ sơ:", error?.response?.data || error);
 //       Toast.show({
-//         type: "error",
+//         type: t("modal.error"),
 //         text1: "Lỗi",
 //         text2: "Không thể cập nhật hồ sơ. Vui lòng thử lại!",
 //       });

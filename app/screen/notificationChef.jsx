@@ -30,7 +30,7 @@ const NotificationChef = () => {
             }
             console.log(response.data)
         } catch (error) {
-            console.log("Error", error);
+            console.log(t("modal.error"), error);
         }
     };
 

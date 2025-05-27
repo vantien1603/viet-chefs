@@ -69,7 +69,7 @@ const AllDishScreen = () => {
         console.log('Request was cancelled');
         return;
       }
-      showModal("Error", "Có lỗi khi tải danh sách món ăn", "Failed", fetchDishes());
+      showModal(t("modal.error"), "Có lỗi khi tải danh sách món ăn", "Failed", fetchDishes());
     } finally {
       setLoading(false);
       if (isRefresh) setRefresh(false);
@@ -93,7 +93,7 @@ const AllDishScreen = () => {
       }
       setLocation(newLocation);
     } catch (error) {
-      showModal("Error", "Có lỗi khi tải địa chỉ.", "Failed");
+      showModal(t("modal.error"), "Có lỗi khi tải địa chỉ.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -138,21 +138,21 @@ const AllDishScreen = () => {
     groupedDishes.push(filteredDishes.slice(i, i + 2));
   }
 
-  if (loading) {
-    return (
-      <SafeAreaView style={commonStyles.containerContent}>
-        <Header
-          title={t("allDishes")}
-          rightIcon={"search"}
-          onRightPress={toggleSearch}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#A9411D" />
-          <Text style={styles.loadingText}>{t("loadingDishes")}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <SafeAreaView style={commonStyles.containerContent}>
+  //       <Header
+  //         title={t("allDishes")}
+  //         rightIcon={"search"}
+  //         onRightPress={toggleSearch}
+  //       />
+  //       <View style={styles.loadingContainer}>
+  //         <ActivityIndicator size="large" color="#A9411D" />
+  //         <Text style={styles.loadingText}>{t("loadingDishes")}</Text>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   if (error) {
     return (
@@ -191,7 +191,7 @@ const AllDishScreen = () => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm món ăn..."
+            placeholder={t("search")}
             value={searchQuery}
             onChangeText={handleSearch}
             autoFocus={true}
@@ -237,12 +237,12 @@ const AllDishScreen = () => {
                   defaultSource={require("../../assets/images/1.jpg")}
                 />
               </View>
-              <Text style={styles.title}>{dish.name}</Text>
+              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.title}>{dish.name}</Text>
               <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>{dish.description}</Text>
-              <Text style={{ color: "#FFF", fontSize: 12 }}>
+              <Text style={{ color: "#F8BF40", fontSize: 12 }}>
                 {t("timeCook")}: ~{dish.cookTime} {t("minutes")}
               </Text>
-              <Text style={{ color: "#fff", fontSize: 12 }}>
+              <Text style={{ color: "#F8BF40", fontSize: 12 }}>
                 {t("distance")}: {dish.chef.distance.toFixed(2)} km
               </Text>
             </View>
@@ -250,6 +250,13 @@ const AllDishScreen = () => {
         )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>{t("noDishesFound")}</Text>
+        }
+        ListFooterComponent={
+          loading ? (
+            <View style={{ paddingVertical: 20 }}>
+              <ActivityIndicator size="small" color="#fff" />
+            </View>
+          ) : null
         }
       />
     </SafeAreaView>
@@ -293,6 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#A9411D",
     borderRadius: 16,
     padding: 16,
+    paddingVertical: 20,
     paddingTop: 50,
     alignItems: "center",
     width: "100%",
@@ -312,7 +320,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     overflow: "hidden",
     position: "absolute",
-    top: -30,
+    top: -20,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -333,7 +341,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#F8BF40",
     textAlign: "center",
-    marginBottom: 6,
+    // marginBottom: 6,
   },
   cookTime: {
     fontSize: 13,

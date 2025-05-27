@@ -80,8 +80,6 @@ const ChooseFoodForLongterm = () => {
   const { showModal } = useCommonNoification();
   const [loading, setLoading] = useState(false);
 
-  console.log("selectted day", selectedDay);
-
 
   useEffect(() => {
     fetchMenus();
@@ -99,7 +97,7 @@ const ChooseFoodForLongterm = () => {
 
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status !== 401) return
-      showModal("Error", "Có lỗi khi tải menu.", "Failed");
+      showModal(t("modal.error"), t("errors.fetchMenusFailed"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -116,7 +114,7 @@ const ChooseFoodForLongterm = () => {
       setDishes(res.data.content || []);
     } catch (error) {
       if (!axios.isCancel(error) && error.response?.status !== 401) return;
-      showModal("Error", "Có lỗi khi tải món ăn.", "Failed");
+      showModal(t("modal.error"), "Có lỗi khi tải món ăn.", "Failed");
     } finally {
       setLoading(false);
     }
@@ -125,7 +123,7 @@ const ChooseFoodForLongterm = () => {
   const handleSelectMenu = useCallback((menu) => {
     const dishCount = selectedDishes[selectedDay] ? Object.keys(selectedDishes[selectedDay])?.length : 0;
     if (dishCount > 0) {
-      showModal("Error", "Bạn phải bỏ chọn tất cả món ăn trước khi chọn menu.", "Failed");
+      showModal(t("modal.error"), t("errors.dishesSelectedWithMenu"), "Failed");
       return;
     }
 
@@ -226,7 +224,7 @@ const ChooseFoodForLongterm = () => {
 
   const handleConfirm = () => {
     if (!selectedMenuLong[selectedDay] && !selectedDishes[selectedDay]) {
-      showModal("Error", "Vui lòng chọn ít nhất một menu hoặc món ăn.", "Failed")
+      showModal(t("modal.error"), t("errors.noSelection"), "Failed")
       return;
     }
     router.replace("/screen/longTermSelect");
@@ -293,7 +291,7 @@ const ChooseFoodForLongterm = () => {
                 <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 15 }}>{selectedMenuDetail.name}</Text>
                 <Text style={{ marginTop: 10 }}>{selectedMenuDetail.description || t("noInformation")}</Text>
                 <Text>
-                  <Text>Dishes: </Text>
+                  <Text>{t("dishes")}: </Text>
                   <Text style={[styles.itemContent]}>
                     {selectedMenuDetail.menuItems.map((dish) => dish.dishName).join(", ")}
                   </Text>

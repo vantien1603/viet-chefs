@@ -7,15 +7,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
     const axiosInstance = useAxios();
     const { isGuest } = useContext(AuthContext);
-    let interval;
+    const { registerNotificationCallback } = useContext(SocketContext);
 
     useEffect(() => {
-        if (!isGuest) {
-            interval = setInterval(() => {
-                fetchUnreadMessageCount();
-            }, 5000);
-            return () => clearInterval(interval);
-        }
+        registerNotificationCallback(() => {
+            fetchUnreadMessageCount();
+        });
     }, []);
 
     const fetchUnreadMessageCount = async () => {
@@ -23,11 +20,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
             const response = await axiosInstance.get("/notifications/my/count");
             const count = response.data.chatNoti ?? 0;
             setUnreadMessageCount(count);
-            if (count === 0 && interval) {
-                clearInterval(interval);
-            }
         } catch (error) {
-            console.error("Error fetching unread message count:", error);
+            if (axios.isCancel(error) || error.response?.status === 401) return;
         }
     };
 
@@ -36,7 +30,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
             await axiosInstance.put("/notifications/my-chat");
             fetchUnreadMessageCount();
         } catch (error) {
-            console.error("Error fetching unread message count:", error);
+            if (axios.isCancel(error) || error.response?.status === 401) return;
         }
     }
     return (
@@ -106,6 +100,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
 import { Tabs } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
+import { SocketContext } from "../../config/SocketContext";
+import axios from "axios";
 
 export default function TabLayout() {
     return (

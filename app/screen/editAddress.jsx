@@ -23,6 +23,7 @@ import { useModalLogin } from "../../context/modalLoginContext";
 import { useConfirmModal } from "../../context/commonConfirm";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import * as SecureStore from "expo-secure-store";
 
 const EditAddress = () => {
   const [selectedId, setSelectedId] = useState(null);
@@ -39,7 +40,7 @@ const EditAddress = () => {
   const { showConfirm } = useConfirmModal();
   const { showModal } = useCommonNoification();
   const [isEdit, setIsEdit] = useState(false);
-
+  const country = SecureStore.getItem('country');
 
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const fetchAddressSuggestions = async (query) => {
@@ -48,25 +49,30 @@ const EditAddress = () => {
       return;
     }
     try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+      };
+
+      if (country) {
+        params.components = `country:${country}`;
+      }
+
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
-        {
-          params: {
-            input: query,
-            key: process.env.API_GEO_KEY,
-            language: "vi",
-            components: "country:vn",
-          },
-        }
+        { params }
       );
+
       console.log("Suggestions response:", response.data);
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
       }
     } catch (error) {
-      console.error(
-        "Error fetching suggestions from Google Places:",
-        error?.response?.data
+      showModal(
+        t("modal.error"),
+        t("errors.fetchSuggestionsFailed"),
+        "Failed"
       );
     }
   };
@@ -86,7 +92,11 @@ const EditAddress = () => {
       );
       return response.data.result.formatted_address;
     } catch (error) {
-      console.error("Error fetching place details:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.fetchPlaceDetailsFailed"),
+        "Failed"
+      );
       return null;
     }
   };
@@ -102,7 +112,12 @@ const EditAddress = () => {
   };
 
   useEffect(() => {
-    if (isGuest) showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
+    if (isGuest)
+      showModalLogin(
+        t("errors.loginRequired"),
+        t("errors.loginRequiredMessage"),
+        true
+      );
 
     fetchAddresses();
     loadSelectedAddress();
@@ -116,7 +131,11 @@ const EditAddress = () => {
         setSelectedId(parsedAddress.id);
       }
     } catch (error) {
-      console.error("Error loading selected address:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.loadSelectedAddressFailed"),
+        "Failed"
+      );
     }
   };
 
@@ -124,7 +143,11 @@ const EditAddress = () => {
     try {
       await AsyncStorage.setItem("selectedAddress", JSON.stringify(address));
     } catch (error) {
-      console.error("Error saving selected address:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.saveSelectedAddressFailed"),
+        "Failed"
+      );
     }
   };
 
@@ -137,7 +160,11 @@ const EditAddress = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách địa chỉ.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchAddressesFailed"),
+        "Failed"
+      );
     }
   };
 
@@ -146,7 +173,11 @@ const EditAddress = () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        showModal("Quyền bị từ chối", "Bạn cần cho phép ứng dụng sử dụng định vị của bạn.", "Failed");
+        showModal(
+          t("modal.error"),
+          t("errors.locationPermissionDenied"),
+          "Failed"
+        );
         return;
       }
 
@@ -162,14 +193,17 @@ const EditAddress = () => {
           }, ${addr.region || ""}, ${addr.country || ""}`;
 
         const existingCurrentLocation = addresses.find(
-          (addr) => addr.title === "Vị trí hiện tại"
+          (addr) => addr.title === t("currentLocation")
         );
         const newLocation = {
-          title: "Vị trí hiện tại",
+          title: t("currentLocation"),
           address: fullAddress,
         };
         if (existingCurrentLocation) {
-          await handleUpdateCurrentAddress({ ...existingCurrentLocation, address: fullAddress })
+          await handleUpdateCurrentAddress({
+            ...existingCurrentLocation,
+            address: fullAddress,
+          });
         } else {
           await handleCreateAddress(newLocation);
         }
@@ -177,7 +211,11 @@ const EditAddress = () => {
         setSelectedId(null);
       }
     } catch (error) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình xác định vị trí.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchLocationFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -194,20 +232,29 @@ const EditAddress = () => {
               : addr
           )
         );
-        showModal("Success", "Cập nhật vị trí hiện tại thành công.", "Success");
+        showModal(t("modal.success"),
+          t("updateCurrentLocationSuccess"),
+        );
       }
     } catch (error) {
       if (error.response.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật vị trí hiện tại. ", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.updateCurrentLocationFailed"),
+        "Failed"
+      );
     }
-  }
-
+  };
 
   const handleCreateAddress = async (addressData) => {
     if (addresses.length >= 5) {
-      showModal("Giới hạn", "Bạn chỉ được tạo tối đa 5 địa chỉ.", "Warning");
+      showModal(
+        t("modal.warning"),
+        t("errors.maxAddresses"),
+        t("Warning")
+      );
       setModalVisible(false);
       return;
     }
@@ -218,21 +265,30 @@ const EditAddress = () => {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
         setNewAddress({ title: "", address: "" });
-        showModal("Success", "Lưu địa chỉ thành công.", "Success");
-
+        showModal(t("modal.success"),
+          t("saveAddressSuccess"),
+        );
       }
     } catch (error) {
       if (error.response.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình lưu địa chỉ.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.saveAddressFailed"),
+        "Failed"
+      );
     }
   };
 
   const handleUpdateAddress = async () => {
     setLoading(true);
     if (!editingAddress.title || !editingAddress.address) {
-      showModal("Error", "Vui lòng điền đầy đủ thông tin.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.incompleteAddress"),
+        "Failed"
+      );
 
       return;
     }
@@ -247,8 +303,9 @@ const EditAddress = () => {
         setModalVisible(false);
         setIsEdit(false);
         setEditingAddress(null);
-        showModal("Success", "Cập nhật địa chỉ thành công.", "Success");
-
+        showModal(t("modal.success"),
+          t("updateAddressSuccess"),
+        );
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -257,40 +314,51 @@ const EditAddress = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật địa chỉ.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.updateAddressFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteAddress = async (id) => {
-    showConfirm("Delele confirm", `Are you sure want to delete this address?`, () => requireAuthAndNetWork(async () => {
-      try {
-        const response = await axiosInstance.delete(`/address/${id}`);
-        if (response.status === 200) {
-          setAddresses(addresses.filter((addr) => addr.id !== id));
-          if (selectedId === id) {
-            setSelectedId(null);
-            await AsyncStorage.removeItem("selectedAddress");
+    showConfirm(t("deleteAddress"), t("deleteAddressMessage"), () =>
+      requireAuthAndNetWork(async () => {
+        try {
+          const response = await axiosInstance.delete(`/address/${id}`);
+          if (response.status === 200) {
+            setAddresses(addresses.filter((addr) => addr.id !== id));
+            if (selectedId === id) {
+              setSelectedId(null);
+              await AsyncStorage.removeItem("selectedAddress");
+            }
+            showModal(t("modal.success"),
+              t("deleteAddressSuccess"),
+            );
           }
-          showModal("Success", "Xóa địa chỉ thành công.", "Success");
-
+        } catch (error) {
+          if (error.response?.status === 401) {
+            return;
+          }
+          if (axios.isCancel(error)) {
+            return;
+          }
+          showModal(
+            t("modal.error"),
+            t("errors.deleteAddressFailed"),
+            "Failed"
+          );
         }
-      } catch (error) {
-        if (error.response?.status === 401) {
-          return;
-        }
-        if (axios.isCancel(error)) {
-          return;
-        }
-        showModal("Error", "Có lỗi xảy ra trong quá trình xóa địa chỉ.", "Failed");
-      }
-    }))
+      })
+    );
   };
 
   const handleSearch = (query) => {
     if (isEdit) {
-      setEditingAddress({ ...editingAddress, address: query })
+      setEditingAddress({ ...editingAddress, address: query });
     } else {
       setNewAddress({ ...newAddress, address: query });
     }
@@ -371,7 +439,9 @@ const EditAddress = () => {
                 marginBottom: 10,
               }}
             >
-              <Text style={{ color: "#666", fontSize: 16 }}>{t("addressList")}</Text>
+              <Text style={{ color: "#666", fontSize: 16 }}>
+                {t("addressList")}
+              </Text>
               <TouchableOpacity onPress={() => setModalVisible(true)}>
                 <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
                   {t("addNew")}
@@ -391,7 +461,9 @@ const EditAddress = () => {
                   <TextInput
                     style={styles.input}
                     placeholder={t("addressLabel")}
-                    value={editingAddress ? editingAddress.title : newAddress.title}
+                    value={
+                      editingAddress ? editingAddress.title : newAddress.title
+                    }
                     onChangeText={(text) =>
                       editingAddress
                         ? setEditingAddress({ ...editingAddress, title: text })
@@ -416,7 +488,11 @@ const EditAddress = () => {
                     // }}
                     // returnKeyType="search"
 
-                    value={editingAddress ? editingAddress.address : newAddress.address}
+                    value={
+                      editingAddress
+                        ? editingAddress.address
+                        : newAddress.address
+                    }
                     onChangeText={handleSearch}
                     onSubmitEditing={(event) => {
                       event.persist();
@@ -490,15 +566,15 @@ const EditAddress = () => {
             {loading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+              <Text
+                style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+              >
                 {t("useCurrentLocation")}
               </Text>
             )}
           </TouchableOpacity>
         </>
       )}
-
-
     </SafeAreaView>
   );
 };

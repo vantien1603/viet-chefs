@@ -16,6 +16,7 @@ import { TabBar, TabView } from 'react-native-tab-view';
 import { commonStyles } from '../../style';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import { t } from 'i18next';
 
 const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail, loading }) => {
     const renderItem = ({ item }) => {
@@ -23,25 +24,25 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
             <TouchableOpacity key={item.id} style={[styles.section]} onPress={() => onViewDetail(item.id)}>
                 <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
-                    <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
+                    <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{t("date")}: {item.sessionDate}</Text>
                 </View>
                 <Text numberOfLines={1} ellipsizeMode="tail">
-                    <Text style={styles.itemContentLabel}>Address: </Text>
+                    <Text style={styles.itemContentLabel}>{t("address")}: </Text>
                     <Text style={styles.itemContent}>{item.location}</Text>
                 </Text>
                 <Text>
-                    <Text style={styles.itemContentLabel}>Dinner time: </Text>
+                    <Text style={styles.itemContentLabel}>{t("mealTime")}: </Text>
                     <Text style={styles.itemContent}>{item.startTime}</Text>
                 </Text>
                 <Text>
-                    <Text style={styles.itemContentLabel}>Travel time: </Text>
+                    <Text style={styles.itemContentLabel}>{t("travelTime")}: </Text>
                     <Text style={styles.itemContent}>{item.timeBeginTravel}</Text>
                 </Text>
                 <Text numberOfLines={2} ellipsizeMode="tail">
-                    <Text style={styles.itemContentLabel}>Dishes: </Text>
+                    <Text style={styles.itemContentLabel}>{t("dishes")}: </Text>
                     {item.dishes?.length === 0 && (
                         <Text style={styles.itemContent}>
-                            Not yet
+                            {t("notYet")}
                         </Text>
                     )}
                     {item.dishes && item.dishes.map((dish) => (
@@ -49,7 +50,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
                     ))}
 
                 </Text>
-                <Text style={styles.itemContentLabel}>Price: {item.totalPrice}</Text>
+                <Text style={styles.itemContentLabel}>{t("totalPrice")}: {item.totalPrice}</Text>
             </TouchableOpacity>
         )
 
@@ -66,7 +67,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
                 onEndReachedThreshold={0.5}
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>No pending orders</Text>}
+                ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>{t('noPendingOrders')}</Text>}
                 ListFooterComponent={(loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
             />
         </View>
@@ -94,9 +95,9 @@ const ScheduleCompleted = () => {
     const PAGE_SIZE = 20;
 
     const routes = [
-        { key: 'completed', title: 'Completed' },
-        { key: 'cancelled', title: 'Cancelled' }
-    ];
+    { key: 'completed', title: t('completed') },
+    { key: 'cancelled', title: t('cancelled') },
+  ];
 
     const fetchBookingDetails = async (pageNum, status, isRefresh = false) => {
         if (loading && !isRefresh) return;
@@ -128,7 +129,7 @@ const ScheduleCompleted = () => {
         } catch (error) {
             if (error.response?.status === 401) return;
             if (axios.isCancel(error)) return;
-            showModal("Error", "Có lỗi xảy ra khi tải dữ liệu.", "Failed");
+            showModal(t("modal.error"), t('errors.fetchBookingsFailed'), "Failed");
         } finally {
             setLoading(false);
             setRefresh(false);
@@ -207,7 +208,7 @@ const ScheduleCompleted = () => {
 
     return (
         <SafeAreaView style={commonStyles.container}>
-            <Header title={'Schedule'} />
+            <Header title={t('schedule')} />
             <TabView
                 navigationState={{ index, routes }}
                 renderScene={renderScene}

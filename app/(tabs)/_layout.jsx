@@ -10,15 +10,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const axiosInstance = useAxios();
 
-  let interval;
-  useEffect(() => {
-    if (!isGuest) {
-      interval = setInterval(() => {
-        fetchUnreadMessageCount();
-      }, 5000);
-      return () => clearInterval(interval);
-    }
+  const { registerNotificationCallback } = useContext(SocketContext);
 
+  useEffect(() => {
+    registerNotificationCallback(() => {
+      fetchUnreadMessageCount();
+    });
   }, []);
 
   const fetchUnreadMessageCount = async () => {
@@ -26,11 +23,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
       const response = await axiosInstance.get("/notifications/my/count");
       const count = response.data.chatNoti ?? 0;
       setUnreadMessageCount(count);
-      if (count === 0 && interval) {
-        clearInterval(interval);
-      }
     } catch (error) {
-      console.error("Error fetching unread message count:", error);
+      console.log("Error fetching unread message count:", error);
     }
   };
 
@@ -38,11 +32,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
     if (isGuest) return;
     try {
       await axiosInstance.put("/notifications/my-chat");
-      fetchUnreadMessageCount();
+      fetchUnreadMessageCount(); // gọi lại sau khi cập nhật
     } catch (error) {
-      console.error("Error fetching unread message count:", error);
+      console.log("Error updating notifications:", error);
     }
-  }
+  };
 
   useEffect(() => {
     const restrictedScreens = ["chat", "schedule"];
@@ -119,6 +113,7 @@ import { AuthContext } from "../../config/AuthContext";
 import { useGlobalModal } from "../../context/modalContext";
 import { useModalLogin } from "../../context/modalLoginContext";
 import useAxios from "../../config/AXIOS_API";
+import { SocketContext } from "../../config/SocketContext";
 
 export default function TabLayout() {
   return (

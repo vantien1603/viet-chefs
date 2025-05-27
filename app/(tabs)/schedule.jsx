@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,6 +13,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { commonStyles } from "../../style";
 import Header from "../../components/header";
@@ -37,10 +44,10 @@ const CustomerSchedule = () => {
     { key: "past", title: "Past" },
   ], []);
 
-  // useEffect(() => {
-  //   if (isGuest) return;
-  //   fetchBookingDetails(0, true);
-  // }, []);
+  useEffect(() => {
+    if (isGuest) return;
+    fetchBookingDetails(0, true);
+  }, []);
 
   console.log("user hsitasd", user);
   const statuses = ['SCHEDULED', 'COMPLETED', 'SCHEDULED_COMPLETE', 'IN_PROGRESS', 'WAITING_FOR_CONFIRMATION'];
@@ -71,8 +78,9 @@ const CustomerSchedule = () => {
       });
     }
     catch (error) {
+      console.log("Loi mang nayf nef cdcm nos")
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", error.response.data.message, 'Faield');
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
     } finally {
       setLoading(false);
       if (isRefresh) setRefresh(false);
@@ -167,7 +175,11 @@ const CustomerSchedule = () => {
 
   const handleRebook = async (bookingDetail) => {
     if (bookingDetail.status !== "COMPLETED") {
-      showModal("Error", "Rebook is only allowed when status is COMPLETED", "Failed");
+      showModal(
+        t("modal.error"),
+        "Rebook is only allowed when status is COMPLETED",
+        "Failed"
+      );
       return;
     }
     console.log("dish", bookingDetail.dishes);
@@ -204,47 +216,74 @@ const CustomerSchedule = () => {
     // });
   };
 
-  const renderBookingItem = useCallback(({ item: detail }) => (
-    <View style={styles.bookingItem}>
-      <TouchableOpacity onPress={() => handlePressDetail(detail.id)} style={styles.touchableArea}>
-        <View style={styles.row}>
-          <Text style={styles.label1}>{detail.booking?.chef?.user?.fullName || "N/A"}</Text>
-          <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
-        </View>
-        <Text style={styles.label}>{t("time")}: {detail.startTime || "N/A"}</Text>
-        <Text style={styles.label}>{t("address")}: {detail.location || "N/A"}</Text>
-        <Text style={styles.label}>
-          {t("totalPrice")}: {detail.totalPrice ? `${detail.totalPrice.toFixed(2)}` : "N/A"}
-        </Text>
-        <View style={styles.statusContainer}>
-          <Text style={[
-            styles.labelStatus,
-            {
-              color: detail.status === "COMPLETED"
-                ? "green"
-                : ["SCHEDULED", "SCHEDULED_COMPLETE"].includes(detail.status)
-                  ? "orange"
-                  : "black"
-            }
-          ]}>
-            {detail.status.replace("_", " ")}
-            {detail.status === "COMPLETED" && (
-              <Ionicons name="checkmark-done" size={20} color="green" />
-            )}
+  const renderBookingItem = useCallback(
+    ({ item: detail }) => (
+      <View style={styles.bookingItem}>
+        <TouchableOpacity
+          onPress={() => handlePressDetail(detail.id)}
+          style={styles.touchableArea}
+        >
+          <View style={styles.row}>
+            <Text style={styles.label1}>
+              {detail.booking?.chef?.user?.fullName || "N/A"}
+            </Text>
+            <Text style={styles.label}>{detail.sessionDate || "N/A"}</Text>
+          </View>
+          <Text style={styles.label}>
+            {t("time")}: {detail.startTime || "N/A"}
           </Text>
-          {detail.status === "COMPLETED" && (
-            <TouchableOpacity style={styles.rebookButton} onPress={() => handleRebook(detail)}>
-              <Text style={styles.rebookText}>{t("rebook")}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
-    </View>
-  ), [handlePressDetail, handleRebook]);
+          <Text style={styles.label}>
+            {t("address")}: {detail.location || "N/A"}
+          </Text>
+          <Text style={styles.label}>
+            {t("totalPrice")}:{" "}
+            {detail.totalPrice ? `${detail.totalPrice.toFixed(2)}` : "N/A"}
+          </Text>
+          <View style={styles.statusContainer}>
+            <Text
+              style={[
+                styles.labelStatus,
+                {
+                  color:
+                    detail.status === "COMPLETED"
+                      ? "green"
+                      : ["SCHEDULED", "SCHEDULED_COMPLETE"].includes(
+                        detail.status
+                      )
+                        ? "orange"
+                        : "black",
+                },
+              ]}
+            >
+              {detail.status.replace("_", " ")}
+              {detail.status === "COMPLETED" && (
+                <Ionicons name="checkmark-done" size={20} color="green" />
+              )}
+            </Text>
+            {detail.status === "COMPLETED" && (
+              <TouchableOpacity
+                style={styles.rebookButton}
+                onPress={() => handleRebook(detail)}
+              >
+                <Text style={styles.rebookText}>{t("rebook")}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    ),
+    [handlePressDetail, handleRebook]
+  );
 
   const renderBookingList = (details) => {
     if (loading) {
-      return <ActivityIndicator size="large" color="white" style={{ marginTop: 20 }} />;
+      return (
+        <ActivityIndicator
+          size="large"
+          color="white"
+          style={{ marginTop: 20 }}
+        />
+      );
     }
 
     return (

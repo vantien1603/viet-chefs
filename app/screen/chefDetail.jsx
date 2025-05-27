@@ -70,13 +70,14 @@ const ChefDetail = () => {
       console.log(response.data)
       if (response.status === 200) {
         setChefs(response.data);
+        console.log("chef data", response.data);
       }
     } catch (error) {
       if (axios.isCancel(error)) {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp", "Failed");
+      showModal(t("modal.error"), t("errors.fetchChefError"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,7 @@ const ChefDetail = () => {
         console.log("Yêu cầu đã bị huỷ do không có mạng.");
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách món ăn", "Failed");
+      showModal(t("modal.error"), t("errors.fetchDishesError"), "Failed");
 
     } finally {
       setLoading(false);
@@ -125,7 +126,7 @@ const ChefDetail = () => {
 
   const toggleFavorite = async (chefId) => {
     if (isGuest) {
-      showModalLogin("Login required!", "Bạn cần đăng nhập để sử dụng tính năng này", true);
+      showModalLogin(t("loginRequired"), t("loginRequiredMessage"), true);
       return;
     }
     setFavoriteLoading(true);
@@ -143,11 +144,12 @@ const ChefDetail = () => {
         setFavorites(true);
       }
     } catch (err) {
-      let errorMessage =
+      const action = favorites ? t("removing") : t("adding");
+      const preposition = favorites ? t("from") : t("to");
+      const errorMessage =
         err.response?.data?.message ||
-        `Lỗi khi ${favorites ? "xóa đầu bếp khỏi" : "thêm đầu bếp vào"
-        } danh sách yêu thích.`;
-      showModal("Error", errorMessage, "Failed");
+        t("errors.toggleFavoriteError", { action, preposition });
+      showModal(t("modal.error"), errorMessage, "Failed");
     } finally {
       setFavoriteLoading(false);
     }
@@ -225,7 +227,7 @@ const ChefDetail = () => {
                             if (i < Math.floor(rating)) {
                               color = "#f5a623";
                             } else if (i < rating) {
-                              iconName = "star-half-full";
+                              iconName = "star-half";
                               color = "#f5a623";
                             }
 
@@ -268,6 +270,7 @@ const ChefDetail = () => {
                       <Text style={styles.label}>{t("address")}: </Text>
                       <Text style={styles.value}>{chefs?.address}</Text>
                     </Text>
+
                     <Text style={styles.section}>
                       <Text style={styles.label}>Email: </Text>
                       <Text style={styles.value}>{chefs?.user?.email}</Text>
@@ -399,13 +402,13 @@ const ChefDetail = () => {
                 popover={
                   <View style={{ padding: 4 }}>
                     <Text style={{ marginBottom: 4 }}>
-                      Choose the type of booking you want.
+                      {t("tooltip.title")}
                     </Text>
                     <Text style={{ marginBottom: 4 }}>
-                      <Text style={{ fontWeight: 'bold' }}>Regular booking:</Text> Choose dishes or menu for 1 meal according to your schedule.
+                      <Text style={{ fontWeight: 'bold' }}>{t("tooltip.regularBooking")}</Text>
                     </Text>
                     <Text>
-                      <Text style={{ fontWeight: 'bold' }}>Long-term booking:</Text> Experience the service on many selected days. You can flexibly change dishes/menu before the booking date.
+                      <Text style={{ fontWeight: 'bold' }}>{t("tooltip.longTermBooking")}</Text>
                     </Text>
                   </View>
                 }

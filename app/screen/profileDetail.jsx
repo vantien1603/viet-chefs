@@ -11,11 +11,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../../style";
-import { useRouter, useFocusEffect } from "expo-router"; // Thêm useFocusEffect
+import { useRouter, useFocusEffect } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
-import { Feather } from "@expo/vector-icons";
+import { createIconSet, Feather } from "@expo/vector-icons";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
 import * as ImagePicker from "expo-image-picker";
@@ -23,6 +23,7 @@ import { TabBar, TabView } from "react-native-tab-view";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { t } from "i18next";
+import * as SecureStore from "expo-secure-store";
 
 const ProfileDetail = () => {
   const [loading, setLoading] = useState();
@@ -36,15 +37,19 @@ const ProfileDetail = () => {
   const axiosInstanceForm = useAxiosFormData();
   const { showModal } = useCommonNoification();
   const [index, setIndex] = useState(0);
+  const country = SecureStore.getItem('country');
+  const [suggestions, setSuggestions] = useState([]);
+
   const [routes] = useState([
-    { key: 'profile', title: t("personalInformation") },
-    { key: 'chef', title: 'Thông tin đầu bếp' },
-  ]
-  );
-  const [errors, setErrors] = useState({ name: false, phone: false, dob: false });
+    { key: "profile", title: t("personalInformation") },
+    { key: "chef", title: t("chefInformation") },
+  ]);
+  const [errors, setErrors] = useState({
+    name: false,
+    phone: false,
+    dob: false,
+  });
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-
 
   const handleProfile = async () => {
     setLoading(true);
@@ -61,17 +66,21 @@ const ProfileDetail = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin cá nhân.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchProfileFailed"),
+        "Failed"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
-
 
   const fetchChefDetail = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`/chefs/${user.chefId}`);
+      console.log(user.chefId);
       if (response.status === 200) {
         setDataChef(response.data);
         setUpdateDataChef(response.data);
@@ -83,11 +92,14 @@ const ProfileDetail = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải thông tin đầu bếp.", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.fetchChefProfileFailed"),
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -96,12 +108,15 @@ const ProfileDetail = () => {
     }, [])
   );
 
-
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      showModal("Warning", "Bạn cần cho phép ứng dụng sử dụng quyền truy cập hình ảnh.", "Warning")
+      showModal(
+        t("modal.warning"),
+        t("errors.imagePermissionRequired"),
+        t("Warning")
+      );
       return;
     }
 
@@ -123,16 +138,16 @@ const ProfileDetail = () => {
   const mapGenderToDisplay = (apiGender) => {
     switch (apiGender) {
       case "Male":
-        return "Nam";
+        return t("male");
       case "Female":
-        return "Nữ";
+        return t("female");
       default:
-        return "Nam";
+        return t("male");
     }
   };
 
   const mapGenderToApi = (displayGender) => {
-    return displayGender === "Nam" ? "Male" : "Female";
+    return displayGender === t("male") ? "Male" : "Female";
   };
 
   const handleSaveProfile = async () => {
@@ -158,7 +173,7 @@ const ProfileDetail = () => {
     setErrors(localErrors);
     const hasAnyError = Object.values(localErrors).some((v) => v === true);
     if (hasAnyError) {
-      showModal("Error", "Invalid data", "Failed");
+      showModal(t("modal.error"), t("errors.invalidData"), "Failed");
       return;
     }
 
@@ -190,7 +205,9 @@ const ProfileDetail = () => {
           fullName: response.data.fullName,
           avatarUrl: response.data.avatarUrl,
         }));
-        showModal("Success", "Update profile successfully", "Success")
+        showModal(t("modal.success"),
+          t("updateProfileSuccess"),
+        );
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -199,14 +216,23 @@ const ProfileDetail = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      console.log("err", error.response.data)
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông tin cá nhân.", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      console.log("err", error.response.data);
+      showModal(
+        t("modal.error"),
+        t("errors.updateProfileFailed"),
+        t("Failed")
+      );
+      if (error.response?.data?.message) {
+        showModal(
+          t("modal.error"),
+          error.response.data.message,
+          t("Failed")
+        );
+      }
     } finally {
       setLoading(false);
     }
-  }
-
+  };
 
   const handleDateChange = (event, selectedDate) => {
     if (event.type === "dismissed") {
@@ -217,10 +243,9 @@ const ProfileDetail = () => {
       const formattedDate = selectedDate.toISOString().split("T")[0];
       setUpdateData((prev) => ({ ...prev, dob: formattedDate }));
     }
-    setErrors((prev) => ({ ...prev, dob: false }))
+    setErrors((prev) => ({ ...prev, dob: false }));
     setShowDatePicker(false);
   };
-
 
   const handleSaveChefProfile = async () => {
     setLoading(true);
@@ -234,11 +259,18 @@ const ProfileDetail = () => {
         maxServingSize: updateDataChef.maxServingSize,
         specialization: updateDataChef.specialization,
         yearsOfExperience: updateDataChef.yearsOfExperience,
-        certification: updateDataChef.certification
-      }
-      const response = await axiosInstance.put(`/chefs/${user.chefId}`, payload);
+        certification: updateDataChef.certification,
+      };
+
+      console.log(payload);
+      const response = await axiosInstance.put(
+        `chefs/my-chef`,
+        payload
+      );
       if (response.status === 200) {
-        showModal("Success", "Update chef profile successfully")
+        showModal(t("modal.success"),
+          t("updateChefProfileSuccess"),
+        );
         setIsEditing(false);
       }
     } catch (error) {
@@ -248,20 +280,71 @@ const ProfileDetail = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình cập nhật thông tin đầu bếp.", "Failed");
+      console.log(error.response.data);
+      showModal(
+        // t("modal.error"), t("errors.updateChefProfileFailed"), "Failed");
+        t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
+  const handleSearch = (query) => {
+    setUpdateDataChef((prev) => ({ ...prev, address: query }))
+    fetchAddressSuggestions(query);
+  };
+
+
+  const fetchAddressSuggestions = async (query) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+      };
+
+
+      if (country) {
+        params.components = `country:${country}`;
+      }
+
+      console.log(params)
+
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+        { params }
+      );
+
+      console.log("Suggestions response:", response.data);
+      if (response.data.status === "OK") {
+        setSuggestions(response.data.predictions);
+      }
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        t("errors.fetchSuggestionsFailed"),
+        "Failed"
+      );
+    }
+  };
 
   const renderProfileTab = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 10, paddingBottom: 50, paddingTop: 20 }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ padding: 10, paddingBottom: 50, paddingTop: 20 }}
+    >
       {isEditing ? (
         <View style={{ alignItems: "center", marginBottom: 20 }}>
           <TouchableOpacity onPress={pickImage}>
             <View style={{ position: "relative" }}>
-              <Image source={{ uri: updateData.avatarUrl }} style={styles.avatar} />
+              <Image
+                source={{ uri: updateData.avatarUrl }}
+                style={styles.avatar}
+              />
               <Feather
                 name="camera"
                 size={32}
@@ -276,54 +359,79 @@ const ProfileDetail = () => {
             </View>
           </TouchableOpacity>
         </View>
-
       ) : (
         <View style={{ alignItems: "center", marginBottom: 20 }}>
           <Image
-            source={{ uri: updateData.avatarUrl || "https://via.placeholder.com/100" }}
+            source={{
+              uri: updateData.avatarUrl,
+            }}
             style={{ width: 100, height: 100, borderRadius: 50 }}
           />
-        </View>)}
+        </View>
+      )}
 
       <Text style={styles.label}>{t("username")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateData.username} editable={false} />
+        <TextInput
+          style={styles.input}
+          value={updateData.username}
+          editable={false}
+        />
       ) : (
         <Text style={styles.text}>{updateData.username}</Text>
       )}
 
       <Text style={styles.label}>{t("fullName")}</Text>
       {isEditing ? (
-        <TextInput style={[styles.input, errors.name && styles.errorInput]} value={updateData.fullName} onChangeText={(text) => {
-          setUpdateData((prev) => ({ ...prev, fullName: text }));
-          setErrors((prev) => ({ ...prev, name: false, }))
-        }} />
+        <TextInput
+          style={[styles.input, errors.name && styles.errorInput]}
+          value={updateData.fullName}
+          onChangeText={(text) => {
+            setUpdateData((prev) => ({ ...prev, fullName: text }));
+            setErrors((prev) => ({ ...prev, name: false }));
+          }}
+        />
       ) : (
         <Text style={styles.text}>{updateData.fullName}</Text>
       )}
 
       <Text style={styles.label}>{t("email")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateData.email} editable={false} />
+        <TextInput
+          style={styles.input}
+          value={updateData.email}
+          editable={false}
+        />
       ) : (
         <Text style={styles.text}>{updateData.email}</Text>
       )}
 
       <Text style={styles.label}>{t("phone")}</Text>
       {isEditing ? (
-        <TextInput style={[styles.input, errors.phone && styles.errorInput]} value={updateData.phone} onChangeText={(text) => {
-          setUpdateData((prev) => ({ ...prev, phone: text }));
-          setErrors((prev) => ({ ...prev, phone: false, }))
-        }}
-          keyboardType="phone-pad" />
+        <TextInput
+          style={[styles.input, errors.phone && styles.errorInput]}
+          value={updateData.phone}
+          onChangeText={(text) => {
+            setUpdateData((prev) => ({ ...prev, phone: text }));
+            setErrors((prev) => ({ ...prev, phone: false }));
+          }}
+          keyboardType="phone-pad"
+        />
       ) : (
         <Text style={styles.text}>{updateData.phone}</Text>
       )}
 
       <Text style={styles.label}>{t("dob")}</Text>
       {isEditing ? (
-        <TouchableOpacity onPress={() => setShowDatePicker(true)} disabled={loading}>
-          <TextInput style={[styles.input, errors.dob && styles.errorInput]} value={updateData.dob} editable={false} />
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          disabled={loading}
+        >
+          <TextInput
+            style={[styles.input, errors.dob && styles.errorInput]}
+            value={updateData.dob}
+            editable={false}
+          />
         </TouchableOpacity>
       ) : (
         <Text style={styles.text}>{updateData.dob}</Text>
@@ -344,180 +452,306 @@ const ProfileDetail = () => {
           <TouchableOpacity
             style={[
               styles.genderButton,
-              mapGenderToDisplay(updateData.gender) === "Nam" && styles.genderSelected,
+              updateData.gender === "Male" && styles.genderSelected,
             ]}
-            onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Male" }))}
+            onPress={() =>
+              setUpdateData((prev) => ({ ...prev, gender: "Male" }))
+            }
           >
             <Text
               style={
-                mapGenderToDisplay(updateData.gender) === "Nam" ? styles.genderTextSelected : styles.genderText
+                updateData.gender === "Male"
+                  ? styles.genderTextSelected
+                  : styles.genderText
               }
             >
-              Nam
+              {t("male")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.genderButton,
-              mapGenderToDisplay(updateData.gender) === "Nữ" && styles.genderSelected,
+              updateData.gender === "Female" && styles.genderSelected,
             ]}
-            onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Female" }))}
+            onPress={() =>
+              setUpdateData((prev) => ({ ...prev, gender: "Female" }))
+            }
           >
             <Text
               style={
-                mapGenderToDisplay(updateData.gender) === "Nữ" ? styles.genderTextSelected : styles.genderText
+                updateData.gender === "Female"
+                  ? styles.genderTextSelected
+                  : styles.genderText
               }
             >
-              Nữ
+              {t("female")}
             </Text>
           </TouchableOpacity>
-        </View>) : (
+        </View>
+      ) : (
         <Text style={styles.text}>{updateData.gender}</Text>
       )}
       <View style={{ marginTop: 20 }}>
         {isEditing ? (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-            <TouchableOpacity style={{
-              backgroundColor: "orange",
-              paddingVertical: 12,
-              borderRadius: 8,
-              alignItems: "center",
-              width: '30%'
-            }}
-              onPress={() => handleSaveProfile()}>
-              <Text style={styles.editButtonText}>Save</Text>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-around" }}
+          >
+            <TouchableOpacity
+              style={{
+                backgroundColor: "orange",
+                paddingVertical: 12,
+                borderRadius: 8,
+                alignItems: "center",
+                width: "30%",
+              }}
+              onPress={() => handleSaveProfile()}
+            >
+              <Text style={styles.editButtonText}>{t("save")}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{
-              backgroundColor: "red",
-              paddingVertical: 12,
-              borderRadius: 8,
-              alignItems: "center",
-              width: '30%'
-            }}
-              onPress={() => { setIsEditing(false), setUpdateData(data) }}>
-              <Text style={styles.editButtonText}>Cancel</Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "red",
+                paddingVertical: 12,
+                borderRadius: 8,
+                alignItems: "center",
+                width: "30%",
+              }}
+              onPress={() => {
+                setIsEditing(false), setUpdateData(data);
+              }}
+            >
+              <Text style={styles.editButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
-
         ) : (
-          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => setIsEditing(true)}
+          >
             <Text style={styles.editButtonText}>{t("editProfile")}</Text>
           </TouchableOpacity>
         )}
-
       </View>
     </ScrollView>
   );
 
   const renderChefTab = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 10, paddingBottom: 50, paddingTop: 20 }}>
-      <Text style={styles.label}>Bio</Text>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ padding: 10, paddingBottom: 50, paddingTop: 20 }}
+    >
+      <Text style={styles.label}>{t("bio")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateDataChef.bio} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, bio: text }))} />
+        // <TextInput
+        //   style={styles.input}
+        //   value={updateDataChef.bio}
+        //   onChangeText={(text) =>
+        //     setUpdateDataChef((prev) => ({ ...prev, bio: text }))
+        //   }
+        // />
+        <TextInput
+          multiline
+          numberOfLines={3}
+          style={styles.textArea}
+          value={updateDataChef.bio}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, bio: text }))
+          }
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.bio}</Text>
       )}
 
-      <Text style={styles.label}>Description</Text>
+      <Text style={styles.label}>{t("description")}</Text>
       {isEditing ? (
         <TextInput
           multiline
           numberOfLines={3}
-          style={styles.textArea} value={updateDataChef.description} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, description: text }))} />
+          style={styles.textArea}
+          value={updateDataChef.description}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, description: text }))
+          }
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.description}</Text>
       )}
 
-      <Text style={styles.label}>Country</Text>
+      <Text style={styles.label}>{t("address")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateDataChef.country} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, country: text }))} />
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            style={styles.input}
+            value={updateDataChef.address}
+            onChangeText={handleSearch}
+            onSubmitEditing={(event) => {
+              event.persist();
+              fetchAddressSuggestions(event.nativeEvent.text);
+            }}
+            returnKeyType="search"
+          />
+          {suggestions.length > 0 && (
+            <View style={styles.suggestionContainer}>
+              <ScrollView nestedScrollEnabled={true}>
+                {suggestions.map((item, index) => (
+                  <TouchableOpacity
+                    key={`${item.place_id}-${index}`}
+                    onPress={() => selectAddress(item)}
+                    style={styles.suggestionItem}
+                  >
+                    <Text style={styles.suggestionText}>
+                      {item.description}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
+
+      ) : (
+        <Text style={styles.text}>{updateDataChef.address}</Text>
+      )}
+
+      <Text style={styles.label}>{t("country")}</Text>
+      {isEditing ? (
+        <TextInput
+          style={styles.input}
+          value={updateDataChef.country}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, country: text }))
+          }
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.country}</Text>
       )}
 
-      <Text style={styles.label}>Price</Text>
+      <Text style={styles.label}>{t("price")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={String(updateDataChef.price)} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, price: text }))} keyboardType="phone-pad" />
+        <TextInput
+          style={styles.input}
+          value={String(updateDataChef.price)}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, price: text }))
+          }
+          keyboardType="phone-pad"
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.price}</Text>
       )}
 
-      <Text style={styles.label}>Max Serving Size</Text>
+      <Text style={styles.label}>{t("maxServingSize")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={String(updateDataChef.maxServingSize)} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, maxServingSize: text }))} keyboardType="phone-pad" />
+        <TextInput
+          style={styles.input}
+          value={String(updateDataChef.maxServingSize)}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, maxServingSize: text }))
+          }
+          keyboardType="phone-pad"
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.maxServingSize}</Text>
       )}
 
-      <Text style={styles.label}>Specialization</Text>
+      <Text style={styles.label}>{t("specialization")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateDataChef.specialization} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, specialization: text }))} />
+        <TextInput
+          style={styles.input}
+          value={updateDataChef.specialization}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, specialization: text }))
+          }
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.specialization}</Text>
       )}
 
-      <Text style={styles.label}>Years of experience</Text>
+      <Text style={styles.label}>{t("yearsOfExperience")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={String(updateDataChef.yearsOfExperience)} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, yearsOfExperience: text }))} keyboardType="phone-pad" />
+        <TextInput
+          style={styles.input}
+          value={String(updateDataChef.yearsOfExperience)}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, yearsOfExperience: text }))
+          }
+          keyboardType="phone-pad"
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.yearsOfExperience}</Text>
       )}
 
-      <Text style={styles.label}>Certification</Text>
+      <Text style={styles.label}>{t("certification")}</Text>
       {isEditing ? (
-        <TextInput style={styles.input} value={updateDataChef.certification} onChangeText={(text) => setUpdateDataChef((prev) => ({ ...prev, certification: text }))} keyboardType="phone-pad" />
+        <TextInput
+          style={styles.input}
+          value={updateDataChef.certification}
+          onChangeText={(text) =>
+            setUpdateDataChef((prev) => ({ ...prev, certification: text }))
+          }
+          keyboardType="phone-pad"
+        />
       ) : (
         <Text style={styles.text}>{updateDataChef.certification}</Text>
       )}
       <View style={{ marginTop: 20 }}>
         {isEditing ? (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-            <TouchableOpacity style={{
-              backgroundColor: "orange",
-              paddingVertical: 12,
-              borderRadius: 8,
-              alignItems: "center",
-              width: '30%'
-            }}
-              onPress={() => handleSaveChefProfile()}>
-              <Text style={styles.editButtonText}>Save</Text>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-around" }}
+          >
+            <TouchableOpacity
+              style={{
+                backgroundColor: "orange",
+                paddingVertical: 12,
+                borderRadius: 8,
+                alignItems: "center",
+                width: "30%",
+              }}
+              onPress={() => handleSaveChefProfile()}
+            >
+              <Text style={styles.editButtonText}>{t("save")}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{
-              backgroundColor: "red",
-              paddingVertical: 12,
-              borderRadius: 8,
-              alignItems: "center",
-              width: '30%'
-            }}
-              onPress={() => { setIsEditing(false), setUpdateDataChef(dataChef) }}>
-              <Text style={styles.editButtonText}>Cancel</Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "red",
+                paddingVertical: 12,
+                borderRadius: 8,
+                alignItems: "center",
+                width: "30%",
+              }}
+              onPress={() => {
+                setIsEditing(false), setUpdateDataChef(dataChef);
+              }}
+            >
+              <Text style={styles.editButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
-
         ) : (
-          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
-            <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => setIsEditing(true)}
+          >
+            <Text style={styles.editButtonText}>{t("editProfile")}</Text>
           </TouchableOpacity>
         )}
-
       </View>
     </ScrollView>
   );
   const renderScene = ({ route }) => {
     switch (route.key) {
-      case 'profile':
+      case "profile":
         return renderProfileTab();
-      case 'chef':
+      case "chef":
         return renderChefTab();
       default:
         return null;
     }
   };
 
-
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Profile" />
+      <Header title={t("titleP")} />
       {user?.roleName === "ROLE_CHEF" ? (
         <TabView
           navigationState={{ index, routes }}
@@ -531,19 +765,30 @@ const ProfileDetail = () => {
               {...props}
               inactiveColor="gray"
               activeColor="#9C583F"
-              indicatorStyle={{ backgroundColor: '#A9411D' }}
-              style={{ backgroundColor: '#EBE5DD', elevation: 0, shadowOpacity: 0, borderBottomWidth: 0 }}
-              labelStyle={{ color: '#A9411D', fontWeight: 'bold' }}
+              indicatorStyle={{ backgroundColor: "#A9411D" }}
+              style={{
+                backgroundColor: "#EBE5DD",
+                elevation: 0,
+                shadowOpacity: 0,
+                borderBottomWidth: 0,
+              }}
+              labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
             />
           )}
         />
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 10, paddingBottom: 80 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 10, paddingBottom: 80 }}
+        >
           {isEditing ? (
             <View style={{ alignItems: "center", marginBottom: 20 }}>
               <TouchableOpacity onPress={pickImage}>
                 <View style={{ position: "relative" }}>
-                  <Image source={{ uri: updateData.avatarUrl }} style={styles.avatar} />
+                  <Image
+                    source={{ uri: updateData.avatarUrl }}
+                    style={styles.avatar}
+                  />
                   <Feather
                     name="camera"
                     size={32}
@@ -558,46 +803,76 @@ const ProfileDetail = () => {
                 </View>
               </TouchableOpacity>
             </View>
-
           ) : (
             <View style={{ alignItems: "center", marginBottom: 20 }}>
               <Image
-                source={{ uri: updateData.avatarUrl || "https://via.placeholder.com/100" }}
+                source={{
+                  uri:
+                    updateData.avatarUrl || "https://via.placeholder.com/100",
+                }}
                 style={{ width: 100, height: 100, borderRadius: 50 }}
               />
-            </View>)}
+            </View>
+          )}
 
           <Text style={styles.label}>Username</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={updateData.username} editable={false} />
+            <TextInput
+              style={styles.input}
+              value={updateData.username}
+              editable={false}
+            />
           ) : (
             <Text style={styles.text}>{updateData.username}</Text>
           )}
 
           <Text style={styles.label}>Họ và tên</Text>
           {isEditing ? (
-            <TextInput style={[styles.input, errors.name && styles.errorInput]} value={updateData.fullName} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, fullName: text }))} />
+            <TextInput
+              style={[styles.input, errors.name && styles.errorInput]}
+              value={updateData.fullName}
+              onChangeText={(text) =>
+                setUpdateData((prev) => ({ ...prev, fullName: text }))
+              }
+            />
           ) : (
             <Text style={styles.text}>{updateData.fullName}</Text>
           )}
 
           <Text style={styles.label}>Email</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={updateData.email} editable={false} />
+            <TextInput
+              style={styles.input}
+              value={updateData.email}
+              editable={false}
+            />
           ) : (
             <Text style={styles.text}>{updateData.email}</Text>
           )}
 
           <Text style={styles.label}>Số điện thoại</Text>
           {isEditing ? (
-            <TextInput style={[styles.input, errors.phone && styles.errorInput]} value={updateData.phone} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, phone: text }))} keyboardType="phone-pad" />
+            <TextInput
+              style={[styles.input, errors.phone && styles.errorInput]}
+              value={updateData.phone}
+              onChangeText={(text) =>
+                setUpdateData((prev) => ({ ...prev, phone: text }))
+              }
+              keyboardType="phone-pad"
+            />
           ) : (
             <Text style={styles.text}>{updateData.phone}</Text>
           )}
 
           <Text style={styles.label}>Ngày sinh</Text>
           {isEditing ? (
-            <TextInput style={[styles.input, errors.dob && styles.errorInput]} value={updateData.dob} onChangeText={(text) => setUpdateData((prev) => ({ ...prev, dob: text }))} />
+            <TextInput
+              style={[styles.input, errors.dob && styles.errorInput]}
+              value={updateData.dob}
+              onChangeText={(text) =>
+                setUpdateData((prev) => ({ ...prev, dob: text }))
+              }
+            />
           ) : (
             <Text style={styles.text}>{updateData.dob}</Text>
           )}
@@ -608,13 +883,18 @@ const ProfileDetail = () => {
               <TouchableOpacity
                 style={[
                   styles.genderButton,
-                  mapGenderToDisplay(updateData.gender) === "Nam" && styles.genderSelected,
+                  mapGenderToDisplay(updateData.gender) === "Nam" &&
+                  styles.genderSelected,
                 ]}
-                onPress={() => setUpdateData((prev) => ({ ...prev, gender: "Male" }))}
+                onPress={() =>
+                  setUpdateData((prev) => ({ ...prev, gender: "Male" }))
+                }
               >
                 <Text
                   style={
-                    mapGenderToDisplay(updateData.gender) === "Nam" ? styles.genderTextSelected : styles.genderText
+                    mapGenderToDisplay(updateData.gender) === "Nam"
+                      ? styles.genderTextSelected
+                      : styles.genderText
                   }
                 >
                   Nam
@@ -623,66 +903,77 @@ const ProfileDetail = () => {
               <TouchableOpacity
                 style={[
                   styles.genderButton,
-                  mapGenderToDisplay(updateData.gender) === "Nữ" && styles.genderSelected,
+                  mapGenderToDisplay(updateData.gender) === "Nữ" &&
+                  styles.genderSelected,
                 ]}
                 onPress={() => {
                   setUpdateData((prev) => ({ ...prev, gender: "Female" }));
                   console.log(updateData.gender);
-                  console.log(mapGenderToDisplay(updateData.gender))
-                }
-                }
+                  console.log(mapGenderToDisplay(updateData.gender));
+                }}
               >
                 <Text
                   style={
-                    mapGenderToDisplay(updateData.gender) === "Nữ" ? styles.genderTextSelected : styles.genderText
+                    mapGenderToDisplay(updateData.gender) === "Nữ"
+                      ? styles.genderTextSelected
+                      : styles.genderText
                   }
                 >
                   Nữ
                 </Text>
               </TouchableOpacity>
-            </View>) : (
+            </View>
+          ) : (
             <Text style={styles.text}>{updateData.gender}</Text>
           )}
           <View style={{ marginTop: 20 }}>
             {isEditing ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                <TouchableOpacity style={{
-                  backgroundColor: "orange",
-                  paddingVertical: 12,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  width: '30%'
-                }}
-                  onPress={() => handleSaveProfile()}>
+              <View
+                style={{ flexDirection: "row", justifyContent: "space-around" }}
+              >
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "orange",
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    width: "30%",
+                  }}
+                  onPress={() => handleSaveProfile()}
+                >
                   {loading ? (
-                    <ActivityIndicator size={'small'} color={'white'} />
+                    <ActivityIndicator size={"small"} color={"white"} />
                   ) : (
                     <Text style={styles.editButtonText}>Save</Text>
                   )}
                 </TouchableOpacity>
-                <TouchableOpacity style={{
-                  backgroundColor: "red",
-                  paddingVertical: 12,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  width: '30%'
-                }}
-                  onPress={() => { setIsEditing(false), setUpdateData(data) }}>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "red",
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    width: "30%",
+                  }}
+                  onPress={() => {
+                    setIsEditing(false), setUpdateData(data);
+                  }}
+                >
                   <Text style={styles.editButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-
             ) : (
-              <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => setIsEditing(true)}
+              >
                 <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
               </TouchableOpacity>
             )}
-
           </View>
         </ScrollView>
       )}
-
-    </SafeAreaView >
+    </SafeAreaView>
   );
 };
 
@@ -712,10 +1003,11 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     marginBottom: 16,
-    color: '#333',
+    color: "#333",
+    zIndex: 10
   },
   errorInput: {
-    borderColor: 'red'
+    borderColor: "red",
   },
   textArea: {
     borderColor: "#ccc",
@@ -724,9 +1016,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     minHeight: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     marginBottom: 10,
   },
   genderContainer: {
@@ -759,6 +1051,34 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+  },
+  suggestionContainer: {
+    position: 'absolute',
+    top: 45, // hoặc bằng height của TextInput + margin
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    maxHeight: 200,
+    zIndex: 20,
+    elevation: 5, // Android
+    shadowColor: '#000', // iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+
+  suggestionItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+
+  suggestionText: {
+    fontSize: 14,
+    color: '#333',
   },
 });
 

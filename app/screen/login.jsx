@@ -1,4 +1,12 @@
-import { View, Text, TextInput, Image, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,22 +16,21 @@ import * as WebBrowser from "expo-web-browser";
 import { AuthContext } from "../../config/AuthContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 import { t } from "i18next";
-import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { WebView } from "react-native-webview";
 import { Modal } from "react-native";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
 import useActionCheckNetwork from "../../hooks/useAction";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState(null);
   const navigation = useNavigation();
   const { user, login, loading, setUser, setIsGuest } = useContext(AuthContext);
   const modalRef = useRef(null);
@@ -33,20 +40,19 @@ export default function LoginScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [oauthUrl, setOauthUrl] = useState(null);
   const requireNetwork = useActionCheckNetwork();
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (user?.token !== undefined && !hasNavigated && !loading) {
       if (user?.roleName === "ROLE_CHEF") {
-        console.log("????")
-        navigation.navigate("(chef)", { screen: "home" })
+        console.log("????");
+        navigation.navigate("(chef)", { screen: "home" });
       }
     } else if (user?.roleName === "ROLE_CUSTOMER") {
       navigation.navigate("(tabs)", { screen: "home" });
     }
     setHasNavigated(true);
-
-  }, [user, hasNavigated, loading])
-
+  }, [user, hasNavigated, loading]);
 
   const saveDeviceToken = async (email, token) => {
     if (!email || !token) return;
@@ -64,11 +70,13 @@ export default function LoginScreen() {
       );
       console.log("Device token saved successfully");
     } catch (error) {
-      console.error("Error saving device token:", error?.response?.data);
+      showModal(
+        t("modal.error"),
+        t("errors.saveDeviceTokenFailed"),
+        "Failed"
+      );
     }
   };
-
-
 
   const handleLogin = async () => {
     if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
@@ -76,19 +84,19 @@ export default function LoginScreen() {
       return;
     }
     setLoadingA(true);
-    const token = await SecureStore.getItemAsync('expoPushToken');
+    setErrorMessage("");
+    const token = SecureStore.getItem("expoPushToken");
+    console.log("token luc login", token);
     const result = await login(usernameOrEmail, password, token);
-    if (result != null) {
+    console.log("reas asd", result);
+    if (result != null && result.error === undefined) {
       if (result?.roleName === "ROLE_CHEF") {
-        navigation.navigate("(chef)", { screen: "home" })
-      }
-      else if (result?.roleName === "ROLE_CUSTOMER") {
+        navigation.navigate("(chef)", { screen: "home" });
+      } else if (result?.roleName === "ROLE_CUSTOMER") {
         navigation.navigate("(tabs)", { screen: "home" });
       }
-      console.log("roi voday")
-    }
-    else {
-      console.log("roi xuong day1")
+    } else {
+      setErrorMessage(result?.error || t("loginFailedMessage"));
       if (modalRef.current) {
         modalRef.current.open();
       }
@@ -112,7 +120,11 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error("Lỗi khi gọi API OAuth:", error?.response);
-      showModal("Error", "Login google failed", "Failed");
+      showModal(
+        t("modal.error"),
+        t("errors.googleLoginFailed"),
+        "Failed"
+      );
     } finally {
       setGoogleLoading(false);
     }
@@ -125,7 +137,9 @@ export default function LoginScreen() {
   const handleNavigationStateChange = async (navState) => {
     const url = navState.url;
 
-    if (url.startsWith("https://vietchef-api.ddns.net/no-auth/oauth-redirect")) {
+    if (
+      url.startsWith("https://vietchef-api.ddns.net/no-auth/oauth-redirect")
+    ) {
       const params = new URLSearchParams(url.split("?")[1]);
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
@@ -141,7 +155,7 @@ export default function LoginScreen() {
           token: access_token,
           ...decoded,
         });
-        const token = await SecureStore.getItemAsync('expoPushToken');
+        const token = await SecureStore.getItemAsync("expoPushToken");
         await saveDeviceToken(decoded?.sub, token);
         setOauthUrl(null);
         setIsGuest(false);
@@ -154,22 +168,25 @@ export default function LoginScreen() {
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
-      <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 50 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('index')}>
-          <View style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}>
+      <ScrollView
+        style={commonStyles.containerContent}
+        contentContainerStyle={{ paddingBottom: 50 }}
+      >
+        <TouchableOpacity onPress={() => navigation.navigate("index")}>
+          <View
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <Ionicons name="arrow-back" size={24} color="black" />
           </View>
         </TouchableOpacity>
 
-        <Text style={commonStyles.subTitleText}>
-          Login to your account to use...
-        </Text>
+        <Text style={commonStyles.subTitleText}>{t("loginToAccount")} </Text>
         <Image
           source={require("../../assets/images/logo.png")}
           style={{ width: 400, height: 250 }}
@@ -182,10 +199,16 @@ export default function LoginScreen() {
           placeholderTextColor="#968B7B"
           value={usernameOrEmail}
           onChangeText={setUsernameOrEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
         <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
-        <View style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}>
-          <TouchableOpacity onPress={() => navigation.navigate("screen/forgot")}>
+        <View
+          style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.navigate("screen/forgot")}
+          >
             <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
@@ -206,11 +229,17 @@ export default function LoginScreen() {
             {loadingA ? (
               <ActivityIndicator size="large" color="#fff" />
             ) : (
-              <Text style={{ textAlign: "center", fontSize: 18, color: "#fff", fontFamily: "nunito-bold" }}>
-                Login
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontSize: 18,
+                  color: "#fff",
+                  fontFamily: "nunito-bold",
+                }}
+              >
+                {t("login")}
               </Text>
             )}
-
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -252,15 +281,32 @@ export default function LoginScreen() {
               </>
             )}
           </TouchableOpacity>
-
         </View>
       </ScrollView>
 
       <Modalize ref={modalRef} adjustToContentHeight>
-        <View style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: "bold", textAlign: 'center' }}>Login failed</Text>
+        <View
+          style={{
+            paddingVertical: 20,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              marginBottom: 10,
+              fontWeight: "bold",
+              textAlign: "center",
+            }}
+          >
+            {t("loginFailed")}
+          </Text>
           <Ionicons name="close-circle" size={60} color="red" />
-          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: 'center' }}>Please check your account or password again.</Text>
+          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: "center" }}>
+            {/* {t("loginFailedMessage")} */}
+            {errorMessage}
+          </Text>
           <TouchableOpacity
             style={{
               padding: 5,
@@ -269,12 +315,12 @@ export default function LoginScreen() {
               backgroundColor: "#383737",
               borderColor: "#383737",
               borderRadius: 50,
-              width: '50%',
+              width: "50%",
             }}
             onPress={() => modalRef.current?.close()}
           >
             <Text style={{ textAlign: "center", fontSize: 16, color: "#fff" }}>
-              Try again
+              {t("tryAgain")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -315,7 +361,6 @@ export default function LoginScreen() {
           />
         </View>
       </Modal>
-
     </GestureHandlerRootView>
   );
 }

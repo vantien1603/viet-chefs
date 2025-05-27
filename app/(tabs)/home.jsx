@@ -22,6 +22,7 @@ import { t } from "i18next";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
 import CustomChat from "../../components/CustomChat.jsx";
+import { SocketContext } from "../../config/SocketContext.js";
 
 
 export default function Home() {
@@ -36,10 +37,14 @@ export default function Home() {
   const [location, setLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [loadingChef, setLoadingChef] = useState(false);
+  const [loadingDish, setLoadingDish] = useState(false);
   const { showModal } = useCommonNoification();
 
   const [messages, setMessages] = useState([]);
   const [isChatVisible, setIsChatVisible] = useState(false);
+  const { registerNotificationCallback } = useContext(SocketContext);
 
   const initialMessages = [
     {
@@ -59,19 +64,28 @@ export default function Home() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-      if (!isGuest) fetchUnreadCount();
     }, [])
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (location) {
-        fetchChef();
-        fetchDishes();
-        !isGuest && fetchChefFavorite();
+  useEffect(() => {
+    if (!isGuest) {
+      registerNotificationCallback(() => {
+        fetchUnreadCount();
+      });
+    }
+
+  }, []);
+
+  useEffect(() => {
+    if (location) {
+      fetchChef();
+      fetchDishes();
+      if (!isGuest) {
+        fetchChefFavorite();
       }
-    }, [location])
-  );
+    }
+  }, [location]);
+
 
 
 
@@ -87,7 +101,7 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình xử lý", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xử lý", "Failed");
     } finally {
       setLoading(false);
     }
@@ -108,7 +122,7 @@ export default function Home() {
         longitude: currentLocation.coords.longitude,
       };
     } catch (error) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình xác định vị trí", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xác định vị trí", "Failed");
     } finally {
       setLoading(false);
     }
@@ -137,7 +151,7 @@ export default function Home() {
       }
       return null;
     } catch (error) {
-      showModal("Error", "Có lỗi xảy ra trong quá trình reverse geocoding", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình reverse geocoding", "Failed");
     } finally {
       setLoading(false);
     }
@@ -177,14 +191,14 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải địa chỉ", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải địa chỉ", "Failed");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchChefFavorite = async () => {
-    setLoading(true);
+    setLoadingFavorite(true);
     try {
       if (!location) return;
       // const response = await axiosInstance.get("/favorite-chefs/nearby", {
@@ -206,15 +220,15 @@ export default function Home() {
       setChefFavorite(response.data.content);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", error.response.data.message, "Failed");
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     }
     finally {
-      setLoading(false);
+      setLoadingFavorite(false);
     }
   };
 
   const fetchChef = async () => {
-    setLoading(true);
+    setLoadingChef(true);
     try {
       if (!location) return;
       const response = await axiosInstance.get("/chefs/nearby", {
@@ -229,18 +243,16 @@ export default function Home() {
       if (response.status === 200)
         setChef(response.data.content.slice(0, 7));
     } catch (error) {
-      if (axios.isCancel(error)) {
-        return;
-      }
-      // showModal("Error", "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", "Failed");
     } finally {
-      setLoading(false);
+      setLoadingChef(false);
     }
   };
 
   const fetchDishes = async () => {
-    setLoading(true);
+    setLoadingDish(true);
     try {
       if (!location) return;
       const response = await axiosInstance.get("/dishes/nearby", {
@@ -254,12 +266,10 @@ export default function Home() {
       });
       setDishes(response.data.content.slice(0, 7));
     } catch (error) {
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal("Error", error.response.data.message, "Failed");
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải thông tin món ăn", "Failed");
     } finally {
-      setLoading(false);
+      setLoadingDish(false);
     }
   };
 
@@ -358,7 +368,10 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{t('basePrice')}: {item.basePrice}$</Text>
       <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{item.description}</Text>
+      <Text style={{ color: '#F8BF40', fontSize: 12 }}> {t('distance')}: {item.chef.distance.toFixed(2)} km</Text>
+
     </TouchableOpacity>
   );
 
@@ -382,7 +395,9 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.user.fullName}</Text>
+      {/* <Text style={{ color: "#F8BF40" }}>{t('price')}: {item.price}</Text> */}
       <Text style={{ color: "#F8BF40" }}>{item.specialization}</Text>
+      <Text style={{ color: '#F8BF40', fontSize: 12 }}> {t('distance')}: {item.distance.toFixed(2)} km</Text>
     </TouchableOpacity>
   );
 
@@ -495,7 +510,7 @@ export default function Home() {
             </View>
 
             <View style={{ minHeight: 200 }}>
-              {loading ? (
+              {loadingFavorite ? (
                 <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
               ) : (
                 (chefFavorite.length > 0) && (
@@ -536,7 +551,7 @@ export default function Home() {
             </Text>
           </TouchableOpacity>
         </View>
-        {loading ? (
+        {loadingDish ? (
           <View style={{ minHeight: 200 }}>
             <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
           </View>
@@ -581,7 +596,7 @@ export default function Home() {
           </TouchableOpacity>
         </View>
         {/* <View style={{ minHeight: 200 }} > */}
-        {loading ? (
+        {loadingChef ? (
           <View style={{ minHeight: 200 }} >
             <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
           </View>
@@ -596,23 +611,20 @@ export default function Home() {
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 30 }}
             >
-              {loading ? (
-                <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
-              ) : (
-                chef.map((item, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      width: 200,
-                      alignItems: "center",
-                      marginRight: 20,
-                      marginLeft: index === 0 ? 16 : 0,
-                    }}
-                  >
-                    {renderChefItem({ item })}
-                  </View>
-                ))
-              )}
+
+              {chef.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderChefItem({ item })}
+                </View>
+              ))}
             </ScrollView>
           ))}
         {/* </View> */}

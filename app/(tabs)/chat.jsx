@@ -41,16 +41,16 @@ const Chat = () => {
 
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/conversations/${user.sub}`);
+      const response = await axiosInstance.get(`/conversations/${user?.sub}`);
       console.log("Dữ liệu conversations:", response.data);
       const messagesData = await Promise.all(
         response.data.map(async (message) => {
           const otherUserId =
-            message.senderId === user.sub
+            message.senderId === user?.sub
               ? message.recipientId
               : message.senderId;
           const otherUserName =
-            message.senderId === user.sub
+            message.senderId === user?.sub
               ? message.recipientName
               : message.senderName;
           let avatarUrl = null;
@@ -151,17 +151,17 @@ const Chat = () => {
     }
   };
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     fetchConversations();
-  //   }, [shouldRefetch])
-  // );
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations();
+    }, [shouldRefetch])
+  );
 
-  // useEffect(() => {
-  //   registerNotificationCallback(() => {
-  //     setShouldRefetch((prev) => prev + 1);
-  //   });
-  // }, []);
+  useEffect(() => {
+    registerNotificationCallback(() => {
+      setShouldRefetch((prev) => prev + 1);
+    });
+  }, []);
 
   const handleSearch = (text) => {
     setSearchQuery(text);
@@ -194,7 +194,7 @@ const Chat = () => {
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.message} numberOfLines={1} ellipsizeMode="tail">
           {item.contentType === "image"
-            ? item.senderId === user.sub
+            ? item.senderId === user?.sub
               ? t("youSentImage")
               : t("chefSentImage")
             : `${item.senderName}: ${item.message}`}

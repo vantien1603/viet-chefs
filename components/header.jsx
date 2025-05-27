@@ -3,7 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 
-const Header = ({ title, subtitle, onRightPress, rightIcon, rightText, onLeftPress }) => {
+const Header = ({
+  title,
+  subtitle,
+  onRightPress,
+  rightIcon,
+  rightText,
+  onLeftPress,
+}) => {
   const router = useRouter();
 
   const handleLeftPress = onLeftPress || (() => router.back());
@@ -15,9 +22,9 @@ const Header = ({ title, subtitle, onRightPress, rightIcon, rightText, onLeftPre
           <Ionicons name="arrow-back" size={24} color="black" />
         </View>
       </TouchableOpacity>
-      <View style={[styles.textContainer, { flexDirection: !subtitle ? "row" : "column" }]}>
+      <View style={styles.absoluteTextContainer}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       <TouchableOpacity onPress={onRightPress} disabled={!onRightPress}>
         <View
@@ -30,7 +37,9 @@ const Header = ({ title, subtitle, onRightPress, rightIcon, rightText, onLeftPre
             },
           ]}
         >
-          {rightIcon ? <Ionicons name={rightIcon} size={24} color="black" /> : null}
+          {rightIcon ? (
+            <Ionicons name={rightIcon} size={24} color="black" />
+          ) : null}
           {rightText ? <Text style={styles.rightText}>{rightText}</Text> : null}
         </View>
       </TouchableOpacity>
@@ -47,11 +56,20 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
     borderBottomWidth: 1.5,
     borderBottomColor: "#e0e0e0",
-    // paddingBottom: 20,
-    // marginBottom:20
+    paddingBottom: 20,
+    position: "relative", // needed for absolute children
+  },
+  absoluteTextContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    pointerEvents: "none", // allow touches to pass through
   },
   iconContainer: {
-    width: 60,
+    minWidth: 60, // Dùng minWidth thay vì fixed width
+    paddingHorizontal: 12,
     height: 60,
     borderRadius: 30,
     justifyContent: "center",
@@ -74,7 +92,8 @@ const styles = StyleSheet.create({
   rightText: {
     fontSize: 16,
     color: "#A9411D",
-    marginLeft: 8 // This could still reference rightIcon; fix below
+    marginLeft: 8,
+    flexShrink: 1, // Cho phép co lại nếu cần
   },
 });
 

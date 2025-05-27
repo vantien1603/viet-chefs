@@ -81,16 +81,31 @@ const groupDatesByWeek = (dates) => {
 };
 
 const LongTermSelectBooking = () => {
-  const { numPeople, address, chefId, selectedPackage, setIsLong,
-    selectedDay, setSelectedDay,
-    startTime, setStartTime,
-    ingredientPrep, setIngredientPrep,
-    dishNotes, setDishNotes,
-    selectedMenuLong, setSelectedMenuLong,
-    selectedDishes, setSelectedDishes,
-    extraDishIds, setExtraDishIds,
-    selectedDates, setSelectedDates,
-    isSelected, setIsSelected, } = useSelectedItems();
+  const {
+    numPeople,
+    address,
+    chefId,
+    selectedPackage,
+    setIsLong,
+    selectedDay,
+    setSelectedDay,
+    startTime,
+    setStartTime,
+    ingredientPrep,
+    setIngredientPrep,
+    dishNotes,
+    setDishNotes,
+    selectedMenuLong,
+    setSelectedMenuLong,
+    selectedDishes,
+    setSelectedDishes,
+    extraDishIds,
+    setExtraDishIds,
+    selectedDates,
+    setSelectedDates,
+    isSelected,
+    setIsSelected,
+  } = useSelectedItems();
 
   const axiosInstance = useAxios();
   const [currentDish, setCurrentDish] = useState(null);
@@ -137,7 +152,11 @@ const LongTermSelectBooking = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchBookingFailed"),
+        "Failed"
+      );
     }
   };
 
@@ -145,10 +164,19 @@ const LongTermSelectBooking = () => {
     try {
       const requestBody = selectedDates.map((date) => {
         const menuId = selectedMenuLong[date]?.id || null;
-        const extraDishId = Array.isArray(extraDishIds[date]) ? extraDishIds[date].map(dish => dish.id || dish.dishId) : [];
-        const singleDishId = !selectedMenuLong[date] && Array.isArray(selectedDishes[date]) ? selectedDishes[date].map(dish => dish.id || dish.dishId) : [];
-        const menuDishId = Array.isArray(selectedMenuLong[date]) ? selectedMenuLong[date].map(dish => dish.id || dish.dishId) : [];
-        const dishIds = [...new Set([...singleDishId, ...extraDishId, ...menuDishId,])];
+        const extraDishId = Array.isArray(extraDishIds[date])
+          ? extraDishIds[date].map((dish) => dish.id || dish.dishId)
+          : [];
+        const singleDishId =
+          !selectedMenuLong[date] && Array.isArray(selectedDishes[date])
+            ? selectedDishes[date].map((dish) => dish.id || dish.dishId)
+            : [];
+        const menuDishId = Array.isArray(selectedMenuLong[date])
+          ? selectedMenuLong[date].map((dish) => dish.id || dish.dishId)
+          : [];
+        const dishIds = [
+          ...new Set([...singleDishId, ...extraDishId, ...menuDishId]),
+        ];
         return {
           sessionDate: date,
           ...(menuId && { menuId }),
@@ -163,19 +191,28 @@ const LongTermSelectBooking = () => {
             customerLocation: address.address,
             guestCount: numPeople,
             maxDishesPerMeal: selectedPackage.maxDishesPerMeal,
-          }
+          },
         }
       );
       if (response.status === 200) setAvailability(response.data);
     } catch (error) {
       console.log("Error fetching availability:", error);
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchAvailabilityFailed"),
+        "Failed"
+      );
       setAvailability({});
     } finally {
     }
   };
   const handleRepeatSelection = () => {
     if (!isRepeatEnabled || selectedWeekdays.length === 0) {
-      showModal("Error", t("selectAtLeastOneWeekday"), "Error");
+      showModal(
+        t("modal.error"),
+        t("errors.selectAtLeastOneWeekday"),
+        "Failed"
+      );
       return;
     }
 
@@ -201,19 +238,21 @@ const LongTermSelectBooking = () => {
 
       loopSafetyLimit++;
       if (loopSafetyLimit > 370) {
-        showModal("Error", t("cannotSelectEnoughDays"), "Error");
+        showModal(
+          t("modal.error"),
+          t("errors.cannotSelectEnoughDays"),
+          "Failed"
+        );
         return;
       }
     }
 
     setSelectedDates(resultDates);
-    showModal(
-      "Success",
+    showModal(t("modal.success"),
       t("datesSelectedWithRepeat", { count: resultDates.length }),
-      "Success"
+      t("modal.succeeded")
     );
   };
-
 
   const toggleWeekday = (day) => {
     setSelectedWeekdays((prev) =>
@@ -297,15 +336,13 @@ const LongTermSelectBooking = () => {
         //   return updated;
         // });
         return prev.filter((d) => d !== dateString);
-      }
-      else if (prev.length < selectedPackage.durationDays) {
+      } else if (prev.length < selectedPackage.durationDays) {
         // setIsSelected((prevIsSelected) => ({
         //   ...prevIsSelected,
         //   [dateString]: false,
         // }));
         return [...prev, dateString];
-      }
-      else {
+      } else {
         return prev;
       }
     });
@@ -325,34 +362,49 @@ const LongTermSelectBooking = () => {
 
   const handleConfirm = async () => {
     for (const day of selectedDates) {
-      const isNearFutureDate = moment(day, 'YYYY-MM-DD').isBetween(
-        moment(todayString, 'YYYY-MM-DD').add(1, "day"),
-        moment(todayString, 'YYYY-MM-DD').add(3, "days"),
-        'day',
+      const isNearFutureDate = moment(day, "YYYY-MM-DD").isBetween(
+        moment(todayString, "YYYY-MM-DD").add(1, "day"),
+        moment(todayString, "YYYY-MM-DD").add(3, "days"),
+        "day",
         "[]"
       );
       console.log(isNearFutureDate);
       if (isNearFutureDate) {
-        if (!isSelected[day] && !selectedMenuLong[day]?.id && !selectedDishes[day]) {
-          showModal("Error", t("selectDishesForAllDays"), "Failed");
+        if (
+          !isSelected[day] &&
+          !selectedMenuLong[day]?.id &&
+          !selectedDishes[day]
+        ) {
+          showModal(
+            t("modal.error"),
+            t("errors.selectDishesForAllDays"),
+            "Failed"
+          );
           return;
         }
       }
 
       if (!startTime[day]) {
-        showModal("Error", t("selectStartTime"), "Failed");
+        showModal(
+          t("modal.error"),
+          t("errors.selectStartTime"),
+          "Failed"
+        );
         return;
       }
 
       if (!getAvailableTimeSlots(day).includes(startTime[day])) {
-        showModal("Error", t("timeNotAvailable", { time: startTime[day], date: day }), "Failed");
+        showModal(
+          t("modal.error"),
+          t("errors.timeNotAvailable", { time: startTime[day], date: day }),
+          "Failed"
+        );
         return;
       }
     }
 
     router.replace("/screen/reviewBooking");
   };
-
 
   const navigateToSelectFood = (date) => {
     setSelectedDay(date);
@@ -367,10 +419,7 @@ const LongTermSelectBooking = () => {
           <View>
             <View style={styles.menuHeader}>
               <Text style={styles.summaryText}>
-                {t("menu")}:{" "}
-                {
-                  selectedMenuLong[date].name
-                }
+                {t("menu")}: {selectedMenuLong[date].name}
               </Text>
             </View>
             {selectedMenuLong[date]?.menuItems.map((item) => (
@@ -379,8 +428,8 @@ const LongTermSelectBooking = () => {
                 style={[
                   styles.dishItem,
                   activeDish?.date === date &&
-                  activeDish?.dishId === item.dishId &&
-                  styles.dishItemActive,
+                    activeDish?.dishId === item.dishId &&
+                    styles.dishItemActive,
                 ]}
               >
                 <Image
@@ -388,112 +437,114 @@ const LongTermSelectBooking = () => {
                   style={styles.dishImage}
                   resizeMode="cover"
                 />
-                <Text style={styles.dishText}>
-                  {item.dishName}{" "}
-                </Text>
+                <Text style={styles.dishText}>{item.dishName} </Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
-        {(extraDishIds[date] && selectedMenuLong[date]) && (
+        {extraDishIds[date] && selectedMenuLong[date] && (
           <>
             <Text style={styles.subTitle}>
               {selectedMenuLong[date] ? t("additionalDishes") : t("dishes")}
             </Text>
-            {extraDishIds[date] && Object.values(extraDishIds[date]).map((dish) => (
-              <TouchableOpacity
-                key={dish.id}
-                style={[
-                  styles.dishItem,
-                  activeDish?.date === date &&
-                  activeDish?.dishId === dish.id &&
-                  styles.dishItemActive,
-                ]}
-                onPress={() =>
-                  toggleDishActive(date, dish.id)
-                }
-              >
-                <View style={{ flexDirection: 'row', width: '90%' }}>
-                  <Image
-                    source={{ uri: dish.imageUrl }}
-                    style={styles.dishImage}
-                    resizeMode="cover"
-                  />
-                  <View>
-                    <Text style={styles.dishText}>
-                      {dish?.name || "Unknown Dish"}{" "}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#666', width: '50%' }} numberOfLines={1} ellipsizeMode="tail" >
-                      {dishNotes?.[date]?.[dish.id] || ""}
-                    </Text>
+            {extraDishIds[date] &&
+              Object.values(extraDishIds[date]).map((dish) => (
+                <TouchableOpacity
+                  key={dish.id}
+                  style={[
+                    styles.dishItem,
+                    activeDish?.date === date &&
+                      activeDish?.dishId === dish.id &&
+                      styles.dishItemActive,
+                  ]}
+                  onPress={() => toggleDishActive(date, dish.id)}
+                >
+                  <View style={{ flexDirection: "row", width: "90%" }}>
+                    <Image
+                      source={{ uri: dish.imageUrl }}
+                      style={styles.dishImage}
+                      resizeMode="cover"
+                    />
+                    <View>
+                      <Text style={styles.dishText}>
+                        {dish?.name || "Unknown Dish"}{" "}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 12, color: "#666", width: "50%" }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {dishNotes?.[date]?.[dish.id] || ""}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            )
-            )}
+                </TouchableOpacity>
+              ))}
           </>
         )}
 
         {selectedDishes[date] && (
           <>
-            <Text style={styles.subTitle}>
-              {t("dishes")}
-            </Text>
-            {selectedDishes[date] && Object.values(selectedDishes[date]).map((dish) => (
-              <TouchableOpacity
-                key={dish.id}
-                style={[
-                  styles.dishItem,
-                  activeDish?.date === date &&
-                  activeDish?.dishId === dish.id &&
-                  styles.dishItemActive,
-                  { justifyContent: 'space-between' }
-                ]}
-                onPress={() => toggleDishActive(date, dish.id)}
-              >
-                <View style={{ flexDirection: 'row', width: '90%' }}>
-                  <Image
-                    source={{ uri: dish.imageUrl }}
-                    style={styles.dishImage}
-                    resizeMode="cover"
-                  />
-                  <View>
-                    <Text style={styles.dishText}>
-                      {dish?.name || "Unknown Dish"}{" "}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#666', width: '50%' }} numberOfLines={1} ellipsizeMode="tail" >
-                      {dishNotes?.[date]?.[dish.id] || ""}
-                    </Text>
+            <Text style={styles.subTitle}>{t("dishes")}</Text>
+            {selectedDishes[date] &&
+              Object.values(selectedDishes[date]).map((dish) => (
+                <TouchableOpacity
+                  key={dish.id}
+                  style={[
+                    styles.dishItem,
+                    activeDish?.date === date &&
+                      activeDish?.dishId === dish.id &&
+                      styles.dishItemActive,
+                    { justifyContent: "space-between" },
+                  ]}
+                  onPress={() => toggleDishActive(date, dish.id)}
+                >
+                  <View style={{ flexDirection: "row", width: "90%" }}>
+                    <Image
+                      source={{ uri: dish.imageUrl }}
+                      style={styles.dishImage}
+                      resizeMode="cover"
+                    />
+                    <View>
+                      <Text style={styles.dishText}>
+                        {dish?.name || "Unknown Dish"}{" "}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 12, color: "#666", width: "50%" }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {dishNotes?.[date]?.[dish.id] || ""}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.dishActions}>
-                  <TouchableOpacity onPress={() => handleEditNote(date, dish,)}>
-                    <Text style={styles.noteText}>
-                      {t("note")}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            )
-            )}
+                  <View style={styles.dishActions}>
+                    <TouchableOpacity
+                      onPress={() => handleEditNote(date, dish)}
+                    >
+                      <Text style={styles.noteText}>{t("note")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              ))}
           </>
         )}
 
         <TouchableOpacity
           onPress={() => navigateToSelectFood(date)}
           style={{
-            borderColor: 'black',
+            borderColor: "black",
             borderWidth: 1,
-            borderStyle: 'dotted',
+            borderStyle: "dotted",
             // padding: 5,
-            width: '60%',
+            width: "60%",
             borderRadius: 5,
-            alignItems: 'center',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-around',
-            alignSelf: 'center'
+            alignItems: "center",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-around",
+            alignSelf: "center",
           }}
         >
           <Text style={styles.addItemsText}>
@@ -504,16 +555,11 @@ const LongTermSelectBooking = () => {
         </TouchableOpacity>
 
         <View style={styles.switchContainer}>
-          <Text style={styles.label}>
-            {t("note")}
-          </Text>
-
+          <Text style={styles.label}>{t("note")}</Text>
         </View>
 
         <View style={styles.switchContainer}>
-          <Text style={styles.label}>
-            {t("chefBringIngredients")}
-          </Text>
+          <Text style={styles.label}>{t("chefBringIngredients")}</Text>
           <Switch
             value={ingredientPrep[date]}
             onValueChange={() =>
@@ -522,17 +568,17 @@ const LongTermSelectBooking = () => {
                 [date]: !prev[date],
               }))
             }
-            trackColor={{ false: "#767577", true: "#A64B2A", }}
+            trackColor={{ false: "#767577", true: "#A64B2A" }}
             thumbColor={ingredientPrep[date] ? "#A64B2A" : "#f4f3f4"}
           />
         </View>
-      </View >
+      </View>
     );
   });
 
   const handleBack = () => {
-    router.replace("/screen/longTermBooking")
-  }
+    router.replace("/screen/longTermBooking");
+  };
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
@@ -550,7 +596,9 @@ const LongTermSelectBooking = () => {
                   style={styles.weekHeader}
                   onPress={() => toggleWeek(index)}
                 >
-                  <Text style={styles.weekTitle}>{week.start} - {week.end}</Text>
+                  <Text style={styles.weekTitle}>
+                    {week.start} - {week.end}
+                  </Text>
                   <MaterialIcons
                     name={expandedWeeks[index] ? "expand-less" : "expand-more"}
                     size={24}
@@ -573,7 +621,11 @@ const LongTermSelectBooking = () => {
                             style={styles.removeButton}
                             onPress={() => removeDate(date)}
                           >
-                            <MaterialIcons name="close" size={16} color="#FFF" />
+                            <MaterialIcons
+                              name="close"
+                              size={16}
+                              color="#FFF"
+                            />
                           </TouchableOpacity>
                         </View>
 
@@ -588,23 +640,35 @@ const LongTermSelectBooking = () => {
                               }))
                             }
                             trackColor={{ false: "#767577", true: "#A64B2A" }}
-                            thumbColor={isSelected[date] ? "#A64B2A" : "#f4f3f4"}
+                            thumbColor={
+                              isSelected[date] ? "#A64B2A" : "#f4f3f4"
+                            }
                           />
                         </View>
 
-                        {isSelected[date] && (<DishSection date={date} isSelected={true} />)}
+                        {isSelected[date] && (
+                          <DishSection date={date} isSelected={true} />
+                        )}
                         <Text style={styles.label}>{t("startTime")}:</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          nestedScrollEnabled={true}
+                        >
                           {getAvailableTimeSlots(date).length > 0 ? (
                             getAvailableTimeSlots(date).map((time) => (
                               <TouchableOpacity
                                 key={`start-${time}`}
                                 style={[
                                   styles.timeButton,
-                                  startTime[date] === time && styles.timeButtonSelected,
+                                  startTime[date] === time &&
+                                    styles.timeButtonSelected,
                                 ]}
                                 onPress={() =>
-                                  setStartTime((prev) => ({ ...prev, [date]: time }))
+                                  setStartTime((prev) => ({
+                                    ...prev,
+                                    [date]: time,
+                                  }))
                                 }
                               >
                                 <Text
@@ -633,11 +697,20 @@ const LongTermSelectBooking = () => {
             contentContainerStyle={{ paddingBottom: 100 }}
             ListHeaderComponent={
               <View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <Text style={styles.title}>
-                    {t("needToSelect")} {selectedPackage?.durationDays || 0} days
+                    {t("needToSelect")} {selectedPackage?.durationDays || 0}{" "}
+                    days
                   </Text>
-                  <TouchableOpacity onPress={() => setIsExpanedCalenda(!isExpanedCalenda)}>
+                  <TouchableOpacity
+                    onPress={() => setIsExpanedCalenda(!isExpanedCalenda)}
+                  >
                     <Ionicons
                       name={isExpanedCalenda ? "chevron-up" : "chevron-down"}
                       size={24}
@@ -651,8 +724,15 @@ const LongTermSelectBooking = () => {
                     {selectedPackage?.durationDays >= 10 && (
                       <View style={styles.repeatContainer}>
                         <View style={styles.switchContainer}>
-                          <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Text style={styles.label}>{t("repeatSchedule")}: </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text style={styles.label}>
+                              {t("repeatSchedule")}:{" "}
+                            </Text>
                             <TouchableOpacity
                               style={styles.infoButton}
                               onPress={showRepeatInfo}
@@ -679,39 +759,48 @@ const LongTermSelectBooking = () => {
                         {isRepeatEnabled && (
                           <View>
                             <View style={styles.weekdayContainer}>
-                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                                (day, index) => (
-                                  <TouchableOpacity
-                                    key={day}
-                                    style={[
-                                      styles.weekdayButton,
-                                      selectedWeekdays.includes(index) &&
+                              {[
+                                "Sun",
+                                "Mon",
+                                "Tue",
+                                "Wed",
+                                "Thu",
+                                "Fri",
+                                "Sat",
+                              ].map((day, index) => (
+                                <TouchableOpacity
+                                  key={day}
+                                  style={[
+                                    styles.weekdayButton,
+                                    selectedWeekdays.includes(index) &&
                                       styles.weekdayButtonSelected,
-                                    ]}
-                                    onPress={() => toggleWeekday(index)}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.weekdayText,
-                                        selectedWeekdays.includes(index) &&
+                                  ]}
+                                  onPress={() => toggleWeekday(index)}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.weekdayText,
+                                      selectedWeekdays.includes(index) &&
                                         styles.weekdayTextSelected,
-                                      ]}
-                                    >
-                                      {day}
-                                    </Text>
-                                  </TouchableOpacity>
-                                )
-                              )}
+                                    ]}
+                                  >
+                                    {day}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
                             </View>
                             <TouchableOpacity
                               style={[
                                 styles.applyButton,
-                                selectedWeekdays.length === 0 && styles.disabledButton,
+                                selectedWeekdays.length === 0 &&
+                                  styles.disabledButton,
                               ]}
                               onPress={handleRepeatSelection}
                               disabled={selectedWeekdays.length === 0}
                             >
-                              <Text style={styles.applyButtonText}>{t("apply")}</Text>
+                              <Text style={styles.applyButtonText}>
+                                {t("apply")}
+                              </Text>
                             </TouchableOpacity>
                           </View>
                         )}
@@ -720,17 +809,20 @@ const LongTermSelectBooking = () => {
 
                     <Calendar
                       markedDates={{
-                        ...selectedDates.reduce((acc, date) => ({
-                          ...acc, [date]: {
-                            selected: true,
-                            selectedColor: "#6C63FF",
-                          },
-                        }),
+                        ...selectedDates.reduce(
+                          (acc, date) => ({
+                            ...acc,
+                            [date]: {
+                              selected: true,
+                              selectedColor: "#6C63FF",
+                            },
+                          }),
                           {}
                         ),
                         ...unavailableDates.reduce(
                           (acc, date) => ({
-                            ...acc, [date]: {
+                            ...acc,
+                            [date]: {
                               marked: true,
                               dotColor: "#FF4D4D",
                               disableTouchEvent: true,
@@ -763,7 +855,7 @@ const LongTermSelectBooking = () => {
             style={[
               styles.fixedButton,
               Object.keys(selectedDates).length !==
-              selectedPackage?.durationDays && styles.disabledButton,
+                selectedPackage?.durationDays && styles.disabledButton,
             ]}
             onPress={handleConfirm}
             disabled={
@@ -774,7 +866,7 @@ const LongTermSelectBooking = () => {
             <Text style={styles.buttonText}>{t("confirmBooking")}</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView >
+      </SafeAreaView>
 
       <Modalize ref={modalizeRef} adjustToContentHeight>
         <View
@@ -835,7 +927,9 @@ const LongTermSelectBooking = () => {
                     setTempNote("");
                   }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+                  <Text
+                    style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}
+                  >
                     {t("cancel")}
                   </Text>
                 </TouchableOpacity>
@@ -861,20 +955,21 @@ const LongTermSelectBooking = () => {
                     setTempNote("");
                   }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+                  <Text
+                    style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}
+                  >
                     {t("save")}
                   </Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
-            <Text style={{ fontSize: 16, color: "#777" }}>{t("noDishSelected")}</Text>
+            <Text style={{ fontSize: 16, color: "#777" }}>
+              {t("noDishSelected")}
+            </Text>
           )}
         </View>
       </Modalize>
-
-
-
 
       <Modalize
         ref={infoModalizeRef}
@@ -905,7 +1000,7 @@ const LongTermSelectBooking = () => {
           </TouchableOpacity>
         </View>
       </Modalize>
-    </GestureHandlerRootView >
+    </GestureHandlerRootView>
   );
 };
 
@@ -1035,7 +1130,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   removeButton: {
-    position: 'absolute',
+    position: "absolute",
     right: -15,
     top: -15,
     width: 20,
@@ -1071,7 +1166,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: "#333",
     marginVertical: 4,
   },

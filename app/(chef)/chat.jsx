@@ -19,6 +19,7 @@ import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 import { useFocusEffect } from "expo-router";
 import { SocketContext } from "../../config/SocketContext";
+import axios from "axios";
 
 const Chat = () => {
   const { user, isGuest } = useContext(AuthContext);
@@ -31,26 +32,18 @@ const Chat = () => {
   const [filteredConversations, setFilteredConversations] = useState([]);
   const [shouldRefetch, setShouldRefetch] = useState(0);
 
-  // console.log("call", notificationsCallback);
-
   const fetchConversations = async () => {
-    if (!user?.sub || isGuest) {
-      console.log("No username found");
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/conversations/${user.sub}`);
-      console.log("Dữ liệu conversations:", response.data);
+      const response = await axiosInstance.get(`/conversations/${user?.sub}`);
       const messagesData = await Promise.all(
         response.data.map(async (message) => {
           const otherUserId =
-            message.senderId === user.sub
+            message.senderId === user?.sub
               ? message.recipientId
               : message.senderId;
           const otherUserName =
-            message.senderId === user.sub
+            message.senderId === user?.sub
               ? message.recipientName
               : message.senderName;
           let avatarUrl = null;
@@ -60,10 +53,7 @@ const Chat = () => {
             );
             avatarUrl = userResponse.data?.avatarUrl;
           } catch (error) {
-            console.error(
-              `Lỗi khi lấy dữ liệu người dùng ${otherUserId}:`,
-              error
-            );
+            if (axios.isCancel(error) || error.response?.status === 401) return;
           }
 
           const messageDate = new Date(message.timestamp);
@@ -153,7 +143,9 @@ const Chat = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchConversations();
+      if (!isGuest) {
+        fetchConversations();
+      }
     }, [shouldRefetch])
   );
 
@@ -194,7 +186,7 @@ const Chat = () => {
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.message} numberOfLines={1} ellipsizeMode="tail">
           {item.contentType === "image"
-            ? item.senderId === user.sub
+            ? item.senderId === user?.sub
               ? t("youSentImage")
               : t("chefSentImage")
             : `${item.senderName}: ${item.message}`}

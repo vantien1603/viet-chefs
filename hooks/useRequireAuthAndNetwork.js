@@ -12,7 +12,7 @@ export default function useRequireAuthAndNetwork() {
 
   const requireAuthAndNetwork = (callback) => {
     if (!isConnected) {
-      showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại.", "Error");
+      showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại.", t("modal.error"));
     } else if (isGuest) {
       showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
     } else {

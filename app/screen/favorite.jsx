@@ -71,7 +71,7 @@ const FavoriteScreen = () => {
         `/favorite-chefs/${user.userId}/chefs/${chef.chefId}`
       );
       fetchFavorite(0, true);
-      showModal(t("success"), `${chef.chefName} ${t("removedFromFavorites")}`);
+      showModal(t("modal.success"), `${chef.chefName} ${t("removedFromFavorites")}`);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
       showModal("Error", error.response.data.message, "Failed");

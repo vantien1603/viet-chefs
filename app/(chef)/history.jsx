@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native'
 import { useCommonNoification } from '../../context/commonNoti'
 import axios from 'axios'
 import { useConfirmModal } from '../../context/commonConfirm'
+import { t } from 'i18next'
 
 
 const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccept, onReject, onCancel, onViewDetail }) => {
@@ -58,31 +59,31 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
       <View key={item.id} style={styles.section}>
         <TouchableOpacity onPress={() => onViewDetail(item.id)} >
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {sessionDateDisplay}</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{t("sessionDate")}: {sessionDateDisplay}</Text>
             <Text style={[styles.itemContentLabel, { textAlign: 'right', fontSize: 20 }]}>${item.totalPrice}</Text>
           </View>
           <Text numberOfLines={1} ellipsizeMode="tail">
-            <Text style={styles.itemContentLabel}>Customer: </Text>
+            <Text style={styles.itemContentLabel}>{t("customer")}: </Text>
             <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.customer.fullName}</Text>
           </Text>
           <Text numberOfLines={1} ellipsizeMode="tail">
-            <Text style={styles.itemContentLabel}>Phone: </Text>
+            <Text style={styles.itemContentLabel}>{t("phone")}: </Text>
             <Text style={styles.itemContent}>{item.customer.phone}</Text>
           </Text>
           <Text numberOfLines={1} ellipsizeMode="tail">
-            <Text style={styles.itemContentLabel}>Address: </Text>
+            <Text style={styles.itemContentLabel}>{t("address")}: </Text>
             <Text style={styles.itemContent}>{item.bookingDetails[0].location}</Text>
           </Text>
           <Text>
-            <Text style={styles.itemContentLabel}>Booking type: </Text>
+            <Text style={styles.itemContentLabel}>{t("bookingType")}: </Text>
             <Text style={styles.itemContent}>{item.bookingType === "LONG_TERM" ? item.bookingPackage.name : item.bookingType}</Text>
           </Text>
           <Text>
-            <Text style={styles.itemContentLabel}>Guest: </Text>
+            <Text style={styles.itemContentLabel}>{t("guest")}: </Text>
             <Text style={styles.itemContent}>{item.guestCount}</Text>
           </Text>
           <Text numberOfLines={2} ellipsizeMode="tail">
-            <Text style={styles.itemContentLabel}>Note: </Text>
+            <Text style={styles.itemContentLabel}>{t("note")}: </Text>
             <Text style={styles.itemContent}>{item.requestDetails}</Text>
           </Text>
           {/* <Text style={[styles.itemContentLabel,{textAlign:'right', fontSize:20}]}>${item.totalPrice}</Text> */}
@@ -90,16 +91,16 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
         {item.status === "PAID" || item.status === "DEPOSITED" || item.status === "PAID_FIRST_CYCLE" ? (
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-around' }}>
             <TouchableOpacity style={{ backgroundColor: "green", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onAccept(item.id)}>
-              <Text style={{ textAlign: 'center', color: 'white' }}>Confirm</Text>
+              <Text style={{ textAlign: 'center', color: 'white' }}>{t("confirm")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onReject(item.id)}>
-              <Text style={{ textAlign: 'center', color: 'white' }}>Reject</Text>
+              <Text style={{ textAlign: 'center', color: 'white' }}>{t("reject")}</Text>
             </TouchableOpacity>
           </View>
         ) : item.status === "CONFIRMED_PAID" || item.status === "CONFIRMED_PARTIALLY_PAID" || item.status === "CONFIRMED" && (
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'flex-end' }}>
             <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onCancel(item.id, item.bookingType === "SINGLE" && "single")}>
-              <Text style={{ textAlign: 'center', color: 'white' }}>Cancel</Text>
+              <Text style={{ textAlign: 'center', color: 'white' }}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -118,7 +119,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
         onEndReachedThreshold={0.4}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>No pending orders</Text>}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>{t("noPendingOrders")}</Text>}
         ListFooterComponent={() => <View style={{ height: 100 }} />}
       />
     </View>
@@ -204,7 +205,7 @@ const Histories = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
+      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu.", "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -283,7 +284,7 @@ const Histories = () => {
       if (response.status === 200) {
         // setNewBooking(prev => prev.filter(item => item.id !== id));
         setBookings(prev => ({ ...prev, PAID: prev.PAID.filter(item => item.id !== id) }));
-        showModal("Success", "Reject successfully");
+        showModal(t("modal.success"), "Reject successfully");
         // fetchRequestBooking(0, true)
       }
 
@@ -295,7 +296,7 @@ const Histories = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", mes, "Failed");
+      showModal(t("modal.error"), mes, "Failed");
     } finally {
       setLoading(false);
     }
@@ -309,7 +310,7 @@ const Histories = () => {
       if (response.status === 200) {
         // setNewBooking(prev => prev.filter(item => item.id !== id));
         setBookings(prev => ({ ...prev, PAID: prev.PAID.filter(item => item.id !== id) }));
-        showModal("Success", "Confirmed successfully");
+        showModal(t("modal.success"), "Confirmed successfully");
         // fetchRequestBooking(0, true)
       }
     } catch (error) {
@@ -320,7 +321,7 @@ const Histories = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", mes, "Failed");
+      showModal(t("modal.error"), mes, "Failed");
     } finally {
       setLoading(false);
     }
@@ -333,7 +334,7 @@ const Histories = () => {
         console.log(type, id);
         const response = type === "single" ? await axiosInstance.put(`/bookings/single/cancel-chef/${id}`) : await axiosInstance.put(`/bookings/long-term/cancel-chef/${id}`);
         if (response.status === 200) {
-          showModal("Success", "Cancel successfully");
+          showModal(t("modal.success"), "Cancel successfully");
           // fetchRequestBooking(0, 'CONFIRMED', true);
           setBookings(prev => ({ ...prev, CONFIRMED: prev.CONFIRMED.filter(item => item.id !== id) }));
         }
@@ -345,7 +346,7 @@ const Histories = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal("Error", mes, "Failed")
+        showModal(t("modal.error"), mes, "Failed")
       } finally {
         setLoading(false);
       }

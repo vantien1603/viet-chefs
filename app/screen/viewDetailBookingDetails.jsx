@@ -53,11 +53,7 @@ const ViewDetailBookingDetails = () => {
         `/bookings/booking-details/${bookingDetailsId}/complete-customer`
       );
       if (response.status === 200) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Confirm success",
-        });
+        showModal(t("modal.success"),t("modal.success"))
         setBookingDetails({ ...bookingDetails, status: "COMPLETED" });
       }
     } catch (error) {
@@ -65,11 +61,7 @@ const ViewDetailBookingDetails = () => {
         "Error confirming completion:",
         error?.response?.data?.message
       );
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error?.response?.data?.message || "Failed to confirm",
-      });
+      showModal(t("modal.error"), error?.response?.data?.message || "Failed to confirm" , "Failed")
     }
   };
 
@@ -116,11 +108,10 @@ const ViewDetailBookingDetails = () => {
       );
 
       if (response.status === 200) {
-        Toast.show({
-          type: "success",
-          text1: "Success",
-          text2: "Report submitted successfully",
-        });
+        showModal(t("modal.success"),
+          t("reportSuccess"),
+         
+        );
 
         try {
           const updatedResponse = await axiosInstance.get(
@@ -137,7 +128,7 @@ const ViewDetailBookingDetails = () => {
           if (axios.isCancel(fetchError)) {
             return;
           }
-          showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+          showModal(t("modal.error"), t("fetchBookingFailed"), "Failed");
         }
 
         closeReportModal();
@@ -147,14 +138,14 @@ const ViewDetailBookingDetails = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Failed to submit report", "Failed");
+      showModal(t("modal.error"), t("fetchReportFailed"), "Failed");
     }
   };
 
   if (!bookingDetails) {
     return (
       <SafeAreaView style={commonStyles.container}>
-        <Header title={"Booking detail"} />
+        <Header title={t("bookingDetails")} />
         <View style={styles.container}>
           <ActivityIndicator size={'large'} color={'white'} />
         </View>
@@ -164,7 +155,7 @@ const ViewDetailBookingDetails = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
-      <Header title={"Booking detail"} />
+      <Header title={t("bookingDetails")} />
       <View style={commonStyles.containerContent}>
         <ScrollView
           style={styles.scrollContainer}
@@ -172,39 +163,39 @@ const ViewDetailBookingDetails = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Thông tin đặt chỗ</Text>
+            <Text style={styles.sectionTitle}>{t("bookingInfo")}</Text>
             <View style={{ marginLeft: 10 }}>
               <Text>
-                <Text style={styles.detailLabel}>Đầu bếp: </Text>
+                <Text style={styles.detailLabel}>{t("chef")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.booking?.chef?.user?.fullName || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Ngày: </Text>
+                <Text style={styles.detailLabel}>{t("sessionDate")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.sessionDate || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Giờ bắt đầu: </Text>
+                <Text style={styles.detailLabel}>{t("startTime")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.startTime || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Địa chỉ: </Text>
+                <Text style={styles.detailLabel}>{t("location")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.location || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Tổng giá: </Text>
+                <Text style={styles.detailLabel}>{t("totalPrice")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.totalPrice ? `${bookingDetails.totalPrice.toFixed(2)}` : "N/A"}</Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Trạng thái: </Text>
+                <Text style={styles.detailLabel}>{t("status")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.status || "N/A"}
                 </Text>
@@ -213,25 +204,25 @@ const ViewDetailBookingDetails = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Chi tiết giá</Text>
+            <Text style={styles.sectionTitle}>{t("feeDetails")}</Text>
             <View style={{ marginLeft: 10 }}>
               <Text>
-                <Text style={styles.detailLabel}>Phí nấu: </Text>
+                <Text style={styles.detailLabel}>{t("chefCookingFee")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.chefCookingFee ? `$${bookingDetails.chefCookingFee.toFixed(2)}` : "$0"}</Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Giá món ăn: </Text>
+                <Text style={styles.detailLabel}>{t("priceOfDishes")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.priceOfDishes ? `$${bookingDetails.priceOfDishes.toFixed(2)}` : "$0"}</Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Phí áp dụng: </Text>
+                <Text style={styles.detailLabel}>{t("platformFee")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.platformFee ? `$${bookingDetails.platformFee.toFixed(2)}` : "$0"}</Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Giảm giá: </Text>
+                <Text style={styles.detailLabel}>{t("discountAmount")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.discountAmout ? `$${bookingDetails.discountAmout.toFixed(2)}` : "$0"}</Text>
               </Text>
@@ -240,43 +231,43 @@ const ViewDetailBookingDetails = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Món ăn</Text>
+            <Text style={styles.sectionTitle}>{t("dish")}</Text>
             {bookingDetails.dishes?.length > 0 ? (
               bookingDetails.dishes.map((dish) => (
                 <View key={dish.id} style={styles.dishItem}>
                   <Text style={styles.detailLabel}>
-                    {dish.dish?.name || ""} {dish.notes && `(Ghi chú: ${dish.notes || ""})`}
+                    {dish.dish?.name || ""} {dish.notes && `(${dish.notes || ""})`}
                   </Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.noData}>Không có món ăn nào.</Text>
+              <Text style={styles.noData}>{t("noDishSelect")}</Text>
             )}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Thông tin bổ sung</Text>
+            <Text style={styles.sectionTitle}>{t("moreInfo")}</Text>
             <View style={{ marginLeft: 10 }}>
               <Text>
-                <Text style={styles.detailLabel}>Loại đặt chỗ: </Text>
+                <Text style={styles.detailLabel}>{t("bookingType")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.booking?.bookingType || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Trạng thái booking: </Text>
+                <Text style={styles.detailLabel}>{t("status")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.booking?.status || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Thời gian bắt đầu nấu: </Text>
+                <Text style={styles.detailLabel}>{t("timeBeginCook")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.timeBeginCook || "N/A"}
                 </Text>
               </Text>
               <Text>
-                <Text style={styles.detailLabel}>Thời gian bắt đầu di chuyển: </Text>
+                <Text style={styles.detailLabel}>{t("timeBeginTravel")}: </Text>
                 <Text style={styles.detailValue}>
                   {bookingDetails.timeBeginTravel || "N/A"}
                 </Text>
@@ -328,7 +319,7 @@ const ViewDetailBookingDetails = () => {
                 style={[styles.button, { backgroundColor: "#dc3545" }]}
                 onPress={openReportModal}
               >
-                <Text style={styles.buttonText}>Report</Text>
+                <Text style={styles.buttonText}>{t("report")}</Text>
               </TouchableOpacity>
             )}
           {bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
@@ -336,7 +327,7 @@ const ViewDetailBookingDetails = () => {
               style={[styles.button, { backgroundColor: "#28a745" }]}
               onPress={handleCompleted}
             >
-              <Text style={styles.buttonText}>Completed</Text>
+              <Text style={styles.buttonText}>{t("confirmCompleted")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -380,17 +371,17 @@ const ViewDetailBookingDetails = () => {
         handlePosition="outside"
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Report</Text>
-          <Text style={styles.modalLabel}>Reason</Text>
+          <Text style={styles.modalTitle}>{t("report")}</Text>
+          <Text style={styles.modalLabel}>{t("reason")}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: "#e0e0e0" }]}
             value="Chef not arrived"
             editable={false}
           />
-          <Text style={styles.modalLabel}>Detail (Optional)</Text>
+          <Text style={styles.modalLabel}>{t("detailOptional")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Provide additional details..."
+            placeholder={t("provideDetails")}
             value={reportReasonDetail}
             onChangeText={setReportReasonDetail}
             multiline
@@ -401,13 +392,13 @@ const ViewDetailBookingDetails = () => {
               style={[styles.modalButton, { backgroundColor: "#6c757d" }]}
               onPress={closeReportModal}
             >
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={styles.buttonText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: "#dc3545" }]}
               onPress={handleSubmitReport}
             >
-              <Text style={styles.buttonText}>Submit Report</Text>
+              <Text style={styles.buttonText}>{t("submitReport")}</Text>
             </TouchableOpacity>
           </View>
         </View>

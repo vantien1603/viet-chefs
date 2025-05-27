@@ -232,7 +232,7 @@ const WalletScreen = () => {
         `/users/profile/my-wallet/access?password=${oldPin}`
       );
       if (accessResponse.data !== true) {
-        showModal(t("error"), "Incorrect old PIN", "Failed");
+        showModal(t(t("modal.error")), t("oldPinIncorrect"), "Failed");
         return;
       }
 
@@ -241,12 +241,12 @@ const WalletScreen = () => {
       );
       if (setResponse.status === 200 || setResponse.status === 201) {
         closeChangePinModal();
-        showModal(t("success"), t("pinChangedSuccessfully"), "Success");
+        showModal(t("modal.success"), t("pinChangedSuccessfully"),);
         setError("");
       }
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal("Error", error.response.data.message, "Failed");
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -260,7 +260,7 @@ const WalletScreen = () => {
         params: { id: walletId, balance },
       });
     } else {
-      showModal(t("error"), t("walletIdNotFound"), "Failed");
+      showModal(t("modal.error"), t("walletIdNotFound"), "Failed");
     }
   };
 
@@ -341,9 +341,9 @@ const WalletScreen = () => {
       const response = await axiosInstance.post(
         "/users/profile/my-wallet/forgot-wallet-password"
       );
-      showModal(t("success"), t("newPinSentToEmail"), "Success");
+      showModal(t("modal.success"), t("newPinSentToEmail"),);
     } catch (error) {
-      showModal(t("error"), t("failedToRequestNewPin"), "Failed");
+      showModal(t("modal.error"), t("errors.failedToRequestNewPin"), "Failed");
     }
   };
 

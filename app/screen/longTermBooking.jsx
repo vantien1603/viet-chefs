@@ -15,7 +15,6 @@ import Header from "../../components/header";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAxios from "../../config/AXIOS_API";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Toast from "react-native-toast-message";
 import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
@@ -24,14 +23,22 @@ import * as SecureStore from "expo-secure-store";
 
 const LongTermBookingScreen = () => {
   const router = useRouter();
-  const { numPeople, setNumPeople, address, setAddress, chefId, selectedPackage, setSelectedPackage, setIsLong } = useSelectedItems();
+  const {
+    numPeople,
+    setNumPeople,
+    address,
+    setAddress,
+    chefId,
+    selectedPackage,
+    setSelectedPackage,
+    setIsLong,
+  } = useSelectedItems();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
   const startChef = SecureStore.getItem("firstChef");
-
 
   useEffect(() => {
     fetchPackagesByChefId();
@@ -46,7 +53,11 @@ const LongTermBookingScreen = () => {
         setAddress(parsedAddress);
       }
     } catch (error) {
-      console.error("Error loading selected address:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.loadAddressFailed"),
+        "Failed"
+      );
     }
   };
 
@@ -64,7 +75,11 @@ const LongTermBookingScreen = () => {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách gói dịch vụ.", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchPackagesFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -90,36 +105,45 @@ const LongTermBookingScreen = () => {
   const handleContinue = () => {
     {
       if (!selectedPackage) {
-        showModal("Error", "Vui lòng chọn một gói dịch vụ!", "Failed")
+        showModal(
+          t("modal.error"),
+          t("errors.noPackageSelected"),
+          "Failed"
+        );
         return;
       }
       if (!address) {
-        showModal("Error", "Vui lòng chọn địa chỉ!", "Failed")
+        showModal(
+          t("modal.error"),
+          t("errors.noAddressSelected"),
+          "Failed"
+        );
         return;
       }
       router.replace("/screen/longTermSelect");
     }
-  }
+  };
 
   const handleBack = () => {
     router.replace({
-      pathname: '/screen/chefDetail',
+      pathname: "/screen/chefDetail",
       params: {
-        chefId: startChef
-      }
-    })
-  }
+        chefId: startChef,
+      },
+    });
+  };
   return (
     <SafeAreaView style={commonStyles.container}>
       <Header title={t("longTermBooking")} onLeftPress={() => handleBack()} />
       {loading ? (
-        <ActivityIndicator size={'large'} color={'white'} />
+        <ActivityIndicator size={"large"} color={"white"} />
       ) : (
         <>
           <ScrollView style={{ padding: 20, backgroundColor: "#EBE5DD" }}>
-
             <View style={{ marginVertical: 10 }}>
-              <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
+              <Text
+                style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}
+              >
                 {t("selectServicePackage")}
               </Text>
               {packages.length > 0 ? (
@@ -127,11 +151,20 @@ const LongTermBookingScreen = () => {
                   <TouchableOpacity
                     key={pkg.id}
                     onPress={() => setSelectedPackage(pkg)}
-                    style={[styles.buttonStyle, { backgroundColor: selectedPackage?.id === pkg.id ? "#A64B2A" : "#e0e0e0" }]}
+                    style={[
+                      styles.buttonStyle,
+                      {
+                        backgroundColor:
+                          selectedPackage?.id === pkg.id
+                            ? "#A64B2A"
+                            : "#e0e0e0",
+                      },
+                    ]}
                   >
                     <Text
                       style={{
-                        color: selectedPackage?.id === pkg.id ? "white" : "black",
+                        color:
+                          selectedPackage?.id === pkg.id ? "white" : "black",
                         fontSize: 16,
                       }}
                     >
@@ -147,8 +180,17 @@ const LongTermBookingScreen = () => {
             </View>
 
             <View style={{ marginVertical: 10 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", }} >
-                <Text style={{ fontSize: 20, fontWeight: "bold" }}> {t("numberOfPeople")}: </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                  {" "}
+                  {t("numberOfPeople")}:{" "}
+                </Text>
                 {selectedPackage && (
                   <Text style={{ fontSize: 14, color: "#666" }}>
                     {t("maximum")}: {selectedPackage.maxGuestCountPerMeal}{" "}
@@ -156,16 +198,18 @@ const LongTermBookingScreen = () => {
                   </Text>
                 )}
               </View>
-              <View style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginTop: 20,
-                justifyContent: "center",
-                width: "100%",
-                paddingHorizontal: 20
-              }}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 20,
+                  justifyContent: "center",
+                  width: "100%",
+                  paddingHorizontal: 20,
+                }}
               >
-                <TouchableOpacity onPress={decrementNumPeople}
+                <TouchableOpacity
+                  onPress={decrementNumPeople}
                   style={{
                     width: 40,
                     height: 40,
@@ -176,17 +220,34 @@ const LongTermBookingScreen = () => {
                   }}
                   disabled={numPeople <= 1}
                 >
-                  <Text style={{ fontSize: 20, fontWeight: "bold", color: 'white' }}>−</Text>
+                  <Text
+                    style={{ fontSize: 20, fontWeight: "bold", color: "white" }}
+                  >
+                    −
+                  </Text>
                 </TouchableOpacity>
-                <Text style={{ fontSize: 18, fontWeight: "bold", marginHorizontal: 20, width: 40, textAlign: "center", }}>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    marginHorizontal: 20,
+                    width: 40,
+                    textAlign: "center",
+                  }}
+                >
                   {numPeople}
                 </Text>
-                <TouchableOpacity onPress={incrementNumPeople}
+                <TouchableOpacity
+                  onPress={incrementNumPeople}
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: numPeople >= (selectedPackage?.maxGuestCountPerMeal || 999) ? "#D1D1D1" : "#A64B2A",
+                    backgroundColor:
+                      numPeople >=
+                      (selectedPackage?.maxGuestCountPerMeal || 999)
+                        ? "#D1D1D1"
+                        : "#A64B2A",
                     justifyContent: "center",
                     alignItems: "center",
                   }}
@@ -194,7 +255,11 @@ const LongTermBookingScreen = () => {
                     numPeople >= (selectedPackage?.maxGuestCountPerMeal || 999)
                   }
                 >
-                  <Text style={{ fontSize: 20, fontWeight: "bold", color: 'white' }}>+</Text>
+                  <Text
+                    style={{ fontSize: 20, fontWeight: "bold", color: "white" }}
+                  >
+                    +
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -234,11 +299,18 @@ const LongTermBookingScreen = () => {
                 </View>
               </TouchableOpacity>
             </View>
-
           </ScrollView>
           <View>
             <TouchableOpacity
-              style={[styles.buttonStyle, { backgroundColor: "#A64B2A", marginTop: 20, marginBottom: 20, marginHorizontal: 20 }]}
+              style={[
+                styles.buttonStyle,
+                {
+                  backgroundColor: "#A64B2A",
+                  marginTop: 20,
+                  marginBottom: 20,
+                  marginHorizontal: 20,
+                },
+              ]}
               onPress={() => handleContinue()}
             >
               <Text
@@ -255,7 +327,6 @@ const LongTermBookingScreen = () => {
           </View>
         </>
       )}
-
     </SafeAreaView>
   );
 };

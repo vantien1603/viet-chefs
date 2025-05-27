@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Alert,
-  Dimensions,
   Keyboard,
   ActivityIndicator,
   BackHandler,
@@ -31,9 +29,7 @@ import axios from "axios";
 import { AuthContext } from "../../config/AuthContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCommonNoification } from "../../context/commonNoti";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
+import { t } from "i18next";
 const SearchResultScreen = () => {
   const {
     query,
@@ -78,46 +74,19 @@ const SearchResultScreen = () => {
   const [lastMenuResults, setLastMenuResults] = useState([]);
 
   const distanceOptions = useMemo(
-    () => [
-      { label: "1 km", value: 1 },
-      { label: "5 km", value: 5 },
-      { label: "10 km", value: 10 },
-      { label: "15 km", value: 15 },
-      { label: "20 km", value: 20 },
-      { label: "25 km", value: 25 },
-      { label: "30 km", value: 30 },
-    ],
+    () => t("filterOptions.distance", { returnObjects: true }),
     []
   );
-
   const dishPriceRangeOptions = useMemo(
-    () => [
-      { label: "Under $10", value: { min: 0, max: 10 } },
-      { label: "$10 - $30", value: { min: 10, max: 30 } },
-      { label: "$30 - $50", value: { min: 30, max: 50 } },
-      { label: "Over $50", value: { min: 50, max: Infinity } },
-    ],
+    () => t("filterOptions.dishPriceRange", { returnObjects: true }),
     []
   );
-
   const chefPriceRangeOptions = useMemo(
-    () => [
-      { label: "Under $50/hr", value: { min: 0, max: 50 } },
-      { label: "$50 - $100/hr", value: { min: 50, max: 100 } },
-      { label: "$100 - $300/hr", value: { min: 100, max: 300 } },
-      { label: "Over $300/hr", value: { min: 300, max: Infinity } },
-    ],
+    () => t("filterOptions.chefPriceRange", { returnObjects: true }),
     []
   );
-
   const rateRangeOptions = useMemo(
-    () => [
-      { label: "1 sao trở lên", value: { min: 1, max: 5 } },
-      { label: "2 sao trở lên", value: { min: 2, max: 5 } },
-      { label: "3 sao trở lên", value: { min: 3, max: 5 } },
-      { label: "4 sao trở lên", value: { min: 4, max: 5 } },
-      { label: "5 sao", value: { min: 5, max: 5 } },
-    ],
+    () => t("filterOptions.rateRange", { returnObjects: true }),
     []
   );
 
@@ -125,23 +94,27 @@ const SearchResultScreen = () => {
     () => [
       {
         index: 0,
-        name: "Distance",
-        value: distance ? `${distance} km` : "All",
+        name: t("distance"),
+        value: distance ? `${distance} km` : t("all"),
       },
       {
         index: 1,
-        name: "Dish Price",
-        value: dishPriceRange ? dishPriceRange.label : "All",
+        name: t("dishPrice"),
+        value: dishPriceRange
+          ? dishPriceRange.label
+          : t("all"),
       },
       {
         index: 2,
-        name: "Chef Price",
-        value: chefPriceRange ? chefPriceRange.label : "All",
+        name: t("chefPrice"),
+        value: chefPriceRange
+          ? chefPriceRange.label
+          : t("all"),
       },
       {
         index: 3,
-        name: "Chef Rating",
-        value: rateRange ? rateRange.label : "All",
+        name: t("chefRating"),
+        value: rateRange ? rateRange.label : t("all"),
       },
     ],
     [distance, dishPriceRange, chefPriceRange, rateRange]
@@ -358,7 +331,11 @@ const SearchResultScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      showModal(
+        t("modal.error"),
+        error.response?.data?.message || t("errors.fetchDataFailed"),
+        "Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -489,7 +466,7 @@ const SearchResultScreen = () => {
           </TouchableOpacity>
           <TextInput
             ref={textInputRef}
-            placeholder="Search chefs or dishes"
+            placeholder={t("searchPlaceholder")}
             placeholderTextColor="#4EA0B7"
             style={styles.searchInput}
             value={searchQuery}
@@ -560,9 +537,9 @@ const SearchResultScreen = () => {
       <View style={styles.rowNgayGui}>
         <FlatList
           data={[
-            { index: 0, name: "Recommended (Dishes)" },
-            { index: 1, name: "Chefs" },
-            { index: 2, name: "Menus" },
+            { index: 0, name: t("recommendedDishes") },
+            { index: 1, name: t("chefs") },
+            { index: 2, name: t("menus") },
           ]}
           keyExtractor={(item) => item.index.toString()}
           horizontal
@@ -621,14 +598,24 @@ const SearchResultScreen = () => {
                 <Text style={styles.title}>
                   {truncateText(item.user.fullName)}
                 </Text>
-                <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">
+                <Text
+                  style={styles.description}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {truncateText(item.description)}
                 </Text>
-                <Text style={styles.address} numberOfLines={1} ellipsizeMode="tail">{truncateText(item.address)}</Text>
-                <Text style={styles.description}>
-                  Max Serving: {item.maxServingSize}
+                <Text
+                  style={styles.address}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {truncateText(item.address)}
                 </Text>
-                <Text style={styles.description}>Price/hour: {item.price}</Text>
+                <Text style={styles.description}>
+                  {t("maxServing")}: {item.maxServingSize}
+                </Text>
+                <Text style={styles.description}>{t("pricePerHour")}: {item.price}</Text>
               </View>
               <Text style={styles.rating}>
                 ⭐{item.averageRating.toFixed(1)}
@@ -650,7 +637,7 @@ const SearchResultScreen = () => {
               <View style={styles.info}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
                 <Text style={styles.subtitle}>
-                  Chef: {truncateText(item.chef.user.fullName)}
+                  {t("chef")}: {truncateText(item.chef.user.fullName)}
                 </Text>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
@@ -682,16 +669,16 @@ const SearchResultScreen = () => {
               <View style={styles.info}>
                 <Text style={styles.title}>{truncateText(item.name)}</Text>
                 <Text style={styles.subtitle}>
-                  Chef: {truncateText(item.chef.user.fullName)}
+                  {t("chef")}: {truncateText(item.chef.user.fullName)}
                 </Text>
                 <Text style={styles.description}>
                   {truncateText(item.description)}
                 </Text>
                 <Text style={styles.cuisine}>
-                  Cuisine: {truncateText(item.cuisineType)}
+                  {t("Ccuisine")}: {truncateText(item.cuisineType)}
                 </Text>
-                <Text style={styles.label}>Cook Time: {item.cookTime} min</Text>
-                <Text style={styles.label}>Price: ${item.basePrice}</Text>
+                <Text style={styles.label}>{t("cookTime")}: {item.cookTime} {t("minutes")}</Text>
+                <Text style={styles.label}>{t("price")}: ${item.basePrice}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -715,21 +702,21 @@ const SearchResultScreen = () => {
     if (isSelected === 1 && chefs.length === 0 && location) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No chefs found nearby</Text>
+          <Text style={styles.emptyText}>{t("noChefsFound")}</Text>
         </View>
       );
     }
     if (isSelected === 0 && dishes.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No dishes found</Text>
+          <Text style={styles.emptyText}>{t("noDishesFound")}</Text>
         </View>
       );
     }
     if (isSelected === 2 && menus?.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No menus found</Text>
+          <Text style={styles.emptyText}>{t("noMenusFound")}</Text>
         </View>
       );
     }
@@ -744,7 +731,7 @@ const SearchResultScreen = () => {
     const handleRateChange = useCallback((value) => {
       setTempRateRange((prev) =>
         prev?.value.min === value.value.min &&
-          prev?.value.max === value.value.max
+        prev?.value.max === value.value.max
           ? null
           : value
       );
@@ -761,11 +748,11 @@ const SearchResultScreen = () => {
         animationConfig={{ timing: { duration: 150 } }}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Filter Options</Text>
+          <Text style={styles.modalTitle}>{t("filterOption")}</Text>
 
           {/* Distance Filter */}
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownLabel}>Distance</Text>
+            <Text style={styles.dropdownLabel}>{t("distance")}</Text>
             <View style={styles.buttonGroup}>
               {distanceOptions.map((option) => (
                 <TouchableOpacity
@@ -773,7 +760,7 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempDistance === option.value &&
-                    styles.optionButtonSelected,
+                      styles.optionButtonSelected,
                   ]}
                   onPress={() => handleDistanceChange(option.value)}
                 >
@@ -781,7 +768,7 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempDistance === option.value &&
-                      styles.optionButtonTextSelected,
+                        styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -793,7 +780,7 @@ const SearchResultScreen = () => {
 
           {/* Dish Price Filter */}
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownLabel}>Dish Price Range</Text>
+            <Text style={styles.dropdownLabel}>{t("dishPrice")}</Text>
             <View style={styles.buttonGroup}>
               {dishPriceRangeOptions.map((option) => (
                 <TouchableOpacity
@@ -801,13 +788,13 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempDishPriceRange?.value.min === option.value.min &&
-                    tempDishPriceRange?.value.max === option.value.max &&
-                    styles.optionButtonSelected,
+                      tempDishPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonSelected,
                   ]}
                   onPress={() => {
                     setTempDishPriceRange((prev) =>
                       prev?.value.min === option.value.min &&
-                        prev?.value.max === option.value.max
+                      prev?.value.max === option.value.max
                         ? null
                         : option
                     );
@@ -817,8 +804,8 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempDishPriceRange?.value.min === option.value.min &&
-                      tempDishPriceRange?.value.max === option.value.max &&
-                      styles.optionButtonTextSelected,
+                        tempDishPriceRange?.value.max === option.value.max &&
+                        styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -831,7 +818,7 @@ const SearchResultScreen = () => {
           {/* Chef Price Filter */}
           <View style={styles.dropdownContainer}>
             <Text style={styles.dropdownLabel}>
-              Chef Price Range (per hour)
+              {t("chefPrice")}/h
             </Text>
             <View style={styles.buttonGroup}>
               {chefPriceRangeOptions.map((option) => (
@@ -840,13 +827,13 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempChefPriceRange?.value.min === option.value.min &&
-                    tempChefPriceRange?.value.max === option.value.max &&
-                    styles.optionButtonSelected,
+                      tempChefPriceRange?.value.max === option.value.max &&
+                      styles.optionButtonSelected,
                   ]}
                   onPress={() => {
                     setTempChefPriceRange((prev) =>
                       prev?.value.min === option.value.min &&
-                        prev?.value.max === option.value.max
+                      prev?.value.max === option.value.max
                         ? null
                         : option
                     );
@@ -856,8 +843,8 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempChefPriceRange?.value.min === option.value.min &&
-                      tempChefPriceRange?.value.max === option.value.max &&
-                      styles.optionButtonTextSelected,
+                        tempChefPriceRange?.value.max === option.value.max &&
+                        styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -869,7 +856,7 @@ const SearchResultScreen = () => {
 
           {/* Rating Filter */}
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownLabel}>Chef Rating Range</Text>
+            <Text style={styles.dropdownLabel}>{t("chefRating")}</Text>
             <View style={styles.buttonGroup}>
               {rateRangeOptions.map((option) => (
                 <TouchableOpacity
@@ -877,8 +864,8 @@ const SearchResultScreen = () => {
                   style={[
                     styles.optionButton,
                     tempRateRange?.value.min === option.value.min &&
-                    tempRateRange?.value.max === option.value.max &&
-                    styles.optionButtonSelected,
+                      tempRateRange?.value.max === option.value.max &&
+                      styles.optionButtonSelected,
                   ]}
                   onPress={() => handleRateChange(option)}
                 >
@@ -886,8 +873,8 @@ const SearchResultScreen = () => {
                     style={[
                       styles.optionButtonText,
                       tempRateRange?.value.min === option.value.min &&
-                      tempRateRange?.value.max === option.value.max &&
-                      styles.optionButtonTextSelected,
+                        tempRateRange?.value.max === option.value.max &&
+                        styles.optionButtonTextSelected,
                     ]}
                   >
                     {option.label}
@@ -902,10 +889,10 @@ const SearchResultScreen = () => {
               onPress={() => modalizeRef.current?.close()}
               style={styles.cancelButton}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={applyFilter} style={styles.applyButton}>
-              <Text style={styles.applyButtonText}>Apply Filter</Text>
+              <Text style={styles.applyButtonText}>{t("applyFilter")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -922,10 +909,10 @@ const SearchResultScreen = () => {
       adjustToContentHeight={true}
     >
       <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Select Address</Text>
+        <Text style={styles.modalTitle}>{t("selectAddress")}</Text>
         {addresses.length === 0 ? (
           <Text style={styles.emptyText}>
-            You have no saved addresses. Add a new one!
+            {t("noAddresses")}
           </Text>
         ) : (
           addresses.map((item) => (
@@ -948,7 +935,7 @@ const SearchResultScreen = () => {
               .then((location) => {
                 const newAddress = {
                   id: Date.now().toString(),
-                  title: "Current Location",
+                  title: t("currentLocation"),
                   address: `${location.coords.latitude}, ${location.coords.longitude}`,
                   latitude: location.coords.latitude,
                   longitude: location.coords.longitude,
@@ -973,7 +960,7 @@ const SearchResultScreen = () => {
             <ActivityIndicator size="small" color="white" />
           ) : (
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Use Current Location
+              {t("useCurrentLocation")}
             </Text>
           )}
         </TouchableOpacity>
@@ -981,7 +968,7 @@ const SearchResultScreen = () => {
           onPress={() => addressModalizeRef.current?.close()}
           style={styles.cancelButton}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
         </TouchableOpacity>
       </View>
     </Modalize>
@@ -1089,6 +1076,15 @@ const styles = StyleSheet.create({
     color: "#333",
     marginRight: 5,
   },
+  filterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
+    backgroundColor: "#FFF8EF",
+    borderRadius: 20,
+  },
   filterIcon: {
     marginLeft: 5,
   },
@@ -1099,7 +1095,6 @@ const styles = StyleSheet.create({
     // paddingTop: 50,
     // alignItems: "center",
     // ,
-
 
     width: 200,
     marginTop: 20,
@@ -1122,7 +1117,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFF",
     marginBottom: 4,
-    alignSelf: 'center'
+    alignSelf: "center",
   },
   subtitle: {
     fontSize: 14,
@@ -1270,7 +1265,6 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
-
   },
   addressItem: {
     paddingVertical: 10,

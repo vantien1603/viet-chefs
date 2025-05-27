@@ -133,7 +133,7 @@ const BookingScreen = () => {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra trong quá trình tải unavailable-dates", "Failed");
+      showModal(t("modal.error"), t("errors.unavailableDatesLoadError"), "Failed");
     } finally {
       setLoading(false);
     }
@@ -194,8 +194,8 @@ const BookingScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal("Error", "Có lỗi xảy ra trong quá trình tải danh sách availability", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải danh sách availability", "Failed");
+      showModal(t("modal.error"), error.response.data.message || t("errors.availabilityLoadError"), "Failed");
     } finally {
       setIsFetchingAvailability(false);
     }
@@ -288,7 +288,7 @@ const BookingScreen = () => {
       if (!address) {
         setErrors((prev) => ({ ...prev, address: true }));
       }
-      showModal("Thiếu thông tin", "Vui lòng điền đầy đủ thông tin cần thiết.", "Failed");
+      showModal("Thiếu thông tin", t("errors.missingInformation"), "Failed");
       return;
     }
     // setRouteBefore(segment);
@@ -351,7 +351,7 @@ const BookingScreen = () => {
 
   return (
     <GestureHandlerRootView style={commonStyles.containerContent}>
-      <Header title="Booking" onLeftPress={() => handleBack()} />
+      <Header title={t("booking")} onLeftPress={() => handleBack()} />
       <ScrollView
         style={{ flex: 1, paddingHorizontal: 10 }}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -626,7 +626,7 @@ const BookingScreen = () => {
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={styles.sectionTitle}>Notes</Text>
+          <Text style={styles.sectionTitle}>{t("note")}</Text>
           <TouchableOpacity onPress={openModal}>
             <Text style={styles.editText}>{t("editNotes")}</Text>
           </TouchableOpacity>

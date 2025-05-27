@@ -154,8 +154,8 @@ const Schedule = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      // showModal("Error", "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
-      showModal("Error", error.response.data.message, "Failed");
+      // showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", "Failed");
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
       setRefresh(false);

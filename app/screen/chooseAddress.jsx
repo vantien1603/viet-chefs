@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
+import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
@@ -21,19 +22,28 @@ import { t } from "i18next";
 import { useCommonNoification } from "../../context/commonNoti";
 import { useSelectedItems } from "../../context/itemContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+
 
 const ChooseAddressScreen = () => {
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
   const axiosInstance = useAxios();
   const [addresses, setAddresses] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newAddress, setNewAddress] = useState({ title: "", address: "" });
+  const [newAddress, setNewAddress] = useState({
+    title: "",
+    address: "",
+    placeId: "",
+  });
+  const country = SecureStore.getItem('country');
   const [suggestions, setSuggestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const { showModal } = useCommonNoification();
   const { address, setAddress, isLong, chefLong, chefLat } = useSelectedItems();
   const MAX_DISTANCE_KM = 50;
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [distanceError, setDistanceError] = useState("");
 
   useEffect(() => {
     const fetchAddress = async () => {
@@ -47,10 +57,25 @@ const ChooseAddressScreen = () => {
         if (axios.isCancel(error)) {
           return;
         }
-        showModal("Error", "Không thể tải danh sách địa chỉ", "Failed")
+        showModal(t("modal.error"), t("errors.fetchAddressesFailed"), "Failed");
       }
     };
     fetchAddress();
+
+    // Request current location
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        // setLocationError("Quyền truy cập vị trí bị từ chối");
+        setErrorMessage(t("errors.locationPermissionDenied"));
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    })();
   }, []);
 
   const fetchAddressSuggestions = async (query) => {
@@ -59,20 +84,24 @@ const ChooseAddressScreen = () => {
       return;
     }
     try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+        location: `${chefLat},${chefLong}`,
+        radius: 10000,
+        strictbounds: true,
+      };
+
+      if (country) {
+        params.components = `country:${country}`;
+      }
+
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
-        {
-          params: {
-            input: query,
-            key: API_GEO_KEY,
-            language: "vi",
-            components: "country:vn",
-            location: `${chefLat},${chefLong}`,
-            radius: 10000,
-            strictbounds: true,
-          },
-        }
+        { params }
       );
+
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
       }
@@ -81,6 +110,7 @@ const ChooseAddressScreen = () => {
         "Error fetching suggestions from Google Places:",
         error?.response?.data
       );
+      setErrorMessage(t("errors.fetchSuggestionsFailed"));
     }
   };
 
@@ -100,6 +130,7 @@ const ChooseAddressScreen = () => {
       return response.data.result;
     } catch (error) {
       console.error("Error fetching place details:", error);
+      setErrorMessage(t("errors.fetchPlaceDetailsFailed"));
       return null;
     }
   };
@@ -110,19 +141,15 @@ const ChooseAddressScreen = () => {
     const dLon = (lng2 - lng1) * (Math.PI / 180);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
   const selectAddress = async (prediction) => {
-    // const formattedAddress = await getPlaceDetails(prediction.place_id);
-    // if (formattedAddress) {
-    //   setNewAddress({ ...newAddress, address: formattedAddress });
-    //   setSuggestions([]);
-    //   setSearchQuery(formattedAddress);
-    // }
-
     const details = await getPlaceDetails(prediction.place_id);
     if (details) {
       const { formatted_address, geometry } = details;
@@ -131,7 +158,7 @@ const ChooseAddressScreen = () => {
       console.log("detial", details);
 
       if (distance > MAX_DISTANCE_KM) {
-        showModal("Error", "Địa chỉ phải nằm trong bán kính 50km từ vị trí hiện tại", "Failed");
+        showModal(t("modal.error"), t("errors.distanceExceeded"), "Failed");
         return;
       }
 
@@ -155,12 +182,12 @@ const ChooseAddressScreen = () => {
 
   const createAddress = async () => {
     if (!newAddress.title || !newAddress.address) {
-      showModal("Error", "Vui lòng điền đầy đủ thông tin", "Failed")
+      showModal(t("modal.error"), t("errors.incompleteAddress"), "Failed");
       return;
     }
 
     if (addresses.length >= 5) {
-      showModal("Error", "Bạn chỉ được tạo tối đa 5 địa chỉ", "Failed");
+      showModal(t("modal.error"), t("errors.maxAddresses"), "Failed");
       setModalVisible(false);
       return;
     }
@@ -174,10 +201,10 @@ const ChooseAddressScreen = () => {
       if (response.status === 201) {
         setAddresses((prev) => [...prev, response.data]);
         setModalVisible(false);
-        setNewAddress({ title: "", address: "" });
+        setNewAddress({ title: "", address: "", placeId: "" });
         setSearchQuery("");
         setSuggestions([]);
-        showModal("Success", "Địa chỉ đã được tạo", "Success");
+        showModal(t("modal.success"), t("createAddressSuccess"),);
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -186,13 +213,13 @@ const ChooseAddressScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal("Error", "Có lỗi xảy ra khi lưu địa chỉ.", "Failed");
+      showModal(t("modal.error"), t("errors.createAddressFailed"), "Failed");
     }
   };
 
   const handleConfirm = async () => {
     if (selectedAddressIndex === null) {
-      showModal("Error", "Vui lòng chọn một địa chỉ.", "Failed");
+      showModal(t("modal.error"), t("errors.noAddressSelected"), "Failed");
       return;
     }
     const selectedAddress = addresses[selectedAddressIndex];
@@ -208,13 +235,11 @@ const ChooseAddressScreen = () => {
     isLong ? router.replace("/screen/longTermBooking") : router.replace("/screen/booking")
   };
 
-
   useEffect(() => {
     if (address && addresses.length > 0) {
       const index = addresses.findIndex(
         (item) =>
-          item.address === address?.address &&
-          item.title === address?.title
+          item.address === address?.address && item.title === address?.title
       );
       if (index !== -1) {
         setSelectedAddressIndex(index);
@@ -222,9 +247,11 @@ const ChooseAddressScreen = () => {
     }
   }, [addresses, address]);
 
-
   const renderAddressItem = ({ item, index }) => (
-    <TouchableOpacity style={styles.addressContainer} onPress={() => setSelectedAddressIndex(index)}>
+    <TouchableOpacity
+      style={styles.addressContainer}
+      onPress={() => setSelectedAddressIndex(index)}
+    >
       <Ionicons
         name={
           selectedAddressIndex === index
@@ -243,7 +270,14 @@ const ChooseAddressScreen = () => {
 
   return (
     <SafeAreaView style={commonStyles.containerContent}>
-      <Header title="Choose Address" onLeftPress={() => isLong ? router.replace("/screen/longTermBooking") : router.replace("/screen/booking")} />
+      <Header
+        title={t("chooseAddress")}
+        onLeftPress={() =>
+          isLong
+            ? router.replace("/screen/longTermBooking")
+            : router.replace("/screen/booking")
+        }
+      />
       <View style={styles.headerContainer}>
         <Text style={styles.sectionTitle}>{t("address")}</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -259,10 +293,7 @@ const ChooseAddressScreen = () => {
       />
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirm}
-        >
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
           <Text style={styles.confirmButtonText}>{t("confirm")}</Text>
         </TouchableOpacity>
       </View>
@@ -283,9 +314,10 @@ const ChooseAddressScreen = () => {
               placeholder="Title ex: home, work,..."
               placeholderTextColor="#999"
               value={newAddress.title}
-              onChangeText={(text) => setNewAddress({ ...newAddress, title: text })}
+              onChangeText={(text) =>
+                setNewAddress({ ...newAddress, title: text })
+              }
             />
-
 
             <Text style={styles.inputLabel}>{t("address")}</Text>
             <TextInput
@@ -294,10 +326,6 @@ const ChooseAddressScreen = () => {
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={handleSearch}
-              onSubmitEditing={(event) => {
-                event.persist();
-                fetchAddressSuggestions(event.nativeEvent.text);
-              }}
               returnKeyType="search"
             />
 
@@ -324,9 +352,11 @@ const ChooseAddressScreen = () => {
               <TouchableOpacity
                 onPress={() => {
                   setModalVisible(false);
-                  setNewAddress({ title: "", address: "" });
+                  setNewAddress({ title: "", address: "", placeId: "" });
                   setSearchQuery("");
                   setSuggestions([]);
+                  setErrorMessage("");
+                  setDistanceError("");
                 }}
                 style={styles.cancelButton}
               >
@@ -347,26 +377,6 @@ const ChooseAddressScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    marginHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#666",
-  },
-  addNewText: {
-    color: "#A64B2A",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
   addressContainer: {
     flexDirection: "row",
     padding: 16,
@@ -388,6 +398,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     marginTop: 4,
+  },
+  editText: {
+    color: "#A64B2A",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 10,
+    padding: 20,
+    backgroundColor: "#EBE5DD",
+    borderBottomColor: "#CCCCCC",
+    borderBottomWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  addNewText: {
+    color: "#A64B2A",
+    fontWeight: "bold",
+    fontSize: 17,
+    marginLeft: 10,
   },
   separator: {
     height: 1,
@@ -525,6 +560,12 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 18,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
   },
 });
 

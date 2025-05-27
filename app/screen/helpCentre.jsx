@@ -21,15 +21,21 @@ const HelpCentre = () => {
         },
       });
     } catch (error) {
-      console.error("Navigation error:", error);
+      showModal(
+        t("modal.error"),
+        t("errors.navigationFailed"),
+        "Failed"
+      );
     }
   };
   return (
     <SafeAreaView style={{ backgroundColor: "#EBE5DD", flex: 1 }}>
       <Header title={t("helpCentre")} />
       <View style={styles.container}>
-        <Text style={styles.text}>Xin chào, {user.fullName}</Text>
-        <Text style={styles.text}>Chúng tôi đang cải thiện dịch vụ</Text>
+        <Text style={styles.text}>
+          {t("greeting", { name: user?.fullName || t("guest") })}
+        </Text>
+        <Text style={styles.text}>{t("serviceMessage")}</Text>
         <View style={styles.imageWrapper}>
           <Image
             source={require("../../assets/images/help.png")}
@@ -55,10 +61,10 @@ const HelpCentre = () => {
         </View>
         <View style={styles.content}>
           <Text style={{ color: "#4E342E", fontSize: 16, fontWeight: "500" }}>
-            Trò chuyện để được hỗ trợ
+            {t("chatSupport")}
           </Text>
           <Text style={{ color: "#3E3E3E", fontSize: 14 }}>
-            Hỗ trợ chính xác vấn đề của bạn
+            {t("supportDescription")}
           </Text>
         </View>
       </TouchableOpacity>
