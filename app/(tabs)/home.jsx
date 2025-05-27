@@ -49,10 +49,15 @@ export default function Home() {
   const initialMessages = [
     {
       role: "assistant",
-      content: "Hello! Welcome to VietChef virtual assistant. I will support you here today.",
+      content:
+        t("botHello"),
       suggestContactAdmin: false,
     },
-    { role: "assistant", content: "How can I help you today?", suggestContactAdmin: false },
+    {
+      role: "assistant",
+      content: t("botHowCanIHelp"),
+      suggestContactAdmin: false,
+    },
   ];
 
   useEffect(() => {
@@ -88,7 +93,6 @@ export default function Home() {
 
 
 
-
   const fetchUnreadCount = async () => {
     setLoading(true);
     try {
@@ -106,7 +110,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
 
   const getCurrentLocation = async () => {
     setLoading(true);
@@ -210,13 +213,16 @@ export default function Home() {
       //     sortDir: "asc",
       //   },
       // });
-      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`, {
-        params: {
-          pageSize: 7,
-          sortBy: "createdAt",
-          sortDir: "desc",
-        },
-      });
+      const response = await axiosInstance.get(
+        `/favorite-chefs/${user.userId}`,
+        {
+          params: {
+            pageSize: 7,
+            sortBy: "createdAt",
+            sortDir: "desc",
+          },
+        }
+      );
       setChefFavorite(response.data.content);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
@@ -240,8 +246,7 @@ export default function Home() {
           sortDir: "asc",
         },
       });
-      if (response.status === 200)
-        setChef(response.data.content.slice(0, 7));
+      if (response.status === 200) setChef(response.data.content.slice(0, 7));
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
 
@@ -273,7 +278,6 @@ export default function Home() {
     }
   };
 
-
   const handleSend = (userMessage) => {
     setMessages((prev) => [...prev, userMessage]);
   };
@@ -290,7 +294,7 @@ export default function Home() {
       const botMessage = {
         role: "assistant",
         content: replyContent,
-        suggestContactAdmin: suggestContactAdmin
+        suggestContactAdmin: suggestContactAdmin,
       };
       setMessages((prev) => [...prev, botMessage]);
       console.log("Bot response:", response.data);
@@ -300,7 +304,8 @@ export default function Home() {
         ...prev,
         {
           role: "assistant",
-          content: "Xin lỗi, tôi không thể trả lời ngay bây giờ. Vui lòng thử lại",
+          content:
+            "Xin lỗi, tôi không thể trả lời ngay bây giờ. Vui lòng thử lại",
           suggestContactAdmin: false,
         },
       ]);
@@ -313,7 +318,6 @@ export default function Home() {
     }
     setIsChatVisible(!isChatVisible);
   };
-
 
   const handleSearchIconPress = () => {
     router.push({
@@ -346,7 +350,9 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.chefName}</Text>
-      <Text style={{ color: "#F8BF40" }}>{item.chefSpecialization}</Text>
+      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>
+        {item.chefSpecialization}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -368,9 +374,9 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{t('basePrice')}: {item.basePrice}$</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{item.description}</Text>
-      <Text style={{ color: '#F8BF40', fontSize: 12 }}> {t('distance')}: {item.chef.distance.toFixed(2)} km</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{t('basePrice')}: {item.basePrice}$</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{item.description}</Text>
+      <Text style={{ color: '#F8BF40', fontSize: 12, fontFamily: "nunito-regular" }}> {t('distance')}: {item.chef.distance.toFixed(2)} km</Text>
 
     </TouchableOpacity>
   );
@@ -396,8 +402,8 @@ export default function Home() {
       </View>
       <Text style={styles.title}>{item.user.fullName}</Text>
       {/* <Text style={{ color: "#F8BF40" }}>{t('price')}: {item.price}</Text> */}
-      <Text style={{ color: "#F8BF40" }}>{item.specialization}</Text>
-      <Text style={{ color: '#F8BF40', fontSize: 12 }}> {t('distance')}: {item.distance.toFixed(2)} km</Text>
+      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{item.specialization}</Text>
+      <Text style={{ color: '#F8BF40', fontSize: 12, fontFamily: "nunito-regular" }}> {t('distance')}: {item.distance.toFixed(2)} km</Text>
     </TouchableOpacity>
   );
 
@@ -407,12 +413,22 @@ export default function Home() {
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image
-              source={user ? { uri: user?.avatarUrl } : require("../../assets/images/logo.png")}
+              source={
+                user
+                  ? { uri: user?.avatarUrl }
+                  : require("../../assets/images/logo.png")
+              }
               style={{ width: 50, height: 50, borderRadius: 30 }}
               resizeMode="cover"
             />
             <View style={{ marginLeft: 10, maxWidth: 200 }}>
-              <Text style={{ fontSize: 18, color: "#383838" }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: "#383838",
+                  fontFamily: "nunito-regular",
+                }}
+              >
                 Hello, {user?.fullName || "Guest"}
               </Text>
               <Text
@@ -420,7 +436,9 @@ export default function Home() {
                   fontSize: 12,
                   color: selectedAddress ? "#968B7B" : "#A9411D",
                   fontStyle: selectedAddress ? "normal" : "italic",
-                  fontWeight: selectedAddress ? "normal" : "bold",
+                  fontFamily: selectedAddress
+                    ? "nunito-regular"
+                    : "nunito-bold",
                 }}
                 numberOfLines={2}
               >
@@ -444,7 +462,6 @@ export default function Home() {
           </View>
         </TouchableOpacity>
       </View>
-
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -501,7 +518,7 @@ export default function Home() {
         {chefFavorite.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
+              <Text style={styles.sectionTitle}>{t("favoriteList")}</Text>
               <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
                 <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
                   {t("seeAll")}
@@ -546,7 +563,9 @@ export default function Home() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("nearbyDishes")}</Text>
           <TouchableOpacity onPress={() => router.push("/screen/allDish")}>
-            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+            <Text style={{
+              color: "#4EA0B7", fontSize: 14, fontFamily: "nunito-regular",
+            }}>
               {t("seeAll")}
             </Text>
           </TouchableOpacity>
@@ -558,7 +577,9 @@ export default function Home() {
         ) : (
           dishes.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
+              <Text style={{
+                fontSize: 16, color: '#333', fontFamily: "nunito-regular",
+              }}> {t("serviceNotNear")}</Text>
             </View>
           ) : (
             <ScrollView
@@ -590,20 +611,17 @@ export default function Home() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
           <TouchableOpacity onPress={() => router.push("/screen/allChef")}>
-            <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
+            <Text style={{ color: "#4EA0B7", fontSize: 14, fontFamily: "nunito-regular", }}>
               {t("seeAll")}
             </Text>
           </TouchableOpacity>
         </View>
-        {/* <View style={{ minHeight: 200 }} > */}
         {loadingChef ? (
-          <View style={{ minHeight: 200 }} >
-            <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
-          </View>
+          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
         ) : (
           chef.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
+              <Text style={{ fontSize: 16, color: '#333',fontFamily: "nunito-regular", }}> {t("serviceNotNear")}</Text>
             </View>
           ) : (
             <ScrollView
@@ -611,71 +629,76 @@ export default function Home() {
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 30 }}
             >
-
-              {chef.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderChefItem({ item })}
-                </View>
-              ))}
+                {
+                chef.map((item, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: 200,
+                      alignItems: "center",
+                      marginRight: 20,
+                      marginLeft: index === 0 ? 16 : 0,
+                    }}
+                  >
+                    {renderChefItem({ item })}
+                  </View>
+                ))
+              }
             </ScrollView>
           ))}
-        {/* </View> */}
+
       </ScrollView>
       <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
         <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />
       </TouchableOpacity>
 
-      {
-        isChatVisible && (
-          <View style={styles.chatOverlay}>
-            <View
+      {isChatVisible && (
+        <View style={styles.chatOverlay}>
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: "#A9411D",
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={require("../../assets/images/logo.png")}
               style={{
-                flexDirection: "row",
-                backgroundColor: "#A9411D",
-                padding: 20,
-                alignItems: "center",
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                borderWidth: 1,
+                borderColor: "#EBE5DD",
+              }}
+            />
+            <Text
+              style={{
+                color: "#fff",
+                fontSize: 15,
+                marginLeft: 15,
+                fontFamily: "nunito-regular",
               }}
             >
-              <Image
-                source={require("../../assets/images/logo.png")}
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 25,
-                  borderWidth: 1,
-                  borderColor: "#EBE5DD",
-                }}
-              />
-              <Text style={{ color: "#fff", fontSize: 15, marginLeft: 15 }}>
-                VietChef Chatbot
-              </Text>
-              <TouchableOpacity
-                style={styles.closeChatButton}
-                onPress={toggleChat}
-              >
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <CustomChat
-              messages={messages}
-              onSendMessage={handleSend}
-              callApi={handleChatbot}
-              onContactAdmin={() => router.push("/screen/helpCentre")}
-            />
+              VietChef Chatbot
+            </Text>
+            <TouchableOpacity
+              style={styles.closeChatButton}
+              onPress={toggleChat}
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
-        )
-      }
 
-    </SafeAreaView >
+          <CustomChat
+            messages={messages}
+            onSendMessage={handleSend}
+            callApi={handleChatbot}
+            onContactAdmin={() => router.push("/screen/helpCentre")}
+          />
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -702,6 +725,7 @@ const styles = StyleSheet.create({
     padding: 20,
     fontSize: 16,
     paddingRight: 50,
+    fontFamily: "nunito-regular",
   },
   searchIcon: {
     position: "absolute",
@@ -737,7 +761,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#FFF",
     marginTop: 70,
     textAlign: "center",
@@ -752,7 +776,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   notificationIconContainer: {
@@ -772,7 +796,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   chatbotIcon: {
     position: "absolute",
@@ -808,5 +832,4 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
   },
-
 });

@@ -401,7 +401,7 @@ const EditAddress = () => {
           color="black"
           style={{ marginLeft: 10 }}
         />
-        <Text style={{ marginLeft: 10, fontSize: 16, color: "#333", flex: 1 }}>
+        <Text style={{ marginLeft: 10, fontSize: 16, color: "#333", flex: 1, fontFamily: "nunito-regular" }}>
           {item.address}
         </Text>
       </TouchableOpacity>
@@ -414,7 +414,7 @@ const EditAddress = () => {
           }}
         >
           <Text
-            style={{ color: "#A9411D", fontWeight: "bold", marginRight: 15 }}
+            style={{ color: "#A9411D", fontFamily: "nunito-bold", marginRight: 15 }}
           >
             {t("edit")}
           </Text>
@@ -439,11 +439,11 @@ const EditAddress = () => {
                 marginBottom: 10,
               }}
             >
-              <Text style={{ color: "#666", fontSize: 16 }}>
+              <Text style={{ color: "#666", fontSize: 16, fontFamily: "nunito-regular" }}>
                 {t("addressList")}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(true)}>
-                <Text style={{ color: "#A64B2A", fontWeight: "bold" }}>
+                <Text style={{ color: "#A64B2A", fontFamily: "nunito-bold" }}>
                   {t("addNew")}
                 </Text>
               </TouchableOpacity>
@@ -567,7 +567,7 @@ const EditAddress = () => {
               <ActivityIndicator size="small" color="white" />
             ) : (
               <Text
-                style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+                style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}
               >
                 {t("useCurrentLocation")}
               </Text>
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 15,
   },
   input: {
@@ -603,6 +603,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
     fontSize: 16,
+    fontFamily: "nunito-regular"
   },
   suggestionContainer: {
     maxHeight: 250,
@@ -620,6 +621,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 16,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   buttonContainer: {
     flexDirection: "row",
@@ -631,6 +633,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: "gray",
     fontSize: 16,
+    fontFamily: "nunito-bold",
   },
   saveButton: {
     backgroundColor: "#A64B2A",
@@ -639,7 +642,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
 });

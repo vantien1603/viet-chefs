@@ -17,6 +17,7 @@ import { useSelectedItems } from "../../context/itemContext";
 import { commonStyles } from "../../style";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
+import { t } from "i18next";
 
 const PaymentLongterm = () => {
   const params = useLocalSearchParams();
@@ -317,7 +318,7 @@ const PaymentLongterm = () => {
               onPress={() => accessWallet()}
             >
               <Text
-                style={{ fontSize: 16, color: "white", fontWeight: "bold" }}
+                style={{ fontSize: 16, color: "white", fontFamily: "nunito-bold" }}
               >
                 {t("pay")}
               </Text>
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 20,
   },
   summaryContainer: {
@@ -357,10 +358,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 16,
+    fontFamily: "nunito-regular"
   },
   summaryValue: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   depositValue: {
     color: "#A64B2A",
@@ -375,12 +377,13 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 5,
   },
   infoValue: {
     fontSize: 16,
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   buttonArea: {
     position: "absolute",
@@ -406,7 +409,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   spacer: {
     height: 100,
@@ -435,7 +438,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
     marginTop: 10,
@@ -444,6 +447,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginBottom: 20,
+    fontFamily: "nunito-regular"
   },
   pinContainer: {
     flexDirection: "row",
@@ -465,7 +469,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     textAlign: "center",
     borderWidth: 0,

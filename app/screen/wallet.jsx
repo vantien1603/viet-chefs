@@ -25,9 +25,9 @@ const WalletScreen = () => {
   const [walletId, setWalletId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [paypalAccountEmail, setPaypalAccountEmail] = useState(null);
-  const [pinInputs, setPinInputs] = useState(['', '', '', '']);
-  const [oldPinInputs, setOldPinInputs] = useState(['', '', '', '']);
-  const [newPinInputs, setNewPinInputs] = useState(['', '', '', '']);
+  const [pinInputs, setPinInputs] = useState(["", "", "", ""]);
+  const [oldPinInputs, setOldPinInputs] = useState(["", "", "", ""]);
+  const [newPinInputs, setNewPinInputs] = useState(["", "", "", ""]);
   const pinRefs = useRef([]);
   const oldPinRefs = useRef([]);
   const newPinRefs = useRef([]);
@@ -40,12 +40,12 @@ const WalletScreen = () => {
   const { showModal } = useCommonNoification();
   const [modalKey, setModalKey] = useState(0);
   const [type, setType] = useState(0);
-  const getPIN = (arr) => arr.join('');
+  const getPIN = (arr) => arr.join("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [refresh, setRefresh] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
-  const toggleBalance = () => setShowBalance(prev => !prev);
+  const toggleBalance = () => setShowBalance((prev) => !prev);
   useEffect(() => {
     checkWalletPassword();
     fetchWalletData(0, true);
@@ -54,31 +54,30 @@ const WalletScreen = () => {
   const openModal = (tp) => {
     setType(tp);
     setModalKey((prev) => prev + 1);
-    setPinInputs(['', '', '', '']);
+    setPinInputs(["", "", "", ""]);
     setTimeout(() => {
       modalizeRef.current?.open();
-    }, 100)
+    }, 100);
   };
 
   const closeModal = () => {
     modalizeRef.current?.close();
-    setPinInputs(['', '', '', '']);
+    setPinInputs(["", "", "", ""]);
     setError("");
   };
 
   const openChangePinModal = () => {
     setModalKey((prev) => prev + 1);
-    setOldPinInputs(['', '', '', '']);
-    setNewPinInputs(['', '', '', '']);
+    setOldPinInputs(["", "", "", ""]);
+    setNewPinInputs(["", "", "", ""]);
     setTimeout(() => {
       changePinModalizeRef.current?.open();
-    }, 100)
+    }, 100);
   };
 
   const closeChangePinModal = () => {
     changePinModalizeRef.current?.close();
     setChangePinError("");
-
   };
 
   const fetchWalletData = async (page, isRefresh = false) => {
@@ -97,20 +96,25 @@ const WalletScreen = () => {
       setBalance(walletData.balance ?? 0);
       setWalletId(walletData.id);
       setPaypalAccountEmail(walletData.paypalAccountEmail);
-      const trans = walletData.walletType === "CUSTOMER" ? response.data.customerTransactions?.content || [] : response.data.chefTransactions?.content || [];
-      setTotalPages(walletData.walletType === "CUSTOMER" ? response.data.customerTransactions?.totalPages || 0 : response.data.chefTransactions?.totalPages || 0);
+      const trans =
+        walletData.walletType === "CUSTOMER"
+          ? response.data.customerTransactions?.content || []
+          : response.data.chefTransactions?.content || [];
+      setTotalPages(
+        walletData.walletType === "CUSTOMER"
+          ? response.data.customerTransactions?.totalPages || 0
+          : response.data.chefTransactions?.totalPages || 0
+      );
       console.log(totalPages);
       console.log(page);
       console.log(isRefresh);
       // setTransactions((prev) => {
       //   return isRefresh ? trans : [...prev, ...trans];
       // });
-      setTransactions(prev => {
-        const newData = trans.filter(tx => !prev.some(p => p.id === tx.id));
+      setTransactions((prev) => {
+        const newData = trans.filter((tx) => !prev.some((p) => p.id === tx.id));
         return isRefresh ? trans : [...prev, ...newData];
-
       });
-
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
       console.log(t('error'), error.response.data.message || "Có lỗi xảy ra khi tải dữ liệu", "Failed");
@@ -119,7 +123,6 @@ const WalletScreen = () => {
       if (isRefresh) setRefresh(false);
     }
   };
-
 
   console.log(transactions.length);
 
@@ -137,7 +140,6 @@ const WalletScreen = () => {
       }
     }
   };
-
 
   const handleRefresh = async () => {
     setRefresh(true);
@@ -174,10 +176,8 @@ const WalletScreen = () => {
       fetchWalletData(0, true);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      setError(
-        error?.response?.data?.message || t("failedToSetPin")
-      );
-      setPinInputs(['', '', '', '']);
+      setError(error?.response?.data?.message || t("failedToSetPin"));
+      setPinInputs(["", "", "", ""]);
     } finally {
       setLoading(false);
     }
@@ -200,18 +200,18 @@ const WalletScreen = () => {
       if (response.data === true) {
         closeModal();
         if (type === 1) {
-          handleDeposit()
+          handleDeposit();
         } else if (type === 2) {
-          handleWithdrawal()
+          handleWithdrawal();
         }
       } else {
-        setPinInputs(['', '', '', '']);
+        setPinInputs(["", "", "", ""]);
         setError(t("invalidPin"));
       }
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
       console.error("Error accessing wallet:", error.response?.data.message);
-      setPinInputs(['', '', '', '']);
+      setPinInputs(["", "", "", ""]);
       setError(t("invalidPin"));
     } finally {
       setLoading(false);
@@ -253,7 +253,7 @@ const WalletScreen = () => {
   };
 
   const handleDeposit = () => {
-    console.log("cung dau")
+    console.log("cung dau");
     if (walletId) {
       router.replace({
         pathname: "/screen/deposit",
@@ -305,8 +305,12 @@ const WalletScreen = () => {
         <View style={styles.transactionDetails}>
           <Text style={styles.transactionDescription}>{item.description}</Text>
           <View style={styles.transactionBottomRow}>
-            <Text style={styles.transactionDate}>{item.createdAt ? moment(item.createdAt).format("HH:mm - DD/MM/YYYY") : "Unknown date"} </Text>
-            < Text style={[styles.transactionAmount, { color }]}>
+            <Text style={styles.transactionDate}>
+              {item.createdAt
+                ? moment(item.createdAt).format("HH:mm - DD/MM/YYYY")
+                : "Unknown date"}{" "}
+            </Text>
+            <Text style={[styles.transactionAmount, { color }]}>
               {sign}
               {(item.amount ?? 0).toLocaleString("en-US", {
                 style: "currency",
@@ -320,7 +324,6 @@ const WalletScreen = () => {
   };
 
   const handlePinChange = (text, index, state, setState, refs) => {
-
     const updated = [...state];
     const prevVal = updated[index];
 
@@ -341,7 +344,7 @@ const WalletScreen = () => {
       const response = await axiosInstance.post(
         "/users/profile/my-wallet/forgot-wallet-password"
       );
-      showModal(t("modal.success"), t("newPinSentToEmail"),);
+      showModal(t(t("modal.success")), t("newPinSentToEmail"));
     } catch (error) {
       showModal(t("modal.error"), t("errors.failedToRequestNewPin"), "Failed");
     }
@@ -356,13 +359,22 @@ const WalletScreen = () => {
             <Text style={styles.walletTitle}>{t("vietchefWallet")}</Text>
           </View>
           <View style={styles.balanceRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 20 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginVertical: 20,
+              }}
+            >
               <Text style={styles.balanceText}>
-                Số dư: {showBalance ? balance : '***'}
+                Số dư: {showBalance ? balance : "***"}
               </Text>
-              <TouchableOpacity onPress={toggleBalance} style={{ marginLeft: 8 }}>
+              <TouchableOpacity
+                onPress={toggleBalance}
+                style={{ marginLeft: 8 }}
+              >
                 <MaterialIcons
-                  name={showBalance ? 'visibility' : 'visibility-off'}
+                  name={showBalance ? "visibility" : "visibility-off"}
                   size={20}
                   color="#555"
                 />
@@ -372,14 +384,16 @@ const WalletScreen = () => {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.depositContainer}
-                onPress={() => hasPassword ? openModal(1) : handleDeposit()}
+                onPress={() => (hasPassword ? openModal(1) : handleDeposit())}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
                 <Text style={styles.depositText}>{t("topUp")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.depositContainer}
-                onPress={() => hasPassword ? openModal(2) : handleWithdrawal()}
+                onPress={() =>
+                  hasPassword ? openModal(2) : handleWithdrawal()
+                }
               >
                 <Ionicons name="remove-circle-outline" size={18} color="#fff" />
                 <Text style={styles.depositText}>{t("withdraw")}</Text>
@@ -389,7 +403,9 @@ const WalletScreen = () => {
                 onPress={hasPassword ? openChangePinModal : openModal}
               >
                 <Ionicons name="lock-closed-outline" size={18} color="#fff" />
-                <Text style={styles.depositText}>{hasPassword ? t("changePin") : t("setPin")}</Text>
+                <Text style={styles.depositText}>
+                  {hasPassword ? t("changePin") : t("setPin")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -421,17 +437,15 @@ const WalletScreen = () => {
             onEndReachedThreshold={0.2}
             refreshing={refresh}
             onRefresh={handleRefresh}
-            ListEmptyComponent={<Text style={styles.noTransactions}>{t("noTransactions")}</Text>}
+            ListEmptyComponent={
+              <Text style={styles.noTransactions}>{t("noTransactions")}</Text>
+            }
           />
         </View>
       </View>
 
       {/* Modal for Access/Set PIN */}
-      <Modalize
-        ref={modalizeRef}
-        adjustToContentHeight={true}
-        key={modalKey}
-      >
+      <Modalize ref={modalizeRef} adjustToContentHeight={true} key={modalKey}>
         <View style={styles.modalContent}>
           <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
             <Ionicons name="close" size={24} color="#333" />
@@ -444,14 +458,16 @@ const WalletScreen = () => {
             {pinInputs.map((val, i) => (
               <View key={i} style={styles.pinBox}>
                 <TextInput
-                  ref={ref => pinRefs.current[i] = ref}
+                  ref={(ref) => (pinRefs.current[i] = ref)}
                   style={styles.pinInput}
                   keyboardType="numeric"
                   maxLength={1}
                   value={val}
                   secureTextEntry={true}
-                  onChangeText={text => handlePinChange(text, i, pinInputs, setPinInputs, pinRefs)}
-                // onKeyPress={e => handleKeyPress(e, i, pinInputs, pinRefs)}
+                  onChangeText={(text) =>
+                    handlePinChange(text, i, pinInputs, setPinInputs, pinRefs)
+                  }
+                  // onKeyPress={e => handleKeyPress(e, i, pinInputs, pinRefs)}
                 />
               </View>
             ))}
@@ -462,8 +478,25 @@ const WalletScreen = () => {
               <Text style={styles.forgotPinText}>{t("forgotPin")}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={{ marginVertical: 20, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#A64B2A', borderRadius: 20 }} onPress={() => hasPassword ? accessWallet() : setWalletPassword()}>
-            <Text style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}>{t('confirm')}</Text>
+          <TouchableOpacity
+            style={{
+              marginVertical: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              backgroundColor: "#A64B2A",
+              borderRadius: 20,
+            }}
+            onPress={() => (hasPassword ? accessWallet() : setWalletPassword())}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                color: "white",
+                fontFamily: "nunito-bold",
+              }}
+            >
+              {t("confirm")}
+            </Text>
           </TouchableOpacity>
         </View>
       </Modalize>
@@ -475,24 +508,33 @@ const WalletScreen = () => {
         key={`change ${modalKey}`}
       >
         <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={closeChangePinModal}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={closeChangePinModal}
+          >
             <Ionicons name="close" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>
-            {t("changePin")}
-          </Text>
+          <Text style={styles.modalTitle}>{t("changePin")}</Text>
           <Text style={styles.modalSubtitle}>{t("enterOldPin")}</Text>
           <View style={styles.pinContainer}>
             {oldPinInputs.map((val, i) => (
               <View key={i} style={styles.pinBox}>
                 <TextInput
-                  ref={ref => oldPinRefs.current[i] = ref}
+                  ref={(ref) => (oldPinRefs.current[i] = ref)}
                   style={styles.pinInput}
                   keyboardType="numeric"
                   maxLength={1}
                   secureTextEntry={true}
                   value={val}
-                  onChangeText={text => handlePinChange(text, i, oldPinInputs, setOldPinInputs, oldPinRefs)}
+                  onChangeText={(text) =>
+                    handlePinChange(
+                      text,
+                      i,
+                      oldPinInputs,
+                      setOldPinInputs,
+                      oldPinRefs
+                    )
+                  }
                 />
               </View>
             ))}
@@ -502,24 +544,51 @@ const WalletScreen = () => {
             {newPinInputs.map((val, i) => (
               <View key={i} style={styles.pinBox}>
                 <TextInput
-                  ref={ref => newPinRefs.current[i] = ref}
+                  ref={(ref) => (newPinRefs.current[i] = ref)}
                   style={styles.pinInput}
                   keyboardType="numeric"
                   maxLength={1}
                   secureTextEntry={true}
                   value={val}
-                  onChangeText={text => handlePinChange(text, i, newPinInputs, setNewPinInputs, newPinRefs)}
+                  onChangeText={(text) =>
+                    handlePinChange(
+                      text,
+                      i,
+                      newPinInputs,
+                      setNewPinInputs,
+                      newPinRefs
+                    )
+                  }
                 />
               </View>
             ))}
           </View>
-          {changePinError && <Text style={styles.errorText}>{changePinError}</Text>}
-          <TouchableOpacity style={{ marginVertical: 20, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#A64B2A', borderRadius: 20 }} onPress={() => changeWalletPassword()}>
-            <Text style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}>{t('confirm')}</Text>
+          {changePinError && (
+            <Text style={styles.errorText}>{changePinError}</Text>
+          )}
+          <TouchableOpacity
+            style={{
+              marginVertical: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              backgroundColor: "#A64B2A",
+              borderRadius: 20,
+            }}
+            onPress={() => changeWalletPassword()}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                color: "white",
+                fontFamily: "nunito-bold",
+              }}
+            >
+              {t("confirm")}
+            </Text>
           </TouchableOpacity>
         </View>
       </Modalize>
-    </GestureHandlerRootView >
+    </GestureHandlerRootView>
   );
 };
 
@@ -546,7 +615,7 @@ const styles = StyleSheet.create({
   },
   walletTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   balanceRow: {
@@ -562,7 +631,7 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 18,
     color: "#222",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   buttonContainer: {
     flexDirection: "row",
@@ -593,7 +662,7 @@ const styles = StyleSheet.create({
   },
   depositText: {
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginLeft: 6,
     fontSize: 14,
   },
@@ -618,7 +687,7 @@ const styles = StyleSheet.create({
   },
   monthYear: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#000",
   },
   statisticButton: {
@@ -629,7 +698,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FF69B4",
     marginRight: 5,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   transactionListContainer: {
     paddingBottom: 10,
@@ -653,16 +722,18 @@ const styles = StyleSheet.create({
   },
   transactionDescription: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   transactionDate: {
     fontSize: 12,
     color: "#777",
+    fontFamily: "nunito-regular",
   },
   transactionAmount: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
+    fontFamily: "nunito-regular",
   },
   transactionBottomRow: {
     flexDirection: "row",
@@ -674,6 +745,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 14,
     color: "#666",
+    fontFamily: "nunito-regular",
   },
   modalStyle: {
     backgroundColor: "#FFF",
@@ -699,7 +771,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
     marginTop: 10,
@@ -708,6 +780,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginBottom: 10,
+    fontFamily: "nunito-regular",
   },
   pinContainer: {
     flexDirection: "row",
@@ -729,7 +802,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     textAlign: "center",
     borderWidth: 0,
@@ -739,11 +812,13 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 16,
     marginBottom: 10,
+    fontFamily: "nunito-regular",
   },
   forgotPinText: {
     color: "#FF69B4",
     fontSize: 16,
     textDecorationLine: "underline",
+    fontFamily: "nunito-regular",
   },
 });
 

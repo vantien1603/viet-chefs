@@ -352,33 +352,45 @@ export default function ChefScheduleScreen() {
     return (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {loading ? (
-          <ActivityIndicator style={{ alignSelf: 'center' }} size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : slots.length === 0 ? (
+          <Text style={{ color: "#888" ,fontFamily: "nunito-regular"}}>{t("noSlotsAvailable")}</Text>
         ) : (
-          slots.length === 0 ? (
-            <Text style={{ color: "#888", alignSelf: 'center' }}>{t("noSlotsAvailable")}</Text>
-          ) : (
-            slots.map((slot, index) => (
-              <TouchableOpacity key={index} onPress={() => openModal(slot)} style={styles.section}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeStart")}</Text>
-                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{t("timeEnd")}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5 }}>
-                  <Text style={styles.slotText}>
-                    {slot.startTime}
-                  </Text>
-                  <Text style={styles.slotText}>
-                    ----------------------------
-                  </Text>
-                  <Text style={styles.slotText}>
-                    {slot.endTime}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          ))}
-
-
+          slots.map((slot, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => openModal(slot)}
+              style={styles.section}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                  {t("timeStart")}
+                </Text>
+                <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                  {t("timeEnd")}
+                </Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  paddingHorizontal: 5,
+                }}
+              >
+                <Text style={styles.slotText}>{slot.startTime}</Text>
+                <Text style={styles.slotText}>
+                  ----------------------------
+                </Text>
+                <Text style={styles.slotText}>{slot.endTime}</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     );
   };
@@ -423,7 +435,7 @@ export default function ChefScheduleScreen() {
                   shadowOpacity: 0,
                   borderBottomWidth: 0,
                 }}
-                labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
+                labelStyle={{ color: "#A9411D", fontFamily: "nunito-bold" }}
                 tabStyle={{ paddingVertical: 0, width: 130 }}
               />
             )}
@@ -442,7 +454,7 @@ export default function ChefScheduleScreen() {
             onPress={() => route.push("/screen/scheduleBlocked")}
           >
             <MaterialIcons name="event-busy" size={30} color="red" />
-            <Text>{t("busyDate")}</Text>
+            <Text style={{fontFamily: "nunito-bold"}}>{t("busyDate")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -463,10 +475,10 @@ export default function ChefScheduleScreen() {
                       justifyContent: "space-between",
                     }}
                   >
-                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                    <Text style={{ fontFamily: "nunito-bold", fontSize: 16 }}>
                       {t("timeStart")}
                     </Text>
-                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                    <Text style={{ fontFamily: "nunito-bold", fontSize: 16 }}>
                       {t("timeEnd")}
                     </Text>
                   </View>
@@ -577,7 +589,7 @@ export default function ChefScheduleScreen() {
                     >
                       <Text
                         style={{
-                          fontWeight: "bold",
+                          fontFamily: "nunito-bold",
                           color: selectedDays.includes(day.id)
                             ? "white"
                             : "black",
@@ -603,12 +615,12 @@ export default function ChefScheduleScreen() {
                         <View
                           style={{ flexDirection: "row", alignItems: "center" }}
                         >
-                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>
+                          <Text style={{ fontFamily: "nunito-bold", marginRight: 10 }}>
                             {t("startTime")}
                           </Text>
 
                           <TextInput
-                            style={{ fontWeight: "bold", fontSize: 15 }}
+                            style={{ fontFamily: "nunito-bold", fontSize: 15 }}
                             value={slot.startTime}
                             editable={false}
                           />
@@ -619,11 +631,11 @@ export default function ChefScheduleScreen() {
                           style={{ flexDirection: "row", alignItems: "center" }}
                         >
                           <TextInput
-                            style={{ fontWeight: "bold", fontSize: 15 }}
+                            style={{ fontFamily: "nunito-bold", fontSize: 15 }}
                             value={slot.endTime}
                             editable={false}
                           />
-                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>
+                          <Text style={{ fontFamily: "nunito-bold", marginLeft: 10 }}>
                             {t("endTime")}
                           </Text>
                         </View>
@@ -634,7 +646,7 @@ export default function ChefScheduleScreen() {
                         <View
                           style={{ flexDirection: "row", alignItems: "center" }}
                         >
-                          <Text style={{ fontWeight: "bold", marginRight: 10 }}>
+                          <Text style={{ fontFamily: "nunito-bold", marginRight: 10 }}>
                             {t("startTime")}
                           </Text>
                           <TouchableOpacity
@@ -661,7 +673,7 @@ export default function ChefScheduleScreen() {
                               editable={false}
                             />
                           </TouchableOpacity>
-                          <Text style={{ fontWeight: "bold", marginLeft: 10 }}>
+                          <Text style={{ fontFamily: "nunito-bold", marginLeft: 10 }}>
                             {t("endTime")}
                           </Text>
                         </View>
@@ -684,7 +696,7 @@ export default function ChefScheduleScreen() {
                         style={styles.addSlotButton}
                         onPress={() => handleAddSlot(dayId)}
                       >
-                        <Text style={{ color: "white", fontWeight: "bold" }}>
+                        <Text style={{ color: "white", fontFamily: "nunito-bold" }}>
                           + {t("addSlot")}
                         </Text>
                       </TouchableOpacity>
@@ -725,7 +737,7 @@ export default function ChefScheduleScreen() {
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text
-                  style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+                  style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}
                 >
                   {t("save")}
                 </Text>
@@ -800,7 +812,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 10,
     textAlign: "center",
   },
@@ -820,6 +832,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginHorizontal: 5,
     backgroundColor: "#f5f5f5",
+    fontFamily: "nunito-regular",
   },
   addSlotButton: {
     backgroundColor: "#A9411D",
@@ -857,7 +870,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   floatingActions: {
     position: "absolute",
@@ -883,6 +896,6 @@ const styles = StyleSheet.create({
   floatingText: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });

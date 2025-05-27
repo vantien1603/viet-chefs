@@ -1,34 +1,34 @@
 {
   "login": "Đăng nhập",
-  "signup": "Đăng ký",
-  "forgot": "Quên mật khẩu",
-  "verify": "Xác minh",
-  "next": "Tiếp tục",
-  "register": "Đăng ký",
-  "pleasure": "Rất vui được gặp bạn",
-  "createAccount": "Tạo tài khoản ngay để trải nghiệm dịch vụ của chúng tôi",
-  "fullName": "Họ và tên",
-  "phone": "Số điện thoại",
-  "enterCode": "Vui lòng nhập mã xác minh gồm 4 ký tự được gửi đến trong hòm thư điện tử của bạn",
-  "notRecieve": "Không nhận được mã",
-  "enterPassword": "Vui lòng nhập mật khẩu. Mật khẩu sẽ được dùng để đăng nhập ở những lần tiếp theo",
-  "password": "Mật khẩu",
-  "rePassword": "Nhập lại mật khẩu",
-  "search": "Tìm kiếm...",
-  "seeAll": "Xem thêm",
-  "popularDishes": "Món ăn phổ biến",
-  "recommendChef": "Đầu bếp gợi ý",
-  "chefInfo": "Thông tin đầu bếp",
-  "review": "Đánh giá",
-  "bookNow": "Đặt ngay",
-  "book": "Đặt",
-  "Upcoming": "Đang chờ",
-  "account": "Tài khoản",
-  "language": "Ngôn ngữ",
-  "country": "Quốc gia",
-  "selectCountry": "Chọn quốc gia",
-  "selectLanguage": "Chọn ngôn ngữ",
-  "logout": "Đăng xuất",
+  "signup":"Đăng ký",
+  "forgot":"Quên mật khẩu",
+  "verify":"Xác minh",
+  "next":"Tiếp tục",
+  "register":"Đăng ký",
+  "pleasure":"Rất vui được gặp bạn",
+  "createAccount":"Tạo tài khoản ngay để trải nghiệm dịch vụ của chúng tôi",
+  "fullName":"Họ và tên",
+  "phone":"Số điện thoại",
+  "enterCode":"Vui lòng nhập mã xác minh gồm 4 ký tự được gửi đến trong hòm thư điện tử của bạn",
+  "notRecieve":"Không nhận được mã",
+  "enterPassword":"Vui lòng nhập mật khẩu. Mật khẩu sẽ được dùng để đăng nhập ở những lần tiếp theo",
+  "password":"Mật khẩu",
+  "rePassword":"Nhập lại mật khẩu",
+  "search":"Tìm kiếm...",
+  "seeAll":"Xem thêm",
+  "popularDishes":"Món ăn phổ biến",
+  "recommendChef":"Đầu bếp gợi ý",
+  "chefInfo":"Thông tin đầu bếp",
+  "review":"Đánh giá",
+  "bookNow":"Đặt ngay",
+  "book":"Đặt",
+  "Upcoming":"Đang chờ",
+  "account":"Tài khoản",
+  "language":"Ngôn ngữ",
+  "country":"Quốc gia",
+  "selectCountry":"Chọn quốc gia",
+  "selectLanguage":"Chọn ngôn ngữ",
+  "logout":"Đăng xuất",
   "nearbyDishes": "Món ăn gần bạn",
   "nearbyChefs": "Đầu bếp gần bạn",
   "viewProfile": "Xem hồ sơ",
@@ -262,7 +262,7 @@
   "timeCook": "Thời gian nấu",
   "distance": "Khoảng cách",
   "nearbyFavorite": "Đầu bếp yêu thích gần bạn",
-  "loadingChef": "Đang tải danh sách đầu bếp...",
+   "loadingChef": "Đang tải danh sách đầu bếp...",
   "loadingDishes": "Đang tải món ăn...",
   "noChefFound": "Không tìm thấy đầu bếp",
   "noDishesFound": "Không tìm thấy món ăn",
@@ -308,15 +308,15 @@
   "applicationFeeTitle": "Phí áp dụng là gì?",
   "applicationFeeDescription": "Phí áp dụng là khoản phí nhỏ được thu để hỗ trợ cải thiện và duy trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.\nChúng tôi sử dụng phí này để nâng cấp tính năng, bảo trì hệ thống và mang đến nhiều dịch vụ chất lượng hơn cho bạn.",
   "newest": "Mới nhất",
-  "oldest": "Cũ nhất",
-  "highestRating": "Đánh giá cao nhất",
-  "lowestRating": "Đánh giá thấp nhất",
-  "reviewsFor": "Đánh giá cho",
-  "overallRating": "Đánh giá tổng thể",
-  "sortBy": "Sắp xếp theo",
-  "noReviewsYet": "Chưa có đánh giá nào",
-  "basePrice": "Giá cơ bản",
-  "enterWalletPin": "Nhập mã PIN ví",
+    "oldest": "Cũ nhất",
+    "highestRating": "Đánh giá cao nhất",
+    "lowestRating": "Đánh giá thấp nhất",
+    "reviewsFor": "Đánh giá cho",
+    "overallRating": "Đánh giá tổng thể",
+    "sortBy": "Sắp xếp theo",
+    "noReviewsYet": "Chưa có đánh giá nào",
+    "basePrice": "Giá cơ bản",
+    "enterWalletPin": "Nhập mã PIN ví",
   "setWalletPin": "Đặt mã PIN ví",
   "enter4DigitPin": "Nhập mã PIN 4 chữ số",
   "forgotPin": "Quên mã PIN?",
@@ -512,7 +512,7 @@
   "deleteMenusSuccess": "Tất cả menu đã được xóa thành công",
   "partialDeleteFailed": "Một số menu xóa không thành công. Số menu xóa thành công: {successCount}, Số menu xóa thất bại: {errorCount}",
   "beforePrice": "Giá gốc",
-  "afterPrice": "Giá sau giảm",
+  "afterPrice": "Giá sau giảm",  
   "packages": "Gói dịch vụ",
   "subscribeConfirmTitle": "Xác nhận đăng ký",
   "unsubscribeConfirmTitle": "Xác nhận hủy đăng ký",
@@ -572,133 +572,35 @@
   "noMenusFound": "Không tìm thấy thực đơn nào",
   "maxServing": "Số người phục vụ tối đa",
   "applyFilter": "Áp dụng bộ lọc",
+  
   "filterOptions": {
     "distance": [
-      {
-        "label": "1 km",
-        "value": 1
-      },
-      {
-        "label": "5 km",
-        "value": 5
-      },
-      {
-        "label": "10 km",
-        "value": 10
-      },
-      {
-        "label": "15 km",
-        "value": 15
-      },
-      {
-        "label": "20 km",
-        "value": 20
-      },
-      {
-        "label": "25 km",
-        "value": 25
-      },
-      {
-        "label": "30 km",
-        "value": 30
-      }
+      { "label": "1 km", "value": 1 },
+      { "label": "5 km", "value": 5 },
+      { "label": "10 km", "value": 10 },
+      { "label": "15 km", "value": 15 },
+      { "label": "20 km", "value": 20 },
+      { "label": "25 km", "value": 25 },
+      { "label": "30 km", "value": 30 }
     ],
     "dishPriceRange": [
-      {
-        "label": "Dưới $10",
-        "value": {
-          "min": 0,
-          "max": 10
-        }
-      },
-      {
-        "label": "$10 - $30",
-        "value": {
-          "min": 10,
-          "max": 30
-        }
-      },
-      {
-        "label": "$30 - $50",
-        "value": {
-          "min": 30,
-          "max": 50
-        }
-      },
-      {
-        "label": "Trên $50",
-        "value": {
-          "min": 50,
-          "max": "Infinity"
-        }
-      }
+      { "label": "Dưới $10", "value": { "min": 0, "max": 10 } },
+      { "label": "$10 - $30", "value": { "min": 10, "max": 30 } },
+      { "label": "$30 - $50", "value": { "min": 30, "max": 50 } },
+      { "label": "Trên $50", "value": { "min": 50, "max": "Infinity" } }
     ],
     "chefPriceRange": [
-      {
-        "label": "Dưới $50/giờ",
-        "value": {
-          "min": 0,
-          "max": 50
-        }
-      },
-      {
-        "label": "$50 - $100/giờ",
-        "value": {
-          "min": 50,
-          "max": 100
-        }
-      },
-      {
-        "label": "$100 - $300/giờ",
-        "value": {
-          "min": 100,
-          "max": 300
-        }
-      },
-      {
-        "label": "Trên $300/giờ",
-        "value": {
-          "min": 300,
-          "max": "Infinity"
-        }
-      }
+      { "label": "Dưới $50/giờ", "value": { "min": 0, "max": 50 } },
+      { "label": "$50 - $100/giờ", "value": { "min": 50, "max": 100 } },
+      { "label": "$100 - $300/giờ", "value": { "min": 100, "max": 300 } },
+      { "label": "Trên $300/giờ", "value": { "min": 300, "max": "Infinity" } }
     ],
     "rateRange": [
-      {
-        "label": "1 sao trở lên",
-        "value": {
-          "min": 1,
-          "max": 5
-        }
-      },
-      {
-        "label": "2 sao trở lên",
-        "value": {
-          "min": 2,
-          "max": 5
-        }
-      },
-      {
-        "label": "3 sao trở lên",
-        "value": {
-          "min": 3,
-          "max": 5
-        }
-      },
-      {
-        "label": "4 sao trở lên",
-        "value": {
-          "min": 4,
-          "max": 5
-        }
-      },
-      {
-        "label": "5 sao",
-        "value": {
-          "min": 5,
-          "max": 5
-        }
-      }
+      { "label": "1 sao trở lên", "value": { "min": 1, "max": 5 } },
+      { "label": "2 sao trở lên", "value": { "min": 2, "max": 5 } },
+      { "label": "3 sao trở lên", "value": { "min": 3, "max": 5 } },
+      { "label": "4 sao trở lên", "value": { "min": 4, "max": 5 } },
+      { "label": "5 sao", "value": { "min": 5, "max": 5 } }
     ]
   },
   "menuSelectError": "Bạn phải bỏ chọn tất cả món ăn trước khi chọn thực đơn",
@@ -706,7 +608,7 @@
   "registerSuccess": "Quá trình đăng kí hoàn tất. Vui lòng đăng nhập lại.",
   "termsAgreement": "Tôi đồng ý với",
   "termsLink": "các điều khoản và điều kiện",
-  "updateBookingDetail": "Cập nhật chi tiết đặt chỗ",
+  "updateBookingDetail": "Cập nhật chi tiết đặt chỗ",  
   "resendCode": "Gửi lại mã. Vui lòng kiểm tra email của bạn",
   "depositSuccessMsg": "Đặt cọc thành công",
   "reportSuccess": "Báo cáo đã được gửi thành công",
@@ -746,6 +648,7 @@
   "inputPlaceholder": "Nhập tin nhắn của bạn...",
   "noInternet": "Không có kết nối Internet",
   "loginfailMessage": "Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.",
+
   "modal": {
     "notification": "Thông báo",
     "error": "Lỗi",
@@ -774,6 +677,7 @@
     "serviceTypePlaceholder": "Nhập kiểu phục vụ",
     "cookTimePlaceholder": "Nhập thời gian nấu (phút)",
     "basePricePlaceholder": "Nhập giá cơ bản"
+
   },
   "errors": {
     "foodName": "Tên món ăn là bắt buộc",
@@ -909,6 +813,7 @@
     "fetchReportFailed": "Có lỗi xảy ra trong quá trình gửi báo cáo",
     "failedToRequestNewPin": "Không thể gửi mã PIN mới. Vui lòng thử lại.",
     "failedToSetPin": "Không thể đặt mã PIN mới. Vui lòng thử lại."
-  },
-  "priceMenu": "Giá"
+
+  }
+
 }

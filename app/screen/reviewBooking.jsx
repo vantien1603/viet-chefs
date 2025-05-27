@@ -222,7 +222,7 @@ const ReviewBookingScreen = () => {
                   color={"red"}
                 />
                 <Text
-                  style={{ alignSelf: "center", color: "red", fontSize: 15 }}
+                  style={{ alignSelf: "center", color: "red", fontSize: 15, fontFamily: "nunito-regular" }}
                 >
                   {error}
                 </Text>
@@ -242,7 +242,7 @@ const ReviewBookingScreen = () => {
                     }}
                     onPress={() => router.replace("/(tabs)/home")}
                   >
-                    <Text style={{ color: "white" }}>{t("backToHome")}</Text>
+                    <Text style={{ color: "white", fontFamily: "nunito-regular" }}>{t("backToHome")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{
@@ -253,7 +253,7 @@ const ReviewBookingScreen = () => {
                     }}
                     onPress={() => router.replace("/screen/allChef")}
                   >
-                    <Text style={{ color: "white" }}>{t("viewOtherChefs")}</Text>
+                    <Text style={{ color: "white", fontFamily: "nunito-regular" }}>{t("viewOtherChefs")}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 20,
   },
   dateContainer: {
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   dateTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#A64B2A",
     marginBottom: 10,
   },
@@ -564,10 +564,11 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     color: "#666",
+    fontFamily: "nunito-regular"
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   dishSection: {
     marginTop: 10,
@@ -612,19 +613,19 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   discount: {
     color: "#FF5733",
   },
   totalLabel: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   totalValue: {
     fontSize: 18,
     color: "#A64B2A",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   infoContainer: {
     backgroundColor: "#fff",
@@ -636,12 +637,13 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 5,
   },
   infoValue: {
     fontSize: 16,
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   confirmButton: {
     backgroundColor: "#A64B2A",
@@ -652,7 +654,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   buttonArea: {
     position: "absolute",
@@ -685,7 +687,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 15,
     textAlign: "center",
@@ -706,7 +708,7 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: "#FFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

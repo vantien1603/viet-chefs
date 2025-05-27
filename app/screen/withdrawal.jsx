@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   walletContainer: {
@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
   },
   walletText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   balanceText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   emailContainer: {
@@ -266,6 +266,7 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   row: {
     flexDirection: "row",
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 5,
   },
@@ -292,6 +293,7 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     backgroundColor: "#F5F5F5",
+    fontFamily: "nunito-regular"
   },
   amountButtonsContainer: {
     flexDirection: "row",
@@ -317,7 +319,7 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   footer: {
@@ -339,7 +341,7 @@ const styles = StyleSheet.create({
   withdrawButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   clearIcon: {
     position: "absolute",

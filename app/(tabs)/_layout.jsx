@@ -9,13 +9,14 @@ function CustomTabBar({ state, descriptors, navigation }) {
   const { showModal } = useGlobalModal();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const axiosInstance = useAxios();
-
   const { registerNotificationCallback } = useContext(SocketContext);
 
   useEffect(() => {
-    registerNotificationCallback(() => {
-      fetchUnreadMessageCount();
-    });
+    if (!isGuest) {
+      registerNotificationCallback(() => {
+        fetchUnreadMessageCount();
+      });
+    }
   }, []);
 
   const fetchUnreadMessageCount = async () => {
@@ -43,7 +44,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
     const currentScreen = state.routes[state.index].name;
 
     if (isGuest && restrictedScreens.includes(currentScreen)) {
-      showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
+      showModalLogin(
+        "Yêu cầu đăng nhập",
+        "Bạn cần đăng nhập để tiếp tục.",
+        true
+      );
     }
   }, [state.index, isGuest]);
   return (
@@ -82,12 +87,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     route.name === "home"
                       ? "home"
                       : route.name === "chat"
-                        ? "chatbubble-outline"
-                        : route.name === "schedule"
-                          ? "calendar-outline"
-                          : route.name === "bag"
-                            ? "briefcase-outline"
-                            : "person-outline"
+                      ? "chatbubble-outline"
+                      : route.name === "schedule"
+                      ? "calendar-outline"
+                      : route.name === "bag"
+                      ? "briefcase-outline"
+                      : "person-outline"
                   }
                   size={24}
                   color={isFocused ? "white" : "#B0BEC5"}
@@ -99,7 +104,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     </Text>
                   </View>
                 )}
-
               </TouchableOpacity>
             </View>
           );
@@ -108,7 +112,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
     </View>
   );
 }
-import { Tabs, } from "expo-router";
+import { Tabs } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import { useGlobalModal } from "../../context/modalContext";
 import { useModalLogin } from "../../context/modalLoginContext";
@@ -194,6 +198,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });

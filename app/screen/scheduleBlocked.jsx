@@ -340,8 +340,8 @@ const ScheduleBlocked = () => {
                   textDisabledColor: "#B0A8A0",
                   arrowColor: "#A9411D",
                   monthTextColor: "#4A2C1F",
-                  textDayFontWeight: "500",
-                  textMonthFontWeight: "700",
+                  textDayFontFamily: "nunito-bold",
+                  textMonthfontFamily: "nunito-bold",
                   textDayFontSize: 16,
                   textMonthFontSize: 18,
                 }}
@@ -537,14 +537,14 @@ const styles = StyleSheet.create({
   },
   dateTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#4A2C1F",
     marginBottom: 12,
   },
   viewOnlyTag: {
     fontSize: 14,
     color: "#888888",
-    fontWeight: "400",
+    fontFamily: "nunito-regular",
   },
   fieldGroup: {
     borderWidth: 1,
@@ -569,6 +569,7 @@ const styles = StyleSheet.create({
     color: "#4A2C1F",
     paddingVertical: 12,
     borderWidth: 0,
+    fontFamily: "nunito-regular"
   },
   disabledInput: {
     backgroundColor: "#EDEDED",
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     color: "#A9411D",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginLeft: 8,
   },
   removeButton: {
@@ -619,6 +620,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
   },
 });

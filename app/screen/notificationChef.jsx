@@ -193,6 +193,7 @@ const styles = StyleSheet.create({
     markAllText: {
         color: "#fff",
         fontSize: 14,
+        fontFamily: "nunito-regular"
     },
     listContainer: {
         flexGrow: 1,
@@ -212,17 +213,19 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 16,
-        fontWeight: "bold",
+        fontFamily: "nunito-bold",
         marginBottom: 5,
     },
     message: {
         fontSize: 14,
         color: "#333",
         marginBottom: 5,
+        fontFamily: "nunito-regular"
     },
     time: {
         fontSize: 12,
         color: "#666",
+        fontFamily: "nunito-regular"
     },
     readButton: {
         padding: 5,
@@ -237,6 +240,7 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 16,
         color: "#666",
+        fontFamily: "nunito-regular"
     },
 });
 

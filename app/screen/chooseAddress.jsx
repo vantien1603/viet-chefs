@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   addressText: {
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   editText: {
     color: "#A64B2A",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   headerContainer: {
@@ -415,12 +415,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#666",
   },
   addNewText: {
     color: "#A64B2A",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 17,
     marginLeft: 10,
   },
@@ -446,14 +446,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 15,
     color: "#333",
     textAlign: "center",
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#444",
     marginBottom: 8,
   },
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   },
   titleButtonTextSelected: {
     color: "#A64B2A",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   input: {
     borderWidth: 1,
@@ -491,6 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     fontSize: 16,
     backgroundColor: "#F9F9F9",
+    fontFamily: "nunito-regular",
   },
   suggestionContainer: {
     maxHeight: 250,
@@ -508,6 +509,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 16,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
   buttonContainer: {
     flexDirection: "row",
@@ -521,7 +523,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: "gray",
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   saveButton: {
     backgroundColor: "#A64B2A",
@@ -532,7 +534,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   footer: {
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 18,
   },
   errorText: {

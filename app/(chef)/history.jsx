@@ -59,12 +59,12 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
       <View key={item.id} style={styles.section}>
         <TouchableOpacity onPress={() => onViewDetail(item.id)} >
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{t("sessionDate")}: {sessionDateDisplay}</Text>
+            <Text style={{ fontSize: 14, fontFamily: "nunito-bold" }}>{t("sessionDate")}: {sessionDateDisplay}</Text>
             <Text style={[styles.itemContentLabel, { textAlign: 'right', fontSize: 20 }]}>${item.totalPrice}</Text>
           </View>
           <Text numberOfLines={1} ellipsizeMode="tail">
             <Text style={styles.itemContentLabel}>{t("customer")}: </Text>
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.customer.fullName}</Text>
+            <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>{item.customer.fullName}</Text>
           </Text>
           <Text numberOfLines={1} ellipsizeMode="tail">
             <Text style={styles.itemContentLabel}>{t("phone")}: </Text>
@@ -91,16 +91,16 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
         {item.status === "PAID" || item.status === "DEPOSITED" || item.status === "PAID_FIRST_CYCLE" ? (
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-around' }}>
             <TouchableOpacity style={{ backgroundColor: "green", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onAccept(item.id)}>
-              <Text style={{ textAlign: 'center', color: 'white' }}>{t("confirm")}</Text>
+              <Text style={{ textAlign: 'center', color: 'white', fontFamily: "nunito-bold" }}>{t("confirm")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onReject(item.id)}>
-              <Text style={{ textAlign: 'center', color: 'white' }}>{t("reject")}</Text>
+              <Text style={{ textAlign: 'center', color: 'white', fontFamily: "nunito-bold" }}>{t("reject")}</Text>
             </TouchableOpacity>
           </View>
         ) : item.status === "CONFIRMED_PAID" || item.status === "CONFIRMED_PARTIALLY_PAID" || item.status === "CONFIRMED" && (
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'flex-end' }}>
             <TouchableOpacity style={{ backgroundColor: "red", padding: 10, borderRadius: 10, width: "30%" }} onPress={() => onCancel(item.id, item.bookingType === "SINGLE" && "single")}>
-              <Text style={{ textAlign: 'center', color: 'white' }}>{t("cancel")}</Text>
+              <Text style={{ textAlign: 'center', color: 'white', fontFamily: "nunito-bold" }}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -119,7 +119,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
         onEndReachedThreshold={0.4}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>{t("noPendingOrders")}</Text>}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, fontFamily: "nunito-regular" }}>{t("noPendingOrders")}</Text>}
         ListFooterComponent={() => <View style={{ height: 100 }} />}
       />
     </View>
@@ -284,7 +284,7 @@ const Histories = () => {
       if (response.status === 200) {
         // setNewBooking(prev => prev.filter(item => item.id !== id));
         setBookings(prev => ({ ...prev, PAID: prev.PAID.filter(item => item.id !== id) }));
-        showModal(t("modal.success"), "Reject successfully");
+        showModal(t("modal.success"), t("rejectSuccess"));
         // fetchRequestBooking(0, true)
       }
 
@@ -310,7 +310,7 @@ const Histories = () => {
       if (response.status === 200) {
         // setNewBooking(prev => prev.filter(item => item.id !== id));
         setBookings(prev => ({ ...prev, PAID: prev.PAID.filter(item => item.id !== id) }));
-        showModal(t("modal.success"), "Confirmed successfully");
+        showModal(t("modal.success"), t("confirmSuccess"));
         // fetchRequestBooking(0, true)
       }
     } catch (error) {
@@ -328,7 +328,7 @@ const Histories = () => {
   }
 
   const handleCancel = async (id, type) => {
-    showConfirm("Warming", "Cancelling a booking will affect the customer experience and trust in the app. The money will be refunded to the customer and you will be subject to the corresponding penalty. Are you sure you want to cancel?", async () => {
+    showConfirm(t("modal.warning"), t("cancelHisChef"), async () => {
       setLoading(true);
       try {
         console.log(type, id);
@@ -423,7 +423,7 @@ const Histories = () => {
               }}
               activeColor="#9C583F"
               inactiveColor="gray"
-              labelStyle={{ fontWeight: 'bold' }}
+              labelStyle={{ fontFamily: "nunito-bold" }}
             />
           )}
         />
@@ -449,10 +449,11 @@ const styles = StyleSheet.create({
     // marginHorizontal: 10,
   },
   itemContentLabel: {
-    fontWeight: 'bold'
+    fontFamily: "nunito-bold"
   },
   itemContent: {
-    fontSize: 14
+    fontSize: 14,
+    fontFamily: "nunito-regular"
   }
 });
 export default Histories

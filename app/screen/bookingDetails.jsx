@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 12,
   },
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginLeft: 8,
     width: 150,
@@ -395,6 +395,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     flex: 1,
+    fontFamily: "nunito-regular",
   },
   dishItem: {
     paddingVertical: 8,
@@ -417,6 +418,7 @@ const styles = StyleSheet.create({
     color: "#A64B2A",
     textAlign: "center",
     marginTop: 8,
+    fontFamily: "nunito-regular",
   },
   loadingContainer: {
     flex: 1,
@@ -427,6 +429,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A64B2A",
     marginTop: 8,
+    fontFamily: "nunito-regular",
   },
   updateButton: {
     backgroundColor: "#A64B2A",
@@ -445,7 +448,7 @@ const styles = StyleSheet.create({
   },
   updateButtonText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   card: {
@@ -460,29 +463,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginLeft: 8,
-    width: 150,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: "#666",
-    flex: 1,
   },
 });
 

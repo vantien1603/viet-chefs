@@ -209,7 +209,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             onPress={() => navigation.navigate("screen/forgot")}
           >
-            <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
+            <Text style={{ color: "#968B7B", fontFamily: "nunito-regular" }}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
         <View style={{ alignItems: "center" }}>
@@ -296,8 +296,8 @@ export default function LoginScreen() {
             style={{
               fontSize: 18,
               marginBottom: 10,
-              fontWeight: "bold",
               textAlign: "center",
+              fontFamily: "nunito-bold",
             }}
           >
             {t("loginFailed")}
@@ -319,7 +319,7 @@ export default function LoginScreen() {
             }}
             onPress={() => modalRef.current?.close()}
           >
-            <Text style={{ textAlign: "center", fontSize: 16, color: "#fff" }}>
+            <Text style={{ textAlign: "center", fontSize: 16, color: "#fff", fontFamily: "nunito-regular" }}>
               {t("tryAgain")}
             </Text>
           </TouchableOpacity>

@@ -13,6 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import AXIOS_BASE from "../../config/AXIOS_BASE";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
+import { t } from "i18next";
 
 const ResetPasswordScreen = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -101,7 +102,7 @@ const ResetPasswordScreen = () => {
       <Header title={t("resetPassword")} />
       <Text style={styles.description}>
         {t("wehaveSentACodeToYourEmail")}
-        <Text style={{ fontWeight: "bold" }}>{email}</Text>
+        <Text style={{ fontFamily: "nunito-bold" }}>{email}</Text>
       </Text>
       <View style={styles.content}>
         <Text style={styles.label}>{t("newPass")}</Text>
@@ -162,10 +163,11 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 20,
     paddingHorizontal: 10,
+    fontFamily: "nunito-regular"
   },
   label: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 5,
   },
   input: {
@@ -176,6 +178,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     backgroundColor: "#fff",
     marginBottom: 15,
+    fontFamily: "nunito-regular"
   },
   inputCodeContainer: {
     flexDirection: "row",
@@ -201,7 +204,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

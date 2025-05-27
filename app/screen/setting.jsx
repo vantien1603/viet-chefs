@@ -67,7 +67,7 @@ const Setting = () => {
             borderRadius: 12,
             marginRight: 8
           }}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>{(selectedCountry == 'us' ? 'American' : 'Việt Nam')}</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold' ,fontFamily: "nunito-bold"}}>{(selectedCountry == 'us' ? 'American' : 'Việt Nam')}</Text>
           </View>
 
 
@@ -80,7 +80,7 @@ const Setting = () => {
 
         >
           <Ionicons name='language' size={24} color="black" style={{ marginRight: 16 }} />
-          <Text style={{ flex: 1, fontSize: 16 }}>{t('language')}</Text>
+          <Text style={{ flex: 1, fontSize: 16, fontFamily: "nunito-regular" }}>{t('language')}</Text>
           {selectedLang && (
             <>
               <View style={{
@@ -89,7 +89,7 @@ const Setting = () => {
                 borderRadius: 12,
                 marginRight: 8
               }}>
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>{(selectedLang == 'en' ? 'English' : selectedLang == 'vi' && 'Tiếng Việt')}</Text>
+                <Text style={{ color: 'white', fontFamily: "nunito-bold" }}>{(selectedLang == 'en' ? 'English' : selectedLang == 'vi' && 'Tiếng Việt')}</Text>
               </View>
             </>
           )}
@@ -104,7 +104,7 @@ const Setting = () => {
           onPress={logout}
         >
           <Ionicons name='log-out-outline' size={24} color="black" style={{ marginRight: 16 }} />
-          <Text style={{ flex: 1, fontSize: 16 }}>{isGuest ? (t("login") / t("signup")) : t('logout')}</Text>
+          <Text style={{ flex: 1, fontSize: 16, fontFamily: "nunito-regular" }}>{isGuest ? (t("login")/t("signup")) : t('logout')}</Text>
 
           <Ionicons name="chevron-forward" size={20} color="gray" />
         </TouchableOpacity>
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 15,
   },
   languageItem: {
@@ -222,12 +222,12 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   viewProfile: {
     color: "#A9411D",
     marginTop: 4,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   menuCard: {
     backgroundColor: "#F9F5F0",

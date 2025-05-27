@@ -196,7 +196,7 @@ const CreateChefScreen = () => {
 
             {hasCertificate === true && (
               <View style={styles.uploadSection}>
-                <Text style={styles.uploadTitle}>
+                <Text style={{fontFamily: "nunito-regular"}}>
                   {t("certificateImageUrl")}
                 </Text>
                 <TextInput
@@ -234,13 +234,14 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
+    fontFamily: "nunito-regular"
   },
   specialtySection: {
     marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 15,
   },
   specialtyButtons: {
@@ -263,6 +264,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     color: "black",
+    fontFamily: "nunito-regular",
   },
   certificateSection: {
     marginBottom: 20,
@@ -276,6 +278,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 16,
+    fontFamily: "nunito-regular"
   },
   submitContainer: {
     position: "absolute",
@@ -293,7 +296,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "white",
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

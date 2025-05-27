@@ -16,7 +16,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import useAxios from "../../config/AXIOS_API";
 import { t } from "i18next";
 import { Tooltip } from "react-native-elements";
-import AntDesign from '@expo/vector-icons/AntDesign';
+import AntDesign from "@expo/vector-icons/AntDesign";
 import { useCommonNoification } from "../../context/commonNoti";
 import { commonStyles } from "../../style";
 import { useNavigation } from "@react-navigation/native";
@@ -26,7 +26,6 @@ import { useSelectedItems } from "../../context/itemContext";
 import * as SecureStore from "expo-secure-store";
 import { AuthContext } from "../../config/AuthContext";
 import { useModalLogin } from "../../context/modalLoginContext";
-
 
 const ChefDetail = () => {
   const [showMoreDetails, setShowMoreDetails] = useState(false);
@@ -54,14 +53,16 @@ const ChefDetail = () => {
   const checkFavorite = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}/chefs/${chefId}`);
+      const response = await axiosInstance.get(
+        `/favorite-chefs/${user.userId}/chefs/${chefId}`
+      );
       if (response.status === 200) setFavorites(response.data);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const fetchChefById = async () => {
     setLoading(true);
@@ -121,7 +122,7 @@ const ChefDetail = () => {
     setModalKey(modalKey + 1);
     setTimeout(() => {
       modalizeRef.current?.open();
-    }, 100)
+    }, 100);
   };
 
   const toggleFavorite = async (chefId) => {
@@ -159,8 +160,16 @@ const ChefDetail = () => {
   const DishCard = React.memo(({ dish, onPress }) => (
     <TouchableOpacity style={styles.dishCard} onPress={onPress}>
       <Image source={{ uri: dish.imageUrl }} style={styles.dishImage} />
-      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.dishName}>{dish.name}</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.dishDescription}>{dish.description}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.dishName}>
+        {dish.name}
+      </Text>
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={styles.dishDescription}
+      >
+        {dish.description}
+      </Text>
     </TouchableOpacity>
   ));
 
@@ -199,30 +208,43 @@ const ChefDetail = () => {
                           <Ionicons
                             name={favorites ? "heart" : "heart-outline"}
                             size={24}
-                            color={
-                              favorites ? "#e74c3c" : "#888"
-                            }
+                            color={favorites ? "#e74c3c" : "#888"}
                           />
                         )}
                       </TouchableOpacity>
                     </View>
                     <View style={styles.textContainer}>
-                      <View style={{ flexDirection: 'row' }}>
+                      <View style={{ flexDirection: "row" }}>
                         <Text style={styles.name}>{chefs?.user?.fullName}</Text>
-                        <TouchableOpacity style={{ position: 'absolute', right: 10 }} onPress={() => handleChat()}>
-                          <Ionicons name="chatbubble-ellipses-outline" size={30} color="black" />
+                        <TouchableOpacity
+                          style={{ position: "absolute", right: 10 }}
+                          onPress={() => handleChat()}
+                        >
+                          <Ionicons
+                            name="chatbubble-ellipses-outline"
+                            size={30}
+                            color="black"
+                          />
                         </TouchableOpacity>
                       </View>
 
                       <Text style={styles.specialty}>
                         {chefs?.specialization}
                       </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
                         <View style={styles.starContainer}>
-                          {Array(5).fill().map((_, i) => {
-                            const rating = chefs?.averageRating || 0;
-                            let iconName = "star";
-                            let color = "#ccc";
+                          {Array(5)
+                            .fill()
+                            .map((_, i) => {
+                              const rating = chefs?.averageRating || 0;
+                              let iconName = "star";
+                              let color = "#ccc";
 
                             if (i < Math.floor(rating)) {
                               color = "#f5a623";
@@ -231,38 +253,47 @@ const ChefDetail = () => {
                               color = "#f5a623";
                             }
 
-                            return (
-                              <Icon
-                                key={i}
-                                name={iconName}
-                                size={20}
-                                color={color}
-                              />
-                            );
-                          })}
-
+                              return (
+                                <Icon
+                                  key={i}
+                                  name={iconName}
+                                  size={20}
+                                  color={color}
+                                />
+                              );
+                            })}
                         </View>
-                        <Text style={[styles.value, { color: 'orange' }]}>${chefs?.price}/hour</Text>
+                        <Text style={[styles.value, { color: "orange" }]}>
+                          ${chefs?.price}/hour
+                        </Text>
                       </View>
-
                     </View>
                   </View>
-                  <View style={[styles.detailsFrame, !showMoreDetails && { maxHeight: 250, overflow: 'hidden' }]}>
+                  <View
+                    style={[
+                      styles.detailsFrame,
+                      !showMoreDetails && {
+                        maxHeight: 250,
+                        overflow: "hidden",
+                      },
+                    ]}
+                  >
                     <View style={styles.section}>
                       <Text
                         style={styles.value}
                         numberOfLines={showMoreDetails ? undefined : 2}
-                        ellipsizeMode="tail"                      >
+                        ellipsizeMode="tail"
+                      >
                         {chefs?.bio || t("noInformation")}
                       </Text>
-
                     </View>
 
                     <View style={styles.section}>
                       <Text
                         style={styles.value}
                         numberOfLines={showMoreDetails ? undefined : 2}
-                        ellipsizeMode="tail"                      >
+                        ellipsizeMode="tail"
+                      >
                         {chefs?.description || t("noInformation")}
                       </Text>
                     </View>
@@ -304,8 +335,6 @@ const ChefDetail = () => {
                       </Text>
                     </Text>
                   </View>
-
-
 
                   <TouchableOpacity onPress={toggleDetails}>
                     <Text style={styles.showMore}>
@@ -390,9 +419,15 @@ const ChefDetail = () => {
         key={modalKey}
       >
         <View style={styles.modalContainer}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
             <View style={{ flex: 1 }}>
-              <Text style={[styles.modalTitle, { textAlign: 'center' }]}>
+              <Text style={[styles.modalTitle, { textAlign: "center" }]}>
                 {t("selectBookingType")}
               </Text>
             </View>
@@ -405,10 +440,12 @@ const ChefDetail = () => {
                       {t("tooltip.title")}
                     </Text>
                     <Text style={{ marginBottom: 4 }}>
-                      <Text style={{ fontWeight: 'bold' }}>{t("tooltip.regularBooking")}</Text>
+                      <Text style={{ fontWeight: 'bold' ,fontFamily: "nunito-bold" }}>{t("tooltip.regularBooking")}</Text> 
                     </Text>
                     <Text>
-                      <Text style={{ fontWeight: 'bold' }}>{t("tooltip.longTermBooking")}</Text>
+                      <Text style={{ fontFamily: "nunito-bold" }}>
+                        {t("tooltip.longTermBooking")}
+                      </Text>
                     </Text>
                   </View>
                 }
@@ -431,7 +468,6 @@ const ChefDetail = () => {
               </Tooltip>
             </View>
           </View>
-
 
           <TouchableOpacity
             style={styles.modalButton}
@@ -462,7 +498,7 @@ const ChefDetail = () => {
               setChefLat(chefs.latitude);
               setChefLong(chefs.longitude);
               SecureStore.setItem("firstChef", chefId);
-              router.replace("/screen/longTermBooking")
+              router.replace("/screen/longTermBooking");
             }}
           >
             <View>
@@ -521,13 +557,14 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   specialty: {
     fontSize: 16,
     color: "#777",
     marginVertical: 4,
+    fontFamily: "nunito-regular",
   },
   starContainer: {
     flexDirection: "row",
@@ -540,16 +577,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#999",
     marginBottom: 2,
+    fontFamily: "nunito-regular",
   },
   value: {
     fontSize: 16,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
   showMore: {
     fontSize: 14,
     color: "#b0532c",
     marginTop: 5,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   buttonContainer: {
     flexDirection: "row",
@@ -564,7 +603,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   sectionHeader: {
     borderTopColor: "#D1D1D1",
@@ -577,7 +616,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   viewAllContainer: {
     flexDirection: "row",
@@ -587,6 +626,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#b0532c",
     marginLeft: 5,
+    fontFamily: "nunito-regular",
   },
   dishContainer: {
     paddingHorizontal: 16,
@@ -608,20 +648,21 @@ const styles = StyleSheet.create({
   },
   dishName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#fff",
   },
   dishDescription: {
     fontSize: 14,
     color: "#fff",
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   modalContainer: {
     padding: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 20,
     textAlign: "center",
   },
@@ -633,7 +674,7 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#fff",
     textAlign: "center",
   },
@@ -643,6 +684,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 5,
     opacity: 0.8,
+    fontFamily: "nunito-regular",
   },
   modalStyle: {
     backgroundColor: "#fff",
@@ -664,6 +706,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 10,
+    fontFamily: "nunito-regular",
   },
 });
 

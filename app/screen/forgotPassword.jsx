@@ -85,12 +85,14 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 20,
     paddingHorizontal: 10,
+    fontFamily: "nunito-regular"
   },
   textLabel: {
     fontSize: 16,
     alignSelf: "flex-start",
     marginBottom: 5,
     color: "#444",
+    fontFamily: "nunito-regular"
   },
   input: {
     height: 50,
@@ -102,6 +104,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     fontSize: 16,
     marginBottom: 5,
+    fontFamily: "nunito-regular"
   },
   inputError: {
     borderColor: "red",
@@ -111,6 +114,7 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 14,
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   button: {
     height: 50,
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "white",
   },
 });

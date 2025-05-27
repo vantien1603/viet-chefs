@@ -772,7 +772,7 @@ const ProfileDetail = () => {
                 shadowOpacity: 0,
                 borderBottomWidth: 0,
               }}
-              labelStyle={{ color: "#A9411D", fontWeight: "bold" }}
+              labelStyle={{ color: "#A9411D", fontFamily: "nunito-bold" }}
             />
           )}
         />
@@ -815,7 +815,7 @@ const ProfileDetail = () => {
             </View>
           )}
 
-          <Text style={styles.label}>Username</Text>
+          <Text style={styles.label}>{t("username")}</Text>
           {isEditing ? (
             <TextInput
               style={styles.input}
@@ -826,7 +826,7 @@ const ProfileDetail = () => {
             <Text style={styles.text}>{updateData.username}</Text>
           )}
 
-          <Text style={styles.label}>Họ và tên</Text>
+          <Text style={styles.label}>{t("fullName")}</Text>
           {isEditing ? (
             <TextInput
               style={[styles.input, errors.name && styles.errorInput]}
@@ -850,7 +850,7 @@ const ProfileDetail = () => {
             <Text style={styles.text}>{updateData.email}</Text>
           )}
 
-          <Text style={styles.label}>Số điện thoại</Text>
+          <Text style={styles.label}>{t("phone")}</Text>
           {isEditing ? (
             <TextInput
               style={[styles.input, errors.phone && styles.errorInput]}
@@ -864,7 +864,7 @@ const ProfileDetail = () => {
             <Text style={styles.text}>{updateData.phone}</Text>
           )}
 
-          <Text style={styles.label}>Ngày sinh</Text>
+          <Text style={styles.label}>{t("dob")}</Text>
           {isEditing ? (
             <TextInput
               style={[styles.input, errors.dob && styles.errorInput]}
@@ -877,7 +877,7 @@ const ProfileDetail = () => {
             <Text style={styles.text}>{updateData.dob}</Text>
           )}
 
-          <Text style={styles.label}>Giới tính</Text>
+          <Text style={styles.label}>{t("gender")}</Text>
           {isEditing ? (
             <View style={styles.genderContainer}>
               <TouchableOpacity
@@ -892,12 +892,12 @@ const ProfileDetail = () => {
               >
                 <Text
                   style={
-                    mapGenderToDisplay(updateData.gender) === "Nam"
+                    updateData.gender === "Male"
                       ? styles.genderTextSelected
                       : styles.genderText
                   }
                 >
-                  Nam
+                  {t("male")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -906,20 +906,18 @@ const ProfileDetail = () => {
                   mapGenderToDisplay(updateData.gender) === "Nữ" &&
                   styles.genderSelected,
                 ]}
-                onPress={() => {
-                  setUpdateData((prev) => ({ ...prev, gender: "Female" }));
-                  console.log(updateData.gender);
-                  console.log(mapGenderToDisplay(updateData.gender));
-                }}
+                onPress={() =>
+                  setUpdateData((prev) => ({ ...prev, gender: "Female" }))
+                }
               >
                 <Text
                   style={
-                    mapGenderToDisplay(updateData.gender) === "Nữ"
+                    updateData.gender === "Female"
                       ? styles.genderTextSelected
                       : styles.genderText
                   }
                 >
-                  Nữ
+                  {t("female")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -944,7 +942,7 @@ const ProfileDetail = () => {
                   {loading ? (
                     <ActivityIndicator size={"small"} color={"white"} />
                   ) : (
-                    <Text style={styles.editButtonText}>Save</Text>
+                    <Text style={styles.editButtonText}>{t("save")}</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -959,7 +957,7 @@ const ProfileDetail = () => {
                     setIsEditing(false), setUpdateData(data);
                   }}
                 >
-                  <Text style={styles.editButtonText}>Cancel</Text>
+                  <Text style={styles.editButtonText}>{t("cancel")}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -967,7 +965,7 @@ const ProfileDetail = () => {
                 style={styles.editButton}
                 onPress={() => setIsEditing(true)}
               >
-                <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
+                <Text style={styles.editButtonText}>{t("editProfile")}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -978,7 +976,7 @@ const ProfileDetail = () => {
 };
 
 const styles = StyleSheet.create({
-  label: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
+  label: { fontSize: 16, fontFamily: "nunito-bold", marginBottom: 8 },
   text: {
     fontSize: 16,
     padding: 10,
@@ -987,6 +985,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
   editButton: {
     backgroundColor: "#A9411D",
@@ -994,7 +993,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  editButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  editButtonText: { color: "white", fontSize: 16, fontFamily: "nunito-bold" },
 
   input: {
     borderWidth: 1,
@@ -1004,10 +1003,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     color: "#333",
-    zIndex: 10
+    zIndex: 10,
+    fontFamily: "nunito-regular",
   },
   errorInput: {
     borderColor: "red",
+    fontFamily: "nunito-regular",
   },
   textArea: {
     borderColor: "#ccc",
@@ -1042,10 +1043,12 @@ const styles = StyleSheet.create({
   genderText: {
     fontSize: 16,
     color: "black",
+    fontFamily: "nunito-regular",
   },
   genderTextSelected: {
     fontSize: 16,
     color: "white",
+    fontFamily: "nunito-regular",
   },
   avatar: {
     width: 100,

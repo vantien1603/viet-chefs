@@ -294,7 +294,7 @@ const SelectFood = () => {
             {selectedMenuDetail ? (
               <>
                 <Image source={{ uri: selectedMenuDetail.imageUrl }} style={{ width: '100%', height: 300, borderRadius: 10 }} resizeMode="cover" />
-                <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 15 }}>{selectedMenuDetail.name}</Text>
+                <Text style={{ fontSize: 20, fontFamily: "nunito-bold", marginTop: 15 }}>{selectedMenuDetail.name}</Text>
                 <Text style={{ marginTop: 10 }}>{selectedMenuDetail.description || t("noInformation")}</Text>
                 <Text>
                   <Text>Dishes: </Text>
@@ -333,13 +333,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginLeft: 10,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 10,
     marginHorizontal: 16,
   },
@@ -391,13 +391,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   desc: {
     color: "#555",
     fontSize: 16,
     marginTop: 6,
+    fontFamily: "nunito-regular"
   },
 
   button: {
@@ -414,13 +415,14 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
   },
   emptyText: {
     fontSize: 18,
     color: "#555",
     textAlign: "center",
     marginTop: 24,
+    fontFamily: "nunito-regular"
   },
 });
 

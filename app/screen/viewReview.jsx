@@ -117,18 +117,20 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 4,
   },
   experienceText: {
     fontSize: 14,
     color: "#444",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   dateText: {
     fontSize: 12,
     color: "#888",
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   starsContainer: {
     flexDirection: "row",
@@ -143,13 +145,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   responseTitle: {
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 4,
     color: "#333",
   },
   responseText: {
     fontSize: 14,
     color: "#444",
+    fontFamily: "nunito-regular"
   },
 });
 

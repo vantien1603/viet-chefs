@@ -61,7 +61,7 @@ const SetPassword = () => {
         <SafeAreaView style={commonStyles.container}>
             <Header title={t("setPassword")} />
             <View style={commonStyles.containerContent}>
-                <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 20 }}>
+                <Text style={{ fontSize: 16, fontFamily: "nunito-bold", marginBottom: 20 }}>
                     {t("enterPassword")}
                 </Text>
                 <PasswordInput

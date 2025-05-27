@@ -17,22 +17,22 @@ export const commonStyles = StyleSheet.create({
     // alignItems:'center'
   },
   titleText: {
-    // fontFamily: 'nunito-bold',
+    fontFamily: 'nunito-bold',
     margin: 25,
     fontSize: 35,
     color: '#A9411D',
     textAlign: 'center',
     marginBottom: 30,
-    fontWeight: "bold",
+    // fontWeight: "bold",
   },
   subTitleText: {
-    // fontFamily: 'nunito-bold',
+    fontFamily: 'nunito-bold',
     margin: 25,
     fontSize: 20,
     color: '#A9411D',
     textAlign: 'center',
     marginBottom: 30,
-    fontWeight: "bold",
+    // fontWeight: "bold",
   },
   flagButton: {
     position: 'absolute',
@@ -44,7 +44,7 @@ export const commonStyles = StyleSheet.create({
     height: 40,
   },
   labelInput: {
-    fontWeight: 'bold',
+    fontFamily: "nunito-regular",
     fontSize: 16,
     marginTop: 5
   },

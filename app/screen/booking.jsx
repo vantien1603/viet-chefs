@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 15,
   },
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   numberButtonText: {
     fontSize: 24,
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   numberDisplay: {
     flex: 1,
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   },
   numberText: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   menuHeader: {
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   addItemsText: {
     fontSize: 16,
     color: "#A64B2A",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   menuContent: {
     marginTop: 15,
@@ -851,28 +851,30 @@ const styles = StyleSheet.create({
   dishName: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   noteText: {
     fontSize: 12,
     color: "#777",
     marginTop: 5,
+    fontFamily: "nunito-regular",
   },
   latestTag: {
     fontSize: 12,
     color: "#A64B2A",
-    fontWeight: "bold",
     marginTop: 5,
+    fontFamily: "nunito-bold",
   },
   editText: {
     fontSize: 14,
     color: "#A64B2A",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   noItemsText: {
     fontSize: 16,
     color: "#777",
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   dayContainer: {
     paddingHorizontal: 15,
@@ -897,10 +899,11 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   unavailableText: {
     color: "white",
+    fontFamily: "nunito-regular",
   },
   timeContainer: {
     paddingVertical: 10,
@@ -921,11 +924,11 @@ const styles = StyleSheet.create({
   timeButtonText: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   timeButtonTextSelected: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   locationContainer: {
     flexDirection: "row",
@@ -949,6 +952,7 @@ const styles = StyleSheet.create({
     color: "#333",
     flexShrink: 1,
     flexWrap: "wrap",
+    fontFamily: "nunito-regular",
   },
   specialRequestInput: {
     borderWidth: 1,
@@ -965,6 +969,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    fontFamily: "nunito-regular",
   },
   footer: {
     position: "absolute",
@@ -989,7 +994,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 18,
   },
   modalStyle: {
@@ -1011,7 +1016,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 20,
     textAlign: "center",
@@ -1021,7 +1026,7 @@ const styles = StyleSheet.create({
   },
   dishNoteLabel: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 5,
   },
@@ -1033,12 +1038,14 @@ const styles = StyleSheet.create({
     minHeight: 60,
     textAlignVertical: "top",
     backgroundColor: "#FFF",
+    fontFamily: "nunito-regular",
   },
   noDishesText: {
     fontSize: 16,
     color: "#777",
     textAlign: "center",
     marginVertical: 20,
+    fontFamily: "nunito-regular",
   },
   modalButtons: {
     flexDirection: "row",
@@ -1055,8 +1062,8 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: "#333",
-    fontWeight: "bold",
     fontSize: 16,
+    fontFamily: "nunito-bold",
   },
   saveButton: {
     flex: 1,
@@ -1068,7 +1075,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   noTimeText: {
@@ -1076,12 +1083,14 @@ const styles = StyleSheet.create({
     color: "#777",
     textAlign: "center",
     marginVertical: 10,
+    fontFamily: "nunito-regular",
   },
   noAddressesText: {
     fontSize: 16,
     color: "#777",
     textAlign: "center",
     marginVertical: 20,
+    fontFamily: "nunito-regular",
   },
   addressItem: {
     paddingVertical: 15,
@@ -1093,7 +1102,7 @@ const styles = StyleSheet.create({
   },
   addressTitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 5,
   },
@@ -1101,6 +1110,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginBottom: 5,
+    fontFamily: "nunito-regular",
   },
   checkboxContainer: {
     flexDirection: "row",
@@ -1112,6 +1122,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     marginLeft: 10,
+    fontFamily: "nunito-regular",
   },
   loadingContainer: {
     flexDirection: "row",
@@ -1123,6 +1134,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
     color: "#777",
+    fontFamily: "nunito-regular",
   },
   ingredientPrepContainer: {
     marginTop: 10,

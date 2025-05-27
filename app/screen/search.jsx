@@ -271,6 +271,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 16,
     color: "#4EA0B7",
+    fontFamily: "nunito-regular"
   },
   searchIcon: {
     marginLeft: 15,
@@ -306,11 +307,12 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   suggestionType: {
     fontSize: 12,
     color: "#4EA0B7",
+    fontFamily: "nunito-regular"
   },
   defaultSuggestionsContainer: {
     paddingHorizontal: 10,
@@ -318,7 +320,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
   },

@@ -192,6 +192,7 @@ const AddMenu = () => {
             style={[
               commonStyles.input,
               fieldErrors.name && { borderColor: "red" },
+              { fontFamily: "nunito-regular" },
             ]}
             placeholder={t("placeholders.menuName")}
             value={name}
@@ -228,7 +229,11 @@ const AddMenu = () => {
                 keyboardType="numeric"
                 style={[
                   commonStyles.input,
-                  { width: "30%", textAlign: "center" },
+                  {
+                    width: "30%",
+                    textAlign: "center",
+                    fontFamily: "nunito-regular",
+                  },
                   fieldErrors.discountPercentage && { borderColor: "red" },
                 ]}
               />
@@ -236,7 +241,7 @@ const AddMenu = () => {
           </View>
 
           <TextInput
-            style={[commonStyles.inputDes]}
+            style={[commonStyles.inputDes, { fontFamily: "nunito-regular" }]}
             placeholder={t("placeholders.description")}
             multiline
             textAlignVertical="top"
@@ -261,14 +266,20 @@ const AddMenu = () => {
               <Text
                 style={{
                   fontSize: 14,
-                  fontWeight: "600",
                   color: "#333",
                   marginBottom: 4,
+                  fontFamily: "nunito-bold",
                 }}
               >
                 {t("dishesTapToEdit")}
               </Text>
-              <Text style={{ fontSize: 14, color: "#666" }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "#666",
+                  fontFamily: "nunito-regular",
+                }}
+              >
                 {seletedDishes.length > 0
                   ? dishes
                     .filter((dish) => seletedDishes.includes(dish.id))
@@ -287,7 +298,9 @@ const AddMenu = () => {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>{t("createMenu")}</Text>
+              <Text style={[styles.submitButtonText, { fontFamily: "nunito-bold" }]}>
+                {t("createMenu")}
+              </Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -352,6 +365,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     marginTop: 8,
     color: "gray",
+    fontFamily: "nunito-regular",
   },
   input: {
     borderWidth: 1,
@@ -372,7 +386,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   modalContent: {
     minHeight: 700,
@@ -410,6 +424,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     marginRight: 15,
+  },
+  itemContentLabel: {
+    fontSize: 16,
+    color: "#333",
+    fontFamily: "nunito-bold", // Thêm fontFamily
+  },
+  dishName: {
+    fontSize: 16,
+    color: "#333",
+    fontFamily: "nunito-regular", // Thêm fontFamily
   },
 });
 

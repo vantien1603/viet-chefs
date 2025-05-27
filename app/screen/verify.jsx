@@ -92,7 +92,7 @@ const VerifyScreen = () => {
           style={{ width: 400, height: 250 }}
           resizeMode="cover"
         /> */}
-        <Text style={{ textAlign: "center", fontSize: 16, fontWeight: "600" }}>
+        <Text style={{ textAlign: "center", fontSize: 16, fontFamily: "nunito-bold" }}>
           {t("enter4digit")}
         </Text>
 
@@ -116,7 +116,7 @@ const VerifyScreen = () => {
           style={{ alignItems: "center", marginBottom: 10 }}
           onPress={handleSendAgain}
         >
-          <Text style={{ color: "#383737", fontSize: 16 }}>
+          <Text style={{ color: "#383737", fontSize: 16, fontFamily: "nunito-regular" }}>
             {t("notReceiveCode")}
           </Text>
         </TouchableOpacity>
@@ -125,7 +125,7 @@ const VerifyScreen = () => {
             onPress={() => handleVerify()}
             style={commonStyles.mainButton}
           >
-            <Text style={commonStyles.textMainButton}>{t("verify")}</Text>
+            <Text style={[commonStyles.textMainButton, {fontFamily: "nunito-regular"}]}>{t("verify")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     fontSize: 24,
     textAlign: "center",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

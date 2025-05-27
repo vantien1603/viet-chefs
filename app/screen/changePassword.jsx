@@ -109,7 +109,7 @@ const ChangePasswordScreen = () => {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>{t("currentPass")}</Text>
           <TextInput
-            style={commonStyles.input}
+            style={[commonStyles.input, { fontFamily: "nunito-regular" }]}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
@@ -118,7 +118,7 @@ const ChangePasswordScreen = () => {
 
           <Text style={styles.label}>{t("newPass")}</Text>
           <TextInput
-            style={commonStyles.input}
+            style={[commonStyles.input, { fontFamily: "nunito-regular" }]}
             value={newPassword}
             onChangeText={(text) => {
               setNewPassword(text);
@@ -138,7 +138,7 @@ const ChangePasswordScreen = () => {
 
           <Text style={styles.label}>{t("confirmNewPass")}</Text>
           <TextInput
-            style={commonStyles.input}
+            style={[commonStyles.input, { fontFamily: "nunito-regular" }]}
             value={confirmPassword}
             onChangeText={(text) => {
               setConfirmPassword(text);
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 8,
   },
   input: {
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 14,
     marginBottom: 16,
+    fontFamily: "nunito-regular",
   },
   saveButton: {
     backgroundColor: "#A9411D",
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "white",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#E0E0E0",
+    fontFamily: "nunito-regular",
   },
   closeSearch: {
     marginLeft: 10,
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#FFF",
     marginTop: 60,
     textAlign: "center",
@@ -342,11 +343,13 @@ const styles = StyleSheet.create({
     color: "#F8BF40",
     textAlign: "center",
     // marginBottom: 6,
+    fontFamily: "nunito-regular",
   },
   cookTime: {
     fontSize: 13,
     color: "#FFFFFFAA",
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   loadingContainer: {
     flex: 1,
@@ -357,6 +360,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 8,
+    fontFamily: "nunito-regular",
   },
   errorContainer: {
     flex: 1,
@@ -369,6 +373,7 @@ const styles = StyleSheet.create({
     color: "#A9411D",
     marginBottom: 16,
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   retryButton: {
     backgroundColor: "#A9411D",
@@ -379,13 +384,14 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 16,
     color: "#FFF",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   emptyText: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
     marginTop: 20,
+    fontFamily: "nunito-regular",
   },
 });
 

@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 8,
   },
   separator: {
@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   paymentContainer: {
     marginHorizontal: 5,
@@ -253,6 +254,7 @@ const styles = StyleSheet.create({
   paymentText: {
     fontSize: 16,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   bottomButtonContainer: {
     position: "absolute",
@@ -276,7 +278,7 @@ const styles = StyleSheet.create({
   depositText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   webViewContainer: {
     flex: 1,
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   loading: {
@@ -311,6 +313,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A9411D",
     marginTop: 20,
+    fontFamily: "nunito-regular"
   },
   amountButtonsContainer: {
     flexDirection: "row",
@@ -336,8 +339,8 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#333",
+    fontFamily: "nunito-bold"
   },
   clearIcon: {
     position: "absolute",

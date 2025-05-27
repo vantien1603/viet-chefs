@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: "nunito-bold",
     marginBottom: 10,
     textAlign: 'center'
   },
@@ -116,7 +116,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: "nunito-regular"
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -137,9 +138,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#e74c3c'
   },
   cancelText: {
-    color: '#333'
+    color: '#333',
+    fontFamily: "nunito-bold"
   },
   confirmText: {
-    color: '#fff'
+    color: '#fff',
+    fontFamily: "nunito-bold"
   }
 });

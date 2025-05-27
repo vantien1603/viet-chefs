@@ -334,7 +334,7 @@ const CustomerSchedule = () => {
             style={{ backgroundColor: "#EBE5DD" }}
             activeColor="#9C583F"
             inactiveColor="gray"
-            labelStyle={{ fontWeight: "bold" }}
+            labelStyle={{ ffontFamily: "nunito-bold" }}
           />
         )}
       />
@@ -363,18 +363,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   label1: {
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 18,
   },
   label: {
     marginVertical: 5,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   noData: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
     color: "#666",
+    fontFamily: "nunito-regular"
   },
   statusContainer: {
     flexDirection: "row",
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   labelStatus: {
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   rebookButton: {
     backgroundColor: "#17a2b8",
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   },
   rebookText: {
     color: "#fff",
-    fontWeight: "bold",
+    ffontFamily: "nunito-bold",
     fontSize: 14,
   },
 });

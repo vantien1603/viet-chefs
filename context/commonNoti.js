@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: "nunito-bold",
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#444',
     marginBottom: 16,
+    fontFamily: "nunito-regular"
   },
   button: {
     padding: 5,

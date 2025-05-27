@@ -182,29 +182,33 @@ const styles = StyleSheet.create({
   },
   chefName: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   specification: {
     fontSize: 14,
     color: "#666",
     marginTop: 4,
+    fontFamily: "nunito-regular"
   },
   address: {
     fontSize: 12,
     color: "#888",
     marginTop: 4,
+    fontFamily: "nunito-regular"
   },
   createdAt: {
     fontSize: 12,
     color: "#AAA",
     marginTop: 4,
+    fontFamily: "nunito-regular"
   },
   emptyText: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
     marginTop: 20,
+    fontFamily: "nunito-regular"
   },
   favoriteIcon: {
     position: "absolute",

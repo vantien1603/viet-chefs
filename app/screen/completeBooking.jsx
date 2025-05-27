@@ -23,8 +23,8 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
         return (
             <TouchableOpacity key={item.id} style={[styles.section]} onPress={() => onViewDetail(item.id)}>
                 <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
-                    <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{t("date")}: {item.sessionDate}</Text>
+                    <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>{item.booking?.customer?.fullName}</Text>
+                    <Text style={{ fontSize: 14, fontFamily: "nunito-bold" }}>{t("date")}: {item.sessionDate}</Text>
                 </View>
                 <Text numberOfLines={1} ellipsizeMode="tail">
                     <Text style={styles.itemContentLabel}>{t("address")}: </Text>
@@ -67,7 +67,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
                 onEndReachedThreshold={0.5}
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16 }}>{t('noPendingOrders')}</Text>}
+                ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, fontFamily: "nunito-regular" }}>{t('noPendingOrders')}</Text>}
                 ListFooterComponent={(loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
             />
         </View>
@@ -221,7 +221,7 @@ const ScheduleCompleted = () => {
                         activeColor="#9C583F"
                         indicatorStyle={{ backgroundColor: '#A9411D' }}
                         style={{ backgroundColor: '#EBE5DD' }}
-                        labelStyle={{ fontWeight: 'bold' }}
+                        labelStyle={{ fontFamily: "nunito-bold" }}
                     />
                 )}
             />
@@ -245,10 +245,11 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     itemContentLabel: {
-        fontWeight: 'bold',
+        fontFamily: "nunito-bold",
     },
     itemContent: {
         fontSize: 14,
+        fontFamily: "nunito-regular",
     },
     highlighted: {
         borderWidth: 3,

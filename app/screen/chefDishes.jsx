@@ -212,13 +212,22 @@ const ChefDishes = () => {
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         contentContainerStyle={{ padding: 10, gap: 20, paddingVertical: 30 }}
-        columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 15 }}
-        ListEmptyComponent={<Text style={{ textAlign: "center", fontSize: 16 }}>{t("noDishAvailable")}</Text>}
-        ListHeaderComponent={loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6c5ce7" />
-          </View>
-        )}
+        columnWrapperStyle={{
+          justifyContent: "space-between",
+          marginBottom: 15,
+        }}
+        ListEmptyComponent={
+          <Text style={{ textAlign: "center", fontSize: 16, fontFamily: "nunito-regular", color: "#333" }}>
+            {t("noDishAvailable")}
+          </Text>
+        }
+        ListHeaderComponent={
+          loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6c5ce7" />
+            </View>
+          )
+        }
         renderItem={({ item: dish }) => (
           <TouchableOpacity
             style={[styles.cardContainer, selectedDishes.includes(dish.id) && styles.selectedCard]}
@@ -261,6 +270,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingLeft: 10,
+    fontFamily: "nunito-regular",
   },
   cardContainer: {
     width: "48%",
@@ -310,7 +320,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#FFF",
     marginTop: 60,
     textAlign: "center",
@@ -321,11 +331,13 @@ const styles = StyleSheet.create({
     color: "#F8BF40",
     textAlign: "center",
     marginBottom: 6,
+    fontFamily: "nunito-regular",
   },
   cookTime: {
     fontSize: 13,
-    color: "#FFFFFFAA",
+    color: "#FFFFFF",
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   floatingActions: {
     position: "absolute",
@@ -349,7 +361,7 @@ const styles = StyleSheet.create({
   floatingText: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

@@ -74,8 +74,8 @@ export default function SignUpScreen() {
         <ScrollView style={commonStyles.container}>
             <Header title={t("register")} />
             <View style={commonStyles.containerContent}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold' }}> {t("pleasure")}</Text>
-                <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20 }}> {t("createAccount")}</Text>
+                <Text style={{ fontSize: 18, fontFamily: "nunito-bold" }}> {t("pleasure")}</Text>
+                <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 20, fontFamily: "nunito-regular" }}> {t("createAccount")}</Text>
 
                 <Text style={commonStyles.labelInput}>{t("username")}</Text>
                 <TextInput
@@ -93,7 +93,7 @@ export default function SignUpScreen() {
                 )}
                 <Text style={commonStyles.labelInput}>{t("fullName")}</Text>
                 <TextInput
-                    style={commonStyles.input}
+                    style={[commonStyles.input, {fontFamily: "nunito-regular"}]}
                     placeholder={t("fullName")}
                     value={fullName}
                     onChangeText={(text) => {
@@ -108,7 +108,7 @@ export default function SignUpScreen() {
                 )}
                 <Text style={commonStyles.labelInput}>{t("phone")}</Text>
                 <TextInput
-                    style={commonStyles.input}
+                    style={[commonStyles.input, {fontFamily: "nunito-regular"}]}
                     placeholder="03730xxxxx"
                     keyboardType="numeric"
                     value={phone}
@@ -124,7 +124,7 @@ export default function SignUpScreen() {
                 )}
                 <Text style={commonStyles.labelInput}>{t("mailAddress")}</Text>
                 <TextInput
-                    style={commonStyles.input}
+                    style={[commonStyles.input, {fontFamily: "nunito-regular"}]}
                     placeholder="xxx@gmail.com"
                     keyboardType="email-address"
                     value={mail}
@@ -136,7 +136,7 @@ export default function SignUpScreen() {
                     }}
                 />
                 {errors.email && (
-                    <Text style={{ color: "red", fontSize: 12 }}>{errors.email}</Text>
+                    <Text style={{ color: "red", fontSize: 12, fontFamily: "nunito-regular" }}>{errors.email}</Text>
                 )}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
                     <TouchableOpacity onPress={() => setAgreeTerms(!agreeTerms)} style={{
@@ -161,7 +161,7 @@ export default function SignUpScreen() {
                     <Text style={{ flex: 1 }}>
                         {t("termsAgreement")}{' '}
                         <Text
-                            style={{ color: '#007AFF', textDecorationLine: 'underline' }}
+                            style={{ color: '#007AFF', textDecorationLine: 'underline', fontFamily: 'nunito-regular' }}
                             onPress={() => {
                                 Linking.openURL('https://www.termsfeed.com/live/34c3495d-1cd2-4b4c-95f2-cf216da991ed');
                             }}

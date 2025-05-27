@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from "../config/AuthContext";
 import { NetworkProvider } from "../hooks/networkProvider";
 import NetworkAlert from "../components/networkNoti";
@@ -11,7 +12,9 @@ import { SelectedItemsProvider } from "../context/itemContext";
 import { SocketProvider } from "../config/SocketContext";
 import { useEffect, useState } from "react";
 import i18n from "../i18n";
+import { useFonts } from "expo-font";
 
+SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [i18nReady, setI18nReady] = useState(i18n.isInitialized);
 
@@ -29,6 +32,20 @@ export default function RootLayout() {
         <ActivityIndicator size="large" />
       </View>
     );
+  }
+  const [loaded, error] = useFonts({
+    'nunito-bold': require("../assets/fonts/Nunito-Bold.ttf"),
+    'nunito-regular': require("../assets/fonts/Nunito-Regular.ttf"),
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
   }
   return (
     <GestureHandlerRootView>
