@@ -9,6 +9,7 @@ import { AuthContext } from "../../config/AuthContext";
 import { useCommonNoification } from "../../context/commonNoti";
 import BookingList from "../../components/bookingRouter";
 import axios from "axios";
+import { t } from "i18next";
 
 const OrderHistories = () => {
   const { user, isGuest } = useContext(AuthContext);
@@ -198,7 +199,7 @@ const OrderHistories = () => {
             }}
             activeColor="#9C583F"
             inactiveColor="gray"
-            labelStyle={{ fontWeight: "bold" }}
+            labelStyle={{ fontFamily: "nunito-bold" }}
           />
         )}
       />
@@ -221,6 +222,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#991b1b",
     textAlign: "center",
+    fontFamily: "nunito-regular"
   },
 });
 

@@ -11,10 +11,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import { commonStyles } from "../../style";
+import { t } from "i18next";
 
 const menuItems = [
-  { id: "1", icon: "wallet-outline", title: "Ví của tôi" },
-  { id: "2", icon: "settings-outline", title: "Cài đặt" },
+  { id: "1", icon: "wallet-outline", title: t("myWallet") },
+  { id: "2", icon: "settings-outline", title: t("settings") },
 ];
 
 const Profile = () => {
@@ -50,7 +51,7 @@ const Profile = () => {
           <View style={{ marginLeft: 12, flex: 1 }}>
             <Text style={styles.userName}>{user?.fullName || "Guest"}</Text>
             <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
-              <Text style={styles.viewProfile}>Xem hồ sơ {" >"}</Text>
+              <Text style={styles.viewProfile}>{t("viewProfile")}{" >"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -98,12 +99,12 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   viewProfile: {
     color: "#A9411D",
     marginTop: 4,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   menuCard: {
     backgroundColor: "#F9F5F0",
@@ -128,6 +129,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
 });
 

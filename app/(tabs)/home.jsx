@@ -22,7 +22,7 @@ import { t } from "i18next";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
 import CustomChat from "../../components/CustomChat.jsx";
-
+import { SocketContext } from "../../config/SocketContext.js";
 
 export default function Home() {
   const router = useRouter();
@@ -40,14 +40,20 @@ export default function Home() {
 
   const [messages, setMessages] = useState([]);
   const [isChatVisible, setIsChatVisible] = useState(false);
+  const { registerNotificationCallback } = useContext(SocketContext);
 
   const initialMessages = [
     {
       role: "assistant",
-      content: "Hello! Welcome to VietChef virtual assistant. I will support you here today.",
+      content:
+        t("botHello"),
       suggestContactAdmin: false,
     },
-    { role: "assistant", content: "How can I help you today?", suggestContactAdmin: false },
+    {
+      role: "assistant",
+      content: t("botHowCanIHelp"),
+      suggestContactAdmin: false,
+    },
   ];
 
   useEffect(() => {
@@ -59,7 +65,6 @@ export default function Home() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-      if (!isGuest) fetchUnreadCount();
     }, [])
   );
 
@@ -73,7 +78,13 @@ export default function Home() {
     }, [location])
   );
 
-
+  useEffect(() => {
+    if (!isGuest) {
+      registerNotificationCallback(() => {
+        fetchUnreadCount();
+      });
+    }
+  }, []);
 
   const fetchUnreadCount = async () => {
     setLoading(true);
@@ -87,19 +98,26 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xử lý", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        "Có lỗi xảy ra trong quá trình xử lý",
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
   };
-
 
   const getCurrentLocation = async () => {
     setLoading(true);
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        showModal("Quyền truy cập vị trí bị từ chối", "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.", t("modal.failed"));
+        showModal(
+          "Quyền truy cập vị trí bị từ chối",
+          "Vui lòng cấp quyền để tìm kiếm đầu bếp và món ăn gần bạn.",
+          t("modal.failed")
+        );
         return null;
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
@@ -108,7 +126,11 @@ export default function Home() {
         longitude: currentLocation.coords.longitude,
       };
     } catch (error) {
-      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xác định vị trí", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        "Có lỗi xảy ra trong quá trình xác định vị trí",
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -123,8 +145,9 @@ export default function Home() {
       });
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
-          }, ${addr.region || ""}, ${addr.country || ""}`
+        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${
+          addr.city || ""
+        }, ${addr.region || ""}, ${addr.country || ""}`
           .replace(/,,/g, ",")
           .trim();
         return {
@@ -137,7 +160,11 @@ export default function Home() {
       }
       return null;
     } catch (error) {
-      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình reverse geocoding", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        "Có lỗi xảy ra trong quá trình reverse geocoding",
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -177,7 +204,11 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải địa chỉ", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        "Có lỗi xảy ra trong quá trình tải địa chỉ",
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -196,19 +227,25 @@ export default function Home() {
       //     sortDir: "asc",
       //   },
       // });
-      const response = await axiosInstance.get(`/favorite-chefs/${user.userId}`, {
-        params: {
-          pageSize: 7,
-          sortBy: "createdAt",
-          sortDir: "desc",
-        },
-      });
+      const response = await axiosInstance.get(
+        `/favorite-chefs/${user.userId}`,
+        {
+          params: {
+            pageSize: 7,
+            sortBy: "createdAt",
+            sortDir: "desc",
+          },
+        }
+      );
       setChefFavorite(response.data.content);
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(t("modal.error"), error.response.data.message, t("modal.failed"));
-    }
-    finally {
+      showModal(
+        t("modal.error"),
+        error.response.data.message,
+        t("modal.failed")
+      );
+    } finally {
       setLoading(false);
     }
   };
@@ -226,13 +263,16 @@ export default function Home() {
           sortDir: "asc",
         },
       });
-      if (response.status === 200)
-        setChef(response.data.content.slice(0, 7));
+      if (response.status === 200) setChef(response.data.content.slice(0, 7));
     } catch (error) {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        "Có lỗi xảy ra trong quá trình lấy thông tin đầu bếp",
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -256,12 +296,15 @@ export default function Home() {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải thông tin món ăn", t("modal.failed"));
+      showModal(
+        t("modal.error"),
+        "Có lỗi xảy ra trong quá trình tải thông tin món ăn",
+        t("modal.failed")
+      );
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleSend = (userMessage) => {
     setMessages((prev) => [...prev, userMessage]);
@@ -279,7 +322,7 @@ export default function Home() {
       const botMessage = {
         role: "assistant",
         content: replyContent,
-        suggestContactAdmin: suggestContactAdmin
+        suggestContactAdmin: suggestContactAdmin,
       };
       setMessages((prev) => [...prev, botMessage]);
       console.log("Bot response:", response.data);
@@ -289,7 +332,8 @@ export default function Home() {
         ...prev,
         {
           role: "assistant",
-          content: "Xin lỗi, tôi không thể trả lời ngay bây giờ. Vui lòng thử lại",
+          content:
+            "Xin lỗi, tôi không thể trả lời ngay bây giờ. Vui lòng thử lại",
           suggestContactAdmin: false,
         },
       ]);
@@ -302,7 +346,6 @@ export default function Home() {
     }
     setIsChatVisible(!isChatVisible);
   };
-
 
   const handleSearchIconPress = () => {
     router.push({
@@ -335,7 +378,9 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.chefName}</Text>
-      <Text style={{ color: "#F8BF40" }}>{item.chefSpecialization}</Text>
+      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>
+        {item.chefSpecialization}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -357,7 +402,13 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.name}</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40" }}>{item.description}</Text>
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}
+      >
+        {item.description}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -381,7 +432,9 @@ export default function Home() {
         />
       </View>
       <Text style={styles.title}>{item.user.fullName}</Text>
-      <Text style={{ color: "#F8BF40" }}>{item.specialization}</Text>
+      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>
+        {item.specialization}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -391,12 +444,22 @@ export default function Home() {
         <TouchableOpacity onPress={() => router.push("screen/editAddress")}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image
-              source={user ? { uri: user?.avatarUrl } : require("../../assets/images/logo.png")}
+              source={
+                user
+                  ? { uri: user?.avatarUrl }
+                  : require("../../assets/images/logo.png")
+              }
               style={{ width: 50, height: 50, borderRadius: 30 }}
               resizeMode="cover"
             />
             <View style={{ marginLeft: 10, maxWidth: 200 }}>
-              <Text style={{ fontSize: 18, color: "#383838" }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: "#383838",
+                  fontFamily: "nunito-regular",
+                }}
+              >
                 Hello, {user?.fullName || "Guest"}
               </Text>
               <Text
@@ -404,7 +467,9 @@ export default function Home() {
                   fontSize: 12,
                   color: selectedAddress ? "#968B7B" : "#A9411D",
                   fontStyle: selectedAddress ? "normal" : "italic",
-                  fontWeight: selectedAddress ? "normal" : "bold",
+                  fontFamily: selectedAddress
+                    ? "nunito-regular"
+                    : "nunito-bold",
                 }}
                 numberOfLines={2}
               >
@@ -428,7 +493,6 @@ export default function Home() {
           </View>
         </TouchableOpacity>
       </View>
-
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -482,11 +546,10 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
-
-        {/* đầu bếp yêu thích gần đây */}
+        {/* đầu bếp yêu thích gần đây/ danh sách yêu thích */}
         {chefFavorite.length > 0 && (
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nearbyFavorite")}</Text>
+            <Text style={styles.sectionTitle}>{t("favoriteList")}</Text>
             <TouchableOpacity onPress={() => router.push("/screen/favorite")}>
               <Text style={{ color: "#4EA0B7", fontSize: 14 }}>
                 {t("seeAll")}
@@ -501,7 +564,11 @@ export default function Home() {
             style={{ marginBottom: 30 }}
           >
             {loading ? (
-              <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
+              <ActivityIndicator
+                style={{ alignSelf: "center" }}
+                size={"large"}
+                color={"white"}
+              />
             ) : (
               chefFavorite.map((item, index) => (
                 <View
@@ -529,36 +596,44 @@ export default function Home() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
-        ) : (
-          dishes.length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 30 }}
+          <ActivityIndicator
+            style={{ alignSelf: "center", paddingVertical: 20 }}
+            size={"large"}
+            color={"white"}
+          />
+        ) : dishes.length === 0 ? (
+          <View style={{ alignItems: "center", paddingVertical: 20 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#333",
+                fontFamily: "nunito-regular",
+              }}
             >
-              {dishes.map((item, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 200,
-                    alignItems: "center",
-                    marginRight: 20,
-                    marginLeft: index === 0 ? 16 : 0,
-                  }}
-                >
-                  {renderDishItem({ item })}
-                </View>
-              ))}
-            </ScrollView>
-          )
+              {t("serviceNotNear")}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {dishes.map((item, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 200,
+                  alignItems: "center",
+                  marginRight: 20,
+                  marginLeft: index === 0 ? 16 : 0,
+                }}
+              >
+                {renderDishItem({ item })}
+              </View>
+            ))}
+          </ScrollView>
         )}
-
-
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("nearbyChefs")}</Text>
@@ -569,86 +644,104 @@ export default function Home() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator style={{ alignSelf: 'center', paddingVertical: 20 }} size={'large'} color={'white'} />
-        ) : (
-          chef.length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <Text style={{ fontSize: 16, color: '#333' }}>Rất tiếc, chưa có dịch vụ nào ở gần bạn.</Text>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 30 }}
+          <ActivityIndicator
+            style={{ alignSelf: "center", paddingVertical: 20 }}
+            size={"large"}
+            color={"white"}
+          />
+        ) : chef.length === 0 ? (
+          <View style={{ alignItems: "center", paddingVertical: 20 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#333",
+                fontFamily: "nunito-regular",
+              }}
             >
-              {loading ? (
-                <ActivityIndicator style={{ alignSelf: 'center' }} size={'large'} color={'white'} />
-              ) : (
-                chef.map((item, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      width: 200,
-                      alignItems: "center",
-                      marginRight: 20,
-                      marginLeft: index === 0 ? 16 : 0,
-                    }}
-                  >
-                    {renderChefItem({ item })}
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          ))}
-
+              {t("serviceNotNear")}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 30 }}
+          >
+            {loading ? (
+              <ActivityIndicator
+                style={{ alignSelf: "center" }}
+                size={"large"}
+                color={"white"}
+              />
+            ) : (
+              chef.map((item, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 200,
+                    alignItems: "center",
+                    marginRight: 20,
+                    marginLeft: index === 0 ? 16 : 0,
+                  }}
+                >
+                  {renderChefItem({ item })}
+                </View>
+              ))
+            )}
+          </ScrollView>
+        )}
       </ScrollView>
       <TouchableOpacity style={styles.chatbotIcon} onPress={toggleChat}>
         <Ionicons name="chatbubble-ellipses" size={30} color="#fff" />
       </TouchableOpacity>
 
-      {
-        isChatVisible && (
-          <View style={styles.chatOverlay}>
-            <View
+      {isChatVisible && (
+        <View style={styles.chatOverlay}>
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: "#A9411D",
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={require("../../assets/images/logo.png")}
               style={{
-                flexDirection: "row",
-                backgroundColor: "#A9411D",
-                padding: 20,
-                alignItems: "center",
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                borderWidth: 1,
+                borderColor: "#EBE5DD",
+              }}
+            />
+            <Text
+              style={{
+                color: "#fff",
+                fontSize: 15,
+                marginLeft: 15,
+                fontFamily: "nunito-regular",
               }}
             >
-              <Image
-                source={require("../../assets/images/logo.png")}
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 25,
-                  borderWidth: 1,
-                  borderColor: "#EBE5DD",
-                }}
-              />
-              <Text style={{ color: "#fff", fontSize: 15, marginLeft: 15 }}>
-                VietChef Chatbot
-              </Text>
-              <TouchableOpacity
-                style={styles.closeChatButton}
-                onPress={toggleChat}
-              >
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <CustomChat
-              messages={messages}
-              onSendMessage={handleSend}
-              callApi={handleChatbot}
-              onContactAdmin={() => router.push("/screen/helpCentre")}
-            />
+              VietChef Chatbot
+            </Text>
+            <TouchableOpacity
+              style={styles.closeChatButton}
+              onPress={toggleChat}
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
-        )
-      }
 
-    </SafeAreaView >
+          <CustomChat
+            messages={messages}
+            onSendMessage={handleSend}
+            callApi={handleChatbot}
+            onContactAdmin={() => router.push("/screen/helpCentre")}
+          />
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -675,6 +768,7 @@ const styles = StyleSheet.create({
     padding: 20,
     fontSize: 16,
     paddingRight: 50,
+    fontFamily: "nunito-regular",
   },
   searchIcon: {
     position: "absolute",
@@ -710,7 +804,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#FFF",
     marginTop: 70,
     textAlign: "center",
@@ -725,7 +819,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   notificationIconContainer: {
@@ -745,7 +839,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   chatbotIcon: {
     position: "absolute",
@@ -781,5 +875,4 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
   },
-
 });

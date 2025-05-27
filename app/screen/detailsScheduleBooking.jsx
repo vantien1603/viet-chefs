@@ -221,7 +221,7 @@ const DetailsBooking = () => {
             >
               <Text>
                 <Text style={styles.itemContentLabel}>{t("name")}: </Text>
-                <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                <Text style={{ fontFamily: "nunito-bold", fontSize: 16 }}>
                   {customer?.fullName}
                 </Text>
               </Text>
@@ -283,10 +283,10 @@ const DetailsBooking = () => {
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
                 {t('received')}: ${detail.totalChefFeePrice}
               </Text>
-              <Text style={{ fontWeight: "bold", fontSize: 18 }}>
+              <Text style={{ fontFamily: "nunito-bold", fontSize: 18 }}>
                 {t('total')}: ${detail.totalPrice}
               </Text>
             </View>
@@ -326,9 +326,9 @@ const DetailsBooking = () => {
                     }}
                   />
                   <View>
-                    <Text style={{ fontSize: 15 }}>{dish.dish.name}</Text>
+                    <Text style={{ fontSize: 15, fontFamily: "nunito-regular" }}>{dish.dish.name}</Text>
                     {!dish.notes && (
-                      <Text style={{ fontSize: 13, color: "#333" }}>
+                      <Text style={{ fontSize: 13, color: "#333", fontFamily: "nunito-regular" }}>
                         {dish.notes}
                       </Text>
                     )}
@@ -342,7 +342,7 @@ const DetailsBooking = () => {
           detail.status === "COMPLETED") && (
           <View style={styles.itemContainer}>
             <Text
-              style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}
+              style={{ fontSize: 16, fontFamily: "nunito-bold", marginBottom: 10 }}
             >
               {t('uploadCheckoutReceipts')}
             </Text>
@@ -410,7 +410,7 @@ const DetailsBooking = () => {
                   }}
                 >
                   <Ionicons name="images-outline" size={24} color="#333" />
-                  <Text style={{ marginTop: 5 }}>{t('chooseImage')}</Text>
+                  <Text style={{ marginTop: 5, fontFamily: "nunito-regular" }}>{t('chooseImage')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -427,7 +427,7 @@ const DetailsBooking = () => {
                   }}
                 >
                   <Ionicons name="camera-outline" size={24} color="#333" />
-                  <Text style={{ marginTop: 5 }}>{t('takePhoto')}</Text>
+                  <Text style={{ marginTop: 5, fontFamily: "nunito-regular" }}>{t('takePhoto')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -452,7 +452,7 @@ const DetailsBooking = () => {
                     <Text
                       style={{
                         color: "white",
-                        fontWeight: "bold",
+                        fontFamily: "nunito-bold",
                         fontSize: 16,
                       }}
                     >
@@ -491,10 +491,11 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   itemContentLabel: {
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   itemContent: {
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
 });
 

@@ -32,7 +32,6 @@ const UpdateBookingDetailScreen = () => {
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
 
-console.log("cc", chefId);
   // Fetch danh sách menu
   useEffect(() => {
     const fetchMenus = async () => {
@@ -355,7 +354,7 @@ console.log("cc", chefId);
 const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginTop: 10,
     marginBottom: 10,
@@ -375,10 +374,12 @@ const styles = StyleSheet.create({
   placeholderStyle: {
     fontSize: 14,
     color: "#999",
+    fontFamily: "nunito-regular"
   },
   selectedTextStyle: {
     fontSize: 14,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   clearButton: {
     marginLeft: 10,
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
   clearButtonText: {
     color: "white",
     fontSize: 14,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   dishItem: {
     marginBottom: 10,
@@ -417,6 +418,7 @@ const styles = StyleSheet.create({
   dishText: {
     fontSize: 14,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   input: {
     borderWidth: 1,
@@ -425,6 +427,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
   doneButton: {
     backgroundColor: "#A64B2A",
@@ -436,7 +439,7 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   noDataText: {
@@ -444,6 +447,7 @@ const styles = StyleSheet.create({
     color: "#9C583F",
     textAlign: "center",
     marginVertical: 10,
+    fontFamily: "nunito-regular"
   },
 });
 

@@ -83,17 +83,19 @@ const styles = StyleSheet.create({
   title: {
     color: "#A9411D",
     fontSize: 22,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   subtitle: {
     fontSize: 14,
     color: "#888",
+    fontFamily: "nunito-regular",
   },
   rightText: {
     fontSize: 16,
     color: "#A9411D",
     marginLeft: 8,
     flexShrink: 1, // Cho phép co lại nếu cần
+    fontFamily: "nunito-regular",
   },
 });
 

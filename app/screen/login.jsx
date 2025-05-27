@@ -86,6 +86,7 @@ export default function LoginScreen() {
     setLoadingA(true);
     const token = await SecureStore.getItemAsync("expoPushToken");
     const result = await login(usernameOrEmail, password, token);
+    console.log("token", token);
     console.log("asdasd", result);
     if (result != null) {
       if (result?.roleName === "ROLE_CHEF") {
@@ -206,7 +207,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             onPress={() => navigation.navigate("screen/forgot")}
           >
-            <Text style={{ color: "#968B7B" }}>Forgot password?</Text>
+            <Text style={{ color: "#968B7B", fontFamily: "nunito-regular" }}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
         <View style={{ alignItems: "center" }}>
@@ -293,14 +294,14 @@ export default function LoginScreen() {
             style={{
               fontSize: 18,
               marginBottom: 10,
-              fontWeight: "bold",
               textAlign: "center",
+              fontFamily: "nunito-bold",
             }}
           >
             {t("loginFailed")}
           </Text>
           <Ionicons name="close-circle" size={60} color="red" />
-          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: "center" }}>
+          <Text style={{ fontSize: 16, marginBottom: 10, textAlign: "center", fontFamily: "nunito-regular" }}>
             {t("loginFailedMessage")}
           </Text>
           <TouchableOpacity
@@ -315,7 +316,7 @@ export default function LoginScreen() {
             }}
             onPress={() => modalRef.current?.close()}
           >
-            <Text style={{ textAlign: "center", fontSize: 16, color: "#fff" }}>
+            <Text style={{ textAlign: "center", fontSize: 16, color: "#fff", fontFamily: "nunito-regular" }}>
               {t("tryAgain")}
             </Text>
           </TouchableOpacity>

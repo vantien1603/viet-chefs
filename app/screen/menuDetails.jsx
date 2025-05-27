@@ -259,7 +259,7 @@ const MenuDetails = () => {
                                     style={commonStyles.input}
                                 />
                             ) : (
-                                <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>{menu.name}</Text>
+                                <Text style={{ fontSize: 20, fontFamily: "nunito-bold", marginBottom: 10 }}>{menu.name}</Text>
                             )}
                             {/* {renderPriceSection()} */}
                             {!isEditing ? (
@@ -401,7 +401,7 @@ const MenuDetails = () => {
                                 {loadingAction ? (
                                     <ActivityIndicator size="small" color="white" />
                                 ) : (
-                                    <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                                    <Text style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}>
                                         Save
                                     </Text>
                                 )}
@@ -507,19 +507,20 @@ const styles = StyleSheet.create({
     },
     dishName: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontFamily: "nunito-bold",
         color: '#333',
         flexShrink: 1,
     },
     itemContentLabel: {
-        fontWeight: "bold",
+        fontFamily: "nunito-bold",
         fontSize: 15,
         // marginBottom: 5
     },
     itemContent: {
         fontSize: 14,
         color: "#333",
-        marginHorizontal: 10, marginVertical: 10
+        marginHorizontal: 10, marginVertical: 10,
+        fontFamily: "nunito-regular"
     },
     textInput: {
         backgroundColor: "#eee",
@@ -531,11 +532,12 @@ const styles = StyleSheet.create({
     strikeThrough: {
         textDecorationLine: "line-through",
         fontSize: 14,
-        color: "gray"
+        color: "gray",
+        fontFamily: "nunito-regular"
     },
     highlighted: {
         fontSize: 16,
-        fontWeight: "bold",
+        fontFamily: "nunito-bold",
         color: "green"
     },
     checkboxRow: {
@@ -568,7 +570,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: "white",
-        fontWeight: "bold",
+        fontFamily: "nunito-bold",
         fontSize: 16
     }
 });

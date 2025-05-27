@@ -223,7 +223,7 @@ const PaymentBookingScreen = () => {
           <Text style={styles.title}>{t("bookingPayment")}</Text>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={styles.priceLabel}>
-              Số dư: {showBalance ? balance : "***"}
+              {t("balance")}: {showBalance ? balance : "***"}
             </Text>
             <TouchableOpacity onPress={toggleBalance} style={{ marginLeft: 8 }}>
               <MaterialIcons
@@ -332,7 +332,7 @@ const PaymentBookingScreen = () => {
               onPress={() => accessWallet()}
             >
               <Text
-                style={{ fontSize: 16, color: "white", fontWeight: "bold" }}
+                style={{ fontSize: 16, color: "white", fontFamily: "nunito-bold" }}
               >
                 {t("pay")}
               </Text>
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
   },
@@ -378,10 +378,11 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 18,
     color: "#555",
+    fontFamily: "nunito-regular"
   },
   priceValue: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#A64B2A",
   },
   buttonContainer: {
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
     textAlign: "center",
   },
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
   },
   modalTitleC: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
   },
@@ -453,7 +454,7 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   modalStyle: {
@@ -481,7 +482,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
     marginTop: 10,
@@ -490,6 +491,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginBottom: 20,
+    fontFamily: "nunito-regular"
   },
   pinContainer: {
     flexDirection: "row",
@@ -511,7 +513,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     textAlign: "center",
     borderWidth: 0,
@@ -521,11 +523,13 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 16,
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   forgotPinText: {
     color: "#FF69B4",
     fontSize: 16,
     textDecorationLine: "underline",
+    fontFamily: "nunito-regular"
   },
 });
 

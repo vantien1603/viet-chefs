@@ -338,6 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A9411D",
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   summaryContainer: {
     flexDirection: "row",
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     textAlign: "center",
   },
@@ -391,7 +392,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   overallExperience: {
@@ -414,6 +415,7 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginTop: 20,
+    fontFamily: "nunito-regular",
   },
   responseBox: {
     backgroundColor: "#f1f1f1",
@@ -422,13 +424,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   responseTitle: {
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 4,
     color: "#333",
   },
   responseText: {
     fontSize: 14,
     color: "#444",
+    fontFamily: "nunito-regular",
   },
   reportContainer: {
     marginTop: 10,
@@ -444,13 +447,14 @@ const styles = StyleSheet.create({
   },
   reportText: {
     color: "#fff",
+    fontFamily: "nunito-regular",
   },
   reasonContainer: {
     marginBottom: 15,
   },
   reasonLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 8,
     color: "#333",
   },
@@ -473,9 +477,11 @@ const styles = StyleSheet.create({
   reasonButtonText: {
     fontSize: 14,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
   reasonButtonTextSelected: {
     color: "#fff",
+    fontFamily: "nunito-bold",
   },
   // Modal Styles
   modalOverlay: {
@@ -493,7 +499,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 15,
     textAlign: "center",
   },
@@ -504,6 +510,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     fontSize: 14,
+    fontFamily: "nunito-regular",
   },
   textArea: {
     height: 100,
@@ -529,7 +536,7 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
 });
 

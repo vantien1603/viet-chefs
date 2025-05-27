@@ -236,7 +236,7 @@ const ChefMenu = () => {
               <View>
                 <Text numberOfLines={1} ellipsizeMode="tail">
                   {/* <Text style={styles.itemContentLabel}>Menu name: </Text> */}
-                  <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+                  <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
                     {item.name}
                   </Text>
                 </Text>
@@ -252,11 +252,12 @@ const ChefMenu = () => {
                         style={{
                           textDecorationLine: "line-through",
                           fontSize: 15,
+                          fontFamily: "nunito-regular"
                         }}
                       >
                         ${item.beforePrice}
                       </Text>
-                      <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+                      <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
                         {" "}
                         ${item.afterPrice}
                       </Text>
@@ -306,10 +307,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   itemContentLabel: {
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   itemContent: {
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
   selectedCard: {
     borderWidth: 3,
@@ -346,7 +348,7 @@ const styles = StyleSheet.create({
   floatingText: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

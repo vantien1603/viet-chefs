@@ -303,7 +303,7 @@ const ReviewsChefScreen = () => {
           ListEmptyComponent={
             !loading && (
               <Text style={{ textAlign: "center", marginTop: 30 }}>
-                Chưa có đánh giá nào
+                {t("noReviewsYet")}
               </Text>
             )
           }
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#A64B2A",
     borderRadius: 8,
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     fontSize: 14,
   },
   sortContainer: {
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   sortLabel: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 12,
   },
@@ -397,11 +397,11 @@ const styles = StyleSheet.create({
   sortButtonText: {
     fontSize: 14,
     color: "#333",
-    fontWeight: "500",
+    ffontFamily: "nunito-bold",
   },
   sortButtonTextActive: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   summaryContainer: {
     backgroundColor: "#FFFFFF",
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 12,
     textAlign: "center",
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   averageRating: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#A64B2A",
     marginRight: 12,
   },
@@ -462,10 +462,11 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     width: 40,
     textAlign: "right",
+    fontFamily: "nunito-regular"
   },
   userName: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 4,
   },
@@ -474,12 +475,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     marginVertical: 8,
+    fontFamily: "nunito-regular"
   },
   reviewDate: {
     fontSize: 12,
     color: "#888",
     textAlign: "right",
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   starsContainer: {
     flexDirection: "row",
@@ -493,6 +496,7 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginTop: 4,
+    fontFamily: "nunito-regular"
   },
 });
 

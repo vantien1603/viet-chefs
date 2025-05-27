@@ -24,7 +24,8 @@ async function registerForPushNotificationsAsync() {
       return null;
     }
 
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    // const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const token = (await Notifications.getDevicePushTokenAsync()).data;
     return token;
   } catch (error) {
     console.error('Error registering for push notifications:', error);
@@ -146,10 +147,9 @@ export default function WelcomeScreen() {
           style={{
             marginTop: 25,
             fontSize: 35,
-            fontWeight: "bold",
+            fontFamily: "nunito-bold",
             textAlign: "center",
             color: "#A9411D",
-            fontFamily: "nunito-bold",
           }}
         >
           VIỆT CHEFS

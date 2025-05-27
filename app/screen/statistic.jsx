@@ -180,7 +180,7 @@ const StatisticScreen = () => {
   return (
     <SafeAreaView style={commonStyles.containerContent}>
       <Header title={t("expenseManagement")} />
-      <Text style={{ fontSize: 18, fontWeight: "bold", margin: 10 }}>
+      <Text style={{ fontSize: 18, fontFamily: "nunito-bold", margin: 10 }}>
         {t("overview")}
       </Text>
       <View style={styles.container}>
@@ -223,7 +223,7 @@ const StatisticScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={{ marginHorizontal: 10, color: "#FF9500" }}>
+        <Text style={{ marginHorizontal: 10, color: "#FF9500", fontFamily: "nunito-regular" }}>
           {selectedMode === "Expense"
             ? t("expenseIncreased", { amount })
             : t("incomeIncreased", { amount })}
@@ -263,7 +263,7 @@ const StatisticScreen = () => {
                   position: "absolute",
                 }}
               >
-                <Text style={{ color: "#333", fontWeight: "bold" }}>
+                <Text style={{ color: "#333", fontFamily: "nunito-bold" }}>
                   {formatAmount(item.value * 100)}
                 </Text>
               </View>
@@ -313,15 +313,17 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 14,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   buttonValue: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#000",
   },
   subtext: {
     fontSize: 12,
     color: "#888888",
+    fontFamily: "nunito-regular"
   },
 });
 

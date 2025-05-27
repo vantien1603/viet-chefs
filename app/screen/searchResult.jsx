@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Alert,
-  Dimensions,
   Keyboard,
   ActivityIndicator,
   BackHandler,
@@ -29,11 +27,7 @@ import * as Location from "expo-location";
 import { Modalize } from "react-native-modalize";
 import axios from "axios";
 import { AuthContext } from "../../config/AuthContext";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useCommonNoification } from "../../context/commonNoti";
 import { t } from "i18next";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const SearchResultScreen = () => {
   const {
@@ -964,7 +958,7 @@ const SearchResultScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+            <Text style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}>
               {t("useCurrentLocation")}
             </Text>
           )}
@@ -1038,6 +1032,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 16,
     color: "#4EA0B7",
+    fontFamily: "nunito-regular"
   },
   searchIcon: {
     marginLeft: 15,
@@ -1056,6 +1051,7 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
     flexWrap: "wrap",
+    fontFamily: "nunito-regular"
   },
   filterContainer: {
     marginBottom: 10,
@@ -1080,6 +1076,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     marginRight: 5,
+    fontFamily: "nunito-regular"
   },
   filterItem: {
     flexDirection: "row",
@@ -1119,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#FFF",
     marginBottom: 4,
     alignSelf: "center",
@@ -1133,25 +1130,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#EBE5DD",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   rating: {
     fontSize: 14,
     color: "#FFF",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   address: {
     fontSize: 10,
     color: "#EBE5DD",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   cuisine: {
     fontSize: 12,
     color: "#EBE5DD",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   label: {
     fontSize: 12,
     color: "#EBE5DD",
+    fontFamily: "nunito-regular"
   },
   rowNgayGui: {
     marginTop: 10,
@@ -1193,6 +1195,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     textAlign: "center",
+    fontFamily: "nunito-regular"
   },
   modal: {
     backgroundColor: "#FFF",
@@ -1207,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 20,
     textAlign: "center",
   },
@@ -1218,6 +1221,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   buttonGroup: {
     flexDirection: "row",
@@ -1236,11 +1240,11 @@ const styles = StyleSheet.create({
   },
   optionButtonText: {
     color: "#555",
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   optionButtonTextSelected: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   modalButtons: {
     flexDirection: "row",
@@ -1257,7 +1261,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#333",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   applyButton: {
     backgroundColor: "#4EA0B7",
@@ -1269,7 +1273,7 @@ const styles = StyleSheet.create({
   applyButtonText: {
     color: "#FFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   addressItem: {
     paddingVertical: 10,
@@ -1281,7 +1285,7 @@ const styles = StyleSheet.create({
   },
   addressTitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 5,
   },
@@ -1289,6 +1293,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginBottom: 5,
+    fontFamily: "nunito-regular"
   },
 });
 

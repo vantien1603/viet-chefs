@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: "nunito-bold",
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#555',
     marginBottom: 24,
+    fontFamily: "nunito-regular"
   },
   button: {
     backgroundColor: '#007AFF',
@@ -81,6 +82,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: "nunito-bold",
   },
 });

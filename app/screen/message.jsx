@@ -376,7 +376,7 @@ const Message = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#68A7AD" />
-          <Text style={{ marginTop: 10 }}>{t("loadingMessages")}</Text>
+          <Text style={{ marginTop: 10, fontFamily: "nunito-regular" }}>{t("loadingMessages")}</Text>
         </View>
       ) : (
         <FlatList
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     color: "#000",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   textContainer: {
     alignItems: "center",
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#000",
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   loadingContainer: {
     flex: 1,
@@ -526,12 +526,14 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
+    fontFamily: "nunito-regular"
   },
   messageTime: {
     fontSize: 12,
     color: "gray",
     marginTop: 5,
     alignSelf: "flex-end",
+    fontFamily: "nunito-regular"
   },
   dateContainer: {
     alignItems: "center",
@@ -540,6 +542,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     color: "gray",
+    fontFamily: "nunito-regular"
   },
   imageContainer: {
     marginVertical: 5,
@@ -576,6 +579,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
     marginHorizontal: 10,
+    fontFamily: "nunito-regular"
   },
   actionButton: {
     paddingHorizontal: 15,
@@ -586,7 +590,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   imagePreviewContainer: {
     padding: 10,
@@ -594,6 +598,7 @@ const styles = StyleSheet.create({
   imagePreviewText: {
     color: "#000",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   imagePreviewWrapper: {
     width: 100,
@@ -619,7 +624,7 @@ const styles = StyleSheet.create({
   removeImageButtonText: {
     color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   chatContainer: {
     flex: 1,
@@ -648,7 +653,7 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "#FFFFFF",
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

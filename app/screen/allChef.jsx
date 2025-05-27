@@ -269,21 +269,22 @@ const styles = StyleSheet.create({
   },
   chefName: {
     fontSize: 18,
-    fontWeight: "bold",
     color: "#333",
     marginBottom: 4,
+    fontFamily: "nunito-regular",
   },
   chefSpecialization: {
     fontSize: 16,
-    fontWeight: "600",
     color: "#e74c3c",
     marginBottom: 4,
+    fontFamily: "nunito-bold",
   },
   chefBio: {
     fontSize: 14,
     color: "#666",
     marginBottom: 8,
     lineHeight: 20,
+    fontFamily: "nunito-regular",
   },
   chefMeta: {
     flexDirection: "row",
@@ -295,11 +296,13 @@ const styles = StyleSheet.create({
     color: "#888",
     marginLeft: 6,
     flex: 1,
+    fontFamily: "nunito-regular",
   },
   chefPrice: {
     fontSize: 14,
     color: "#888",
     marginLeft: 6,
+    fontFamily: "nunito-regular",
   },
   loadingContainer: {
     flex: 1,
@@ -310,6 +313,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 8,
+    fontFamily: "nunito-regular",
   },
   errorContainer: {
     flex: 1,
@@ -322,6 +326,7 @@ const styles = StyleSheet.create({
     color: "#e74c3c",
     marginBottom: 16,
     textAlign: "center",
+    fontFamily: "nunito-regular",
   },
   retryButton: {
     backgroundColor: "#e74c3c",
@@ -332,13 +337,14 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 16,
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   emptyText: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
     marginTop: 20,
+    fontFamily: "nunito-regular",
   },
 });
 

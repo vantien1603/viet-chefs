@@ -17,6 +17,7 @@ import { TabBar, TabView } from 'react-native-tab-view';
 import { commonStyles } from '../../style';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import { t } from 'i18next';
 
 const dayInWeek = [
   { id: 0, label: 'Mon', full: 'Monday' },
@@ -33,27 +34,27 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
     return (
       <TouchableOpacity key={item.id} style={[styles.section, item.status === "IN_PROGRESS" && styles.highlighted, item.status === "WAITING_FOR_CONFIRMATION" && { borderWidth: 3, borderColor: 'green' }]} onPress={() => onViewDetail(item.id)}>
         <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.booking?.customer?.fullName}</Text>
-          <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.sessionDate}</Text>
-          {/* <Text style={{ fontSize: 14, fontWeight: 'bold' }}>Date: {item.status}</Text> */}
+          <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>{item.booking?.customer?.fullName}</Text>
+          <Text style={{ fontSize: 14, fontFamily: "nunito-bold" }}>Date: {item.sessionDate}</Text>
+          {/* <Text style={{ fontSize: 14, fontFamily: "nunito-bold" }}>Date: {item.status}</Text> */}
         </View>
         <Text numberOfLines={1} ellipsizeMode="tail">
-          <Text style={styles.itemContentLabel}>Address: </Text>
+          <Text style={styles.itemContentLabel}>{t("address")}: </Text>
           <Text style={styles.itemContent}>{item.location}</Text>
         </Text>
         <Text>
-          <Text style={styles.itemContentLabel}>Dinner time: </Text>
+          <Text style={styles.itemContentLabel}>{t("Mealtime")}: </Text>
           <Text style={styles.itemContent}>{item.startTime}</Text>
         </Text>
         <Text>
-          <Text style={styles.itemContentLabel}>Travel time: </Text>
+          <Text style={styles.itemContentLabel}>{t("travelTime")}: </Text>
           <Text style={styles.itemContent}>{item.timeBeginTravel}</Text>
         </Text>
         <Text numberOfLines={2} ellipsizeMode="tail">
-          <Text style={styles.itemContentLabel}>Dishes: </Text>
+          <Text style={styles.itemContentLabel}>{t("dishes")}: </Text>
           {item.dishes?.length === 0 && (
             <Text style={styles.itemContent}>
-              Not yet
+              {t("notYet")}
             </Text>
           )}
           {item.dishes && item.dishes.map((dish) => (
@@ -63,7 +64,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
           ))}
 
         </Text>
-        <Text style={styles.itemContentLabel}>Price: ${item.totalPrice}</Text>
+        <Text style={styles.itemContentLabel}>{t("price")}: ${item.totalPrice}</Text>
       </TouchableOpacity>
     )
 
@@ -80,7 +81,7 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
         onEndReachedThreshold={0.5}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, marginTop: 20 }}>No orders</Text>}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, marginTop: 20, fontFamily: "nunito-regular" }}>{t("noOrder")}</Text>}
         ListFooterComponent={(loading ? <ActivityIndicator size="large" /> : <View style={{ height: 100 }} />)}
       />
     </View>
@@ -232,7 +233,7 @@ const Schedule = () => {
             activeColor="#9C583F"
             indicatorStyle={{ backgroundColor: '#A9411D' }}
             style={{ backgroundColor: '#EBE5DD', elevation: 0, shadowOpacity: 0, borderBottomWidth: 0 }}
-            labelStyle={{ color: '#A9411D', fontWeight: 'bold' }}
+            labelStyle={{ color: '#A9411D', fontFamily: "nunito-bold" }}
             tabStyle={{ paddingVertical: 0, width: 130 }}
           />
         )}
@@ -256,10 +257,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   itemContentLabel: {
-    fontWeight: 'bold',
+    fontFamily: "nunito-bold",
   },
   itemContent: {
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
   highlighted: {
     borderWidth: 3,

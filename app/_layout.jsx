@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from "../config/AuthContext";
 import { NetworkProvider } from "../hooks/networkProvider";
 import NetworkAlert from "../components/networkNoti";
@@ -9,8 +10,25 @@ import { ConfirmModalProvider } from "../context/commonConfirm";
 import { ModalLoginProvider } from "../context/modalLoginContext";
 import { SelectedItemsProvider } from "../context/itemContext";
 import { SocketProvider } from "../config/SocketContext";
+import { useFonts } from "expo-font";
+import { useEffect } from "react";
 
+SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    'nunito-bold': require("../assets/fonts/Nunito-Bold.ttf"),
+    'nunito-regular': require("../assets/fonts/Nunito-Regular.ttf"),
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
   return (
     <GestureHandlerRootView>
       <NetworkProvider>
