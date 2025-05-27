@@ -19,6 +19,7 @@ import { ActivityIndicator } from "react-native";
 import { TabBar, TabView } from "react-native-tab-view";
 import { useConfirmModal } from "../../context/commonConfirm";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
+import { t } from "i18next";
 
 const PackageRender = ({
   packages,
@@ -46,7 +47,7 @@ const PackageRender = ({
     >
       <Text numberOfLines={1} ellipsizeMode="tail">
         <Text style={styles.itemContentLabel}>{t("packageName")}: </Text>
-        <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
+        <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>{item.name}</Text>
       </Text>
       <Text numberOfLines={1} ellipsizeMode="tail">
         <Text style={styles.itemContentLabel}>{t("duration")}: </Text>
@@ -87,7 +88,7 @@ const PackageRender = ({
             )
           }
         >
-          <Text style={{ color: "white" }}>
+          <Text style={{ color: "white", fontFamily: "nunito-regular" }}>
             {type === "sub" ? t("unsubscribe") : t("subscribe")}
           </Text>
         </TouchableOpacity>
@@ -103,7 +104,7 @@ const PackageRender = ({
         contentContainerStyle={{ paddingHorizontal: 10 }}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={
-          <Text style={{ textAlign: "center", fontSize: 16 }}>
+          <Text style={{ textAlign: "center", fontSize: 16, fontFamily: "nunito-regular" }}>
             {t("noPackage")}
           </Text>
         }
@@ -368,7 +369,7 @@ const Packages = () => {
             }}
             activeColor="#9C583F"
             inactiveColor="gray"
-            labelStyle={{ fontWeight: "bold" }}
+            labelStyle={{ fontFamily: "nunito-bold" }}
           />
         )}
       />
@@ -393,7 +394,7 @@ const Packages = () => {
           >
             <Text numberOfLines={1} ellipsizeMode="tail">
               <Text style={styles.itemContentLabel}>Menu name: </Text>
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
+              <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>{item.name}</Text>
             </Text>
             <Text numberOfLines={1} ellipsizeMode="tail">
               <Text style={styles.itemContentLabel}>Duration: </Text>
@@ -435,10 +436,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   itemContentLabel: {
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   itemContent: {
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
   selectedCard: {
     borderWidth: 3,
@@ -475,7 +477,7 @@ const styles = StyleSheet.create({
   floatingText: {
     fontSize: 16,
     color: "#333",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   modalContainer: {
     height: 500,
@@ -489,7 +491,7 @@ const styles = StyleSheet.create({
   },
   itemModalLabel: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     flex: 1,
   },
@@ -533,7 +535,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
 });

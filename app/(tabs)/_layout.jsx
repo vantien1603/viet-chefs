@@ -9,16 +9,14 @@ function CustomTabBar({ state, descriptors, navigation }) {
   const { showModal } = useGlobalModal();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const axiosInstance = useAxios();
+  const { registerNotificationCallback } = useContext(SocketContext);
 
-  let interval;
   useEffect(() => {
     if (!isGuest) {
-      interval = setInterval(() => {
+      registerNotificationCallback(() => {
         fetchUnreadMessageCount();
-      }, 5000);
-      return () => clearInterval(interval);
+      });
     }
-
   }, []);
 
   const fetchUnreadMessageCount = async () => {
@@ -26,9 +24,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
       const response = await axiosInstance.get("/notifications/my/count");
       const count = response.data.chatNoti ?? 0;
       setUnreadMessageCount(count);
-      if (count === 0 && interval) {
-        clearInterval(interval);
-      }
     } catch (error) {
       console.log("Error fetching unread message count:", error);
     }
@@ -45,11 +40,15 @@ function CustomTabBar({ state, descriptors, navigation }) {
   };
 
   useEffect(() => {
-    const restrictedScreens = ["chat", "history"];
+    const restrictedScreens = ["chat", "schedule"];
     const currentScreen = state.routes[state.index].name;
 
     if (isGuest && restrictedScreens.includes(currentScreen)) {
-      showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
+      showModalLogin(
+        "Yêu cầu đăng nhập",
+        "Bạn cần đăng nhập để tiếp tục.",
+        true
+      );
     }
   }, [state.index, isGuest]);
   return (
@@ -88,12 +87,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     route.name === "home"
                       ? "home"
                       : route.name === "chat"
-                        ? "chatbubble-outline"
-                        : route.name === "schedule"
-                          ? "calendar-outline"
-                          : route.name === "bag"
-                            ? "briefcase-outline"
-                            : "person-outline"
+                      ? "chatbubble-outline"
+                      : route.name === "schedule"
+                      ? "calendar-outline"
+                      : route.name === "bag"
+                      ? "briefcase-outline"
+                      : "person-outline"
                   }
                   size={24}
                   color={isFocused ? "white" : "#B0BEC5"}
@@ -105,7 +104,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     </Text>
                   </View>
                 )}
-
               </TouchableOpacity>
             </View>
           );
@@ -114,11 +112,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
     </View>
   );
 }
-import { Tabs, } from "expo-router";
+import { Tabs } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import { useGlobalModal } from "../../context/modalContext";
 import { useModalLogin } from "../../context/modalLoginContext";
 import useAxios from "../../config/AXIOS_API";
+import { SocketContext } from "../../config/SocketContext";
 
 export default function TabLayout() {
   return (
@@ -199,6 +198,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });

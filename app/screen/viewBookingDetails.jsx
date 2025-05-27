@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 12,
   },
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginLeft: 8,
     width: 150,
@@ -552,6 +552,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     flex: 1,
+    fontFamily: "nunito-regular"
   },
   dishItem: {
     marginLeft: 10,
@@ -570,6 +571,7 @@ const styles = StyleSheet.create({
     color: "#A64B2A",
     textAlign: "center",
     marginTop: 8,
+    fontFamily: "nunito-regular"
   },
   loadingContainer: {
     flex: 1,
@@ -580,6 +582,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A64B2A",
     marginTop: 8,
+    fontFamily: "nunito-regular"
   },
   depositButton: {
     backgroundColor: "#A64B2A",
@@ -602,7 +605,7 @@ const styles = StyleSheet.create({
   },
   depositButtonText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     fontSize: 16,
     marginLeft: 8,
   },
@@ -630,7 +633,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
     marginTop: 10,
@@ -639,6 +642,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginBottom: 20,
+    fontFamily: "nunito-regular"
   },
   pinContainer: {
     flexDirection: "row",
@@ -660,7 +664,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     textAlign: "center",
     borderWidth: 0,
@@ -670,11 +674,13 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 16,
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
   forgotPinText: {
     color: "#FF69B4",
     fontSize: 16,
     textDecorationLine: "underline",
+    fontFamily: "nunito-regular"
   },
 });
 

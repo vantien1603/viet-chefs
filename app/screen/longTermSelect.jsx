@@ -761,13 +761,13 @@ const LongTermSelectBooking = () => {
                           <View>
                             <View style={styles.weekdayContainer}>
                               {[
-                                "Sun",
-                                "Mon",
-                                "Tue",
-                                "Wed",
-                                "Thu",
-                                "Fri",
-                                "Sat",
+                                t("weekdays.0"),
+                                t("weekdays.1"),
+                                t("weekdays.2"),
+                                t("weekdays.3"),
+                                t("weekdays.4"),
+                                t("weekdays.5"),
+                                t("weekdays.6"),
                               ].map((day, index) => (
                                 <TouchableOpacity
                                   key={day}
@@ -883,7 +883,7 @@ const LongTermSelectBooking = () => {
               <Text
                 style={{
                   fontSize: 18,
-                  fontWeight: "bold",
+                  fontFamily: "nunito-bold",
                   marginBottom: 12,
                   color: "#333",
                 }}
@@ -905,6 +905,7 @@ const LongTermSelectBooking = () => {
                   marginBottom: 16,
                   textAlignVertical: "top",
                   fontSize: 16,
+                  fontFamily: "nunito-regular"
                 }}
               />
 
@@ -929,7 +930,7 @@ const LongTermSelectBooking = () => {
                   }}
                 >
                   <Text
-                    style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}
+                    style={{ color: "#fff", fontFamily: "nunito-bold", fontSize: 16 }}
                   >
                     {t("cancel")}
                   </Text>
@@ -957,7 +958,7 @@ const LongTermSelectBooking = () => {
                   }}
                 >
                   <Text
-                    style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}
+                    style={{ color: "#fff", fontFamily: "nunito-bold", fontSize: 16 }}
                   >
                     {t("save")}
                   </Text>
@@ -965,7 +966,7 @@ const LongTermSelectBooking = () => {
               </View>
             </>
           ) : (
-            <Text style={{ fontSize: 16, color: "#777" }}>
+            <Text style={{ fontSize: 16, color: "#777", fontFamily: "nunito-regular" }}>
               {t("noDishSelected")}
             </Text>
           )}
@@ -1009,7 +1010,7 @@ const styles = StyleSheet.create({
   scrollViewContent: { paddingBottom: 100, flexGrow: 1 },
   title: {
     fontSize: 20,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 8,
   },
@@ -1049,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   weekdayTextSelected: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   applyButton: {
     backgroundColor: "#A64B2A",
@@ -1062,7 +1063,7 @@ const styles = StyleSheet.create({
   applyButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   infoButton: {
     width: 24,
@@ -1075,7 +1076,7 @@ const styles = StyleSheet.create({
   infoButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   calendar: {
     backgroundColor: "#FFFFFF",
@@ -1099,7 +1100,7 @@ const styles = StyleSheet.create({
   },
   weekTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#A64B2A",
   },
   weekContent: {
@@ -1127,7 +1128,7 @@ const styles = StyleSheet.create({
   },
   dateTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   removeButton: {
@@ -1149,14 +1150,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginRight: 8,
   },
   addItemsText: {
     color: "#222222",
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginVertical: 8,
   },
   menuHeader: {
@@ -1167,13 +1168,13 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginVertical: 4,
   },
   subTitle: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginTop: 8,
   },
@@ -1195,6 +1196,7 @@ const styles = StyleSheet.create({
     color: "#555",
     flex: 1,
     marginRight: 8,
+    fontFamily: "nunito-regular"
   },
   dishActions: {
     flexDirection: "row",
@@ -1203,7 +1205,7 @@ const styles = StyleSheet.create({
   noteText: {
     color: "#1E90FF",
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
     marginRight: 8,
     paddingVertical: 6,
     paddingHorizontal: 8,
@@ -1232,7 +1234,7 @@ const styles = StyleSheet.create({
   timeButtonTextSelected: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   buttonArea: {
     position: "absolute",
@@ -1255,7 +1257,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   modalContent: {
@@ -1268,7 +1270,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 12,
     textAlign: "center",
   },
@@ -1277,6 +1279,7 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 16,
     lineHeight: 20,
+    fontFamily: "nunito-regular"
   },
   modalInput: {
     borderWidth: 1,
@@ -1300,7 +1303,7 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     fontSize: 14,
   },
   loadingContainer: {
@@ -1326,7 +1329,7 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 14,
     color: "#D32F2F",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 8,
   },
   dishImage: {

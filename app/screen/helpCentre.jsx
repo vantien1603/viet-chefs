@@ -60,10 +60,10 @@ const HelpCentre = () => {
           />
         </View>
         <View style={styles.content}>
-          <Text style={{ color: "#4E342E", fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ color: "#4E342E", fontSize: 16, fontFamily: "nunito-bold" }}>
             {t("chatSupport")}
           </Text>
-          <Text style={{ color: "#3E3E3E", fontSize: 14 }}>
+          <Text style={{ color: "#3E3E3E", fontSize: 14, fontFamily: "nunito-regular" }}>
             {t("supportDescription")}
           </Text>
         </View>
@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
   text: {
     color: "#fff",
     fontSize: 16,
+    fontFamily: "nunito-regular"
   },
   imageWrapper: {
     position: "absolute",

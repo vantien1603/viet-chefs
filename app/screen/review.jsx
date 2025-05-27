@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
   },
@@ -203,6 +203,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
     marginBottom: 20,
+    fontFamily: "nunito-regular"
   },
   textArea: {
     height: 100,
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
   },
   criterionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#555",
     flex: 1,
   },
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
 });

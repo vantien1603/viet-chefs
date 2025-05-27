@@ -170,7 +170,7 @@ const ConfirmBookingScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View>
-          <Text style={{ fontSize: 18, fontWeight: "500", marginBottom: 10 }}>
+          <Text style={{ fontSize: 18, fontFamily: "nunito-bold", marginBottom: 10 }}>
             {t("location")}
           </Text>
           <View
@@ -182,14 +182,14 @@ const ConfirmBookingScreen = () => {
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+            <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
               {address?.address}
             </Text>
           </View>
         </View>
 
         <View>
-          <Text style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>
+          <Text style={{ fontSize: 18, fontFamily: "nunito-bold", marginBottom: 10 }}>
             {t("infor")}
           </Text>
           <View
@@ -203,17 +203,17 @@ const ConfirmBookingScreen = () => {
           >
             <Text style={styles.subSectionTitle}>{t("workingTime")}</Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("date")}</Text>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{t("date")}</Text>
               <Text style={styles.details}>
                 {selectedDay && selectedDay.format("YYYY-MM-DD")}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("time")}</Text>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{t("time")}</Text>
               <Text style={styles.details}>{`${startTime}`}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("timeBeginTravel")}
               </Text>
               <Text style={styles.details}>
@@ -221,7 +221,7 @@ const ConfirmBookingScreen = () => {
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("timeBeginCook")}
               </Text>
               <Text style={styles.details}>
@@ -229,7 +229,7 @@ const ConfirmBookingScreen = () => {
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("cookTime")}</Text>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold"}}>{t("cookTime")}</Text>
               <Text style={styles.details}>
                 {`${calcuResult.cookTimeMinutes} ${t("minutes")}` || "N/A"}
               </Text>
@@ -239,13 +239,13 @@ const ConfirmBookingScreen = () => {
               {t("jobDetails")}
             </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("numberOfPeople")}
               </Text>
               <Text style={styles.details}>{numPeople}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("totalNumberOfDishes")}
               </Text>
               <Text style={styles.details}>{allDishes.length}</Text>
@@ -253,7 +253,7 @@ const ConfirmBookingScreen = () => {
             {selectedMenu && (
               <View>
                 <View style={styles.row}>
-                  <Text style={{ fontSize: 14, flex: 1 }}>{t("menu")}</Text>
+                  <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{t("menu")}</Text>
                   <Text style={styles.details}>{selectedMenu.name}</Text>
                 </View>
                 {selectedMenu.menuItems.map((item, idx) => (
@@ -261,7 +261,7 @@ const ConfirmBookingScreen = () => {
                     key={idx}
                     style={{ alignItems: "flex-end", paddingHorizontal: 5 }}
                   >
-                    <Text style={styles.dishName}>{item.dishName}</Text>
+                    <Text style={{fontFamily: "nunito-regular"}}>{item.dishName}</Text>
                   </View>
                 ))}
               </View>
@@ -274,7 +274,7 @@ const ConfirmBookingScreen = () => {
               }}
             >
               {/* <View style={styles.row}> */}
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {selectedMenu ? "Side dish" : t("dishList")}
               </Text>
               {/* </View> */}
@@ -285,7 +285,7 @@ const ConfirmBookingScreen = () => {
                         key={idx}
                         style={{ alignItems: "flex-end", paddingHorizontal: 5 }}
                       >
-                        <Text style={styles.dishName}>
+                        <Text style={{ fontFamily: "nunito-regular" }}>
                           {extraDishIds[key].name}
                         </Text>
                       </View>
@@ -295,7 +295,7 @@ const ConfirmBookingScreen = () => {
                         key={idx}
                         style={{ alignItems: "flex-end", paddingHorizontal: 5 }}
                       >
-                        <Text style={styles.dishName}>
+                        <Text style={{ fontFamily: "nunito-regular" }}>
                           {selectedDishes[key].name}
                         </Text>
                       </View>
@@ -304,7 +304,7 @@ const ConfirmBookingScreen = () => {
             </View>
 
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("ingredients")}</Text>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{t("ingredients")}</Text>
               <Text style={styles.details}>
                 {ingredientPrep === "customer"
                   ? t("IWillPrepareIngredients")
@@ -315,31 +315,31 @@ const ConfirmBookingScreen = () => {
               {t("feeDetails")}
             </Text>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("chefCookingFee")}
               </Text>
               <Text style={styles.details}>${calcuResult.chefCookingFee}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("priceOfDishes")}
               </Text>
               <Text style={styles.details}>${calcuResult.priceOfDishes}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>
                 {t("arrivalFee")} ({calcuResult.distanceKm} km)
               </Text>
               <Text style={styles.details}>${calcuResult.arrivalFee}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={{ fontSize: 14, flex: 1 }}>{t("platformFee")}</Text>
+              <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{t("platformFee")}</Text>
               <Text style={styles.details}>${calcuResult.platformFee}</Text>
             </View>
             <Text style={[styles.subSectionTitle, { marginTop: 20 }]}>
               {t("specialRequest")}
             </Text>
-            <Text style={{ fontSize: 14 }}>{specialRequest}</Text>
+            <Text style={{ fontSize: 14, fontFamily: "nunito-regular" }}>{specialRequest}</Text>
           </View>
         </View>
         <View style={{ padding: 5 }} />
@@ -367,10 +367,10 @@ const ConfirmBookingScreen = () => {
           }}
         >
           <View style={styles.costRow}>
-            <Text style={{ flex: 1, fontSize: 18, fontWeight: "bold" }}>
+            <Text style={{ flex: 1, fontSize: 18, fontFamily: "nunito-bold" }}>
               {t("total")}:
             </Text>
-            <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+            <Text style={{ fontSize: 18, fontFamily: "nunito-bold" }}>
               {(calcuResult.totalPrice &&
                 calcuResult.totalPrice?.toLocaleString("en-US", {
                   style: "currency",
@@ -395,7 +395,7 @@ const ConfirmBookingScreen = () => {
           {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+            <Text style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}>
               {t("confirmBooking")}
             </Text>
           )}
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#A9411D",
     marginLeft: 10,
   },
@@ -430,6 +430,7 @@ const styles = StyleSheet.create({
   details: {
     textAlign: "right",
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
   costRow: {
     flexDirection: "row",
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
   },
   subSectionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
   },

@@ -5,6 +5,7 @@ import { commonStyles } from "../../style";
 import { ScrollView, Text, View } from "react-native";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
+import { t } from "i18next";
 
 const WalletRequest = () => {
   const { user } = useContext(AuthContext);
@@ -52,13 +53,13 @@ const WalletRequest = () => {
                   borderRadius: 10,
                 }}
               >
-                <Text style={{fontSize: 17, fontWeight: "bold"}}>{item?.note}</Text>
+                <Text style={{fontSize: 17, fontFamily: "nunito-bold"}}>{item?.note}</Text>
                 <Text>{formatDate(item.createdAt)}</Text>
                 <View style={{flexDirection: "row", justifyContent: "space-between"}}>
-                  <Text style={{ color: "green", fontWeight: "bold" }}>
+                  <Text style={{ color: "green", fontFamily: "nunito-bold" }}>
                     {item.status}
                   </Text>
-                  <Text style={{fontSize: 15}}>${item.amount}</Text>
+                  <Text style={{fontSize: 15, fontFamily: "nunito-regular"}}>${item.amount}</Text>
                 </View>
               </View>
             </ScrollView>

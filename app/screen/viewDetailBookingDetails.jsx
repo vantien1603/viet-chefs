@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 10,
     color: "#333",
   },
@@ -468,21 +468,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     flex: 1,
+    fontFamily: "nunito-regular"
   },
   label: {
     fontSize: 14,
     marginVertical: 5,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   detailLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   detailValue: {
     fontSize: 14,
     color: "#666",
     flex: 1,
+    fontFamily: "nunito-regular"
   },
   dishItem: {
     marginLeft: 10,
@@ -492,6 +495,7 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginVertical: 10,
+    fontFamily: "nunito-regular"
   },
   footer: {
     flexDirection: "row",
@@ -511,7 +515,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   modal: {
@@ -524,14 +528,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     marginBottom: 20,
     textAlign: "center",
     color: "#333",
   },
   modalLabel: {
     fontSize: 16,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
     marginBottom: 5,
     color: "#333",
   },
@@ -543,6 +547,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 15,
     backgroundColor: "#fff",
+    fontFamily: "nunito-regular"
   },
   modalButtons: {
     flexDirection: "row",

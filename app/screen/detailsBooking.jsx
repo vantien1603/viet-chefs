@@ -209,7 +209,7 @@ const DetailsBooking = () => {
                 >
                   <Text>
                     <Text style={styles.itemContentLabel}>{t("customer")}: </Text>
-                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                    <Text style={{ fontFamily: "nunito-bold", fontSize: 16 }}>
                       {booking.customer?.fullName}
                     </Text>
                   </Text>
@@ -263,7 +263,7 @@ const DetailsBooking = () => {
                 </Text>
                 <Text
                   style={{
-                    fontWeight: "bold",
+                    fontFamily: "nunito-bold",
                     fontSize: 20,
                     textAlign: "right",
                   }}
@@ -309,7 +309,7 @@ const DetailsBooking = () => {
                                   {t("received")}:{" "}
                                 </Text>
                                 <Text
-                                  style={{ fontSize: 16, fontWeight: "bold" }}
+                                  style={{ fontSize: 16, fontFamily: "nunito-bold" }}
                                 >
                                   ${detail.totalChefFeePrice}
                                 </Text>
@@ -347,7 +347,7 @@ const DetailsBooking = () => {
                                 {t("received")}:{" "}
                               </Text>
                               <Text
-                                style={{ fontSize: 16, fontWeight: "bold" }}
+                                style={{ fontSize: 16, fontFamily: "nunito-bold" }}
                               >
                                 ${detail.totalChefFeePrice}
                               </Text>
@@ -396,12 +396,12 @@ const DetailsBooking = () => {
                                   }}
                                 />
                                 <View>
-                                  <Text style={{ fontSize: 15 }}>
+                                  <Text style={{ fontSize: 15, fontFamily: "nunito-regular" }}>
                                     {dish.dish.name}
                                   </Text>
                                   {!dish.notes && (
                                     <Text
-                                      style={{ fontSize: 13, color: "#333" }}
+                                      style={{ fontSize: 13, color: "#333", fontFamily: "nunito-regular" }}
                                     >
                                       {dish.notes}
                                     </Text>
@@ -447,7 +447,7 @@ const DetailsBooking = () => {
                   <Text
                     style={{
                       color: "white",
-                      fontWeight: "bold",
+                      fontFamily: "nunito-bold",
                       fontSize: 16,
                       textAlign: "center",
                     }}
@@ -473,7 +473,7 @@ const DetailsBooking = () => {
                   <Text
                     style={{
                       color: "white",
-                      fontWeight: "bold",
+                      fontFamily: "nunito-bold",
                       fontSize: 16,
                       textAlign: "center",
                     }}
@@ -505,7 +505,7 @@ const DetailsBooking = () => {
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text
-                    style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+                    style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}
                   >
                     {t("cancel")}
                   </Text>
@@ -538,10 +538,11 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   itemContentLabel: {
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
   itemContent: {
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
 });
 

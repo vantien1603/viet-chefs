@@ -167,6 +167,7 @@ const customStyles = StyleSheet.create({
   },
   messageText: {
     color: "black",
+    fontFamily: "nunito-regular"
   },
   inputContainer: {
     flexDirection: "row",
@@ -180,6 +181,7 @@ const customStyles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
     marginRight: 10,
+    fontFamily: "nunito-regular"
   },
   suggestionContainer: {
     flexDirection: "row",
@@ -198,6 +200,7 @@ const customStyles = StyleSheet.create({
   suggestionText: {
     color: "#333",
     fontSize: 14,
+    fontFamily: "nunito-regular"
   },
   messageHeader: {
     flexDirection: "row",
@@ -206,7 +209,7 @@ const customStyles = StyleSheet.create({
   },
   messageRole: {
     fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginLeft: 5,
   },
@@ -222,7 +225,7 @@ const customStyles = StyleSheet.create({
   contactAdminText: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
   },
 });
 

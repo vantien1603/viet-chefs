@@ -9,6 +9,7 @@ import { Shadow } from 'react-native-shadow-2';
 import useAxios from '../../config/AXIOS_API';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
+import { t } from 'i18next';
 
 const Home = () => {
     const { user } = useContext(AuthContext);
@@ -39,7 +40,7 @@ const Home = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", t("modal.failed"));
+            showModal(t("modal.error"), t("fetchDataFailed"), t("modal.failed"));
         } finally {
             setLoading(false);
         }
@@ -61,7 +62,7 @@ const Home = () => {
             if (axios.isCancel(error)) {
                 return;
             }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình tải dữ liệu", t("modal.failed"));
+            showModal(t("modal.error"), t("fetchDataFailed"), t("modal.failed"));
         } finally {
             setLoading(false);
         }
@@ -84,7 +85,7 @@ const Home = () => {
                         />
 
                         <View style={styles.greetingContainer}>
-                            <Text style={styles.greetingText}>Welcome back,</Text>
+                            <Text style={styles.greetingText}>{t("welcomeBack")},</Text>
                             <Text style={styles.userName}>{user?.fullName || 'Chef'} </Text>
                         </View>
                     </TouchableOpacity>
@@ -104,7 +105,7 @@ const Home = () => {
                             ) : (
                                 <Text style={styles.orderNumber}>{schedules || 0} </Text>
                             )}
-                            <Text style={styles.orderLabel}>RUNNING ORDERS</Text>
+                            <Text style={styles.orderLabel}>{t("runningOrders")}</Text>
                         </LinearGradient>
                     </Shadow>
                     <Shadow distance={5} startColor={'#00000010'} offset={[0, 2]}>
@@ -117,19 +118,19 @@ const Home = () => {
                             ) : (
                                 <Text style={styles.orderNumber}>{pendings || 0}</Text>
                             )}
-                            <Text style={styles.orderLabel}>ORDER REQUEST</Text>
+                            <Text style={styles.orderLabel}>{t("orderRequest")}</Text>
                         </LinearGradient>
                     </Shadow>
                 </View>
 
                 <View style={styles.buttonGrid}>
                     {[
-                        { label: 'Statistical', path: '/screen/dashboard' },
-                        { label: 'Schedules', path: '/screen/chefSchedule' },
-                        { label: 'Dishes', path: '/screen/chefDishes' },
-                        { label: 'Menu', path: '/screen/menu' },
-                        { label: 'Packages', path: '/screen/packages' },
-                        { label: 'Review', path: '/screen/reviewsChef' },
+                        { label: t('statistical'), path: '/screen/dashboard' },
+                        { label: t('schedules'), path: '/screen/chefSchedule' },
+                        { label: t('dishes'), path: '/screen/chefDishes' },
+                        { label: t('menu'), path: '/screen/menu' },
+                        { label: t('packages'), path: '/screen/packages' },
+                        { label: t('review'), path: '/screen/reviewsChef' },
                     ].map((item, index) => (
                         <TouchableOpacity
                             key={index}
@@ -181,12 +182,12 @@ const styles = StyleSheet.create({
     greetingText: {
         fontSize: 16,
         color: '#666',
-        fontWeight: '400',
+        fontFamily: "nunito-regular",
     },
     userName: {
         fontSize: 26,
         color: '#333',
-        fontWeight: '700',
+        fontFamily: "nunito-bold",
     },
     orderContainer: {
         flexDirection: 'row',
@@ -204,14 +205,14 @@ const styles = StyleSheet.create({
     },
     orderNumber: {
         fontSize: 28,
-        fontWeight: 'bold',
+        fontFamily: "nunito-bold",
         color: '#FFF',
     },
     orderLabel: {
         fontSize: 12,
         color: '#FFF',
         marginTop: 5,
-        fontWeight: '500',
+        fontFamily: "nunito-bold",
         letterSpacing: 1,
     },
     buttonGrid: {
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontSize: 18,
-        fontWeight: '600',
+        fontFamily: "nunito-bold",
         color: '#FF5733',
     },
 });

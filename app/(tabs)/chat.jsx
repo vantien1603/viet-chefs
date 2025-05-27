@@ -256,17 +256,19 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginBottom: 5,
   },
   message: {
     fontSize: 16,
     color: "#000",
+    fontFamily: "nunito-regular"
   },
   time: {
     fontSize: 14,
     color: "#7F7F7F",
     marginRight: 10,
+    fontFamily: "nunito-regular"
   },
   addButton: {
     position: "absolute",

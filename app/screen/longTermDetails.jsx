@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   cycleTitle: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#1E293B",
     textAlign: "center",
     marginBottom: 16,
@@ -423,12 +423,12 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   dateRange: {
     fontSize: 14,
     color: "#64748B",
-    fontWeight: "400",
+    fontFamily: "nunito-regular",
   },
   cycleInfo: {
     marginBottom: 20,
@@ -436,10 +436,10 @@ const styles = StyleSheet.create({
   cycleInfoText: {
     fontSize: 16,
     color: "#334155",
-    fontWeight: "500",
+    fontFamily: "nunito-regular",
   },
   amount: {
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#A64B2A",
   },
   bookingDetailsContainer: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#1E293B",
     marginBottom: 12,
   },
@@ -470,15 +470,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     marginBottom: 8,
-    fontWeight: "400",
+    fontFamily: "nunito-regular",
   },
   detailStatus: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   detailTotal: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: "nunito-bold",
     color: "#1E293B",
     marginTop: 8,
   },
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   paymentButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     marginLeft: 6,
   },
   noDataContainer: {
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     color: "#A64B2A",
     textAlign: "center",
     marginTop: 8,
-    fontWeight: "500",
+    fontFamily: "nunito-regular",
   },
   loadingContainer: {
     flex: 1,
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A64B2A",
     marginTop: 8,
-    fontWeight: "500",
+    fontFamily: "nunito-regular",
   },
   modalStyle: {
     backgroundColor: "#FFF",
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 10,
     marginTop: 10,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     textAlign: "center",
     borderWidth: 0,

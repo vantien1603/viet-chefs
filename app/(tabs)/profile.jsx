@@ -13,13 +13,12 @@ import { useRouter } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import { t } from "i18next";
 
-
 const Profile = () => {
   const router = useRouter();
   const { user, isGuest } = useContext(AuthContext);
   const handleSetting = (id) => {
     if (isGuest) {
-      if (id === "viewProfile") router.replace("/")
+      if (id === "viewProfile") router.replace("/");
       if (id === "1") router.push("/screen/setting");
       return;
     }
@@ -51,32 +50,36 @@ const Profile = () => {
     }
   };
 
-  const menuItems = isGuest ? [
-    { id: "1", icon: "settings", title: "Setting" },
-  ] : [
-    { id: "1", icon: "wallet", title: "VietPay" },
-    { id: "2", icon: "briefcase", title: "Create chef account" },
-    { id: "3", icon: "heart", title: "Favorite chef" },
-    { id: "4", icon: "lock-closed", title: "Change password" },
-    { id: "5", icon: "star", title: "allReview" },
-    { id: "6", icon: "help-circle", title: "helpCentre" },
-    { id: "7", icon: "settings", title: "Setting" },
-  ];;
+  const menuItems = isGuest
+    ? [{ id: "1", icon: "settings", title: t("setting") }]
+    : [
+        { id: "1", icon: "wallet", title: t("wallet") },
+        { id: "2", icon: "briefcase", title: t("createChef") },
+        { id: "3", icon: "heart", title: t("favoriteChef") },
+        { id: "4", icon: "lock-closed", title: t("changePassword") },
+        { id: "5", icon: "star", title: t("allReview") },
+        { id: "6", icon: "help-circle", title: t("helpCentre") },
+        { id: "7", icon: "settings", title: t("setting") },
+      ];
   return (
-    <ScrollView style={[commonStyles.container,]}>
+    <ScrollView style={[commonStyles.container]}>
       <View style={styles.card}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
             source={{
-              uri: user?.avatarUrl ||
+              uri:
+                user?.avatarUrl ||
                 "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
             }}
             style={styles.avatar}
           />
           <View style={{ marginLeft: 12, flex: 1 }}>
-            <Text style={styles.userName}>{user?.fullName || "Guest"}</Text>
+            <Text style={styles.userName}>{user?.fullName || t("guest")}</Text>
             <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
-              <Text style={styles.viewProfile}> {isGuest ? 'Login/Sign up' : 'Xem hồ sơ'}</Text>
+              <Text style={styles.viewProfile}>
+                {" "}
+                {isGuest ? t("loginSignup") : t("viewProfile")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -124,12 +127,12 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   viewProfile: {
     color: "#A9411D",
     marginTop: 4,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   menuCard: {
     backgroundColor: "#F9F5F0",
@@ -154,6 +157,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
 });
 

@@ -375,7 +375,7 @@ const AddNewFoodScreen = () => {
         {loading ? (
           <ActivityIndicator size={"small"} color={"white"} />
         ) : (
-          <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+          <Text style={{ color: "white", fontSize: 16, fontFamily: "nunito-bold" }}>
             {t("save")}
           </Text>
         )}
@@ -394,10 +394,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
     color: "#333",
     marginBottom: 6,
     marginTop: 12,
+    fontFamily: "nunito-bold",
   },
   dropdown: {
     backgroundColor: "#f5f5f5",
@@ -419,6 +419,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     flex: 1,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
   inputError: {
     borderColor: "red",
@@ -435,12 +436,14 @@ const styles = StyleSheet.create({
     minHeight: 120,
     textAlignVertical: "top",
     marginBottom: 10,
+    fontFamily: "nunito-regular",
   },
   errorText: {
     color: "red",
     fontSize: 13,
     marginTop: -8,
     marginBottom: 10,
+    fontFamily: "nunito-regular",
   },
   uploadContainer: {
     alignItems: "center",
@@ -466,21 +469,24 @@ const styles = StyleSheet.create({
   uploadText: {
     color: "#A18CD1",
     marginTop: 6,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   dropdownMenu: {
     marginBottom: 10,
   },
   itemTextStyle: {
     fontSize: 15,
+    fontFamily: "nunito-regular",
   },
   selectedTextStyle: {
     fontSize: 15,
     color: "#333",
+    fontFamily: "nunito-regular",
   },
   placeholderStyle: {
     fontSize: 15,
     color: "#999",
+    fontFamily: "nunito-regular",
   },
 });
 

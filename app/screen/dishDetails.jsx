@@ -474,7 +474,7 @@ const DishDetails = () => {
                         alignItems: "center",
                       }}
                     >
-                      <Text style={{ color: "black" }}>{item.label}</Text>
+                      <Text style={{ color: "black", fontFamily: "nunito-regular" }}>{item.label}</Text>
                     </View>
                   );
                 }}
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   },
   dishName: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   description: {
@@ -702,6 +702,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
     lineHeight: 24,
+    fontFamily: "nunito-regular"
   },
   detailsContainer: {
     paddingHorizontal: 16,
@@ -716,13 +717,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#555",
     marginLeft: 8,
+    fontFamily: "nunito-regular"
   },
   chefContainer: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
     marginBottom: 12,
   },
@@ -749,13 +751,14 @@ const styles = StyleSheet.create({
   },
   chefName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     color: "#333",
   },
   chefBio: {
     fontSize: 14,
     color: "#666",
     marginTop: 4,
+    fontFamily: "nunito-regular"
   },
   footer: {
     position: "absolute",
@@ -780,7 +783,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 18,
   },
   buttonRow: {
@@ -808,7 +811,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontWeight: "bold",
+    fontFamily: "nunito-bold",
     fontSize: 16,
   },
   inputEditing: {
@@ -821,6 +824,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     marginBottom: 10,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   input: {
     backgroundColor: "#f5f5f5",
@@ -832,6 +836,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     flex: 1,
     color: "#333",
+    fontFamily: "nunito-regular"
   },
   dropdown: {
     backgroundColor: "#f5f5f5",
@@ -862,6 +867,7 @@ const styles = StyleSheet.create({
     minHeight: 120,
     textAlignVertical: "top",
     marginBottom: 10,
+    fontFamily: "nunito-regular"
   },
 });
 export default DishDetails;

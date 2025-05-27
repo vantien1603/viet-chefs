@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   },
   packageName: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#1e293b",
     flex: 1,
   },
@@ -489,16 +489,17 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontFamily: "nunito-bold",
   },
   detailText: {
     fontSize: 13,
     color: "#64748b",
     marginBottom: 4,
+    fontFamily: "nunito-regular"
   },
   price: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#1e293b",
     marginTop: 4,
   },
@@ -527,7 +528,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
     color: "#ffffff",
   },
   primaryButton: {
@@ -547,15 +548,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#64748b",
     marginTop: 12,
+    fontFamily: "nunito-regular"
   },
   expiredText: {
     color: "#991b1b",
-    fontWeight: "600",
+    fontFamily: "nunito-bold",
   },
   timerText: {
     fontSize: 12,
     color: "#64748b",
     textAlign: "left",
+    fontFamily: "nunito-regular"
   },
 });
 

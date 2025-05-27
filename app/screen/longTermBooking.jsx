@@ -142,7 +142,7 @@ const LongTermBookingScreen = () => {
           <ScrollView style={{ padding: 20, backgroundColor: "#EBE5DD" }}>
             <View style={{ marginVertical: 10 }}>
               <Text
-                style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}
+                style={{ fontSize: 20, fontFamily: "nunito-bold", marginBottom: 10 }}
               >
                 {t("selectServicePackage")}
               </Text>
@@ -166,6 +166,7 @@ const LongTermBookingScreen = () => {
                         color:
                           selectedPackage?.id === pkg.id ? "white" : "black",
                         fontSize: 16,
+                        fontFamily: "nunito-regular",
                       }}
                     >
                       {pkg.name} - {pkg.durationDays} {t("days")}
@@ -173,7 +174,7 @@ const LongTermBookingScreen = () => {
                   </TouchableOpacity>
                 ))
               ) : (
-                <Text style={{ fontSize: 16, color: "#777" }}>
+                <Text style={{ fontSize: 16, color: "#777", fontFamily: "nunito-regular" }}>
                   {t("noPackageForChef")}
                 </Text>
               )}
@@ -187,12 +188,12 @@ const LongTermBookingScreen = () => {
                   alignItems: "center",
                 }}
               >
-                <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                <Text style={{ fontSize: 20, fontFamily: "nunito-bold" }}>
                   {" "}
                   {t("numberOfPeople")}:{" "}
                 </Text>
                 {selectedPackage && (
-                  <Text style={{ fontSize: 14, color: "#666" }}>
+                  <Text style={{ fontSize: 14, color: "#666", fontFamily: "nunito-regular" }}>
                     {t("maximum")}: {selectedPackage.maxGuestCountPerMeal}{" "}
                     {t("people")}
                   </Text>
@@ -221,7 +222,7 @@ const LongTermBookingScreen = () => {
                   disabled={numPeople <= 1}
                 >
                   <Text
-                    style={{ fontSize: 20, fontWeight: "bold", color: "white" }}
+                    style={{ fontSize: 20, fontFamily: "nunito-bold", color: "white" }}
                   >
                     −
                   </Text>
@@ -229,7 +230,7 @@ const LongTermBookingScreen = () => {
                 <Text
                   style={{
                     fontSize: 18,
-                    fontWeight: "bold",
+                    fontFamily: "nunito-bold",
                     marginHorizontal: 20,
                     width: 40,
                     textAlign: "center",
@@ -256,7 +257,7 @@ const LongTermBookingScreen = () => {
                   }
                 >
                   <Text
-                    style={{ fontSize: 20, fontWeight: "bold", color: "white" }}
+                    style={{ fontSize: 20, fontFamily: "nunito-bold", color: "white" }}
                   >
                     +
                   </Text>
@@ -268,7 +269,7 @@ const LongTermBookingScreen = () => {
               <Text
                 style={{
                   fontSize: 20,
-                  fontWeight: "bold",
+                  fontFamily: "nunito-bold",
                   marginTop: 15,
                   marginBottom: 10,
                 }}
@@ -292,6 +293,7 @@ const LongTermBookingScreen = () => {
                       color: address.address ? "#333" : "#777",
                       flexShrink: 1,
                       flexWrap: "wrap",
+                      fontFamily: "nunito-regular"
                     }}
                   >
                     {address.address || t("selectAddress")}
@@ -317,7 +319,7 @@ const LongTermBookingScreen = () => {
                 style={{
                   color: "white",
                   textAlign: "center",
-                  fontWeight: "bold",
+                  fontFamily: "nunito-bold",
                   fontSize: 18,
                 }}
               >
