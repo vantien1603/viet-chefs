@@ -89,7 +89,7 @@ const ChooseAddressScreen = () => {
         key: process.env.API_GEO_KEY,
         language: "vi",
         location: `${chefLat},${chefLong}`,
-        radius: 10000,
+        radius: 30000,
         strictbounds: true,
       };
 
@@ -101,6 +101,7 @@ const ChooseAddressScreen = () => {
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
         { params }
       );
+      console.log(response.data);
 
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
@@ -213,7 +214,7 @@ const ChooseAddressScreen = () => {
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.createAddressFailed"), "Failed");
+      showModal(t("modal.error"), error.response.data.message || t("errors.createAddressFailed"), "Failed");
     }
   };
 

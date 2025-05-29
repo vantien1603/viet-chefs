@@ -6,6 +6,7 @@ import useAxios from '../../config/AXIOS_API';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from "../../components/header";
 import { commonStyles } from '../../style';
+import { t } from "i18next";
 
 const DashboardScreen = () => {
   const [stats, setStats] = useState(null);
@@ -37,33 +38,33 @@ const DashboardScreen = () => {
   }
 
   const barData = [
-    { value: stats?.todayEarnings, label: 'Hôm nay', frontColor: '#10b981' },
-    { value: stats?.weeklyEarnings, label: 'Tuần', frontColor: '#3b82f6' },
-    { value: stats?.monthlyEarnings, label: 'Tháng', frontColor: '#8b5cf6' },
-    { value: stats?.totalEarnings, label: 'Tổng', frontColor: '#f43f5e' },
+    { value: stats?.todayEarnings, label: t('today'), frontColor: '#10b981' },
+    { value: stats?.weeklyEarnings, label: t('week'), frontColor: '#3b82f6' },
+    { value: stats?.monthlyEarnings, label: t('month'), frontColor: '#8b5cf6' },
+    { value: stats?.totalEarnings, label: t('total'), frontColor: '#f43f5e' },
   ];
 
   const pieData = [
-    { value: stats?.completedBookings, color: '#10b981', text: 'Hoàn tất' },
-    { value: stats?.canceledBookings, color: '#ef4444', text: 'Hủy' },
-    { value: stats?.pendingBookings, color: '#f59e0b', text: 'Đang chờ' },
-    { value: stats?.upcomingBookings, color: '#3b82f6', text: 'Sắp tới' },
+    { value: stats?.completedBookings, color: '#10b981', text: t('done') },
+    { value: stats?.canceledBookings, color: '#ef4444', text: t('cancelButton') },
+    { value: stats?.pendingBookings, color: '#f59e0b', text: t('Upcoming') },
+    { value: stats?.upcomingBookings, color: '#3b82f6', text: t('saptoi') },
   ].filter(item => item.value > 0);
 
   const statCards = [
-    { label: 'Tổng đơn', value: stats?.totalBookings },
-    { label: 'Đánh giá TB', value: stats?.averageRating, },
-    { label: 'Số đánh giá', value: stats?.totalReviews },
-    { label: 'Điểm uy tín', value: stats?.reputationPoints },
-    { label: 'Khách hàng', value: stats?.totalCustomers },
-    { label: 'Giá trị TB đơn', value: `$${stats?.averageOrderValue.toFixed(2)}` },
-    { label: 'Tỉ lệ hoàn thành', value: `${stats?.completionRate.toFixed(2)}%` },
-    { label: 'Giờ hoạt động', value: `${stats?.activeHours}h` },
+    { label: t('totalOrder'), value: stats?.totalBookings },
+    { label: t('averageRating'), value: stats?.averageRating, },
+    { label: t('totalReviews'), value: stats?.totalReviews },
+    { label: t('reputationPoint'), value: stats?.reputationPoints },
+    { label: t('customer'), value: stats?.totalCustomers },
+    { label: t('averageOrderValue'), value: `$${stats?.averageOrderValue.toFixed(2)}` },
+    { label: t('completionRate'), value: `${stats?.completionRate.toFixed(2)}%` },
+    { label: t('activeHours'), value: `${stats?.activeHours}h` },
   ];
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={"Statistics"} />
+      <Header title={t('statistic')} />
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
@@ -86,7 +87,7 @@ const DashboardScreen = () => {
           </View>
 
           <View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>Tình Trạng Đơn Hàng</Text>
+            <Text style={styles.chartTitle}>{t('orderStatus')}</Text>
             <LinearGradient
               colors={['#ffffff', '#f0f9ff']}
               style={styles.chartCard}
@@ -96,25 +97,35 @@ const DashboardScreen = () => {
                 donut
                 radius={100}
                 innerRadius={60}
-                showText
+                // showText
                 textColor="#ffffff"
                 textSize={16}
                 fontWeight="bold"
                 centerLabelComponent={() => (
                   <Text style={styles.pieCenterText}>
-                    {stats.totalBookings} đơn
+                    {stats.totalBookings} {t('orderDon')}
                   </Text>
                 )}
               />
+              <View style={styles.legendContainer}>
+                {pieData.map((item, index) => (
+                  <View key={index} style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                    <Text style={styles.legendText}>{item.text}</Text>
+                  </View>
+                ))}
+              </View>
             </LinearGradient>
+
           </View>
-<View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>Thu Nhập</Text>
+          <View style={styles.chartContainer}>
+            <Text style={styles.chartTitle}>{t('income')}</Text>
             <LinearGradient
               colors={['#ffffff', '#f0f9ff']}
               style={styles.chartCard}
             >
               <BarChart
+                showValuesAsTopLabel={true}
                 barWidth={40}
                 barBorderRadius={8}
                 data={barData}
@@ -142,6 +153,29 @@ const DashboardScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  legendContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 8,
+    marginBottom: 8,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 14,
+    color: '#333',
+  },
   container: {
     padding: 16,
     paddingBottom: 48,

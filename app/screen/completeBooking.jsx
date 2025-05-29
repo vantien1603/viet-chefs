@@ -95,9 +95,9 @@ const ScheduleCompleted = () => {
     const PAGE_SIZE = 20;
 
     const routes = [
-    { key: 'completed', title: t('completed') },
-    { key: 'cancelled', title: t('cancelled') },
-  ];
+        { key: 'completed', title: t('completed') },
+        { key: 'cancelled', title: t('cancelled') },
+    ];
 
     const fetchBookingDetails = async (pageNum, status, isRefresh = false) => {
         if (loading && !isRefresh) return;
@@ -125,6 +125,7 @@ const ScheduleCompleted = () => {
                     ...prev,
                     [status]: isRefresh ? data : [...prev[status], ...data]
                 }));
+                console.log("xong")
             }
         } catch (error) {
             if (error.response?.status === 401) return;
@@ -132,7 +133,7 @@ const ScheduleCompleted = () => {
             showModal(t("modal.error"), t('errors.fetchBookingsFailed'), "Failed");
         } finally {
             setLoading(false);
-            setRefresh(false);
+            if (isRefresh) setRefresh(false);
         }
     };
 

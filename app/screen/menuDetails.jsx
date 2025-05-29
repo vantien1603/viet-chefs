@@ -23,6 +23,8 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useConfirmModal } from "../../context/commonConfirm";
+import { t } from "i18next";
 
 
 
@@ -45,6 +47,7 @@ const MenuDetails = () => {
     const { user } = useContext(AuthContext);
     const [selectedDishes, setSelectedDishes] = useState([]);
     const { showModal } = useCommonNoification();
+    const { showConfirm } = useConfirmModal();
     const router = useRouter();
     const [image, setImage] = useState(null);
     useEffect(() => {
@@ -105,7 +108,6 @@ const MenuDetails = () => {
             formData.append('hasDiscount', editedMenu.hasDiscount);
             formData.append('discountPercentage', editedMenu.discountPercentage || 0);
             formData.append('totalCookTime', (editedMenu.totalCookTime || 0) / 60);
-
             selectedDishPayload.forEach((item, index) => {
                 formData.append(`menuItems[${index}].dishId`, item.dishId);
             });
@@ -122,6 +124,7 @@ const MenuDetails = () => {
                     type: mimeType,
                 });
             }
+            console.log("asd")
 
             // console.log("payload", payload);
             const response = await axiosInstanceForm.put(`/menus/${id}`, formData);
@@ -166,24 +169,28 @@ const MenuDetails = () => {
     };
 
     const handleDelete = async () => {
-        setLoadingAction(true);
-        try {
-            const response = await axiosInstance.delete(`/menus/${id}`);
-            if (response.status === 204) {
-                showModal(t("modal.success"), "Delete menu successfully",);
-                router.replace("screen/menu")
+
+        showConfirm(t('deleteConfirmTitle'), t('deleteConfirmMessageMenu'), async () => {
+            setLoadingAction(true);
+            try {
+                const response = await axiosInstance.delete(`/menus/${id}`);
+                if (response.status === 204) {
+                    showModal(t("modal.success"), "Delete menu successfully",);
+                    router.replace("screen/menu")
+                }
+            } catch (error) {
+                if (error.response?.status === 401) {
+                    return;
+                }
+                if (axios.isCancel(error)) {
+                    return;
+                }
+                showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xóa menu.", "Failed");
+            } finally {
+                setLoadingAction(false);
             }
-        } catch (error) {
-            if (error.response?.status === 401) {
-                return;
-            }
-            if (axios.isCancel(error)) {
-                return;
-            }
-            showModal(t("modal.error"), "Có lỗi xảy ra trong quá trình xóa menu.", "Failed");
-        } finally {
-            setLoadingAction(false);
-        }
+        })
+
     }
 
 
@@ -264,7 +271,7 @@ const MenuDetails = () => {
                             {/* {renderPriceSection()} */}
                             {!isEditing ? (
                                 <Text >
-                                    <Text style={styles.itemContentLabel}>Price: </Text>
+                                    <Text style={styles.itemContentLabel}>{t('priceMenu')}: </Text>
                                     {menu.hasDiscount ? (
                                         <>
                                             <Text style={styles.strikeThrough}>${menu.beforePrice}</Text>
@@ -306,7 +313,7 @@ const MenuDetails = () => {
                             onPress={() => isEditing && modalizeRef.current?.open()}
                             style={{ marginTop: 15 }}
                         >
-                            <Text style={styles.itemContentLabel}>Dishes: {isEditing && '(tap to edit)'}</Text>
+                            <Text style={styles.itemContentLabel}>{t('dishes')}: {isEditing && '(' + t('tapToEdit') + ')'}</Text>
                             <Text style={[styles.itemContent, {}]}>
                                 {/* {editedMenu.menuItems?.map(dish => dish.dishName).join(", ")} */}
                                 {dishes
@@ -316,7 +323,7 @@ const MenuDetails = () => {
                             </Text>
                         </TouchableOpacity>
 
-                        {/* {isEditing && (
+                        {isEditing && (
                             <TextInput
                                 placeholder="Total cook time (minutes)"
                                 keyboardType="numeric"
@@ -326,11 +333,11 @@ const MenuDetails = () => {
                                 }
                                 style={commonStyles.input}
                             />
-                        )} */}
+                        )}
                         <View>
 
                         </View>
-                        <Text style={styles.itemContentLabel}>Total cook time:</Text>
+                        {/* <Text style={styles.itemContentLabel}>Total cook time :</Text>
                         {isEditing ? (
                             <TextInput
                                 value={editedMenu.description}
@@ -343,10 +350,10 @@ const MenuDetails = () => {
                             />
                         ) : (
                             <Text style={styles.itemContent}>{menu.description}</Text>
-                        )}
+                        )} */}
 
                         <View>
-                            <Text style={styles.itemContentLabel}>Description:</Text>
+                            <Text style={styles.itemContentLabel}>{t('description')}:</Text>
                             {isEditing ? (
                                 <TextInput
                                     value={editedMenu.description}
@@ -370,7 +377,7 @@ const MenuDetails = () => {
                                     {loadingAction ? (
                                         <ActivityIndicator size="small" color="#fff" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Update</Text>
+                                        <Text style={styles.buttonText}>{t('update')}</Text>
                                     )}
                                 </TouchableOpacity>
 
@@ -378,7 +385,7 @@ const MenuDetails = () => {
                                     {loadingAction ? (
                                         <ActivityIndicator size="small" color="#fff" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Delete</Text>
+                                        <Text style={styles.buttonText}>{t('delete')}</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -402,7 +409,7 @@ const MenuDetails = () => {
                                     <ActivityIndicator size="small" color="white" />
                                 ) : (
                                     <Text style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}>
-                                        Save
+                                        {t('save')}
                                     </Text>
                                 )}
                             </TouchableOpacity>

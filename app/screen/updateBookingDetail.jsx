@@ -9,6 +9,7 @@ import {
   FlatList,
   ScrollView,
   TextInput,
+  Image,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import Header from "../../components/header";
@@ -18,6 +19,8 @@ import useAxios from "../../config/AXIOS_API";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import { t } from "i18next";
+import { useSelectedItems } from "../../context/itemContext";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const UpdateBookingDetailScreen = () => {
   const { bookingDetailId, chefId } = useLocalSearchParams();
@@ -31,6 +34,8 @@ const UpdateBookingDetailScreen = () => {
   const [selectedDishes, setSelectedDishes] = useState([]);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const [selectedMenuDetails, setSelectedMenuDetails] = useState(null);
+  const { ingredientPrep, setIngredientPrep } = useSelectedItems();
 
   // Fetch danh sách menu
   useEffect(() => {
@@ -61,11 +66,18 @@ const UpdateBookingDetailScreen = () => {
       const selectedMenuData = menus.find((menu) => menu.id === selectedMenu);
       if (selectedMenuData && selectedMenuData.menuItems) {
         setMenuDishes(selectedMenuData.menuItems || []);
+        setSelectedMenuDetails({
+          beforePrice: selectedMenuData.beforePrice,
+          afterPrice: selectedMenuData.afterPrice,
+          name: selectedMenuData.name,
+        });
       } else {
         setMenuDishes([]);
+        setSelectedMenuDetails(null);
       }
     } else {
       setMenuDishes([]);
+      setSelectedMenuDetails(null);
     }
   }, [selectedMenu, menus]);
 
@@ -77,6 +89,7 @@ const UpdateBookingDetailScreen = () => {
             `/dishes/not-in-menu?menuId=${selectedMenu}`
           );
           setExtraDishes(dishesResponse.data.content || []);
+          // console.log("extra", dishesResponse.data.content);
         } catch (error) {
           if (error.response?.status === 401) {
             return;
@@ -99,7 +112,9 @@ const UpdateBookingDetailScreen = () => {
     const fetchDishes = async () => {
       if (!selectedMenu) {
         try {
-          const dishesResponse = await axiosInstance.get(`/dishes`);
+          const dishesResponse = await axiosInstance.get(
+            `/dishes?chefId=${chefId}`
+          );
           setAllDishes(dishesResponse.data.content || []);
         } catch (error) {
           if (error.response?.status === 401) {
@@ -131,11 +146,17 @@ const UpdateBookingDetailScreen = () => {
 
   const toggleDish = (dishId) => {
     if (selectedDishes.some((dish) => dish.dishId === dishId)) {
+      // Xóa món ăn khỏi selectedDishes và selectedExtraDishIds
       setSelectedDishes(
         selectedDishes.filter((dish) => dish.dishId !== dishId)
       );
+      setSelectedExtraDishIds(
+        selectedExtraDishIds.filter((id) => id !== dishId)
+      );
     } else {
+      // Thêm món ăn vào selectedDishes và selectedExtraDishIds
       setSelectedDishes([...selectedDishes, { dishId, notes: "" }]);
+      setSelectedExtraDishIds([...selectedExtraDishIds, dishId]);
     }
   };
 
@@ -156,17 +177,20 @@ const UpdateBookingDetailScreen = () => {
         dishes: selectedDishes,
       };
 
-      // console.log("Calculate data:", JSON.stringify(calculateData, null, 2));
+      console.log("Calculate data:", JSON.stringify(calculateData, null, 2));
 
       const response = await axiosInstance.post(
         `/bookings/booking-details/${bookingDetailId}/calculate`,
         calculateData
       );
 
-      // showModal(t("modal.success")success"), "Calculation compt("modal.success")t("modal.success"));
+      // showModal(t('modal.success')success"), "Calculation compt('modal.success')t('modal.success'));
 
       const updateData = {
-        dishes: selectedDishes,
+        dishes: selectedDishes.map((dish) => ({
+          dishId: dish.dishId, // Chuẩn hóa cấu trúc
+          notes: dish.notes,
+        })),
         totalPrice: response.data.totalPrice || 0,
         chefCookingFee: response.data.chefCookingFee || 0,
         priceOfDishes: response.data.priceOfDishes || 0,
@@ -177,15 +201,18 @@ const UpdateBookingDetailScreen = () => {
         timeBeginCook: response.data.timeBeginCook,
         timeBeginTravel: response.data.timeBeginTravel,
         menuId: selectedMenu ? parseInt(selectedMenu) : null, // Cho phép menuId là null
+        extraDishIds: selectedExtraDishIds,
+        chefBringIngredients: ingredientPrep === "chef",
       };
 
       console.log("Update data:", JSON.stringify(updateData, null, 2));
 
       router.push({
-        pathname: "/screen/bookingDetails",
+        pathname: "/screen/confirmBookingDetail",
         params: { bookingDetailId, updateData: JSON.stringify(updateData) },
       });
     } catch (error) {
+      console.log("er", error.response?.data);
       if (error.response?.status === 401) {
         return;
       }
@@ -198,54 +225,118 @@ const UpdateBookingDetailScreen = () => {
     }
   };
 
-
   const renderMenuDishItem = ({ item }) => (
-    <View style={styles.dishItem}>
-      <Text style={styles.dishText}>
-        {item.dishName || `Dish ${item.dishId}`}
-      </Text>
+    <View style={styles.menuDishItem}>
+      <View style={styles.dishContainer}>
+        <Image
+          source={{ uri: item.dishImageUrl }}
+          style={styles.dishImage}
+          resizeMode="cover"
+        />
+        <Text style={styles.menuDishText}>
+          {item.dishName || `Dish ${item.dishId}`}
+        </Text>
+      </View>
     </View>
   );
 
   const renderExtraDishItem = ({ item }) => (
     <View style={styles.dishItem}>
-      <TouchableOpacity
-        style={styles.checkboxContainer}
-        onPress={() => toggleExtraDish(item.id)}
-      >
-        <View style={styles.checkbox}>
-          {selectedExtraDishIds.includes(item.id) && (
-            <Text style={styles.checkmark}>✔</Text>
+      <View style={styles.dishContainer}>
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.dishImage}
+          resizeMode="cover"
+        />
+        <View style={styles.dishDetails}>
+          <TouchableOpacity
+            style={styles.checkboxContainer}
+            onPress={() => toggleDish(item.id)}
+          >
+            <View style={styles.checkbox}>
+              {selectedDishes.some((dish) => dish.dishId === item.id) && (
+                <Text style={styles.checkmark}>✔</Text>
+              )}
+            </View>
+            <Text style={styles.dishText}>
+              {item.name || `Dish ${item.id}`}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Base Price and Cook Time */}
+          <View style={styles.dishInfo}>
+            <Text style={styles.dishInfoText}>
+              {t("basePrice")}: ${item.basePrice || "N/A"}
+            </Text>
+            <Text style={styles.dishInfoText}>
+              {t("cookTime")}: {item.cookTime || "N/A"} min
+            </Text>
+          </View>
+
+          {/* Notes Input */}
+          {selectedDishes.some((dish) => dish.dishId === item.id) && (
+            <TextInput
+              style={styles.input}
+              placeholder={t("note")}
+              value={
+                selectedDishes.find((dish) => dish.dishId === item.id)?.notes ||
+                ""
+              }
+              onChangeText={(text) => updateDishNotes(item.id, text)}
+            />
           )}
         </View>
-        <Text style={styles.dishText}>{item.name || `Dish ${item.id}`}</Text>
-      </TouchableOpacity>
+      </View>
     </View>
   );
 
   const renderDishItem = ({ item }) => (
     <View style={styles.dishItem}>
-      <TouchableOpacity
-        style={styles.checkboxContainer}
-        onPress={() => toggleDish(item.id)}
-      >
-        <View style={styles.checkbox}>
+      <View style={styles.dishContainer}>
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.dishImage}
+          resizeMode="cover"
+        />
+        <View style={styles.dishDetails}>
+          <TouchableOpacity
+            style={styles.checkboxContainer}
+            onPress={() => toggleDish(item.id)}
+          >
+            <View style={styles.checkbox}>
+              {selectedDishes.some((dish) => dish.dishId === item.id) && (
+                <Text style={styles.checkmark}>✔</Text>
+              )}
+            </View>
+            <Text style={styles.dishText}>
+              {item.name || `Dish ${item.id}`}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Base Price and Cook Time */}
+          <View style={styles.dishInfo}>
+            <Text style={styles.dishInfoText}>
+              {t("basePrice")}: ${item.basePrice || "N/A"}
+            </Text>
+            <Text style={styles.dishInfoText}>
+              {t("cookTime")}: {item.cookTime || "N/A"} min
+            </Text>
+          </View>
+
+          {/* Notes Input */}
           {selectedDishes.some((dish) => dish.dishId === item.id) && (
-            <Text style={styles.checkmark}>✔</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t("note")}
+              value={
+                selectedDishes.find((dish) => dish.dishId === item.id)?.notes ||
+                ""
+              }
+              onChangeText={(text) => updateDishNotes(item.id, text)}
+            />
           )}
         </View>
-        <Text style={styles.dishText}>{item.name || `Dish ${item.id}`}</Text>
-      </TouchableOpacity>
-      {selectedDishes.some((dish) => dish.dishId === item.id) && (
-        <TextInput
-          style={styles.input}
-          placeholder={t("note")}
-          value={
-            selectedDishes.find((dish) => dish.dishId === item.id)?.notes || ""
-          }
-          onChangeText={(text) => updateDishNotes(item.id, text)}
-        />
-      )}
+      </View>
     </View>
   );
 
@@ -274,19 +365,34 @@ const UpdateBookingDetailScreen = () => {
             onChange={(item) => {
               setSelectedMenu(item.value);
               if (item.value) {
-                setSelectedDishes([]); // Xóa danh sách dishes nếu chọn menu
+                setSelectedDishes([]);
+                setSelectedExtraDishIds([]);
               } else {
-                setSelectedExtraDishIds([]); // Xóa danh sách extra dishes nếu bỏ chọn menu
+                setSelectedExtraDishIds(
+                  selectedDishes.map((dish) => dish.dishId)
+                );
               }
             }}
-            disable={selectedDishes.length > 0} // Vô hiệu hóa nếu đã chọn dishes
+            disable={selectedDishes.length > 0}
           />
         </View>
 
         {/* Dishes của Menu (chỉ hiển thị khi chọn menu) */}
-        {selectedMenu && (
+        {selectedMenu && selectedMenuDetails && (
           <>
             <Text style={styles.sectionTitle}>{t("dishesInMenu")}</Text>
+            {/* Menu Prices */}
+            <View style={styles.priceContainer}>
+              {selectedMenuDetails.beforePrice && (
+                <Text style={styles.beforePrice}>
+                  ${selectedMenuDetails.beforePrice.toFixed(2)}
+                </Text>
+              )}
+              <Text style={styles.afterPrice}>
+                ${selectedMenuDetails.afterPrice?.toFixed(2) || "N/A"}
+              </Text>
+            </View>
+            {/* Menu Dishes */}
             {menuDishes.length > 0 ? (
               <FlatList
                 data={menuDishes}
@@ -317,7 +423,6 @@ const UpdateBookingDetailScreen = () => {
           </>
         )}
 
-        {/* Dishes (chỉ hiển thị khi không chọn menu) */}
         {!selectedMenu && (
           <>
             <Text style={styles.sectionTitle}>{t("selectDishes")}</Text>
@@ -333,6 +438,49 @@ const UpdateBookingDetailScreen = () => {
             )}
           </>
         )}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("ingredientPreparation")}</Text>
+          <View>
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 5,
+              }}
+              onPress={() => setIngredientPrep("customer")}
+            >
+              <MaterialIcons
+                name={
+                  ingredientPrep === "customer"
+                    ? "check-box"
+                    : "check-box-outline-blank"
+                }
+                size={24}
+                color={ingredientPrep === "customer" ? "#A64B2A" : "#333"}
+              />
+              <Text style={styles.checkboxText}>
+                {t("customerBringIngredients")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flexDirection: "row", alignItems: "center" }}
+              onPress={() => setIngredientPrep("chef")}
+            >
+              <MaterialIcons
+                name={
+                  ingredientPrep === "chef"
+                    ? "check-box"
+                    : "check-box-outline-blank"
+                }
+                size={24}
+                color={ingredientPrep === "chef" ? "#A64B2A" : "#333"}
+              />
+              <Text style={styles.checkboxText}>
+                {t("chefWillPrepareIngredients")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
 
       <TouchableOpacity
@@ -346,7 +494,6 @@ const UpdateBookingDetailScreen = () => {
           <Text style={styles.doneButtonText}>{t("done")}</Text>
         )}
       </TouchableOpacity>
-
     </SafeAreaView>
   );
 };
@@ -374,12 +521,12 @@ const styles = StyleSheet.create({
   placeholderStyle: {
     fontSize: 14,
     color: "#999",
-    fontFamily: "nunito-regular"
+    fontFamily: "nunito-regular",
   },
   selectedTextStyle: {
     fontSize: 14,
     color: "#333",
-    fontFamily: "nunito-regular"
+    fontFamily: "nunito-regular",
   },
   clearButton: {
     marginLeft: 10,
@@ -415,10 +562,34 @@ const styles = StyleSheet.create({
     color: "#A64B2A",
     fontSize: 14,
   },
+  dishContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  dishImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  dishDetails: {
+    flex: 1,
+  },
+  dishInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  dishInfoText: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: "nunito-regular",
+  },
   dishText: {
     fontSize: 14,
     color: "#333",
-    fontFamily: "nunito-regular"
+    fontFamily: "nunito-regular",
   },
   input: {
     borderWidth: 1,
@@ -427,7 +598,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     fontSize: 14,
-    fontFamily: "nunito-regular"
+    fontFamily: "nunito-regular",
   },
   doneButton: {
     backgroundColor: "#A64B2A",
@@ -447,7 +618,47 @@ const styles = StyleSheet.create({
     color: "#9C583F",
     textAlign: "center",
     marginVertical: 10,
-    fontFamily: "nunito-regular"
+    fontFamily: "nunito-regular",
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  beforePrice: {
+    fontSize: 16,
+    color: "#999",
+    fontFamily: "nunito-regular",
+    textDecorationLine: "line-through",
+    marginRight: 10,
+  },
+  afterPrice: {
+    fontSize: 16,
+    color: "#A64B2A",
+    fontFamily: "nunito-bold",
+  },
+  menuDishItem: {
+    marginBottom: 10,
+    backgroundColor: "#F9F9F9",
+    borderRadius: 8,
+    padding: 10,
+  },
+  menuDishText: {
+    fontSize: 14,
+    color: "#333",
+    fontFamily: "nunito-regular",
+    flex: 1,
+  },
+  section: {
+    borderTopColor: "#E5E5E5",
+    borderTopWidth: 1,
+    paddingVertical: 20,
+  },
+  checkboxText: {
+    fontSize: 16,
+    color: "#333",
+    marginLeft: 10,
+    fontFamily: "nunito-regular",
   },
 });
 

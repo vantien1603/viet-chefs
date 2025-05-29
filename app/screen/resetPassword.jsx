@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import Header from "../../components/header";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,14 +15,17 @@ import AXIOS_BASE from "../../config/AXIOS_BASE";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
 import { t } from "i18next";
+import useAxiosBase from "../../config/AXIOS_BASE";
 
 const ResetPasswordScreen = () => {
+  const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [code, setCode] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
   const { email } = useLocalSearchParams();
   const { showModal } = useCommonNoification();
+  const axiosInstanceBase = useAxiosBase();
   const handleInputChange = (value, index) => {
     if (/^\d?$/.test(value)) {
       const newCode = [...code];
@@ -67,17 +71,18 @@ const ResetPasswordScreen = () => {
       return;
     }
     console.log("Sending data:", { email, newPassword, token });
+    setLoading(true);
 
     try {
-      const response = await AXIOS_BASE.post("/reset-password", {
+      const response = await axiosInstanceBase.post("/reset-password", {
         email,
         newPassword,
         token,
       });
+
       if (response.status === 200) {
         showModal(t("modal.success"),
           t("resetPasswordSuccess"),
-          t("modal.succeeded")
         );
 
         router.push("/screen/login");
@@ -91,9 +96,12 @@ const ResetPasswordScreen = () => {
       }
       showModal(
         t("modal.error"),
-        t("errors.resetPasswordFailed"),
+        // t("errors.resetPasswordFailed"),
+        error.response.data.message,
         "Failed"
       );
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -140,8 +148,10 @@ const ResetPasswordScreen = () => {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleReset}>
-          <Text style={styles.buttonText}>{t("resetPassword")}</Text>
+        <TouchableOpacity disabled={loading} style={styles.button} onPress={handleReset}>
+          {loading ? (<ActivityIndicator size={'small'} />) : (
+            <Text style={styles.buttonText}>{t("resetPassword")}</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

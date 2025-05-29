@@ -1,4 +1,3 @@
-import { styles } from "@gorhom/bottom-sheet/lib/typescript/components/bottomSheetScrollable/BottomSheetFlashList";
 import "dotenv/config";
 export default {
   expo: {

@@ -30,7 +30,7 @@ const useAxios = () => {
                 // console.log("token to fetch", user?.token);
 
                 if (user?.token) {
-                    config.headers.Authorization = `Bearer ${user.token}`;
+                    config.headers.Authorization = `Bearer ${user?.token}`;
                 }
 
                 return config;

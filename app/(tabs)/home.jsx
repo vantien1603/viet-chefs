@@ -373,8 +373,8 @@ export default function Home() {
           resizeMode="contain"
         />
       </View>
-      <Text style={styles.title}>{item.name}</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{t('basePrice')}: {item.basePrice}$</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.title}>{item.name}</Text>
+      <Text style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{t('basePrice')}: {item.basePrice}$</Text>
       <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#F8BF40", fontFamily: "nunito-regular" }}>{item.description}</Text>
       <Text style={{ color: '#F8BF40', fontSize: 12, fontFamily: "nunito-regular" }}> {t('distance')}: {item.chef.distance.toFixed(2)} km</Text>
 
@@ -621,7 +621,7 @@ export default function Home() {
         ) : (
           chef.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <Text style={{ fontSize: 16, color: '#333',fontFamily: "nunito-regular", }}> {t("serviceNotNear")}</Text>
+              <Text style={{ fontSize: 16, color: '#333', fontFamily: "nunito-regular", }}> {t("serviceNotNear")}</Text>
             </View>
           ) : (
             <ScrollView
@@ -629,7 +629,7 @@ export default function Home() {
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 30 }}
             >
-                {
+              {
                 chef.map((item, index) => (
                   <View
                     key={index}
@@ -722,7 +722,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     height: 60,
     borderRadius: 100,
-    padding: 20,
+    padding: 10,
+    paddingHorizontal: 20,
     fontSize: 16,
     paddingRight: 50,
     fontFamily: "nunito-regular",

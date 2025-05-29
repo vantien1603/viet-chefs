@@ -111,12 +111,13 @@ const PaymentBookingScreen = () => {
       pinInputRefs[0].current?.focus();
     } finally {
       setLoading(false);
+      setPinValues(["", "", "", ""]);
     }
   };
 
   const handleCompletePayment = async () => {
     if (balance < totalPrice) {
-     showModal(
+      showModal(
         t("modal.error"),
         t("errors.notEnoughBalance"),
         "Failed",
@@ -145,7 +146,7 @@ const PaymentBookingScreen = () => {
       console.log("Payment Response:", response.data);
       if (response.status === 200) {
         await fetchBalanceInWallet();
-        showModal(t("modal.success"), t("success.paymentSuccess"));
+        showModal(t("modal.success"), t("paymentSuccess"));
         setIsPaySuccess(true);
         // clearSelection();
       }
@@ -272,7 +273,7 @@ const PaymentBookingScreen = () => {
               {loading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={styles.buttonText}>{t(`completePayment`)}</Text>
+                <Text style={styles.buttonText}>{t(`payment`)}</Text>
               )}
             </TouchableOpacity>
           </View>

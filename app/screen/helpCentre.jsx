@@ -5,6 +5,7 @@ import { t } from "i18next";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AuthContext } from "../../config/AuthContext";
 import { router } from "expo-router";
+import { commonStyles } from "../../style";
 
 const HelpCentre = () => {
   const { user } = useContext(AuthContext);
@@ -29,45 +30,48 @@ const HelpCentre = () => {
     }
   };
   return (
-    <SafeAreaView style={{ backgroundColor: "#EBE5DD", flex: 1 }}>
+    <SafeAreaView style={commonStyles.container}>
       <Header title={t("helpCentre")} />
-      <View style={styles.container}>
-        <Text style={styles.text}>
-          {t("greeting", { name: user?.fullName || t("guest") })}
-        </Text>
-        <Text style={styles.text}>{t("serviceMessage")}</Text>
-        <View style={styles.imageWrapper}>
-          <Image
-            source={require("../../assets/images/help.png")}
-            style={styles.bgImage}
-          />
+      <View style={commonStyles.containerContent}>
+        <View style={styles.container}>
+          <Text style={styles.text}>
+            {t("greeting", { name: user?.fullName || t("guest") })}
+          </Text>
+          <Text style={styles.text}>{t("serviceMessage")}</Text>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require("../../assets/images/help.png")}
+              style={styles.bgImage}
+            />
+          </View>
         </View>
-      </View>
-      <TouchableOpacity
-        style={styles.contentContainer}
-        onPress={handleNavigation}
-      >
-        <View
-          style={{
-            backgroundColor: "#F5EBDD",
-            borderRadius: "50%",
-            padding: 7,
-          }}
+        <TouchableOpacity
+          style={styles.contentContainer}
+          onPress={handleNavigation}
         >
-          <Image
-            source={require("../../assets/images/help-centre.png")}
-            style={styles.image}
-          />
-        </View>
-        <View style={styles.content}>
-          <Text style={{ color: "#4E342E", fontSize: 16, fontFamily: "nunito-bold" }}>
-            {t("chatSupport")}
-          </Text>
-          <Text style={{ color: "#3E3E3E", fontSize: 14, fontFamily: "nunito-regular" }}>
-            {t("supportDescription")}
-          </Text>
-        </View>
-      </TouchableOpacity>
+          <View
+            style={{
+              backgroundColor: "#F5EBDD",
+              borderRadius: "50%",
+              padding: 7,
+            }}
+          >
+            <Image
+              source={require("../../assets/images/help-centre.png")}
+              style={styles.image}
+            />
+          </View>
+          <View style={styles.content}>
+            <Text style={{ color: "#4E342E", fontSize: 16, fontFamily: "nunito-bold" }}>
+              {t("chatSupport")}
+            </Text>
+            <Text style={{ color: "#3E3E3E", fontSize: 14, fontFamily: "nunito-regular" }}>
+              {t("supportDescription")}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
     </SafeAreaView>
   );
 };
@@ -75,6 +79,7 @@ const HelpCentre = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+    borderRadius: 16,
     backgroundColor: "#A9411D",
     height: 150,
     justifyContent: "center",

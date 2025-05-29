@@ -26,13 +26,13 @@ import axios from "axios";
 import { useConfirmModal } from "../../context/commonConfirm";
 
 const dayInWeek = [
-  { id: 0, label: "Mon", full: "Monday" },
-  { id: 1, label: "Tue", full: "Tuesday" },
-  { id: 2, label: "Wed", full: "Wednesday" },
-  { id: 3, label: "Thu", full: "Thursday" },
-  { id: 4, label: "Fri", full: "Friday" },
-  { id: 5, label: "Sat", full: "Saturday" },
-  { id: 6, label: "Sun", full: "Sunday" },
+  { id: 0, label: t("Mon"), full: t("Monday") },
+  { id: 1, label: t("Tue"), full: t("Tuesday") },
+  { id: 2, label: t("Wed"), full: t("Wednesday") },
+  { id: 3, label: t("Thu"), full: t("Thursday") },
+  { id: 4, label: t("Fri"), full: t("Friday") },
+  { id: 5, label: t("Sat"), full: t("Saturday") },
+  { id: 6, label: t("Sun"), full: t("Sunday") },
 ];
 
 export default function ChefScheduleScreen() {
@@ -137,7 +137,7 @@ export default function ChefScheduleScreen() {
       hour: "2-digit",
       minute: "2-digit",
       seconds: "2-digit",
-      hour12: true,
+      hour12: false,
     });
 
   const handleOpenPicker = (field) => {
@@ -330,7 +330,7 @@ export default function ChefScheduleScreen() {
       showModal(
         t("modal.error"),
         error.response?.data?.message ||
-          t("errors.fetchScheduleFailed"),
+        t("errors.fetchScheduleFailed"),
         "Failed"
       );
     } finally {
@@ -352,9 +352,9 @@ export default function ChefScheduleScreen() {
     return (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator style={{ alignSelf: 'center' }} size="large" color="#0000ff" />
         ) : slots.length === 0 ? (
-          <Text style={{ color: "#888" ,fontFamily: "nunito-regular"}}>{t("noSlotsAvailable")}</Text>
+          <Text style={{ color: "#888", fontFamily: "nunito-regular", alignSelf: 'center' }}>{t("noSlotsAvailable")}</Text>
         ) : (
           slots.map((slot, index) => (
             <TouchableOpacity
@@ -454,7 +454,7 @@ export default function ChefScheduleScreen() {
             onPress={() => route.push("/screen/scheduleBlocked")}
           >
             <MaterialIcons name="event-busy" size={30} color="red" />
-            <Text style={{fontFamily: "nunito-bold"}}>{t("busyDate")}</Text>
+            <Text style={{ fontFamily: "nunito-bold" }}>{t("busyDate")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -584,7 +584,7 @@ export default function ChefScheduleScreen() {
                       style={[
                         styles.dayButton,
                         selectedDays.includes(day.id) &&
-                          styles.dayButtonSelected,
+                        styles.dayButtonSelected,
                       ]}
                     >
                       <Text
@@ -709,13 +709,13 @@ export default function ChefScheduleScreen() {
                 <DateTimePicker
                   value={
                     slots[pickerState.dayId][pickerState.index][
-                      pickerState.mode === "start" ? "startTime" : "endTime"
+                    pickerState.mode === "start" ? "startTime" : "endTime"
                     ]
                   }
                   mode="time"
                   display="spinner"
                   onChange={onTimeChangeAdd}
-                  is24Hour={false}
+                  is24Hour={true}
                 />
               )}
             </ScrollView>

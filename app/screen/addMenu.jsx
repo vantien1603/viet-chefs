@@ -44,10 +44,13 @@ const AddMenu = () => {
   const router = useRouter();
   const [fieldErrors, setFieldErrors] = useState({});
   const [errors, setErrors] = useState({});
+  const [modalKey, setModalKey] = useState(0);
 
   useEffect(() => {
     fetchDishes();
   }, []);
+
+  console.log(dishes.length);
 
   const fetchDishes = async () => {
     setLoading(true);
@@ -102,7 +105,7 @@ const AddMenu = () => {
 
     if (!image) errors.image = t("errors.image");
     if (!name.trim()) errors.name = t("errors.name");
-    if (!description.trim()) errors.description = t("errors.description");
+    // if (!description.trim()) errors.description = t("errors.description");
     if (seletedDishes.length <= 0) errors.dishes = t("errors.dishes");
 
     if (hasDiscount) {
@@ -116,12 +119,13 @@ const AddMenu = () => {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       showModal(t("modal.error"), t("errors.failedToAdd"), "Failed");
+      console.log("err");
       return;
     }
+    console.log("easd")
 
     setLoading(true);
     const selectedDishPayload = seletedDishes.map((dishId) => ({ dishId }));
-
     const formData = new FormData();
     formData.append("chefId", user.chefId);
     formData.append("name", name);
@@ -140,7 +144,6 @@ const AddMenu = () => {
 
     try {
       const response = await axiosInstanceForm.post("/menus", formData);
-      console.log(formData);
       console.log("res", response.data);
       if (response.status === 200 || response.status === 201) {
         console.log("1111");
@@ -150,6 +153,7 @@ const AddMenu = () => {
         }, 1000);
       }
     } catch (error) {
+
       if (error.response?.status === 401) {
         return;
       }
@@ -165,7 +169,7 @@ const AddMenu = () => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={commonStyles.container}>
-        <Header title={t("createNewMenu")} showBackButton />
+        <Header title={t("createNewMenu")} />
         <ScrollView contentContainerStyle={styles.container}>
           <TouchableOpacity
             style={[
@@ -250,7 +254,12 @@ const AddMenu = () => {
           />
           <View style={{ marginBottom: 16 }}>
             <TouchableOpacity
-              onPress={() => modalizeRef.current?.open()}
+              onPress={() => {
+                setModalKey(prev => prev + 1);
+                setTimeout(() => {
+                  modalizeRef.current?.open()
+                }, 100)
+              }}
               activeOpacity={0.7}
               style={[
                 {
@@ -304,11 +313,12 @@ const AddMenu = () => {
             )}
           </TouchableOpacity>
         </ScrollView>
-        <Modalize ref={modalizeRef} adjustToContentHeight>
+        <Modalize ref={modalizeRef} adjustToContentHeight key={modalKey} >
           <View style={styles.modalContent}>
             <ScrollView
               style={{ padding: 10 }}
               contentContainerStyle={{ paddingBottom: 50 }}
+              nestedScrollEnabled
             >
               {dishes &&
                 dishes.map((item) => (
@@ -334,7 +344,7 @@ const AddMenu = () => {
           </View>
         </Modalize>
       </SafeAreaView>
-    </GestureHandlerRootView>
+    </GestureHandlerRootView >
   );
 };
 
@@ -400,7 +410,7 @@ const styles = StyleSheet.create({
   dishItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 15,
+    marginVertical: 10,
     backgroundColor: "#f9f9f9",
     borderRadius: 10,
     padding: 10,

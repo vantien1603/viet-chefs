@@ -230,7 +230,7 @@ const Packages = () => {
             if (response.status === 200) {
               showModal(
                 t('modal.success'),
-                t(`success.${type}Success`, {
+                t(`${type}Success`, {
                   count: mode === 'single' ? 1 : selectedPackages.length,
                 }),
               );

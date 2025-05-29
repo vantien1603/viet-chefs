@@ -43,7 +43,11 @@ const BookingDetailScreen = () => {
             );
             return { dishId: dish.dish.id, dishName: dishResponse.data.name };
           } catch (error) {
-            showModal(t("modal.error"), `Error fetching dish ${dish.dish.id}`, "Failed");
+            showModal(
+              t("modal.error"),
+              `Error fetching dish ${dish.dish.id}`,
+              "Failed"
+            );
             return { dishId: dish.dish.id, dishName: `Dish ${dish.dish.id}` };
           }
         });
@@ -71,40 +75,42 @@ const BookingDetailScreen = () => {
     setUpdating(true);
     try {
       const parsedUpdateData = JSON.parse(data);
-      console.log("Parsed update data:", JSON.stringify(parsedUpdateData, null, 2));
+      console.log(
+        "Parsed update data:",
+        JSON.stringify(parsedUpdateData, null, 2)
+      );
 
+      // Cập nhật bookingDetail
       setBookingDetail((prev) => ({
         ...prev,
         ...parsedUpdateData,
         isUpdated: true,
       }));
 
+      // Gửi yêu cầu cập nhật
       await axiosInstance.put(
         `/bookings/booking-details/${bookingDetailId}`,
         parsedUpdateData
       );
 
-      showModal(t("modal.success"), t("bookingDetailUpdated"),);
+      showModal(t("modal.success"), t("bookingDetailUpdated"));
 
-
+      // Lấy tên món ăn từ dishes
       if (parsedUpdateData.dishes && parsedUpdateData.dishes.length > 0) {
         const dishPromises = parsedUpdateData.dishes.map(async (dish) => {
           try {
             const dishResponse = await axiosInstance.get(
-              `/dishes/${dish.dish.dishId || dish.dish.id}`
+              `/dishes/${dish.dish.id}`
             );
             return {
-              dishId: dish.dishId || dish.dish.id,
-              dishName: dishResponse.data.name,
+              dishId: dish.dish.id,
+              dishName: dishResponse.data.name || `Dish ${dish.dish.id}`,
             };
           } catch (error) {
-            console.error(
-              `Error fetching dish ${dish.dishId || dish.dish.id}:`,
-              error
-            );
+            console.error(`Error fetching dish ${dish.dish.id}:`, error);
             return {
-              dishId: dish.dishId || dish.dish.id,
-              dishName: `Dish ${dish.dishId || dish.dish.id}`,
+              dishId: dish.dish.id,
+              dishName: `Dish ${dish.dish.id}`,
             };
           }
         });
@@ -114,6 +120,43 @@ const BookingDetailScreen = () => {
           return acc;
         }, {});
         setDishNames(dishNamesMap);
+      }
+
+      // Lấy tên món ăn từ extraDishIds (nếu có)
+      if (
+        parsedUpdateData.extraDishIds &&
+        parsedUpdateData.extraDishIds.length > 0
+      ) {
+        const extraDishPromises = parsedUpdateData.extraDishIds.map(
+          async (dishId) => {
+            try {
+              const dishResponse = await axiosInstance.get(`/dishes/${dishId}`);
+              return {
+                dishId,
+                dishName: dishResponse.data.name || `Dish ${dishId}`,
+              };
+            } catch (error) {
+              console.error(`Error fetching extra dish ${dishId}:`, error);
+              return {
+                dishId,
+                dishName: `Dish ${dishId}`,
+              };
+            }
+          }
+        );
+        const extraDishResults = await Promise.all(extraDishPromises);
+        const extraDishNamesMap = extraDishResults.reduce(
+          (acc, { dishId, dishName }) => {
+            acc[dishId] = dishName;
+            return acc;
+          },
+          {}
+        );
+        setDishNames((prev) => ({ ...prev, ...extraDishNamesMap }));
+        console.log(
+          "Extra dish names map:",
+          JSON.stringify(extraDishNamesMap, null, 2)
+        );
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -334,6 +377,27 @@ const BookingDetailScreen = () => {
               </View>
             ))
           )}
+          {bookingDetail.extraDishIds &&
+            bookingDetail.extraDishIds.length > 0 && (
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>{t("extraDishes")}</Text>
+                {bookingDetail.extraDishIds.map((dishId, index) => (
+                  <View key={index} style={styles.dishItem}>
+                    <View style={styles.dishRow}>
+                      <MaterialIcons
+                        name="fiber-manual-record"
+                        size={10}
+                        color="#A64B2A"
+                      />
+                      <Text style={styles.detailLabel}>{t("dishName")}: </Text>
+                      <Text style={styles.detailValue}>
+                        {dishNames[dishId] || t("loading")}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
         </View>
 
         {/* Ingredients */}
