@@ -34,10 +34,10 @@ yarn-error.*
 .env
 .google-services.json
 .google-services-2.json
-google-service.json
-google-service-2.json
-./google-service.json
-./google-service-2.json
+google-services.json
+google-services-2.json
+./google-services.json
+./google-services-2.json
 
 # typescript
 *.tsbuildinfo
