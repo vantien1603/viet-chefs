@@ -10,11 +10,13 @@ import { useCommonNoification } from "../../context/commonNoti";
 import BookingList from "../../components/bookingRouter";
 import axios from "axios";
 import { t } from "i18next";
+import { useConfirmModal } from "../../context/commonConfirm";
 
 const OrderHistories = () => {
   const { user, isGuest } = useContext(AuthContext);
   const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
+  const { showConfirm } = useConfirmModal();
   const params = useLocalSearchParams();
   const { tab } = params;
 
@@ -22,8 +24,8 @@ const OrderHistories = () => {
   const [routes] = useState([
     { key: "pending", title: t("tabs.pending") },
     { key: "paidDeposit", title: t("tabs.paidDeposit") },
-    { key: "completed", title: t("tabs.completed") },
     { key: "confirm", title: t("tabs.confirm") },
+    { key: "completed", title: t("tabs.completed") },
     { key: "cancel", title: t("tabs.cancel") },
   ]);
   const [bookings, setBookings] = useState([]);
@@ -83,9 +85,9 @@ const OrderHistories = () => {
       });
       setTotalPages(
         response.data.totalPages ||
-          Math.ceil(
-            (response.data.totalElements || bookingData.length) / PAGE_SIZE
-          )
+        Math.ceil(
+          (response.data.totalElements || bookingData.length) / PAGE_SIZE
+        )
       );
       setPageNo(page);
     } catch (error) {

@@ -128,7 +128,7 @@ const DetailsBooking = () => {
       setLoading(true);
       const response = await axiosInstance.put(`/bookings/${id}/confirm`);
       if (response.status === 200) {
-        showModal(t("modal.success"), t("success.confirmSuccess"));
+        showModal(t("modal.success"), t("confirmSuccess"));
       }
       await fetchBooking();
     } catch (error) {

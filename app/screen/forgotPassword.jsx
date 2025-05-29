@@ -15,18 +15,23 @@ import AXIOS_BASE from "../../config/AXIOS_BASE";
 import { useCommonNoification } from "../../context/commonNoti";
 import axios from "axios";
 import { t } from "i18next";
+import useAxiosBase from "../../config/AXIOS_BASE";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const { showModal } = useCommonNoification();
+  const axiosInstanceBase = useAxiosBase();
   const handleSend = async () => {
     if (!email) {
       setErrorMessage(t("errors.invalidEmail"));
       return;
     }
+    console.log("asd", email);
+
     try {
-      const response = await AXIOS_BASE.post(`/forgot-password?email=${email}`);
+      const response = await axiosInstanceBase.post(`/forgot-password?email=${email}`);
+
       if (response.status === 200) {
         showModal(t("modal.success"), t("sendResetTokenSuccess"),);
         router.push({
@@ -36,10 +41,12 @@ const ForgotPasswordScreen = () => {
         setErrorMessage("");
       }
     } catch (error) {
+      console.log(error.response);
       if (axios.isCancel(error)) {
         return;
       }
-      showModal(t("modal.error"), t("errors.sendResetTokenFailed"), "Failed");
+      // showModal(t("modal.error"), t("errors.sendResetTokenFailed"), "Failed");
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     }
   };
 

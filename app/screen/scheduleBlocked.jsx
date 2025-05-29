@@ -297,7 +297,6 @@ const ScheduleBlocked = () => {
 
       showModal(t("modal.success"),
         t("saveScheduleSuccess"),
-        t("modal.succeeded")
       );
       fetchSchedule();
     } catch (error) {
@@ -370,7 +369,7 @@ const ScheduleBlocked = () => {
                           style={[styles.inputContainer, isDisabled && !isEditing && styles.disabledInput]}
                         >
                           <TextInput
-                          placeholder={t("startTimePlaceholder")}
+                            placeholder={t("startTimePlaceholder")}
                             value={item.startTime}
                             editable={false}
                             style={[styles.input, isDisabled && !isEditing && styles.disabledInput]}
@@ -383,7 +382,7 @@ const ScheduleBlocked = () => {
                           style={[styles.inputContainer, isDisabled && !isEditing && styles.disabledInput]}
                         >
                           <TextInput
-                          placeholder={t("endTimePlaceholder")}
+                            placeholder={t("endTimePlaceholder")}
                             value={item.endTime}
                             editable={false}
                             style={[styles.input, isDisabled && !isEditing && styles.disabledInput]}
@@ -392,7 +391,7 @@ const ScheduleBlocked = () => {
 
                         <View style={[styles.inputContainer, isDisabled && !isEditing && styles.disabledInput]}>
                           <TextInput
-                          placeholder={t("reasonPlaceholder")}
+                            placeholder={t("reasonPlaceholder")}
                             value={item.reason}
                             onChangeText={(text) => handleFieldChange(date, index, "reason", text)}
                             editable={

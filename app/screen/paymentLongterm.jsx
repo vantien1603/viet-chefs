@@ -18,13 +18,14 @@ import { commonStyles } from "../../style";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { t } from "i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 const PaymentLongterm = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
   const axiosInstance = useAxios();
   const bookingId = params.bookingId;
-  const platformFeeModalRef = useRef(null);
+  // const platformFeeModalRef = useRef(null);
   const { location, totalPrice, selectedDates } = useSelectedItems();
   const depositAmount = totalPrice * 0.05;
   const { showModal } = useCommonNoification();
@@ -33,7 +34,7 @@ const PaymentLongterm = () => {
   const [balance, setBalance] = useState(0);
   const [pinValues, setPinValues] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
-  const [hasPassword, setHasPassword] = useState(true); // Giả sử ví đã có mật khẩu
+  const [hasPassword, setHasPassword] = useState(true);
   const modalizeRef = useRef(null);
   const pinInputRefs = useRef([
     React.createRef(),
@@ -163,7 +164,7 @@ const PaymentLongterm = () => {
       );
       if (response.status === 200 || response.status === 201) {
         await fetchBalanceInWallet();
-        showModal(t("modal.success"), t("depositSuccess"), t("modal.succeeded"));
+        showModal(t("modal.success"), t("depositSuccess"));
         setIsPaySuccess(true);
       }
     } catch (error) {
@@ -208,7 +209,14 @@ const PaymentLongterm = () => {
       <SafeAreaView style={commonStyles.container}>
         <Header title={t("depositPayment")} onLeftPress={() => handleBack()} />
         <ScrollView style={commonStyles.containerContent}>
-          <Text style={styles.title}>{t("confirmDeposit")}</Text>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoLabel}>{t("bookingInfo")}:</Text>
+            <Text style={styles.infoValue}>{t("location")}: {location || "N/A"}</Text>
+            <Text style={styles.infoValue}>
+              {t("numberOfDays")}: {selectedDates?.length || 0}
+            </Text>
+          </View>
+          {/* <Text style={styles.title}>{t("confirmDeposit")}</Text> */}
           <View style={styles.summaryContainer}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t("totalBookingAmount")}:</Text>
@@ -227,15 +235,6 @@ const PaymentLongterm = () => {
               </Text>
             </View>
           </View>
-
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>{t("bookingInfo")}:</Text>
-            <Text style={styles.infoValue}>{t("location")}: {location || "N/A"}</Text>
-            <Text style={styles.infoValue}>
-              {t("numberOfDays")}: {selectedDates?.length || 0}
-            </Text>
-          </View>
-
           <View style={styles.spacer} />
         </ScrollView>
 

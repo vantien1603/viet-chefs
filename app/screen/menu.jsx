@@ -1,5 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/header";
 import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import useAxios from "../../config/AXIOS_API";
-import { commonStyles } from "../../style";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useConfirmModal } from "../../context/commonConfirm";
@@ -22,18 +22,22 @@ import { t } from "i18next";
 
 const ChefMenu = () => {
   const [menus, setMenus] = useState([]);
+  const [filteredMenus, setFilteredMenus] = useState([]);
   const [loading, setLoading] = useState(false);
-  const axiosInstance = useAxios();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMenus, setSelectedMenus] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const axiosInstance = useAxios();
   const { showModal } = useCommonNoification();
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
   const { user } = useContext(AuthContext);
 
-  useEffect(() => {
-    fetchMenu();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMenu();
+    }, [])
+  );
 
   const fetchMenu = async () => {
     setLoading(true);
@@ -41,24 +45,28 @@ const ChefMenu = () => {
       const response = await axiosInstance.get("/menus", {
         params: { chefId: user?.chefId },
       });
-
       setMenus(response.data.content);
-      console.log(response.data.content);
-      console.log(user?.chefId);
+      setFilteredMenus(response.data.content);
     } catch (error) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      if (axios.isCancel(error)) {
-        return;
-      }
-      showModal(
-        t("modal.error"),
-        t("errors.fetchMenusFailed"),
-        "Failed"
-      );
+      if (error.response?.status === 401) return;
+      if (axios.isCancel(error)) return;
+      showModal(t("modal.error"), t("errors.fetchMenusFailed"), "Failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filterMenus = (query) => {
+    setSearchQuery(query);
+    if (query === "") {
+      setFilteredMenus(menus);
+    } else {
+      const filtered = menus.filter(
+        (menu) =>
+          menu.name.toLowerCase().includes(query.toLowerCase()) ||
+          menu.description.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredMenus(filtered);
     }
   };
 
@@ -96,52 +104,31 @@ const ChefMenu = () => {
           let errorCount = 0;
           setLoading(true);
           try {
-            console.log("hehe", selectedMenus);
             const promises = selectedMenus.map((item) =>
               axiosInstance.delete(`/menus/${item}`)
             );
             const results = await Promise.allSettled(promises);
-
             fetchMenu();
             setSelectedMenus([]);
             results.forEach((result) => {
-              if (result.status === "fulfilled") {
-                successCount++;
-              } else {
-                errorCount++;
-              }
+              if (result.status === "fulfilled") successCount++;
+              else errorCount++;
             });
             if (successCount === results.length) {
-              showModal(t("modal.success"),
-                t("success.deleteMenusSuccess"),
-                t("modal.succeeded")
-              );
+              showModal(t("modal.success"), t("deleteMenusSuccess"));
             } else if (errorCount === results.length) {
-              showModal(
-                t("modal.error"),
-                t("errors.deleteMenusFailed"),
-                "Failed"
-              );
+              showModal(t("modal.error"), t("errors.deleteMenusFailed"), "Failed");
             } else {
               showModal(
                 t("modal.warning"),
-                t("warnings.partialDeleteFailed", {
-                  successCount,
-                  errorCount,
-                }),
-                "Failed"
+                t("warnings.partialDeleteFailed", { successCount, errorCount }),
+                "Warning"
               );
             }
           } catch (error) {
-            console.log(
-              "Lỗi khi xóa:",
-              error.response?.data || error.message
-            );
-            showModal(
-              t("modal.error"),
-              t("errors.deleteMenusFailed"),
-              "Failed"
-            );
+            if (error.response?.status === 401) return;
+            if (axios.isCancel(error)) return;
+            showModal(t("modal.error"), t("errors.deleteMenusFailed"), "Failed");
           } finally {
             setLoading(false);
           }
@@ -150,20 +137,29 @@ const ChefMenu = () => {
   };
 
   return (
-    <SafeAreaView style={commonStyles.container}>
+    <SafeAreaView style={styles.container}>
       <Header
         title={t("menu")}
-        rightIcon={"add"}
-        onRightPress={() => router.push("/screen/addMenu")}
+        rightIcon={user.roleName === "ROLE_CHEF" && "add"}
+        onRightPress={() =>
+          user.roleName === "ROLE_CHEF" && router.push("/screen/addMenu")
+        }
       />
 
-      {selectionMode && (
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={t("search")}
+          value={searchQuery}
+          onChangeText={filterMenus}
+          accessibilityLabel={t("search")}
+        />
+      </View>
+
+      {selectionMode && user.roleName === "ROLE_CHEF" && (
         <View style={styles.floatingActions}>
           <TouchableOpacity
-            style={[
-              styles.floatingButton,
-              { flexDirection: "row", alignItems: "center" },
-            ]}
+            style={[styles.floatingButton, { flexDirection: "row", alignItems: "center" }]}
             onPress={selectAll}
           >
             <Text style={[styles.floatingText, { color: "grey" }]}>
@@ -173,13 +169,9 @@ const ChefMenu = () => {
           <TouchableOpacity
             style={[
               styles.floatingButton,
-              {
-                backgroundColor: "#FFCDD2",
-                flexDirection: "row",
-                alignItems: "center",
-              },
+              { backgroundColor: "#FFCDD2", flexDirection: "row", alignItems: "center" },
             ]}
-            onPress={() => handleDelete()}
+            onPress={handleDelete}
           >
             <MaterialIcons name="delete" size={24} color="red" />
             <Text style={[styles.floatingText, { color: "red" }]}>
@@ -190,100 +182,73 @@ const ChefMenu = () => {
             style={[styles.floatingButton, { backgroundColor: "#E0E0E0" }]}
             onPress={cancelSelection}
           >
-            {/* <Text style={[styles.floatingText, { color: "#333" }]}>Hủy</Text> */}
             <MaterialIcons name="cancel" size={24} color="black" />
           </TouchableOpacity>
         </View>
       )}
 
       <FlatList
-        data={menus}
-        style={commonStyles.containerContent}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        data={filteredMenus}
+        key="menu-grid-2" // Added to force re-render for numColumns
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        contentContainerStyle={{ padding: 10, paddingVertical: 30 }}
+        columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 15 }}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>{t("noMenuAvailable")}</Text>
+        }
+        ListHeaderComponent={
+          loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6c5ce7" />
+            </View>
+          )
+        }
+        renderItem={({ item: menu }) => (
           <TouchableOpacity
-            onLongPress={() => handleLongPress(item.id)}
+            style={[styles.cardContainer, selectedMenus.includes(menu.id) && styles.selectedCard]}
+            onLongPress={() => user.roleName === "ROLE_CHEF" && handleLongPress(menu.id)}
             onPress={() => {
               if (selectionMode) {
-                toggleSelection(item.id);
+                toggleSelection(menu.id);
               } else {
-                // navigation.navigate("screen/menuDetail", {
-                //   menuId: {
-                //     id: item.id
-                //   }
-                // })
-                router.push({
-                  pathname: "/screen/menuDetails",
-                  params: { id: item.id },
-                });
+                router.push({ pathname: "/screen/menuDetails", params: { id: menu.id } });
               }
             }}
-            // key={item.id}
-            style={[
-              styles.section,
-              selectedMenus.includes(item.id) && styles.selectedCard,
-            ]}
+            accessibilityLabel={menu.name}
           >
-            <View
-              style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
-            >
+            <View style={styles.card}>
               <Image
-                source={{ uri: item.imageUrl }}
-                style={{ width: 60, height: 60, borderRadius: 10 }}
+                source={{ uri: menu.imageUrl }}
+                style={styles.image}
+                defaultSource={require("../../assets/images/1.jpg")}
               />
-              <View>
-                <Text numberOfLines={1} ellipsizeMode="tail">
-                  {/* <Text style={styles.itemContentLabel}>Menu name: </Text> */}
-                  <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
-                    {item.name}
+              <View style={styles.cardContent}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.title}>
+                  {menu.name}
+                </Text>
+                <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>
+                  {menu.description}
+                </Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.price}>
+                    {menu.hasDiscount ? (
+                      <>
+                        <Text style={styles.strikethrough}>${menu.beforePrice}</Text>{" "}
+                        ${menu.afterPrice}
+                      </>
+                    ) : (
+                      `$${menu.afterPrice}`
+                    )}
                   </Text>
-                </Text>
-                <Text numberOfLines={1} ellipsizeMode="tail">
-                  {/* <Text style={styles.itemContentLabel}>Description: </Text> */}
-                  <Text style={styles.itemContent}>{item.description}</Text>
-                </Text>
-                <Text numberOfLines={1} ellipsizeMode="tail">
-                  <Text style={styles.itemContentLabel}>{t("priceMenu")}: </Text>
-                  {item.hasDiscount ? (
-                    <Text>
-                      <Text
-                        style={{
-                          textDecorationLine: "line-through",
-                          fontSize: 15,
-                          fontFamily: "nunito-regular"
-                        }}
-                      >
-                        ${item.beforePrice}
-                      </Text>
-                      <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
-                        {" "}
-                        ${item.afterPrice}
-                      </Text>
+                  <View style={styles.dishCountBadge}>
+                    <Text style={styles.dishCountText}>
+                      {menu.menuItems?.length || 0} {t("dishes")}
                     </Text>
-                  ) : (
-                    <Text style={styles.itemContent}>${item.afterPrice}</Text>
-                  )}
-                </Text>
+                  </View>
+                </View>
               </View>
             </View>
-
-            <Text
-              numberOfLines={2}
-              ellipsizeMode="tail"
-              style={{ marginLeft: 10 }}
-            >
-              <Text style={styles.itemContentLabel}>{t("dishes")}: </Text>
-              {item.menuItems &&
-                item.menuItems.map((dish) => (
-                  <Text
-                    key={`${dish.dishId}_${item.id}`}
-                    style={styles.itemContent}
-                  >
-                    {dish.dishName},{" "}
-                  </Text>
-                ))}
-            </Text>
           </TouchableOpacity>
         )}
       />
@@ -292,49 +257,110 @@ const ChefMenu = () => {
 };
 
 const styles = StyleSheet.create({
-  section: {
-    gap: 5,
-    maxHeight: 300,
-    backgroundColor: "#F9F5F0",
-    marginVertical: 10,
-    padding: 25,
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF8E7", // Subtle variation from ChefDishes (#FDFBF6)
+  },
+  searchBarContainer: {
+    padding: 10,
+    // backgroundColor: "#FFF",
+  },
+  searchInput: {
+    height: 50,
+    borderColor: "#D4A373", // Distinct from #F8BF40
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingLeft: 15,
+    fontFamily: "nunito-regular",
+    fontSize: 16,
+  },
+  cardContainer: {
+    width: "48%",
+    alignItems: "center",
+  },
+  card: {
+    backgroundColor: "#A9411D", // Same as ChefDishes for cohesion
     borderRadius: 12,
+    padding: 12,
+    width: "100%",
+    height: 220, // Compact for grid
     shadowColor: "#000",
-    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 2,
-  },
-  itemContentLabel: {
-    fontFamily: "nunito-bold",
-  },
-  itemContent: {
-    fontSize: 14,
-    fontFamily: "nunito-regular"
+    elevation: 3,
   },
   selectedCard: {
     borderWidth: 3,
-    borderColor: "#F8BF40",
-    borderRadius: 16,
-    shadowColor: "#000",
+    borderColor: "#D4A373", // Distinct from #F8BF40
+    borderRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 10,
-    transform: [{ scale: 1.03 }],
+    shadowRadius: 6,
+    elevation: 8,
+    transform: [{ scale: 1.02 }],
+  },
+  image: {
+    width: "100%",
+    height: 100, // Adjusted for grid
+    borderRadius: 10,
+    resizeMode: "cover",
+  },
+  cardContent: {
+    paddingTop: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontFamily: "nunito-bold",
+    color: "#FFF",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  description: {
+    fontSize: 12,
+    fontFamily: "nunito-regular",
+    color: "#F8BF40",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  price: {
+    fontSize: 12,
+    fontFamily: "nunito-bold",
+    color: "#FFF",
+  },
+  strikethrough: {
+    textDecorationLine: "line-through",
+    fontSize: 12,
+    fontFamily: "nunito-regular",
+    color: "#FFF",
+  },
+  dishCountBadge: {
+    backgroundColor: "#F8BF40",
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+  },
+  dishCountText: {
+    fontSize: 10,
+    fontFamily: "nunito-bold",
+    color: "#A9411D",
   },
   floatingActions: {
     position: "absolute",
     bottom: 20,
     right: 20,
     zIndex: 999,
-    gap: 10,
+    gap: 12,
   },
-
   floatingButton: {
     backgroundColor: "#FFF9C4",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -343,11 +369,22 @@ const styles = StyleSheet.create({
     elevation: 6,
     alignItems: "center",
   },
-
   floatingText: {
     fontSize: 16,
-    color: "#333",
     fontFamily: "nunito-bold",
+    color: "#333",
+  },
+  emptyText: {
+    textAlign: "center",
+    fontSize: 16,
+    fontFamily: "nunito-regular",
+    color: "#333",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
   },
 });
 

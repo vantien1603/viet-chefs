@@ -33,35 +33,37 @@ const ViewDetailBookingDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    const fetchBookingDetails = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `/bookings/booking-details/${bookingDetailsId}`
-        );
-        setBookingDetails(response.data);
-        setIsReported(response.data.reported || false);
-      } catch (error) {
-        console.log("Error fetching booking details:", error);
-      }
-    };
     fetchBookingDetails();
   }, [bookingDetailsId]);
+
+  const fetchBookingDetails = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/bookings/booking-details/${bookingDetailsId}`
+      );
+      setBookingDetails(response.data);
+      setIsReported(response.data.reported || false);
+    } catch (error) {
+      console.log("Error fetching booking details:", error);
+    }
+  };
 
   const handleCompleted = async () => {
     try {
       const response = await axiosInstance.put(
         `/bookings/booking-details/${bookingDetailsId}/complete-customer`
       );
-      if (response.status === 200) {
-        showModal(t("modal.success"),t("modal.success"))
+      if (response.status === 200 || response.status === 203) {
+        showModal(t("modal.success"), t("modal.success"))
         setBookingDetails({ ...bookingDetails, status: "COMPLETED" });
+        fetchBookingDetails();
       }
     } catch (error) {
       console.log(
         "Error confirming completion:",
         error?.response?.data?.message
       );
-      showModal(t("modal.error"), error?.response?.data?.message || "Failed to confirm" , "Failed")
+      showModal(t("modal.error"), error?.response?.data?.message || "Failed to confirm", "Failed")
     }
   };
 
@@ -110,7 +112,7 @@ const ViewDetailBookingDetails = () => {
       if (response.status === 200) {
         showModal(t("modal.success"),
           t("reportSuccess"),
-         
+
         );
 
         try {
@@ -231,12 +233,18 @@ const ViewDetailBookingDetails = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t("dish")}</Text>
+            <Text style={styles.sectionTitle}>{t("dishes")}</Text>
             {bookingDetails.dishes?.length > 0 ? (
               bookingDetails.dishes.map((dish) => (
                 <View key={dish.id} style={styles.dishItem}>
+                  <Image source={{ uri: dish.dish.imageUrl }} style={{ width: 35, height: 35, borderRadius: 10 }} />
                   <Text style={styles.detailLabel}>
-                    {dish.dish?.name || ""} {dish.notes && `(${dish.notes || ""})`}
+                    <Text>
+                      {dish.dish?.name || ""}
+                    </Text>
+                    <Text style={styles.detailValue}>
+                      {dish.notes && `(${dish.notes || ""})`}
+                    </Text>
                   </Text>
                 </View>
               ))
@@ -479,7 +487,10 @@ const styles = StyleSheet.create({
     fontFamily: "nunito-regular"
   },
   dishItem: {
+    flexDirection: 'row',
+    gap: 10,
     marginLeft: 10,
+    alignItems: 'center'
   },
   noData: {
     fontSize: 16,

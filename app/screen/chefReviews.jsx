@@ -83,8 +83,11 @@ export default function ChefReviews() {
         setLoading(true);
         try {
             const response = await axiosInstance.post(`reviews/${id}/reply`, replyTexts[id]);
-            console.log(response.data);
+            if (response.status === 200) {
+                setReplyTexts((prev) => ({ ...prev, [id]: "" }))
+            }
         } catch (error) {
+            console.log(error.response.data);
             showModal("Error", error.response.data.message, "Failed");
         } finally {
             setLoading(false);

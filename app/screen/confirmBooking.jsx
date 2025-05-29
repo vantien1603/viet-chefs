@@ -160,11 +160,13 @@ const ConfirmBookingScreen = () => {
       if (axios.isCancel(error) || error.response.status === 401) {
         return;
       }
-      showModal(
-        t("modal.error"),
-        error.response.data.message,
-        "Failed"
-      );
+      const matches = errorMessage.match(/The chef already has a booking during this time on/g);
+
+      if (matches) {
+        showModal(t("modal.error"), t("errors.theChefAlreadyHasABooking"), "Failed");
+        return;
+      }
+      showModal(t("modal.error"), error.response.data.message, "Failed");
     } finally {
       setLoading(false);
     }
@@ -274,7 +276,7 @@ const ConfirmBookingScreen = () => {
               )}
               <View style={{ flexDirection: 'row', padding: 5, justifyContent: 'space-evenly' }}>
                 {/* <View style={styles.row}> */}
-                <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{selectedMenu ? 'Side dish' : t("dishList")}</Text>
+                <Text style={{ fontSize: 14, flex: 1, fontFamily: "nunito-bold" }}>{selectedMenu ? t('sideDish') : t("dishList")}</Text>
                 {/* </View> */}
                 <View>
                   {selectedMenu ? (

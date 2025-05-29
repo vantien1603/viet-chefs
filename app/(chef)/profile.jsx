@@ -13,12 +13,13 @@ import { AuthContext } from "../../config/AuthContext";
 import { commonStyles } from "../../style";
 import { t } from "i18next";
 
-const menuItems = [
-  { id: "1", icon: "wallet-outline", title: t("myWallet") },
-  { id: "2", icon: "settings-outline", title: t("settings") },
-];
+
 
 const Profile = () => {
+  const menuItems = [
+    { id: "1", icon: "wallet-outline", title: t("myWallet") },
+    { id: "2", icon: "settings-outline", title: t("settings") },
+  ];
   const router = useRouter();
   const { user } = useContext(AuthContext);
 
@@ -42,8 +43,8 @@ const Profile = () => {
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
             source={{
-              uri: 
-              user?.avatarUrl ||
+              uri:
+                user?.avatarUrl ||
                 "https://cosmic.vn/wp-content/uploads/2023/06/tt-1.png",
             }}
             style={styles.avatar}

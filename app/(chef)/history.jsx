@@ -33,7 +33,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
         .filter(Boolean)
         .sort();
 
-      if (details.length <= 5) {
+      if (details.length <= 4) {
         const grouped = {};
 
         for (let date of details) {
@@ -149,9 +149,9 @@ const Histories = () => {
   const [index, setIndex] = React.useState(0);
   const navigation = useNavigation();
   const [routes] = React.useState([
-    { key: 'new', title: 'New' },
-    { key: 'confirmed', title: 'Confirmed' },
-    { key: 'canceled', title: 'Canceled' },
+    { key: 'new', title: t('new') },
+    { key: 'confirmed', title: t('tabs.confirm') },
+    { key: 'canceled', title: t('tabs.cancel') },
   ]);
 
   const { showModal } = useCommonNoification();

@@ -138,6 +138,7 @@ const ViewBookingDetailsScreen = () => {
       if (response.status === 200) {
         showModal(t("modal.success"), t("depositSuccessMsg"),);
         fetchBookingDetails();
+        fetchBookingStatus();
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -163,6 +164,7 @@ const ViewBookingDetailsScreen = () => {
       if (response.status === 200) {
         showModal(t("modal.success"), t("paymentSuccessful"),);
         fetchBookingDetails();
+        fetchBookingStatus();
       }
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
@@ -225,7 +227,6 @@ const ViewBookingDetailsScreen = () => {
       }
     }
   };
-
 
 
   if (loading) {
@@ -429,7 +430,7 @@ const ViewBookingDetailsScreen = () => {
         </ScrollView>
 
         {/* Nút Make Deposit hoặc Pay (chỉ hiển thị nếu booking status là PENDING) */}
-        {bookingStatus === "PENDING" && bookingType === "LONG_TERM" && (
+        {(bookingStatus === "PENDING" && bookingType === "LONG_TERM") && (
           <TouchableOpacity
             style={[
               styles.depositButton,
@@ -448,7 +449,7 @@ const ViewBookingDetailsScreen = () => {
             )}
           </TouchableOpacity>
         )}
-        {bookingStatus === "PENDING" && bookingType === "SINGLE" && (
+        {(bookingStatus === "PENDING" && bookingType === "SINGLE") && (
           <TouchableOpacity
             style={[styles.depositButton, payLoading && styles.disabledButton]}
             onPress={() => hasPassword ? handleOpenPinModal() : handlePay()}
@@ -502,8 +503,17 @@ const ViewBookingDetailsScreen = () => {
                 </View>))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
-            <TouchableOpacity onPress={() => accessWallet()}>
-              <Text>{t("confirm")}</Text>
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                backgroundColor: "#A64B2A",
+                borderRadius: 20,
+                marginBottom: 20
+              }}
+              onPress={() => accessWallet()}>
+              <Text style={{ fontSize: 16, color: "white", fontFamily: "nunito-bold" }}
+              >{t("confirm")}</Text>
             </TouchableOpacity>
           </View>
         </Modalize>
@@ -515,7 +525,7 @@ const ViewBookingDetailsScreen = () => {
 const styles = StyleSheet.create({
   scrollContent: {
     // padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 50,
   },
   card: {
     backgroundColor: "#F9F5F0",

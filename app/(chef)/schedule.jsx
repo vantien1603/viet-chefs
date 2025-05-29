@@ -19,15 +19,17 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { t } from 'i18next';
 
-const dayInWeek = [
-  { id: 0, label: 'Mon', full: 'Monday' },
-  { id: 1, label: 'Tue', full: 'Tuesday' },
-  { id: 2, label: 'Wed', full: 'Wednesday' },
-  { id: 3, label: 'Thu', full: 'Thursday' },
-  { id: 4, label: 'Fri', full: 'Friday' },
-  { id: 5, label: 'Sat', full: 'Saturday' },
-  { id: 6, label: 'Sun', full: 'Sunday' },
-];
+// const dayInWeek = [
+//   { id: 0, label: 'Mon', full: 'Monday' },
+//   { id: 1, label: 'Tue', full: 'Tuesday' },
+//   { id: 2, label: 'Wed', full: 'Wednesday' },
+//   { id: 3, label: 'Thu', full: 'Thursday' },
+//   { id: 4, label: 'Fri', full: 'Friday' },
+//   { id: 5, label: 'Sat', full: 'Saturday' },
+//   { id: 6, label: 'Sun', full: 'Sunday' },
+// ];
+
+
 
 const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDetail, loading }) => {
   const renderItem = ({ item }) => {
@@ -89,6 +91,15 @@ const ScheduleRender = ({ bookings, onLoadMore, refreshing, onRefresh, onViewDet
 };
 
 const Schedule = () => {
+  const dayInWeek = [
+    { id: 0, label: t("Mon"), full: t("Monday") },
+    { id: 1, label: t("Tue"), full: t("Tuesday") },
+    { id: 2, label: t("Wed"), full: t("Wednesday") },
+    { id: 3, label: t("Thu"), full: t("Thursday") },
+    { id: 4, label: t("Fri"), full: t("Friday") },
+    { id: 5, label: t("Sat"), full: t("Saturday") },
+    { id: 6, label: t("Sun"), full: t("Sunday") },
+  ];
   const axiosInstance = useAxios();
   const [page, setPage] = useState(0);
   const [schedules, setSchedules] = useState(() =>
@@ -102,8 +113,8 @@ const Schedule = () => {
   const [refresh, setRefresh] = useState(false);
   const navigation = useNavigation();
   const [totalPages, setTotalPages] = useState(0);
-
-  const [routes] = useState(dayInWeek.map((day) => ({ key: day.full, title: day.full })));
+  const { showModal } = useCommonNoification();
+  const [routes] = useState(dayInWeek.map((day) => ({ key: day.id.toString(), title: day.full })));
 
   const PAGE_SIZE = 20;
 
@@ -123,7 +134,7 @@ const Schedule = () => {
             status,
             pageNo: pageNum,
             pageSize: PAGE_SIZE,
-            sortBy: 'id',
+            sortBy: 'sessionDate',
             sortDir: 'desc',
           },
         })
@@ -169,6 +180,10 @@ const Schedule = () => {
       fetchBookingDetails(0, true);
     }, [])
   );
+
+  // useEffect(() => {
+  //   fetchBookingDetails(0, true);
+  // }, []);
 
   const loadMoreData = async () => {
     if (!loading && page + 1 <= totalPages - 1) {
@@ -218,7 +233,7 @@ const Schedule = () => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <Header title={'Schedule'}
+      <Header title={t('schedule')}
         rightIcon={'checkmark-done-circle-outline'} onRightPress={() => handleViewDone()} />
       <TabView
         navigationState={{ index, routes }}

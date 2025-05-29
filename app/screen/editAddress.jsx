@@ -43,6 +43,40 @@ const EditAddress = () => {
   const country = SecureStore.getItem('country');
 
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
+  // const fetchAddressSuggestions = async (query) => {
+  //   if (query.length < 3) {
+  //     setSuggestions([]);
+  //     return;
+  //   }
+  //   try {
+  //     const params = {
+  //       input: query,
+  //       key: process.env.API_GEO_KEY,
+  //       language: "vi",
+  //     };
+
+  //     if (country) {
+  //       params.components = `country:${country}`;
+  //     }
+
+  //     const response = await axios.get(
+  //       `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+  //       { params }
+  //     );
+
+  //     console.log("Suggestions response:", response.data);
+  //     if (response.data.status === "OK") {
+  //       setSuggestions(response.data.predictions);
+  //     }
+  //   } catch (error) {
+  //     showModal(
+  //       t("modal.error"),
+  //       t("errors.fetchSuggestionsFailed"),
+  //       "Failed"
+  //     );
+  //   }
+  // };
+
   const fetchAddressSuggestions = async (query) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -63,8 +97,8 @@ const EditAddress = () => {
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
         { params }
       );
+      console.log(response.data);
 
-      console.log("Suggestions response:", response.data);
       if (response.data.status === "OK") {
         setSuggestions(response.data.predictions);
       }

@@ -23,23 +23,27 @@ export default function SignUpScreen() {
 
     const handleSignUp = async () => {
         const currentErrors = {};
-        if (!signUpPayload.username)
+        if (!username || username.trim() === "")
             currentErrors.username = "Username is required";
-        if (!signUpPayload.fullName)
+
+        if (!fullName.trim() === "")
             currentErrors.fullName = "Full name is required";
-        if (!signUpPayload.phone) {
+
+        if (!phone.trim() === "") {
             currentErrors.phone = "Phone is required";
-        } else if (!/^0\d{9}$/.test(signUpPayload.phone)) {
+        } else if (!/^0\d{9}$/.test(phone)) {
             currentErrors.phone =
                 "Phone must start with 0 and be exactly 10 digits";
         }
-        if (!signUpPayload.email) {
+
+        if (!mail || mail.trim() === "") {
             currentErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signUpPayload.email)) {
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
             currentErrors.email = "Invalid email format";
         }
         if (Object.keys(currentErrors).length > 0) {
             setErrors(currentErrors);
+
             return;
         }
         setLoading(true);
@@ -93,7 +97,7 @@ export default function SignUpScreen() {
                 )}
                 <Text style={commonStyles.labelInput}>{t("fullName")}</Text>
                 <TextInput
-                    style={[commonStyles.input, {fontFamily: "nunito-regular"}]}
+                    style={[commonStyles.input, { fontFamily: "nunito-regular" }]}
                     placeholder={t("fullName")}
                     value={fullName}
                     onChangeText={(text) => {
@@ -108,7 +112,7 @@ export default function SignUpScreen() {
                 )}
                 <Text style={commonStyles.labelInput}>{t("phone")}</Text>
                 <TextInput
-                    style={[commonStyles.input, {fontFamily: "nunito-regular"}]}
+                    style={[commonStyles.input, { fontFamily: "nunito-regular" }]}
                     placeholder="03730xxxxx"
                     keyboardType="numeric"
                     value={phone}
@@ -124,7 +128,7 @@ export default function SignUpScreen() {
                 )}
                 <Text style={commonStyles.labelInput}>{t("mailAddress")}</Text>
                 <TextInput
-                    style={[commonStyles.input, {fontFamily: "nunito-regular"}]}
+                    style={[commonStyles.input, { fontFamily: "nunito-regular" }]}
                     placeholder="xxx@gmail.com"
                     keyboardType="email-address"
                     value={mail}
@@ -172,15 +176,16 @@ export default function SignUpScreen() {
                 </View>
 
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => handleSignUp()} style={{
-                        padding: 13,
-                        marginTop: 10,
-                        borderWidth: 1,
-                        backgroundColor: '#383737',
-                        borderColor: '#383737',
-                        borderRadius: 50,
-                        width: 300,
-                    }}>
+                    <TouchableOpacity onPress={() => handleSignUp()}
+                        style={{
+                            padding: 13,
+                            marginTop: 10,
+                            borderWidth: 1,
+                            backgroundColor: '#383737',
+                            borderColor: '#383737',
+                            borderRadius: 50,
+                            width: 300,
+                        }}>
                         <Text style={{
                             textAlign: 'center',
                             fontSize: 18,

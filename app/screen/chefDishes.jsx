@@ -125,7 +125,7 @@ const ChefDishes = () => {
               }
             });
             if (successCount === results.length) {
-              showModal(t("modal.success"), t("success.deleteAllSuccess"),);
+              showModal(t("modal.success"), t("deleteAllSuccess"),);
             } else if (errorCount === results.length) {
               showModal(t("modal.error"), t("errors.deleteAllFailed"), "Failed");
             } else {
@@ -244,7 +244,7 @@ const ChefDishes = () => {
               <View style={styles.imageContainer}>
                 <Image source={{ uri: dish.imageUrl }} style={styles.image} defaultSource={require("../../assets/images/1.jpg")} />
               </View>
-              <Text style={styles.title}>{dish.name}</Text>
+              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.title}>{dish.name}</Text>
               <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>{dish.description}</Text>
               <Text style={styles.cookTime}>~ {dish.cookTime} {t("minutes")}</Text>
             </View>

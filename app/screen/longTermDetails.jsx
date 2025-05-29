@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Animated,
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
@@ -40,6 +39,9 @@ const LongTermDetailsScreen = () => {
   const [error, setError] = useState("");
   const [hasPassword, setHasPassword] = useState(true);
   const [selectedPaymentCycleId, setSelectedPaymentCycleId] = useState(null);
+  const [selectedPaymentCyclePrice, setSelectedPaymentCyclePrice] = useState(null);
+  const [balance, setBalance] = useState(0);
+  const [expandedDates, setExpandedDates] = useState({});
   const modalizeRef = useRef(null);
   const pinInputRefs = useRef([
     React.createRef(),
@@ -54,13 +56,44 @@ const LongTermDetailsScreen = () => {
     if (bookingId) {
       fetchLongTermDetails();
     }
-  }, [bookingId]);
-
+  }, []);
   useEffect(() => {
-    if (pin.length === 4) {
-      accessWallet();
+    checkWalletPassword();
+    fetchBalanceInWallet();
+  }, []);
+
+  const checkWalletPassword = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(
+        "/users/profile/my-wallet/has-password"
+      );
+      console.log(response.data);
+      setHasPassword(response.data);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+    } finally {
+      setLoading(false);
     }
-  }, [pin]);
+  };
+
+  const fetchBalanceInWallet = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get("/users/profile/my-wallet");
+      const wallet = response.data;
+      setBalance(wallet.balance);
+    } catch (error) {
+      if (axios.isCancel(error) || error.response?.status === 401) return;
+      showModal(
+        t("modal.error"),
+        t("errors.fetchBalanceFailed"),
+        "Failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchLongTermDetails = async () => {
     setLoading(true);
@@ -103,25 +136,49 @@ const LongTermDetailsScreen = () => {
       const response = await axiosInstance.post(
         `/users/profile/my-wallet/access?password=${pin}`
       );
-      console.log("Access wallet response:", response.data);
-      setError("");
-      modalizeRef.current?.close();
-      await handlePayment(selectedPaymentCycleId);
+      if (response.data === true) {
+        setError("");
+        modalizeRef.current?.close();
+        await handlePayment(selectedPaymentCycleId, selectedPaymentCyclePrice);
+      } else {
+        setError(t("invalidPin"));
+        setPinValues(["", "", "", ""]);
+        pinInputRefs[0].current?.focus();
+      }
+
     } catch (error) {
       if (axios.isCancel(error) || error.response?.status === 401) return;
-      showModal(
-        t("modal.error"),
-        error.response?.data?.message || t("errors.invalidPin"),
-        "Failed"
-      );
-      setError(t("errors.invalidPin")); // pinInputRefs[0].current?.focus();
+      setError(t("invalidPin"));
+      setPinValues(["", "", "", ""]);
+      pinInputRefs[0].current?.focus();
     } finally {
       setLoading(false);
       setPinValues(["", "", "", ""]);
     }
   };
 
-  const handlePayment = async (paymentCycleId) => {
+  const handlePayment = async (paymentCycleId, totalPrice) => {
+    if (balance < totalPrice) {
+      showModal(
+        t("modal.error"),
+        t("errors.notEnoughBalance"),
+        "Failed",
+        null,
+        [
+          {
+            label: t("cancel"),
+            onPress: () => console.log("Cancel pressed"),
+            style: { backgroundColor: "#ccc", borderColor: "#ccc" },
+          },
+          {
+            label: t("deposit"),
+            onPress: () => router.push("/screen/wallet"),
+            style: { backgroundColor: "#383737", borderColor: "#383737" },
+          },
+        ]
+      );
+      return;
+    }
     setLoading(true);
     try {
       const response = await axiosInstance.post(
@@ -134,10 +191,8 @@ const LongTermDetailsScreen = () => {
       if (paymentSuccessful) {
         showModal(t("modal.success"),
           t("paymentSuccess"),
-          t("modal.succeeded")
         );
         await fetchLongTermDetails();
-        // router.push("/screen/history");
       } else {
         showModal(
           t("modal.error"),
@@ -160,11 +215,13 @@ const LongTermDetailsScreen = () => {
     } finally {
       setLoading(false);
       setSelectedPaymentCycleId(null);
+      setSelectedPaymentCyclePrice(null);
     }
   };
 
-  const handleOpenPinModal = (paymentCycleId) => {
+  const handleOpenPinModal = (paymentCycleId, totalPrice) => {
     setSelectedPaymentCycleId(paymentCycleId);
+    setSelectedPaymentCyclePrice(totalPrice);
     modalizeRef.current?.open();
     setTimeout(() => pinInputRefs[0].current?.focus(), 100);
   };
@@ -199,18 +256,32 @@ const LongTermDetailsScreen = () => {
     }
   };
 
+  const groupByDate = (details) => {
+    return details.reduce((acc, item) => {
+      const date = item.sessionDate;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(item);
+      return acc;
+    }, {});
+  };
+
+  const toggleDate = (date) => {
+    setExpandedDates(prev => ({
+      ...prev,
+      [date]: !prev[date]
+    }));
+  };
+
+
+
   const renderCycleItem = (cycle) => {
-    const sortedBookingDetails = [...cycle.bookingDetails].sort((a, b) => {
-      const dateA = new Date(a.sessionDate);
-      const dateB = new Date(b.sessionDate);
-      return dateA - dateB;
-    });
+    const groupedDetails = groupByDate(cycle.bookingDetails);
+
     return (
       <View key={cycle.id} style={styles.cycleCard}>
-        <Text style={styles.cycleTitle}>
-          {t("cycle")} {cycle.cycleOrder}
-        </Text>
+        <Text style={styles.cycleTitle}>{t("cycle")} {cycle.cycleOrder}</Text>
         <View style={styles.cycleHeader}>
+          <Text style={styles.dateRange}>{cycle.startDate} ~ {cycle.endDate}</Text>
           <Text
             style={[
               styles.statusText,
@@ -218,92 +289,99 @@ const LongTermDetailsScreen = () => {
                 color:
                   cycle.status === "PAID"
                     ? "#2ECC71"
-                    : cycle.status === "CONFIRMED" ||
-                      cycle.status === "PENDING_FIRST_CYCLE"
-                    ? "#A64B2A"
-                    : "#E74C3C",
+                    : cycle.status === "CONFIRMED" || cycle.status === "PENDING_FIRST_CYCLE"
+                      ? "#A64B2A"
+                      : "#E74C3C",
               },
             ]}
           >
             {formatStatus(cycle.status)}
           </Text>
-          <Text style={styles.dateRange}>
-            {cycle.startDate} ~ {cycle.endDate}
-          </Text>
         </View>
 
-        <View style={styles.cycleInfo}>
-          <Text style={styles.cycleInfoText}>
-            {t("amountDue")}:{" "}
-            <Text style={styles.amount}>${cycle.amountDue}</Text>
-          </Text>
-        </View>
+        {/* <Text style={styles.cycleInfoText}>
+          {t("amountDue")}: <Text style={styles.amount}>${cycle.amountDue}</Text>
+        </Text> */}
+        <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
 
         <View style={styles.bookingDetailsContainer}>
-          <Text style={styles.sectionTitle}>{t("bookingDetails")}</Text>
-          {sortedBookingDetails.map((detail) => (
-            <TouchableOpacity
-              key={detail.id}
-              style={styles.detailItem}
-              onPress={() =>
-                router.push({
-                  pathname: "/screen/bookingDetails",
-                  params: { bookingDetailId: detail.id, chefId },
-                })
-              }
-            >
-              <View style={styles.detailHeader}>
-                <Text style={styles.detailText}>
-                  {t("sessionDate")}: {detail.sessionDate}
-                </Text>
-                <Text
-                  style={[
-                    styles.detailStatus,
-                    {
-                      color:
-                        detail.status === "COMPLETED"
-                          ? "#2ECC71"
-                          : detail.status === "PENDING"
-                          ? "#A64B2A"
-                          : "#E74C3C",
-                    },
-                  ]}
-                >
-                  {formatStatus(detail.status)}
-                </Text>
-              </View>
-              <Text style={styles.detailText}>
-                {t("startTime")}: {detail.startTime}
-              </Text>
-              <Text style={styles.detailText}>
-                {t("location")}: {detail.location}
-              </Text>
-              <Text style={styles.detailTotal}>
-                {t("totalPrice")}: ${detail.totalPrice}
-              </Text>
-            </TouchableOpacity>
+          {Object.entries(groupedDetails).map(([date, details]) => (
+            <View key={date} style={styles.dateCard}>
+              <TouchableOpacity
+                onPress={() => toggleDate(date)}
+                style={styles.dateCardHeader}
+              >
+                <Text style={styles.dateTitle}>{t("sessionDate")}: {date}</Text>
+                <Ionicons
+                  name={expandedDates[date] ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#333"
+                />
+              </TouchableOpacity>
+
+              {expandedDates[date] && (
+                <View style={styles.detailsList}>
+                  {details.map((detail) => (
+                    <TouchableOpacity
+                      key={detail.id}
+                      style={styles.detailItem}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/screen/bookingDetails",
+                          params: { bookingDetailId: detail.id, chefId },
+                        })
+                      }
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={styles.detailText}>{t("startTime")}: {detail.startTime}</Text>
+                        <Text style={[
+                          styles.detailStatus,
+                          {
+                            color:
+                              detail.status === "COMPLETED"
+                                ? "#2ECC71"
+                                : detail.status === "PENDING"
+                                  ? "#A64B2A"
+                                  : "#E74C3C",
+                          },
+                        ]}>
+                          {formatStatus(detail.status)}
+                        </Text>
+                      </View>
+                      <Text style={styles.detailText}>{t("location")}: {detail.location}</Text>
+                      <Text style={styles.detailTotal}>{t("totalPrice")}: ${detail.totalPrice}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           ))}
         </View>
-        {(bookingStatus === "PENDING_FIRST_CYCLE" ||
-          bookingStatus === "CONFIRMED") && (
+
+        {(bookingStatus === "PENDING_FIRST_CYCLE" || bookingStatus === "CONFIRMED") && (
           <TouchableOpacity
             style={[styles.paymentButton, loading && styles.disabledButton]}
-            onPress={() => handleOpenPinModal(cycle.id)}
+            onPress={() => hasPassword ? handleOpenPinModal(cycle.id, cycle.amountDue) : handlePayment()}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#FFF" />
             ) : (
               <View style={styles.paymentButtonContent}>
-                <MaterialIcons name="payment" size={16} color="#FFF" />
-                <Text style={styles.paymentButtonText}>{t("payCycle")}</Text>
+                {/* <MaterialIcons name="payment" size={16} color="#FFF" /> */}
+                {/* <Text style={styles.paymentButtonText}>{t("payCycle")}</Text> */}
+                <Text style={styles.paymentButtonText}>{t("payment")}</Text>
+                <Text style={styles.paymentButtonText}>${cycle.amountDue}</Text>
               </View>
             )}
           </TouchableOpacity>
-        )}
-      </View>
+        )
+        }
+      </View >
     );
   };
+
+
 
   return (
     <GestureHandlerRootView>
@@ -331,7 +409,7 @@ const LongTermDetailsScreen = () => {
             )}
           </ScrollView>
         )}
-        {/* Modal nhập PIN */}
+
         <Modalize
           ref={modalizeRef}
           adjustToContentHeight={true}
@@ -343,8 +421,6 @@ const LongTermDetailsScreen = () => {
             const focusIndex = firstEmptyIndex === -1 ? 0 : firstEmptyIndex;
             pinInputRefs[focusIndex].current?.focus();
           }}
-          closeOnOverlayTap={false}
-          panGestureEnabled={false}
         >
           <View style={styles.modalContent}>
             <TouchableOpacity
@@ -353,18 +429,15 @@ const LongTermDetailsScreen = () => {
                 modalizeRef.current?.close();
                 setPinValues(["", "", "", ""]);
                 setError("");
-                setSelectedPaymentCycleId(null);
               }}
             >
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{t("enterWalletPin")}</Text>
-            <Text style={styles.modalSubtitle}>
-              {t("pleaseEnter4DigitPin")}
-            </Text>
+            <Text style={styles.modalSubtitle}>{t("enter4DigitPin")}</Text>
             <View style={styles.pinContainer}>
               {[0, 1, 2, 3].map((index) => (
-                <View style={styles.pinBox} key={index}>
+                <View key={index} style={styles.pinBox}>
                   <TextInput
                     ref={pinInputRefs[index]}
                     style={styles.pinInput}
@@ -381,6 +454,21 @@ const LongTermDetailsScreen = () => {
               ))}
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                backgroundColor: "#A64B2A",
+                borderRadius: 20,
+              }}
+              onPress={() => accessWallet()}
+            >
+              <Text
+                style={{ fontSize: 16, color: "white", fontFamily: "nunito-bold" }}
+              >
+                {t("pay")}
+              </Text>
+            </TouchableOpacity>
           </View>
         </Modalize>
       </SafeAreaView>
@@ -390,17 +478,18 @@ const LongTermDetailsScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 20,
-    paddingBottom: 100, // Đảm bảo không bị che bởi Toast
+    // paddingHorizontal: 10,
+    // paddingVertical: 20,
+    paddingBottom: 50,
   },
   cycleCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9F5F0",
     borderRadius: 12,
-    padding: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    // borderWidth: 1,
+    // borderColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -442,17 +531,17 @@ const styles = StyleSheet.create({
     color: "#A64B2A",
   },
   bookingDetailsContainer: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F9F5F0",
     borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    // padding: 10,
+    // borderWidth: 1,
+    // borderColor: "#E0E0E0",
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "nunito-bold",
     color: "#1E293B",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   detailItem: {
     paddingVertical: 12,
@@ -468,7 +557,7 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     color: "#475569",
-    marginBottom: 8,
+    marginBottom: 5,
     fontFamily: "nunito-regular",
   },
   detailStatus: {
@@ -595,6 +684,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
   },
+
+  dateCard: {
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: "#ddd",
+    backgroundColor: "#fafafa",
+  },
+  dateCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+    backgroundColor: "#f0f0f0",
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  dateTitle: {
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  detailsList: {
+    padding: 10,
+    gap: 6,
+  },
+
 });
 
 export default LongTermDetailsScreen;

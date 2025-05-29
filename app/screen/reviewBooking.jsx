@@ -109,16 +109,28 @@ const ReviewBookingScreen = () => {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
-      if (
-        !error.response?.status === 403 &&
-        !error.response.data.message === "Chef không đủ uy tín để nhận booking."
-      ) {
+      if (error.response?.status === 403 && error.response.data.message === "Chef không đủ uy tín để nhận booking.") {
         showModal(
           t("modal.error"),
           t("errors.chefNotEligible"),
-          "Failed"
+          "Failed",
+          null,
+          [
+            {
+              label: t("backToHome"),
+              onPress: () => router.replace("/(tabs)/home"),
+              style: { backgroundColor: "#ccc", borderColor: "#ccc" },
+            },
+            {
+              label: t("viewOtherChefs"),
+              onPress: () => router.replace("/screen/allChef"),
+              style: { backgroundColor: "#383737", borderColor: "#383737" },
+            },
+          ]
         );
       }
+      showModal(t("modal.error"), error.response.data.message, "Failed");
+
       setError(error.response.data.message);
     } finally {
       setLoading(false);
@@ -176,7 +188,6 @@ const ReviewBookingScreen = () => {
       if (response.status === 200 || response.status === 201) {
         showModal(t("modal.success"),
           t("confirmBookingSuccess"),
-          t("modal.succeeded")
         );
         setTotalPrice(calcuResult.totalPrice);
         setLocation(calcuResult.bookingDetails?.[0]?.location);
@@ -191,6 +202,15 @@ const ReviewBookingScreen = () => {
       if (error.response?.status === 401 || axios.isCancel(error)) {
         return;
       }
+      const errorMessage = error.response.data.message;
+
+      const matches = errorMessage.match(/The chef already has a booking during this time on/g);
+
+      if (matches) {
+        showModal(t("modal.error"), t("errors.theChefAlreadyHasABooking"), "Failed");
+        return;
+      }
+
       showModal(
         t("modal.error"),
         error.response?.data?.message || t("errors.confirmBookingFailed"),
@@ -499,7 +519,7 @@ const ReviewBookingScreen = () => {
           adjustToContentHeight={true}
           handlePosition="outside"
           modalStyle={styles.modalStyle}
-          // onClose={closePlatformFeeModal}
+        // onClose={closePlatformFeeModal}
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("applicationFeeTitle")}</Text>

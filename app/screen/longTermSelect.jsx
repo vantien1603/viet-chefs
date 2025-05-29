@@ -250,7 +250,6 @@ const LongTermSelectBooking = () => {
     setSelectedDates(resultDates);
     showModal(t("modal.success"),
       t("datesSelectedWithRepeat", { count: resultDates.length }),
-      t("modal.succeeded")
     );
   };
 
@@ -428,8 +427,8 @@ const LongTermSelectBooking = () => {
                 style={[
                   styles.dishItem,
                   activeDish?.date === date &&
-                    activeDish?.dishId === item.dishId &&
-                    styles.dishItemActive,
+                  activeDish?.dishId === item.dishId &&
+                  styles.dishItemActive,
                 ]}
               >
                 <Image
@@ -454,8 +453,8 @@ const LongTermSelectBooking = () => {
                   style={[
                     styles.dishItem,
                     activeDish?.date === date &&
-                      activeDish?.dishId === dish.id &&
-                      styles.dishItemActive,
+                    activeDish?.dishId === dish.id &&
+                    styles.dishItemActive,
                   ]}
                   onPress={() => toggleDishActive(date, dish.id)}
                 >
@@ -493,8 +492,8 @@ const LongTermSelectBooking = () => {
                   style={[
                     styles.dishItem,
                     activeDish?.date === date &&
-                      activeDish?.dishId === dish.id &&
-                      styles.dishItemActive,
+                    activeDish?.dishId === dish.id &&
+                    styles.dishItemActive,
                     { justifyContent: "space-between" },
                   ]}
                   onPress={() => toggleDishActive(date, dish.id)}
@@ -662,7 +661,7 @@ const LongTermSelectBooking = () => {
                                 style={[
                                   styles.timeButton,
                                   startTime[date] === time &&
-                                    styles.timeButtonSelected,
+                                  styles.timeButtonSelected,
                                 ]}
                                 onPress={() =>
                                   setStartTime((prev) => ({
@@ -706,7 +705,7 @@ const LongTermSelectBooking = () => {
                 >
                   <Text style={styles.title}>
                     {t("needToSelect")} {selectedPackage?.durationDays || 0}{" "}
-                    days
+                    {t("days")}
                   </Text>
                   <TouchableOpacity
                     onPress={() => setIsExpanedCalenda(!isExpanedCalenda)}
@@ -773,7 +772,7 @@ const LongTermSelectBooking = () => {
                                   style={[
                                     styles.weekdayButton,
                                     selectedWeekdays.includes(index) &&
-                                      styles.weekdayButtonSelected,
+                                    styles.weekdayButtonSelected,
                                   ]}
                                   onPress={() => toggleWeekday(index)}
                                 >
@@ -781,7 +780,7 @@ const LongTermSelectBooking = () => {
                                     style={[
                                       styles.weekdayText,
                                       selectedWeekdays.includes(index) &&
-                                        styles.weekdayTextSelected,
+                                      styles.weekdayTextSelected,
                                     ]}
                                   >
                                     {day}
@@ -793,7 +792,7 @@ const LongTermSelectBooking = () => {
                               style={[
                                 styles.applyButton,
                                 selectedWeekdays.length === 0 &&
-                                  styles.disabledButton,
+                                styles.disabledButton,
                               ]}
                               onPress={handleRepeatSelection}
                               disabled={selectedWeekdays.length === 0}
@@ -855,7 +854,7 @@ const LongTermSelectBooking = () => {
             style={[
               styles.fixedButton,
               Object.keys(selectedDates).length !==
-                selectedPackage?.durationDays && styles.disabledButton,
+              selectedPackage?.durationDays && styles.disabledButton,
             ]}
             onPress={handleConfirm}
             disabled={

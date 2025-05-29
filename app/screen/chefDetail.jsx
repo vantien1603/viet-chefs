@@ -19,7 +19,6 @@ import { Tooltip } from "react-native-elements";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useCommonNoification } from "../../context/commonNoti";
 import { commonStyles } from "../../style";
-import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { useSelectedItems } from "../../context/itemContext";
@@ -246,12 +245,12 @@ const ChefDetail = () => {
                               let iconName = "star";
                               let color = "#ccc";
 
-                            if (i < Math.floor(rating)) {
-                              color = "#f5a623";
-                            } else if (i < rating) {
-                              iconName = "star-half";
-                              color = "#f5a623";
-                            }
+                              if (i < Math.floor(rating)) {
+                                color = "#f5a623";
+                              } else if (i < rating) {
+                                iconName = "star-half";
+                                color = "#f5a623";
+                              }
 
                               return (
                                 <Icon
@@ -264,7 +263,7 @@ const ChefDetail = () => {
                             })}
                         </View>
                         <Text style={[styles.value, { color: "orange" }]}>
-                          ${chefs?.price}/hour
+                          ${chefs?.price}/{t('hour')}
                         </Text>
                       </View>
                     </View>
@@ -353,7 +352,7 @@ const ChefDetail = () => {
                       style={styles.button}
                       onPress={() =>
                         router.push({
-                          pathname: "/screen/reviewsChef",
+                          pathname: "/screen/chefReviews",
                           params: {
                             chefId: chefId,
                             chefName: chefs?.user?.fullName,
@@ -440,7 +439,7 @@ const ChefDetail = () => {
                       {t("tooltip.title")}
                     </Text>
                     <Text style={{ marginBottom: 4 }}>
-                      <Text style={{ fontWeight: 'bold' ,fontFamily: "nunito-bold" }}>{t("tooltip.regularBooking")}</Text> 
+                      <Text style={{ fontWeight: 'bold', fontFamily: "nunito-bold" }}>{t("tooltip.regularBooking")}</Text>
                     </Text>
                     <Text>
                       <Text style={{ fontFamily: "nunito-bold" }}>

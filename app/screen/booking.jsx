@@ -154,6 +154,10 @@ const BookingScreen = () => {
     }
   };
 
+
+  console.log("dish note ben booking", dishNotes);
+  console.log("dishes ben booking", selectedDishes);
+
   const fetchAvailability = async () => {
     if (!selectedDay || !address?.address) {
       return;
@@ -701,7 +705,7 @@ const BookingScreen = () => {
       <Modalize
         ref={modalizeRef}
         adjustToContentHeight
-        handlePosition="outside"
+        // handlePosition="outside"
         modalStyle={styles.modalStyle}
         handleStyle={styles.handleStyle}
         key={modalKey}
@@ -1001,7 +1005,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingVertical: 20
+    paddingVertical: 20,
+    
   },
   handleStyle: {
     backgroundColor: "#A64B2A",
@@ -1051,6 +1056,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 20,
+    marginBottom:50
   },
   cancelButton: {
     flex: 1,

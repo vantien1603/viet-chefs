@@ -14,11 +14,14 @@ import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import useAxios from "../config/AXIOS_API";
 import { t } from "i18next";
+import { useConfirmModal } from "../context/commonConfirm";
+import { useCommonNoification } from "../context/commonNoti";
 
 // Custom hook for cancellation logic
 const useBookingCancellation = () => {
   const axiosInstance = useAxios();
-
+  const { showConfirm } = useConfirmModal();
+  const { showModal } = useCommonNoification();
   const handleCancel = async (bookingId, onRefresh) => {
     try {
       const response = await axiosInstance.put(
@@ -27,7 +30,7 @@ const useBookingCancellation = () => {
       if (response.status === 200) {
         showModal(t("modal.success"),
           t("singleCancelSuccess"),
-         
+
         );
         onRefresh();
       }
@@ -73,35 +76,26 @@ const useBookingCancellation = () => {
       showModal(t("modal.error"), t("invalidBookingType"), "Failed");
       return false;
     }
-
-    Alert.alert(
-      t("cancelBooking"),
-      t("confirmCancel"),
-      [
-        { text: t("noButton"), style: "cancel" },
-        {
-          text: t("yesButton"),
-          onPress: async () => {
-            try {
-              if (bookingType === "SINGLE") {
-                await handleCancel(bookingId, onRefresh);
-              } else if (bookingType === "LONG_TERM") {
-                await handleCancelBookingLongterm(bookingId, onRefresh);
-              }
-              return true;
-            } catch (error) {
-              Toast.show({
-                type: t("modal.error"),
-                text1: t("modal.error"),
-                text2: error.message,
-                visibilityTime: 4000,
-              });
-              return false;
-            }
-          },
-        },
-      ]
-    );
+    showConfirm(t("cancelBooking"), t("confirmCancel"),
+      async () => {
+        try {
+          if (bookingType === "SINGLE") {
+            await handleCancel(bookingId, onRefresh);
+          } else if (bookingType === "LONG_TERM") {
+            await handleCancelBookingLongterm(bookingId, onRefresh);
+          }
+          return true;
+        } catch (error) {
+          Toast.show({
+            type: t("modal.error"),
+            text1: t("modal.error"),
+            text2: error.message,
+            visibilityTime: 4000,
+          });
+          return false;
+        }
+      },
+    )
   };
 
   return { handleCancelBooking };
@@ -154,8 +148,8 @@ const BookingCard = ({
         status === "PENDING"
           ? "/screen/viewBookingDetails"
           : status === "DEPOSITED" || booking.bookingType === "LONG_TERM"
-          ? "/screen/longTermDetails"
-          : "/screen/viewBookingDetails",
+            ? "/screen/longTermDetails"
+            : "/screen/viewBookingDetails",
       params: {
         bookingId: booking.id,
         chefId: booking.chef.id,
@@ -350,7 +344,7 @@ const BookingList = ({ bookings, onLoadMore, refreshing, onRefresh }) => {
         if (!isMenuValid) {
           throw new Error(
             menuValidationResponse.data.message ||
-              "Selected menu has changed or is no longer valid"
+            "Selected menu has changed or is no longer valid"
           );
         }
 

@@ -10,6 +10,9 @@ import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCommonNoification } from '../context/commonNoti';
+import { t } from "i18next";
+import useAxios from '../config/AXIOS_API';
+import axios from 'axios';
 
 async function registerForPushNotificationsAsync() {
   try {
@@ -44,9 +47,9 @@ export default function WelcomeScreen() {
   const [notification, setNotification] = useState();
   const notificationListener = useRef();
   const responseListener = useRef();
-  const { user } = useContext(AuthContext);
+  const { user, chef, setChef } = useContext(AuthContext);
   const { showModal } = useCommonNoification();
-
+  const axiosInstance = useAxios();
   const setupNotifications = async () => {
     try {
       const token = await registerForPushNotificationsAsync();
@@ -107,6 +110,14 @@ export default function WelcomeScreen() {
     router.push("screen/login");
   };
 
+  // const fetchChef = async (id) => {
+  //   try {
+  //     const response = await axiosInstance.get(`/chefs/${id}`);
+  //     if (response.status === 200) setChef(response.data);
+  //   } catch (error) {
+  //     if (axios.isCancel(error)) return;
+  //   }
+  // }
 
   useFocusEffect(
     useCallback(() => {
@@ -116,6 +127,7 @@ export default function WelcomeScreen() {
       const timeout = setTimeout(() => {
         if (user) {
           if (user.roleName === "ROLE_CHEF") {
+            // fetchChef(user.chefId);
             navigation.navigate("(chef)", { screen: "home" });
           } else if (user.roleName === "ROLE_CUSTOMER") {
             navigation.navigate("(tabs)", { screen: "home" });
@@ -185,7 +197,7 @@ export default function WelcomeScreen() {
                 fontFamily: "nunito-bold",
               }}
             >
-              SIGN UP
+              {t('signup')}
             </Text>
           )}
         </TouchableOpacity>
@@ -211,14 +223,14 @@ export default function WelcomeScreen() {
                 fontFamily: "nunito-bold",
               }}
             >
-              LOGIN
+              {t('login')}
             </Text>
           )}
 
         </TouchableOpacity>
       </View>
       <TouchableOpacity disabled={isCheckingUser} onPress={() => navigation.navigate("(tabs)", { screen: "home" })} style={{ alignItems: 'center', marginTop: 10, position: 'absolute', bottom: 10, }}>
-        <Text style={{ textDecorationLine: 'underline', }}>Continue as guest</Text>
+        <Text style={{ textDecorationLine: 'underline', }}>{t('continueAsGuest')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

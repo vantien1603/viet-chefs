@@ -127,7 +127,7 @@ const AddNewFoodScreen = () => {
       newError.estimatedCookGroup = t("errors.estimatedCookGroup");
     if (selectedFoodTypeIds.length === 0) newError.type = t("errors.foodType");
     if (!cuisineType) newError.cuisineType = t("errors.cuisineType");
-    if (!basePrice.trim()) newError.basePrice = t("errors.basePrice");
+    if (!basePrice.trim() || basePrice <= 0) newError.basePrice = t("errors.basePrice");
 
     if (Object.keys(newError).length > 0) {
       setErrors(newError);
@@ -336,6 +336,16 @@ const AddNewFoodScreen = () => {
           disabled={loading}
         />
 
+        <Text style={styles.label}>{t("basePrice")}</Text>
+        <TextInput
+          value={basePrice}
+          placeholder={t("placeholders.basePrice")}
+          keyboardType="numeric"
+          style={[styles.input, errors.basePrice && styles.inputError]}
+          onChangeText={handleBasePrice}
+          disabled={loading}
+        />
+
         <Text style={styles.label}>{t("details")}</Text>
         <TextInput
           value={details}
@@ -347,15 +357,7 @@ const AddNewFoodScreen = () => {
           disabled={loading}
         />
 
-        <Text style={styles.label}>{t("basePrice")}</Text>
-        <TextInput
-          value={basePrice}
-          placeholder={t("placeholders.basePrice")}
-          keyboardType="numeric"
-          style={[styles.input, errors.basePrice && styles.inputError]}
-          onChangeText={handleBasePrice}
-          disabled={loading}
-        />
+
       </ScrollView>
       <TouchableOpacity
         onPress={() => handleSave()}

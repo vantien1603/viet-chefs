@@ -91,7 +91,6 @@ const ReviewScreen = () => {
       if (response.status === 200)
         showModal(t("modal.success"),
           t("submitReviewSuccess"),
-          t("modal.succeeded")
         );
       fetchCriteria();
     } catch (error) {

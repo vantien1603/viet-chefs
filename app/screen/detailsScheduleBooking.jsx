@@ -17,17 +17,17 @@ import { AuthContext } from '../../config/AuthContext'
 
 
 const DetailsBooking = () => {
-    const [loading, setLoading] = useState(false);
-    const axiosInstance = useAxios();
-    const route = useRoute();
-    const { bookingId } = route.params;
-    const [detail, setDetail] = useState({});
-    const [customer, setCustomer] = useState({});
-    const [images, setImages] = useState([]);
-    const { showModal } = useCommonNoification();
-    const axiosInstanceForm = useAxiosFormData();
-    const router = useRouter();
-    const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const axiosInstance = useAxios();
+  const route = useRoute();
+  const { bookingId } = route.params;
+  const [detail, setDetail] = useState({});
+  const [customer, setCustomer] = useState({});
+  const [images, setImages] = useState([]);
+  const { showModal } = useCommonNoification();
+  const axiosInstanceForm = useAxiosFormData();
+  const router = useRouter();
+  const { user } = useContext(AuthContext);
 
 
   useEffect(() => {
@@ -63,7 +63,7 @@ const DetailsBooking = () => {
 
   const pickImage = async () => {
     if (images.length >= 2) {
-      showModal(t("modal.warning"), t("errors.maxImages"), t("modal.warning"));
+      showModal(t("modal.warning"), t("errors.maxImages"), "Warning");
       return;
     }
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -87,7 +87,7 @@ const DetailsBooking = () => {
           showModal(
             t("modal.warning"),
             t("errors.maxImages"),
-            t("modal.warning")
+            "Warning"
           );
           return prev;
         }
@@ -104,13 +104,13 @@ const DetailsBooking = () => {
       showModal(
         t("modal.warning"),
         t("errors.cameraPermissionDenied"),
-        t("modal.warning")
+        "Warning"
       );
       return;
     }
 
     if (images.length >= 2) {
-      showModal(t("modal.warning"), t("errors.maxImages"), t("modal.warning"));
+      showModal(t("modal.warning"), t("errors.maxImages"), "Warning");
       return;
     }
 
@@ -185,19 +185,19 @@ const DetailsBooking = () => {
     }
   };
 
-    const handleChat = () => {
-        console.log(customer)
-        router.push({
-            pathname: "/screen/message",
-            params: {
-                contact: JSON.stringify({
-                    id: customer?.username,
-                    name: customer?.fullName,
-                    avatar: customer?.avatarUrl,
-                }),
-            },
-        });
-    };
+  const handleChat = () => {
+    console.log(customer)
+    router.push({
+      pathname: "/screen/message",
+      params: {
+        contact: JSON.stringify({
+          id: customer?.username,
+          name: customer?.fullName,
+          avatar: customer?.avatarUrl,
+        }),
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -279,9 +279,9 @@ const DetailsBooking = () => {
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
+              {/* <Text style={{ fontSize: 16, fontFamily: "nunito-bold" }}>
                 {t('received')}: ${detail.totalChefFeePrice}
-              </Text>
+              </Text> */}
               <Text style={{ fontFamily: "nunito-bold", fontSize: 18 }}>
                 {t('total')}: ${detail.totalPrice}
               </Text>
@@ -336,130 +336,149 @@ const DetailsBooking = () => {
         {(detail.status === "IN_PROGRESS" ||
           detail.status === "WAITING_FOR_CONFIRMATION" ||
           detail.status === "COMPLETED") && (
-          <View style={styles.itemContainer}>
-            <Text
-              style={{ fontSize: 16, fontFamily: "nunito-bold", marginBottom: 10 }}
-            >
-              {t('uploadCheckoutReceipts')}
-            </Text>
+            <View style={styles.itemContainer}>
+              <Text
+                style={{ fontSize: 16, fontFamily: "nunito-bold", marginBottom: 10 }}
+              >
+                {t('uploadCheckoutReceipts')}
+              </Text>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {detail.status === "WAITING_FOR_CONFIRMATION" ||
-              (detail.status === "COMPLETED" && detail.images)
-                ? detail.images.map((img) => (
-                    <View
-                      key={img.id}
-                      style={{ marginRight: 10, position: "relative" }}
-                    >
-                      <Image
-                        source={{ uri: img.imageUrl }}
-                        style={{ width: 100, height: 100, borderRadius: 8 }}
-                      />
-                    </View>
-                  ))
-                : images.map((img) => (
-                    <View
-                      key={img.id}
-                      style={{ marginRight: 10, position: "relative" }}
-                    >
-                      <Image
-                        source={{ uri: img.imageUrl }}
-                        style={{ width: 100, height: 100, borderRadius: 8 }}
-                      />
-                      <TouchableOpacity
-                        onPress={() =>
-                          setImages(images.filter((i) => i.id !== img.id))
-                        }
+              {(detail.status === "WAITING_FOR_CONFIRMATION" ||
+  (detail.status === "COMPLETED" && detail.images)) ? (
+  detail.images.length > 0 ? (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {detail.images.map((img) => (
+        <View
+          key={img.id}
+          style={{ marginRight: 10, position: "relative" }}
+        >
+          <Image
+            source={{ uri: img.imageUrl }}
+            style={{ width: 100, height: 100, borderRadius: 8 }}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  ) : (
+    <View
+      style={{
+        // width: screenWidth,
+        // height: 100,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <Text style={{ textAlign: 'center', color: 'gray' }}>
+        {t('noImagesAvailable')}
+      </Text>
+    </View>
+  )
+) : (
+  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    {images.map((img) => (
+      <View
+        key={img.id}
+        style={{ marginRight: 10, position: "relative" }}
+      >
+        <Image
+          source={{ uri: img.imageUrl }}
+          style={{ width: 100, height: 100, borderRadius: 8 }}
+        />
+        <TouchableOpacity
+          onPress={() =>
+            setImages(images.filter((i) => i.id !== img.id))
+          }
+          style={{
+            position: "absolute",
+            top: -5,
+            right: -5,
+            backgroundColor: "#fff",
+            borderRadius: 20,
+            padding: 2,
+          }}
+        >
+          <Ionicons name="close-circle" size={20} color="red" />
+        </TouchableOpacity>
+      </View>
+    ))}
+  </ScrollView>
+)}
+              {detail.status === "IN_PROGRESS" && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginTop: 15,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={pickImage}
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: "#ccc",
+                      borderRadius: 8,
+                      padding: 12,
+                      alignItems: "center",
+                      marginRight: 5,
+                      backgroundColor: "#f0f0f0",
+                    }}
+                  >
+                    <Ionicons name="images-outline" size={24} color="#333" />
+                    <Text style={{ marginTop: 5, fontFamily: "nunito-regular" }}>{t('chooseImage')}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={takePhoto}
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: "#ccc",
+                      borderRadius: 8,
+                      padding: 12,
+                      alignItems: "center",
+                      marginLeft: 5,
+                      backgroundColor: "#f0f0f0",
+                    }}
+                  >
+                    <Ionicons name="camera-outline" size={24} color="#333" />
+                    <Text style={{ marginTop: 5, fontFamily: "nunito-regular" }}>{t('takePhoto')}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* </View> */}
+              {detail.status === "IN_PROGRESS" && (
+                <View>
+                  <TouchableOpacity
+                    style={{
+                      marginVertical: 10,
+                      backgroundColor: "#A64B2A",
+                      padding: 12,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      elevation: 5,
+                    }}
+                    onPress={() => handleSubmit()}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text
                         style={{
-                          position: "absolute",
-                          top: -5,
-                          right: -5,
-                          backgroundColor: "#fff",
-                          borderRadius: 20,
-                          padding: 2,
+                          color: "white",
+                          fontFamily: "nunito-bold",
+                          fontSize: 16,
                         }}
                       >
-                        <Ionicons name="close-circle" size={20} color="red" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-            </ScrollView>
-            {detail.status === "IN_PROGRESS" && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 15,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={pickImage}
-                  style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    borderColor: "#ccc",
-                    borderRadius: 8,
-                    padding: 12,
-                    alignItems: "center",
-                    marginRight: 5,
-                    backgroundColor: "#f0f0f0",
-                  }}
-                >
-                  <Ionicons name="images-outline" size={24} color="#333" />
-                  <Text style={{ marginTop: 5, fontFamily: "nunito-regular" }}>{t('chooseImage')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={takePhoto}
-                  style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    borderColor: "#ccc",
-                    borderRadius: 8,
-                    padding: 12,
-                    alignItems: "center",
-                    marginLeft: 5,
-                    backgroundColor: "#f0f0f0",
-                  }}
-                >
-                  <Ionicons name="camera-outline" size={24} color="#333" />
-                  <Text style={{ marginTop: 5, fontFamily: "nunito-regular" }}>{t('takePhoto')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* </View> */}
-            {detail.status === "IN_PROGRESS" && (
-              <View>
-                <TouchableOpacity
-                  style={{
-                    marginVertical: 10,
-                    backgroundColor: "#A64B2A",
-                    padding: 12,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    elevation: 5,
-                  }}
-                  onPress={() => handleSubmit()}
-                >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text
-                      style={{
-                        color: "white",
-                        fontFamily: "nunito-bold",
-                        fontSize: 16,
-                      }}
-                    >
-                      {t('complete')}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
+                        {t('complete')}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
 
         {/* </View> */}
       </ScrollView>
@@ -487,6 +506,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   itemContentLabel: {
+    fontSize: 15,
     fontFamily: "nunito-bold",
   },
   itemContent: {

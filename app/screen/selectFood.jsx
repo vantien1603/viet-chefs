@@ -31,7 +31,7 @@ const DishCard = ({ item, selectedList, onToggle, note, viewDetails }) => (
       />
       <View style={styles.cardContent}>
         <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
+        <Text numberOfLines={2} ellipsizeMode="tail" style={styles.desc}>{item.description || t("noInformation")}</Text>
         {note ? <Text style={styles.note}>{t("note")}: {note}</Text> : null}
       </View>
     </TouchableOpacity>
@@ -54,7 +54,12 @@ const MenuCard = ({ item, isSelected, onSelect, onViewDetails }) => (
       />
       <View style={styles.cardContent}>
         <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.desc}>{item.description || t("noInformation")}</Text>
+        <Text numberOfLines={2} ellipsizeMode="tail" style={styles.desc}>{item.description || t("noInformation")}</Text>
+      </View>
+      <View style={styles.dishCountBadge}>
+        <Text style={styles.dishCountText}>
+          {item.menuItems?.length || 0} {t("dishes")}
+        </Text>
       </View>
     </TouchableOpacity>
     <TouchableOpacity style={{ position: 'absolute', top: 5, right: 20 }} onPress={() => onViewDetails(item)}>
@@ -423,6 +428,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 24,
     fontFamily: "nunito-regular"
+  },
+  dishCountBadge: {
+    backgroundColor: "#F8BF40",
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+  },
+  dishCountText: {
+    fontSize: 10,
+    fontFamily: "nunito-bold",
+    color: "#A9411D",
   },
 });
 

@@ -34,14 +34,14 @@ const CustomerSchedule = () => {
   const [bookingDetails, setBookingDetails] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  // const { setChefId, setSelectedMenu, setSelectedDishes, setExtraDishIds, chefId, setRouteBefore } = useSelectedItems();
+  const { setChefId, setSelectedMenu, setSelectedDishes, setExtraDishIds, setDishNotes, setRouteBefore } = useSelectedItems();
   const [refresh, setRefresh] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(0);
   const routes = useMemo(() => [
-    { key: "today", title: "Today" },
-    { key: "upcoming", title: "Upcoming" },
-    { key: "past", title: "Past" },
+    { key: "today", title: t('today') },
+    { key: "upcoming", title: t('Upcoming') },
+    { key: "past", title: t('past') },
   ], []);
 
   useEffect(() => {
@@ -157,16 +157,20 @@ const CustomerSchedule = () => {
       const response = await axiosInstance.get(`/menus/${id}`);
       const menu = response.data;
 
-      // setSelectedMenu(menu);
-
-      // Lọc các món không có trong menu
+      setSelectedMenu(menu);
       const menuDishIds = new Set(menu.menuItems.map(item => item.dishId));
 
-      const nonMenuDishes = dishesFromBooking.filter(
-        (d) => !menuDishIds.has(d.dish.id)
-      );
+      console.log("mmnenuas dosh id", menuDishIds);
 
-      // setSelectedDishes(nonMenuDishes);
+      const notInMenuDishes = dishesFromBooking
+        .filter(item => !menuDishIds.has(item.dish.id))
+        .map(item => {
+          const { id, name, description, imageUrl } = item.dish;
+          return { id, name, description, imageUrl };
+        });
+
+      console.log("khonfcos trong meu", notInMenuDishes);
+      setExtraDishIds(notInMenuDishes);
     } catch (error) {
       showModal(t("modal.error", "Không thể tải dữ liệu của menu", "Failed"));
     }
@@ -182,38 +186,37 @@ const CustomerSchedule = () => {
       );
       return;
     }
-    console.log("dish", bookingDetail.dishes);
-    // if (bookingDetail.menuId) {
-    //   const menu = await fetchMenu(bookingDetail.menuId);
+    if (bookingDetail.menuId) {
+      console.log(bookingDetail.dishes);
+      await fetchMenu(bookingDetail.menuId, bookingDetail.dishes);
 
-    //   const menuDishIds = new Set(menu.menuItems.map((item) => item.dishId));
 
-    //   const nonMenuDishes = bookingDetail.dishes.filter(
-    //     (d) => !menuDishIds.has(d.dish.id)
-    //   );
+      // const menuDishIds = new Set(menu.menuItems.map((item) => item.dishId));
 
-    //   setExtraDishIds(nonMenuDishes);
-    // } else {
-    //   setSelectedDishes(bookingDetail.dishes);
-    // }
+      // const nonMenuDishes = bookingDetail.dishes.filter(
+      //   (d) => !menuDishIds.has(d.dish.id)
+      // );
+
+      // setExtraDishIds(nonMenuDishes);
+    } else {
+      setSelectedDishes(
+        bookingDetail.dishes.reduce((acc, item) => {
+          const { id, name, description, imageUrl } = item.dish;
+          acc[id] = { id, name, description, imageUrl };
+          return acc;
+        }, {})
+      );
+    }
     // setSelectedDishes(bookingDetail.dishes);
     const dishNotes = {};
-    // bookingDetail.dishes.forEach(({ dish, notes }) => {
-    //   dishNotes[dish.id] = notes || "";
-    // });
-    // setChefId(bookingDetail.booking?.chef?.id);
-    // setRouteBefore(segment);
+    bookingDetail.dishes.forEach(({ dish, notes }) => {
+      dishNotes[dish.id] = notes || "";
+    });
+    console.log(dishNotes);
+    setDishNotes(dishNotes);
+    setChefId(bookingDetail.booking?.chef?.id);
+    setRouteBefore(segment);
     router.push("/screen/booking");
-    // router.push({
-    //   pathname: "/screen/booking",
-    //   params: {
-    //     chefId: bookingDetail.booking?.chef?.id,
-    //     selectedMenu: selectedMenu ? JSON.stringify(selectedMenu) : null,
-    //     selectedDishes: selectDishes.length > 0 ? JSON.stringify(selectDishes) : null,
-    //     dishNotes: Object.keys(dishNotes).length > 0 ? JSON.stringify(dishNotes) : null,
-    //     address: bookingDetail.location,
-    //   },
-    // });
   };
 
   const renderBookingItem = useCallback(

@@ -25,6 +25,7 @@ import { jwtDecode } from "jwt-decode";
 import * as SecureStore from "expo-secure-store";
 import useActionCheckNetwork from "../../hooks/useAction";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAxios from "../../config/AXIOS_API";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,7 +33,7 @@ export default function LoginScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-  const { user, login, loading, setUser, setIsGuest } = useContext(AuthContext);
+  const { user, login, loading, setUser, setIsGuest, setChef } = useContext(AuthContext);
   const modalRef = useRef(null);
   const [loadingA, setLoadingA] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
@@ -41,6 +42,9 @@ export default function LoginScreen() {
   const [oauthUrl, setOauthUrl] = useState(null);
   const requireNetwork = useActionCheckNetwork();
   const [errorMessage, setErrorMessage] = useState("");
+  const [modayKey, setModalKey] = useState(0);
+  const axiosInstance = useAxios();
+
 
   useEffect(() => {
     if (user?.token !== undefined && !hasNavigated && !loading) {
@@ -81,28 +85,46 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (usernameOrEmail.trim().length === 0 || password.trim().length === 0) {
       modalRef.current.open();
+      setErrorMessage(t('errors.loginFailedMessage'));
       return;
     }
     setLoadingA(true);
     setErrorMessage("");
-    const token = SecureStore.getItem("expoPushToken");
+    const token = await SecureStore.getItemAsync("expoPushToken");
     console.log("token luc login", token);
     const result = await login(usernameOrEmail, password, token);
     console.log("reas asd", result);
     if (result != null && result.error === undefined) {
       if (result?.roleName === "ROLE_CHEF") {
+        // await fetchChef(result.chefId);
         navigation.navigate("(chef)", { screen: "home" });
       } else if (result?.roleName === "ROLE_CUSTOMER") {
         navigation.navigate("(tabs)", { screen: "home" });
       }
     } else {
-      setErrorMessage(result?.error || t("loginFailedMessage"));
-      if (modalRef.current) {
-        modalRef.current.open();
-      }
+      setErrorMessage(result?.error || t('loginFailedMessage'));
+      setModalKey(pre => pre + 1);
+      setTimeout(() => {
+        if (modalRef.current) {
+          modalRef.current.open();
+        }
+      }, 100)
+
     }
     setLoadingA(false);
   };
+
+
+  // const fetchChef = async (id) => {
+  //   try {
+  //     const response = await axiosInstance.get(`/chefs/${id}`);
+  //     if (response.status === 200) setChef(response.data);
+  //   } catch (error) {
+  //     if (axios.isCancel(error)) return;
+  //   }
+  // }
+
+
 
   const signinWithGoogle = async () => {
     try {
@@ -202,14 +224,14 @@ export default function LoginScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        <PasswordInput placeholder="Password" onPasswordChange={setPassword} />
+        <PasswordInput placeholder={t('password')} onPasswordChange={setPassword} />
         <View
           style={{ marginBottom: 10, marginTop: -5, alignItems: "flex-end" }}
         >
           <TouchableOpacity
             onPress={() => navigation.navigate("screen/forgot")}
           >
-            <Text style={{ color: "#968B7B", fontFamily: "nunito-regular" }}>Forgot password?</Text>
+            <Text style={{ color: "#968B7B", fontFamily: "nunito-regular" }}>{t('forgot')}</Text>
           </TouchableOpacity>
         </View>
         <View style={{ alignItems: "center" }}>
@@ -284,7 +306,7 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
 
-      <Modalize ref={modalRef} adjustToContentHeight>
+      <Modalize ref={modalRef} adjustToContentHeight key={modayKey}>
         <View
           style={{
             paddingVertical: 20,
@@ -304,7 +326,7 @@ export default function LoginScreen() {
           </Text>
           <Ionicons name="close-circle" size={60} color="red" />
           <Text style={{ fontSize: 16, marginBottom: 10, textAlign: "center" }}>
-            {/* {t("loginFailedMessage")} */}
+            {/* {t('loginFailedMessage')} */}
             {errorMessage}
           </Text>
           <TouchableOpacity
