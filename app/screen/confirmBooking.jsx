@@ -49,7 +49,7 @@ const ConfirmBookingScreen = () => {
       ? Object.values(extraDishIds || {})
       : Object.values(selectedDishes || {})),
   ];
-
+  const [error, setError] = useState(false);
 
 
   const platformFeeModalRef = useRef(null);
@@ -67,6 +67,7 @@ const ConfirmBookingScreen = () => {
   }, []);
 
   const fetchCalculatorBooking = async () => {
+    setError(false);
     setLoading(true);
     try {
       const payload = {
@@ -98,11 +99,8 @@ const ConfirmBookingScreen = () => {
       if (axios.isCancel(error) || error.response.status === 401) {
         return;
       }
-      showModal(
-        t("modal.error"),
-        error.response.data.message,
-        "Failed"
-      );
+      showModal(t("modal.error"), error.response.data.message, "Failed");
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -111,8 +109,6 @@ const ConfirmBookingScreen = () => {
     setLoading(true);
     try {
       const selectedDishIds = allDishes.map((dish) => dish.id || dish.dishId);
-      console.log("measd", selectedMenu);
-
       const payload = {
         customerId: user?.userId,
         chefId: parseInt(chefId),
@@ -146,7 +142,6 @@ const ConfirmBookingScreen = () => {
       if (response.status === 201 || response.status === 200) {
         showModal(t("modal.success"),
           t("bookingConfirmed"),
-
         );
       }
       setTotalPrice(calcuResult.totalPrice);
@@ -160,6 +155,7 @@ const ConfirmBookingScreen = () => {
       if (axios.isCancel(error) || error.response.status === 401) {
         return;
       }
+      const errorMessage = error.response.data.message;
       const matches = errorMessage.match(/The chef already has a booking during this time on/g);
 
       if (matches) {
@@ -383,7 +379,7 @@ const ConfirmBookingScreen = () => {
               alignItems: "center",
             }}
             onPress={() => requireAuthAndNetwork(handleKeepBooking)}
-            disabled={loading}
+            disabled={loading || error}
           >
             {loading ? (
               <ActivityIndicator size="small" color="white" />
@@ -404,12 +400,7 @@ const ConfirmBookingScreen = () => {
       >
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>{t("applicationFeeTitle")}</Text>
-          <Text style={styles.modalText}>
-            Phí áp dụng là khoản phí được thu để hỗ trợ cải thiện và duy
-            trì ứng dụng, đảm bảo bạn có trải nghiệm đặt đầu bếp tốt nhất.
-            Chúng tôi sử dụng phí này để nâng cấp tính năng, bảo trì hệ thống
-            và mang đến nhiều dịch vụ chất lượng hơn cho bạn.
-          </Text>
+          <Text style={styles.modalText}>{t('applicationFeeDescription')}</Text>
           <TouchableOpacity
             style={styles.modalButton}
             onPress={closePlatformFeeModal}

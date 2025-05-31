@@ -173,19 +173,19 @@ const DetailsBooking = () => {
     });
   };
 
-    const handleChat = () => {
-        console.log(booking.customer);
-        router.push({
-            pathname: "/screen/message",
-            params: {
-                contact: JSON.stringify({
-                    id: booking.customer?.username,
-                    name: booking.customer?.fullName,
-                    avatar: booking.customer?.avatarUrl,
-                }),
-            },
-        });
-    };
+  const handleChat = () => {
+    console.log(booking.customer);
+    router.push({
+      pathname: "/screen/message",
+      params: {
+        contact: JSON.stringify({
+          id: booking.customer?.username,
+          name: booking.customer?.fullName,
+          avatar: booking.customer?.avatarUrl,
+        }),
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -306,12 +306,12 @@ const DetailsBooking = () => {
                               </Text>
                               <Text>
                                 <Text style={styles.itemContentLabel}>
-                                  {t("received")}:{" "}
+                                  {t("Chefreceived")}:{" "}
                                 </Text>
                                 <Text
                                   style={{ fontSize: 16, fontFamily: "nunito-bold" }}
                                 >
-                                  ${detail.totalChefFeePrice}
+                                  ${detail.totalPrice}
                                 </Text>
                               </Text>
                             </View>
@@ -417,8 +417,8 @@ const DetailsBooking = () => {
             </View>
           </ScrollView>
           {booking.status === "PAID" ||
-          booking.status === "DEPOSITED" ||
-          booking.status === "PAID_FIRST_CYCLE" ? (
+            booking.status === "DEPOSITED" ||
+            booking.status === "PAID_FIRST_CYCLE" ? (
             <View
               style={{
                 position: "absolute",

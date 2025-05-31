@@ -63,7 +63,7 @@ export default function LoginScreen() {
     try {
       const encodedToken = encodeURIComponent(token);
       await axios.put(
-        "https://vietchef-api.ddns.net/no-auth/save-device-token",
+        "https://vietchef-api.myddns.me/no-auth/save-device-token",
         null,
         {
           params: {
@@ -130,7 +130,7 @@ export default function LoginScreen() {
     try {
       setGoogleLoading(true);
       const response = await axios.get(
-        "https://vietchef-api.ddns.net/no-auth/oauth-url",
+        "https://vietchef-api.myddns.me/no-auth/oauth-url",
         {
           params: { provider: "google" },
         }
@@ -160,6 +160,7 @@ export default function LoginScreen() {
     const url = navState.url;
 
     if (
+      // url.startsWith("https://vietchef-api.myddns.me/no-auth/oauth-redirect")
       url.startsWith("https://vietchef-api.ddns.net/no-auth/oauth-redirect")
     ) {
       const params = new URLSearchParams(url.split("?")[1]);
@@ -187,6 +188,56 @@ export default function LoginScreen() {
       webViewRef.current?.stopLoading();
     }
   };
+
+  const handleOauthRedirect = async (url) => {
+    try {
+      const params = new URLSearchParams(url.split("?")[1]);
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      const fullName = params.get("full_name");
+
+      if (access_token && refresh_token) {
+        await SecureStore.setItemAsync("refreshToken", refresh_token);
+        const decoded = jwtDecode(access_token);
+        const decodedFullName = fullName
+          ? decodeURIComponent(fullName)
+          : "Unknown";
+
+        setUser({
+          fullName: decodedFullName,
+          token: access_token,
+          ...decoded,
+        });
+
+        const expoPushToken = await SecureStore.getItemAsync("expoPushToken");
+        await saveDeviceToken(decoded?.sub, expoPushToken);
+
+        setOauthUrl(null); // đóng WebView
+        setIsGuest(false);
+        navigation.navigate("(tabs)", { screen: "home" });
+      }
+    } catch (err) {
+      console.error("OAuth redirect error:", err);
+    }
+  };
+
+  const handleNavigationRequest = (request) => {
+    const url = request.url;
+
+    if (url.startsWith("https://vietchef-api.ddns.net/no-auth/oauth-redirect")) {
+      // ✅ xử lý ngoài hàm này
+      setTimeout(() => {
+        handleOauthRedirect(url);
+      }, 0);
+
+      return false; // ❗ Quan trọng: chặn WebView load URL này
+    }
+
+    return true;
+  };
+
+
+
 
   return (
     <GestureHandlerRootView style={commonStyles.container}>
@@ -374,7 +425,8 @@ export default function LoginScreen() {
             renderLoading={() => (
               <ActivityIndicator size="large" color="#000" />
             )}
-            onNavigationStateChange={handleNavigationStateChange}
+            // onNavigationStateChange={handleNavigationStateChange}
+            onShouldStartLoadWithRequest={handleNavigationRequest}
             onError={(syntheticEvent) => {
               const { nativeEvent } = syntheticEvent;
               console.warn("WebView error: ", nativeEvent);

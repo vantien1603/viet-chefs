@@ -105,6 +105,7 @@ const LongTermSelectBooking = () => {
     setSelectedDates,
     isSelected,
     setIsSelected,
+    expandedWeeks, setExpandedWeeks
   } = useSelectedItems();
 
   const axiosInstance = useAxios();
@@ -113,7 +114,7 @@ const LongTermSelectBooking = () => {
   const [availability, setAvailability] = useState({});
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [selectedWeekdays, setSelectedWeekdays] = useState([]);
-  const [expandedWeeks, setExpandedWeeks] = useState({});
+  // const [expandedWeeks, setExpandedWeeks] = useState({});
   const modalizeRef = useRef(null);
   const infoModalizeRef = useRef(null);
   const [unavailableDates, setUnavailableDates] = useState([]);
@@ -360,6 +361,24 @@ const LongTermSelectBooking = () => {
   };
 
   const handleConfirm = async () => {
+    const hasAtLeastOneNearFutureDate = selectedDates.some((day) =>
+      moment(day, "YYYY-MM-DD").isBetween(
+        moment(todayString, "YYYY-MM-DD").add(1, "day"),
+        moment(todayString, "YYYY-MM-DD").add(3, "days"),
+        "day",
+        "[]"
+      )
+    );
+
+    if (!hasAtLeastOneNearFutureDate) {
+      showModal(
+        t("modal.error"),
+        t("errors.requireOneDayWithinNext3Days"),
+        "Failed"
+      );
+      return;
+    }
+
     for (const day of selectedDates) {
       const isNearFutureDate = moment(day, "YYYY-MM-DD").isBetween(
         moment(todayString, "YYYY-MM-DD").add(1, "day"),

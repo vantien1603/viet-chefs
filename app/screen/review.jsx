@@ -15,6 +15,7 @@ import useAxios from "../../config/AXIOS_API";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
 import { t } from "i18next";
+import useAxiosFormData from "../../config/AXIOS_API_FORM";
 
 const ReviewScreen = () => {
   const params = useLocalSearchParams();
@@ -25,6 +26,7 @@ const ReviewScreen = () => {
   const [criteriaComments, setCriteriaComments] = useState({});
   const [loading, setLoading] = useState(false);
   const axiosInstance = useAxios();
+  const axiosInstanceForm = useAxiosFormData();
   const { showModal } = useCommonNoification();
 
   const fetchCriteria = async () => {
@@ -72,12 +74,12 @@ const ReviewScreen = () => {
     const hasAnyRating = Object.values(criteriaRatings).some(
       (rating) => rating > 0
     );
-
     if (!hasAnyRating) {
       showModal(t("modal.error"), t("errors.noRating"), "Failed");
       setLoading(false);
       return;
     }
+
     try {
       const payload = {
         chefId: parseInt(chefId),
@@ -85,15 +87,17 @@ const ReviewScreen = () => {
         overallExperience: overallExperience.trim() || "",
         mainImage: null,
         additionalImages: [],
-        criteriaRatings: { ...criteriaRatings },
+        criteriaRatings: criteriaRatings,
       };
-      const response = await axiosInstance.post("/reviews", payload);
+      // console.log(payload);
+      const response = await axiosInstanceForm.post("/reviews", payload);
       if (response.status === 200)
         showModal(t("modal.success"),
           t("submitReviewSuccess"),
         );
       fetchCriteria();
     } catch (error) {
+      console.log(error.response.status);
       if (error.response?.status === 401) {
         return;
       }

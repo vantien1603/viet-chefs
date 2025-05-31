@@ -15,7 +15,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { AuthContext } from "../../config/AuthContext";
 import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
-import { createIconSet, Feather } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import useAxiosFormData from "../../config/AXIOS_API_FORM";
 import { useCommonNoification } from "../../context/commonNoti";
 import * as ImagePicker from "expo-image-picker";
@@ -37,7 +37,7 @@ const ProfileDetail = () => {
   const axiosInstanceForm = useAxiosFormData();
   const { showModal } = useCommonNoification();
   const [index, setIndex] = useState(0);
-  const country = SecureStore.getItem('country');
+  // const country = SecureStore.getItem('country');
   const [suggestions, setSuggestions] = useState([]);
 
   const [routes] = useState([
@@ -308,9 +308,9 @@ const ProfileDetail = () => {
       };
 
 
-      if (country) {
-        params.components = `country:${country}`;
-      }
+      // if (country) {
+      //   params.components = `country:${country}`;
+      // }
 
       console.log(params)
 
@@ -329,6 +329,38 @@ const ProfileDetail = () => {
         t("errors.fetchSuggestionsFailed"),
         "Failed"
       );
+    }
+  };
+
+  const selectAddress = async (prediction) => {
+    const formattedAddress = await getPlaceDetails(prediction.place_id);
+    if (formattedAddress) {
+      setUpdateDataChef((prev) => ({ ...prev, address: formattedAddress }))
+      setSuggestions([]);
+    }
+  };
+
+  const getPlaceDetails = async (placeId) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/details/json`,
+        {
+          params: {
+            place_id: placeId,
+            key: process.env.API_GEO_KEY,
+            fields: "formatted_address",
+            language: "vi",
+          },
+        }
+      );
+      return response.data.result.formatted_address;
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        t("errors.fetchPlaceDetailsFailed"),
+        "Failed"
+      );
+      return null;
     }
   };
 

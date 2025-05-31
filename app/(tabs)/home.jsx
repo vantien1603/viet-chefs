@@ -44,7 +44,7 @@ export default function Home() {
 
   const [messages, setMessages] = useState([]);
   const [isChatVisible, setIsChatVisible] = useState(false);
-  const { registerNotificationCallback } = useContext(SocketContext);
+  const { lastMessage } = useContext(SocketContext);
 
   const initialMessages = [
     {
@@ -74,12 +74,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!isGuest) {
-      registerNotificationCallback(() => {
-        fetchUnreadCount();
-      });
+      // registerNotificationCallback(() => {
+      fetchUnreadCount();
+      // });
     }
 
-  }, []);
+  }, [lastMessage]);
 
   useEffect(() => {
     if (location) {
@@ -99,6 +99,7 @@ export default function Home() {
       const response = await axiosInstance.get("/notifications/my/count");
       if (response.status === 200) {
         const unread = response.data.notiNotChat;
+        console.log(unread);
         setUnreadCount(unread);
       }
     } catch (error) {
@@ -140,10 +141,7 @@ export default function Home() {
       });
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
-          }, ${addr.region || ""}, ${addr.country || ""}`
-          .replace(/,,/g, ",")
-          .trim();
+        let fullAddress = `${addr.formattedAddress}`;
         return {
           id: "current-location",
           title: "Vị trí hiện tại",

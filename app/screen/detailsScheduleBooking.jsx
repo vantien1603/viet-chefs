@@ -114,19 +114,24 @@ const DetailsBooking = () => {
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 1,
-    });
+const result = await ImagePicker.launchCameraAsync({ quality: 1 });
 
-    if (!result.canceled) {
-      const photo = {
-        id: Date.now() + Math.random(),
-        imageUrl: result.assets[0].uri,
-        entityType: "checkout",
-        entityId: detail.id,
-      };
-      setImages((prev) => [...prev, photo]);
-    }
+if (!result.canceled) {
+  const resized = await ImageManipulator.manipulateAsync(
+    result.assets[0].uri,
+    [{ resize: { width: 800 } }], // hoặc width: 720
+    { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
+  );
+
+  const photo = {
+    id: Date.now() + Math.random(),
+    imageUrl: resized.uri,
+    entityType: "checkout",
+    entityId: detail.id,
+  };
+
+  setImages((prev) => [...prev, photo]);
+}
   };
 
   const handleSubmit = async () => {
@@ -177,7 +182,7 @@ const DetailsBooking = () => {
       }
       showModal(
         t("modal.error"),
-        error.response?.data?.message || t("errors.checkoutFailed"),
+        error.response?.data?.message ,
         "Failed"
       );
     } finally {

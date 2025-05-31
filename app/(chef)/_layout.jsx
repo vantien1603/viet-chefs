@@ -7,15 +7,13 @@ function CustomTabBar({ state, descriptors, navigation }) {
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
     const axiosInstance = useAxios();
     const { isGuest } = useContext(AuthContext);
-    const { registerNotificationCallback } = useContext(SocketContext);
+    const { lastMessage  } = useContext(SocketContext);
 
   useEffect(() => {
     if (!isGuest) {
-      registerNotificationCallback(() => {
         fetchUnreadMessageCount();
-      });
     }
-  }, []);
+  }, [lastMessage ]);
 
     const fetchUnreadMessageCount = async () => {
         try {

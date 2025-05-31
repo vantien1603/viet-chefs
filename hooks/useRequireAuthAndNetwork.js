@@ -14,6 +14,7 @@ export default function useRequireAuthAndNetwork() {
     if (!isConnected) {
       showModal("Lỗi kết nối mạng", "Không thể kết nối với internet. Vui lòng kiểm tra lại.", t("modal.error"));
     } else if (isGuest) {
+      console.log("roi vo case nay")
       showModalLogin("Yêu cầu đăng nhập", "Bạn cần đăng nhập để tiếp tục.", true);
     } else {
       callback();

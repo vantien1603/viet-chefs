@@ -19,17 +19,19 @@ import { Modalize } from "react-native-modalize";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import axios from "axios";
 import { useCommonNoification } from "../../context/commonNoti";
+import { useSelectedItems } from "../../context/itemContext";
 
 const formatStatus = (status) => {
   if (!status) return "";
   return status
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 const LongTermDetailsScreen = () => {
-  const { bookingId, chefId } = useLocalSearchParams();
+  // const { bookingId, chefId } = useLocalSearchParams();
+  const { bookingId, chefId, setBookingDetailId, setChefId, clearSelectionLate } = useSelectedItems();
   const [longTermDetails, setLongTermDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const { showModal } = useCommonNoification();
@@ -53,7 +55,9 @@ const LongTermDetailsScreen = () => {
   const pin = pinValues.join("");
 
   useEffect(() => {
+    console.log("ashjdhj boking", bookingId);
     if (bookingId) {
+      clearSelectionLate();
       fetchLongTermDetails();
     }
   }, []);
@@ -61,6 +65,8 @@ const LongTermDetailsScreen = () => {
     checkWalletPassword();
     fetchBalanceInWallet();
   }, []);
+
+
 
   const checkWalletPassword = async () => {
     setLoading(true);
@@ -104,6 +110,7 @@ const LongTermDetailsScreen = () => {
       setLongTermDetails(response.data || []);
 
       const bookingResponse = await axiosInstance.get(`/bookings/${bookingId}`);
+      console.log(bookingResponse.data);
       setBookingStatus(bookingResponse.data.status);
     } catch (error) {
       if (error.response?.status === 401) {
@@ -265,12 +272,31 @@ const LongTermDetailsScreen = () => {
     }, {});
   };
 
+
+  // const groupByDate = (details) => {
+  //   return details.reduce((acc, item) => {
+  //     const date = item.sessionDate;
+
+  //     // Thêm isUpdated nếu updatedAt khác createdAt
+  //     const isUpdated = item.isUpdated;
+  //     const newItem = { ...item, isUpdated };
+
+  //     if (!acc[date]) acc[date] = [];
+  //     acc[date].push(newItem);
+
+  //     return acc;
+  //   }, {});
+  // };
+
+
   const toggleDate = (date) => {
     setExpandedDates(prev => ({
       ...prev,
       [date]: !prev[date]
     }));
   };
+
+
 
 
 
@@ -306,7 +332,7 @@ const LongTermDetailsScreen = () => {
 
         <View style={styles.bookingDetailsContainer}>
           {Object.entries(groupedDetails).map(([date, details]) => (
-            <View key={date} style={styles.dateCard}>
+            <View key={date} style={[styles.dateCard, { borderWidth: 1, borderColor: details.some(detail => detail.isUpdated) ? 'green' : 'red' }]}>
               <TouchableOpacity
                 onPress={() => toggleDate(date)}
                 style={styles.dateCardHeader}
@@ -325,11 +351,15 @@ const LongTermDetailsScreen = () => {
                     <TouchableOpacity
                       key={detail.id}
                       style={styles.detailItem}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/screen/bookingDetails",
-                          params: { bookingDetailId: detail.id, chefId },
-                        })
+                      onPress={() => {
+                        setBookingDetailId(detail.id);
+                        setChefId(chefId);
+                        router.replace("/screen/bookingDetails");
+                      }
+                        //   router.replace({
+                        //   pathname: "/screen/bookingDetails",
+                        //   params: { bookingDetailId: detail.id, chefId },
+                        // })
                       }
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -358,24 +388,25 @@ const LongTermDetailsScreen = () => {
           ))}
         </View>
 
-        {(bookingStatus === "PENDING_FIRST_CYCLE" || bookingStatus === "CONFIRMED") && (
-          <TouchableOpacity
-            style={[styles.paymentButton, loading && styles.disabledButton]}
-            onPress={() => hasPassword ? handleOpenPinModal(cycle.id, cycle.amountDue) : handlePayment()}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <View style={styles.paymentButtonContent}>
-                {/* <MaterialIcons name="payment" size={16} color="#FFF" /> */}
-                {/* <Text style={styles.paymentButtonText}>{t("payCycle")}</Text> */}
-                <Text style={styles.paymentButtonText}>{t("payment")}</Text>
-                <Text style={styles.paymentButtonText}>${cycle.amountDue}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )
+        {
+          (bookingStatus === "PENDING_FIRST_CYCLE" || bookingStatus === "CONFIRMED") && (
+            <TouchableOpacity
+              style={[styles.paymentButton, loading && styles.disabledButton]}
+              onPress={() => hasPassword ? handleOpenPinModal(cycle.id, cycle.amountDue) : handlePayment()}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <View style={styles.paymentButtonContent}>
+                  {/* <MaterialIcons name="payment" size={16} color="#FFF" /> */}
+                  {/* <Text style={styles.paymentButtonText}>{t("payCycle")}</Text> */}
+                  <Text style={styles.paymentButtonText}>{t("payment")}</Text>
+                  <Text style={styles.paymentButtonText}>${cycle.amountDue}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
         }
       </View >
     );

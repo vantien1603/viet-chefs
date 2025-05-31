@@ -10,7 +10,7 @@ const useAxiosFormData = () => {
   const { showModalLogin } = useModalLogin();
 
   const config = {
-    baseURL: "https://vietchef-api.ddns.net/api/v1",
+    baseURL: "https://vietchef-api.myddns.me/api/v1",
     headers: {
       "Content-Type": "application/json",
       ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),

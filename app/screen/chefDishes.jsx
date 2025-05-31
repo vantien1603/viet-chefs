@@ -15,7 +15,7 @@ import Header from "../../components/header";
 import useAxios from "../../config/AXIOS_API";
 import { AuthContext } from "../../config/AuthContext";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCommonNoification } from "../../context/commonNoti";
 import useRequireAuthAndNetwork from "../../hooks/useRequireAuthAndNetwork";
 import { useConfirmModal } from "../../context/commonConfirm";
@@ -34,6 +34,7 @@ const ChefDishes = () => {
   const { showModal } = useCommonNoification();
   const requireAuthAndNetWork = useRequireAuthAndNetwork();
   const { showConfirm } = useConfirmModal();
+  const { chefId } = useLocalSearchParams();
 
   useFocusEffect(
     useCallback(() => {
@@ -45,7 +46,7 @@ const ChefDishes = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get("/dishes", {
-        params: { chefId: user.chefId },
+        params: { chefId: user.chefId || chefId },
       });
       setDishes(response.data.content);
       setFilteredDishes(response.data.content);

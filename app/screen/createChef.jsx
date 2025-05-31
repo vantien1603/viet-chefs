@@ -40,6 +40,7 @@ const CreateChefScreen = () => {
   const axiosInstance = useAxios();
   const { user } = useContext(AuthContext);
   const { showModal } = useCommonNoification();
+  const [suggestions, setSuggestions] = useState([]);
 
   const toggleSpecialty = (region) => {
     setSpecialties((prev) => ({
@@ -94,6 +95,81 @@ const CreateChefScreen = () => {
     }
   };
 
+  const handleSearch = (query) => {
+    setUpdateDataChef((prev) => ({ ...prev, address: query }))
+    fetchAddressSuggestions(query);
+  };
+
+
+  const fetchAddressSuggestions = async (query) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const params = {
+        input: query,
+        key: process.env.API_GEO_KEY,
+        language: "vi",
+      };
+
+
+      // if (country) {
+      //   params.components = `country:${country}`;
+      // }
+
+      console.log(params)
+
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+        { params }
+      );
+
+      console.log("Suggestions response:", response.data);
+      if (response.data.status === "OK") {
+        setSuggestions(response.data.predictions);
+      }
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        t("errors.fetchSuggestionsFailed"),
+        "Failed"
+      );
+    }
+  };
+
+  const selectAddress = async (prediction) => {
+    const formattedAddress = await getPlaceDetails(prediction.place_id);
+    if (formattedAddress) {
+      setAddress(formattedAddress);
+      setSuggestions([]);
+    }
+  };
+
+  const getPlaceDetails = async (placeId) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/details/json`,
+        {
+          params: {
+            place_id: placeId,
+            key: process.env.API_GEO_KEY,
+            fields: "formatted_address",
+            language: "vi",
+          },
+        }
+      );
+      return response.data.result.formatted_address;
+    } catch (error) {
+      showModal(
+        t("modal.error"),
+        t("errors.fetchPlaceDetailsFailed"),
+        "Failed"
+      );
+      return null;
+    }
+  };
+
   return (
     <SafeAreaView style={commonStyles.container}>
       <Header title={t("registerChef")} />
@@ -113,12 +189,37 @@ const CreateChefScreen = () => {
             onChangeText={setDescription}
             multiline
           />
-          <TextInput
-            style={styles.input}
-            placeholder={t("address")}
-            value={address}
-            onChangeText={setAddress}
-          />
+
+          <View style={{ position: 'relative' }}>
+            <TextInput
+              style={styles.input}
+              placeholder={t("address")}
+              value={address}
+              onChangeText={handleSearch}
+              onSubmitEditing={(event) => {
+                event.persist();
+                fetchAddressSuggestions(event.nativeEvent.text);
+              }}
+              returnKeyType="search"
+            />
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionContainer}>
+                <ScrollView nestedScrollEnabled={true}>
+                  {suggestions.map((item, index) => (
+                    <TouchableOpacity
+                      key={`${item.place_id}-${index}`}
+                      onPress={() => selectAddress(item)}
+                      style={styles.suggestionItem}
+                    >
+                      <Text style={styles.suggestionText}>
+                        {item.description}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
           <TextInput
             style={styles.input}
             placeholder={t("country")}
@@ -136,7 +237,15 @@ const CreateChefScreen = () => {
             style={styles.input}
             placeholder={t("maxServingSizes")}
             value={maxServingSize}
-            onChangeText={setMaxServingSize}
+            // onChangeText={setMaxServingSize}
+            onChangeText={(text) => {
+              const numericValue = text.replace(/[^0-9]/g, "");
+              if (numericValue === "" || parseInt(numericValue) <= 10) {
+                setMaxServingSize(numericValue);
+              } else {
+                setMaxServingSize("10"); // Clamp to 10 if input exceeds it
+              }
+            }}
             keyboardType="numeric"
           />
           <TextInput
@@ -196,7 +305,7 @@ const CreateChefScreen = () => {
 
             {hasCertificate === true && (
               <View style={styles.uploadSection}>
-                <Text style={{fontFamily: "nunito-regular"}}>
+                <Text style={{ fontFamily: "nunito-regular" }}>
                   {t("certificateImageUrl")}
                 </Text>
                 <TextInput

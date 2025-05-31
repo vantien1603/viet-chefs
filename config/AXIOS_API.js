@@ -12,7 +12,7 @@ const useAxios = () => {
     const { showModalLogin } = useModalLogin();
     const AXIOS_API = useMemo(() => {
         const instance = axios.create({
-            baseURL: "https://vietchef-api.ddns.net/api/v1",
+            baseURL: "https://vietchef-api.myddns.me/api/v1",
             headers: {
                 "Content-Type": "application/json",
             },

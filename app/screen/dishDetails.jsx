@@ -43,10 +43,15 @@ const DishDetails = () => {
     setChefId,
     isLoop,
     setIsLoop,
+    isLate,
+    setIsLate,
     clearSelection,
     isLong,
     setRouteBefore,
   } = useSelectedItems();
+
+
+  console.log("lateee", isLate);
 
   const [dishesName, setDishesName] = useState("");
   const [dish, setDish] = useState({});
@@ -161,12 +166,17 @@ const DishDetails = () => {
 
   const handleBack = () => {
     if (isLoop) {
-      console.log("roi vo day", isLoop);
       setIsLoop(false);
-      isLong
-        ? router.replace("/screen/chooseFoodForLongterm")
-        : router.replace("/screen/selectFood");
-    } else {
+
+      if (isLate) {
+        router.replace('/screen/updateBookingDetail');
+      } else if (isLong) {
+        router.replace('/screen/chooseFoodForLongterm');
+      } else {
+        router.replace('/screen/selectFood');
+      }
+    }
+    else {
       setIsLoop(false);
       router.back();
     }
@@ -251,9 +261,21 @@ const DishDetails = () => {
       router.replace("/screen/selectFood");
     } else {
       setIsLoop(false);
-      isLong
-        ? router.replace("/screen/chooseFoodForLongterm")
-        : router.replace("/screen/selectFood");
+      // isLate && router.replace('/screen/updateBookingDetail');
+      // isLong
+      //   ? router.replace("/screen/chooseFoodForLongterm")
+      //   : router.replace("/screen/selectFood");
+
+
+      if (isLate) {
+        router.replace('/screen/updateBookingDetail');
+      } else if (isLong) {
+        router.replace('/screen/chooseFoodForLongterm');
+      } else {
+        router.replace('/screen/selectFood');
+      }
+
+
     }
   };
 

@@ -18,7 +18,8 @@ import { t } from "i18next";
 const Profile = () => {
   const menuItems = [
     { id: "1", icon: "wallet-outline", title: t("myWallet") },
-    { id: "2", icon: "settings-outline", title: t("settings") },
+    { id: "2", icon: "wallet-outline", title: t('payFineHeader') },
+    { id: "3", icon: "settings-outline", title: t("settings") },
   ];
   const router = useRouter();
   const { user } = useContext(AuthContext);
@@ -29,6 +30,9 @@ const Profile = () => {
         router.push("/screen/wallet");
         break;
       case "2":
+        router.push("/screen/penatyFee");
+        break;
+      case "3":
         router.push("/screen/setting");
         break;
       default:

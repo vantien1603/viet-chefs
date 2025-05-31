@@ -16,6 +16,7 @@ import useAxios from "../config/AXIOS_API";
 import { t } from "i18next";
 import { useConfirmModal } from "../context/commonConfirm";
 import { useCommonNoification } from "../context/commonNoti";
+import { useSelectedItems } from "../context/itemContext";
 
 // Custom hook for cancellation logic
 const useBookingCancellation = () => {
@@ -112,6 +113,7 @@ const BookingCard = ({
   const status = booking.status;
   const [cancellingId, setCancellingId] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const { setChefId, setBookingId } = useSelectedItems();
 
   useEffect(() => {
     if (status !== "PENDING" || !booking.createdAt) {
@@ -143,6 +145,8 @@ const BookingCard = ({
   }, [booking.updatedAt, status]);
 
   const handlePress = () => {
+    setBookingId(booking.id);
+    setChefId(booking.chef.id);
     router.push({
       pathname:
         status === "PENDING"

@@ -8,7 +8,6 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [chef, setChef] = useState(null);
   const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -62,13 +61,13 @@ export const AuthProvider = ({ children }) => {
         expoToken: expoToken,
       };
       const response = await axiosInstanceBase.post('/login', loginPayload);
+            console.log("voooooooooooooooo")
+
       if (response.status === 200) {
         const { access_token, refresh_token } = response.data;
         console.log("acdses cua Auth", access_token);
         await SecureStore.setItemAsync("refreshToken", refresh_token);
         const decoded = jwtDecode(access_token);
-        console.log("decode", decoded)
-        console.log("response", response.data);
         if (decoded?.roleName === "ROLE_ADMIN") return null;
         setUser({ fullName: response.data.fullName, token: access_token, ...decoded });
         console.log("loasd");
@@ -107,7 +106,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isGuest, setIsGuest, login, logout, logoutNoDirect, setChef, chef, loading }}>
+    <AuthContext.Provider value={{ user, setUser, isGuest, setIsGuest, login, logout, logoutNoDirect, loading }}>
       {children}
     </AuthContext.Provider>
   );
