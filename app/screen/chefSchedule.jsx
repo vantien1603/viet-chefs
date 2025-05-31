@@ -226,7 +226,7 @@ export default function ChefScheduleScreen() {
       if (successCount === results.length) {
         showModal(t("modal.success"), t("addAllSuccess"),);
       } else if (errorCount === results.length) {
-        showModal(t("modal.error"), t("addAllFailed"), "Failed");
+        showModal(t("modal.error"), t("errors.addAllFailed"), "Failed");
       } else {
         showModal(
           "Warning",

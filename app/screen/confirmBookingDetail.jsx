@@ -101,6 +101,7 @@ const ConfirmBookingDetail = () => {
         timeBeginCook: bookingDetails.timeBeginCook,
         timeBeginTravel: bookingDetails.timeBeginTravel,
         menuId: bookingDetails.menuId || null,
+        totalCookTime: bookingDetails.totalCookTime || 0,
         chefBringIngredients: ingredientPrep === "chef",
       };
 

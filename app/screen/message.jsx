@@ -40,7 +40,7 @@ const Message = () => {
   const { contact: contactString } = useLocalSearchParams();
   const stompClientRef = useRef(null);
   const flatListRef = useRef(null);
-  const WEB_SOCKET_ENDPOINT = "https://vietchef-api.ddns.net/ws";
+  const WEB_SOCKET_ENDPOINT = "https://vietchef-api.myddns.me/ws";
   const CLOUDINARY_URL =
     "https://api.cloudinary.com/v1_1/deczpzvro/image/upload";
   const CLOUDINARY_UPLOAD_PRESET = "vietchef_image";

@@ -1,5 +1,5 @@
 // context/SocketContext.js
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { AuthContext } from './AuthContext';
@@ -7,20 +7,10 @@ import { AuthContext } from './AuthContext';
 export const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
-  const WEB_SOCKET_ENDPOINT = 'https://vietchef-api.ddns.net/ws';
-  const [client, setClient] = useState(null);
+  const WEB_SOCKET_ENDPOINT = 'https://vietchef-api.myddns.me/ws';
   const { user } = useContext(AuthContext);
-  const [notificationCallbacks, setNotificationCallbacks] = useState([]);
-  const callbackRef = useRef([]);
-
-  const registerNotificationCallback = (callback) => {
-    callbackRef.current.push(callback);
-
-    return () => {
-      callbackRef.current = callbackRef.current.filter((cb) => cb !== callback);
-    };
-  };
-
+  const [client, setClient] = useState(null);
+  const [lastMessage, setLastMessage] = useState(null);
 
   useEffect(() => {
     if (!user || !user?.sub) {
@@ -28,37 +18,34 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    console.log('User:', user);
-    console.log('Subscribing to queue:', `/user/${user?.sub}/queue/notifications`);
-
     const socket = new SockJS(WEB_SOCKET_ENDPOINT);
     const stompClient = Stomp.over(socket);
 
     stompClient.reconnectDelay = 5000;
+    stompClient.debug = () => { };
 
     stompClient.connect(
-      {}, // Add Authorization header if needed
+      {
+        Authorization: `Bearer ${user?.token}`
+      },
       () => {
         console.log('STOMP connected');
 
-        const subscription = stompClient.subscribe(
-          `/user/${user?.sub}/queue/notifications`,
-          (message) => {
-            try {
-              const data = JSON.parse(message.body);
-              console.log("data", data);
-              //notificationCallbacks.forEach((callback) => callback(data));
-              callbackRef.current.forEach((cb) => cb(data));
-            } catch (error) {
-              console.error('Error parsing message:', error);
-            }
+        const destination = `/user/${user?.sub}/queue/notifications`;
+        const subscription = stompClient.subscribe(destination, (message) => {
+          try {
+            const data = JSON.parse(message.body);
+            console.log("Received WS data:", data);
+            setLastMessage(data);
+          } catch (err) {
+            console.error('Message parse error:', err);
           }
-        );
+        });
 
         stompClient.subscription = subscription;
       },
-      (error) => {
-        console.error('STOMP connection error:', error);
+      (err) => {
+        console.error('STOMP error:', err);
       }
     );
 
@@ -69,16 +56,15 @@ export const SocketProvider = ({ children }) => {
         if (stompClient.subscription) {
           stompClient.subscription.unsubscribe();
         }
-        stompClient.disconnect(() => {
-          console.log('STOMP disconnected');
-        });
+        stompClient.disconnect(() => console.log('STOMP disconnected'));
       }
-      setNotificationCallbacks([]);
+      setClient(null);
+      setLastMessage(null);
     };
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ client, registerNotificationCallback }}>
+    <SocketContext.Provider value={{ client, lastMessage }}>
       {children}
     </SocketContext.Provider>
   );

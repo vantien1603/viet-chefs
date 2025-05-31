@@ -155,6 +155,14 @@ const ViewDetailBookingDetails = () => {
     );
   }
 
+  const formatStatus = (status) => {
+    if (!status) return "";
+    return status
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   return (
     <GestureHandlerRootView style={commonStyles.container}>
       <Header title={t("bookingDetails")} />
@@ -199,7 +207,7 @@ const ViewDetailBookingDetails = () => {
               <Text>
                 <Text style={styles.detailLabel}>{t("status")}: </Text>
                 <Text style={styles.detailValue}>
-                  {bookingDetails.status || "N/A"}
+                  {formatStatus(bookingDetails.status) || "N/A"}
                 </Text>
               </Text>
             </View>
@@ -265,7 +273,7 @@ const ViewDetailBookingDetails = () => {
               <Text>
                 <Text style={styles.detailLabel}>{t("status")}: </Text>
                 <Text style={styles.detailValue}>
-                  {bookingDetails.booking?.status || "N/A"}
+                  {formatStatus(bookingDetails.booking?.status) || "N/A"}
                 </Text>
               </Text>
               <Text>
@@ -333,7 +341,7 @@ const ViewDetailBookingDetails = () => {
           {bookingDetails.status === "WAITING_FOR_CONFIRMATION" && (
             <TouchableOpacity
               style={[styles.button, { backgroundColor: "#28a745" }]}
-              onPress={handleCompleted}
+              onPress={()=> handleCompleted()}
             >
               <Text style={styles.buttonText}>{t("confirmCompleted")}</Text>
             </TouchableOpacity>

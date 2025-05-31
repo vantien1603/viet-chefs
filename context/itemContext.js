@@ -25,6 +25,10 @@ export const SelectedItemsProvider = ({ children }) => {
     const [routeBefore, setRouteBefore] = useState("");
     const [chefLong, setChefLong] = useState(null);
     const [chefLat, setChefLat] = useState(null);
+    const [bookingId, setBookingId] = useState(null);
+    const [bookingDetailId, setBookingDetailId] = useState(null);
+    const [expandedWeeks, setExpandedWeeks] = useState({});
+    const [isLate, setIsLate] = useState(false);
     const clearSelection = () => {
         setSelectedMenu(null);
         setSelectedDishes({});
@@ -48,7 +52,38 @@ export const SelectedItemsProvider = ({ children }) => {
         setRouteBefore("")
         setChefLat(null);
         setChefLong(null);
+        setBookingId(null);
+        setBookingDetailId(null);
+        setIsLate(false);
+        setExpandedWeeks({});
         console.log("Clear")
+    };
+    const clearSelectionLate = () => {
+        setSelectedMenu(null);
+        setSelectedDishes({});
+        setExtraDishIds({});
+        setIsLoop(false);
+        setAddress("");
+        setSelectedDay(null);
+        setNumPeople(1);
+        setSpecialRequest("");
+        setStartTime({});
+        setDishNotes({});
+        setIngredientPrep("customer");
+        setTotalPrice(null);
+        setSelectedPackage(null);
+        setIsLong(false);
+        setSelectedDates([]);
+        setSelectedMenuLong({});
+        setIsSelected({});
+        setLocation("");
+        setRouteBefore("")
+        setChefLat(null);
+        setChefLong(null);
+        setBookingDetailId(null);
+        setIsLate(false);
+        setExpandedWeeks({});
+        console.log("Clear late")
     };
 
     return (
@@ -60,6 +95,7 @@ export const SelectedItemsProvider = ({ children }) => {
             extraDishIds,
             setExtraDishIds,
             clearSelection,
+            clearSelectionLate,
             chefId,
             setChefId,
             isLoop,
@@ -97,7 +133,11 @@ export const SelectedItemsProvider = ({ children }) => {
             chefLat,
             setChefLat,
             chefLong,
-            setChefLong
+            setChefLong,
+            bookingId, setBookingId,
+            bookingDetailId, setBookingDetailId,
+            isLate, setIsLate,
+            expandedWeeks, setExpandedWeeks
         }}>
             {children}
         </SelectedItemsContext.Provider>

@@ -17,7 +17,7 @@ import { NetworkContext } from '../hooks/networkProvider';
 import { useGlobalModal } from '../context/modalContext';
 
 const config = {
-    baseURL: "https://vietchef-api.ddns.net/no-auth", // Crema
+    baseURL: "https://vietchef-api.myddns.me/no-auth", // Crema
     headers: {
         "Content-Type": "application/json",
     }

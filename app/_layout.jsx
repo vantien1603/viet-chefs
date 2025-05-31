@@ -478,6 +478,12 @@ export default function RootLayout() {
                                 headerShown: false,
                               }}
                             />
+                            <Stack.Screen
+                              name="screen/penatyFee"
+                              options={{
+                                headerShown: false,
+                              }}
+                            />
                           </Stack>
                         </SelectedItemsProvider>
                       </ConfirmModalProvider>

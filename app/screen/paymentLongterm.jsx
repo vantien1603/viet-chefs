@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../components/header";
@@ -18,7 +19,8 @@ import { commonStyles } from "../../style";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modalize } from "react-native-modalize";
 import { t } from "i18next";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useConfirmModal } from "../../context/commonConfirm";
 
 const PaymentLongterm = () => {
   const params = useLocalSearchParams();
@@ -29,6 +31,7 @@ const PaymentLongterm = () => {
   const { location, totalPrice, selectedDates } = useSelectedItems();
   const depositAmount = totalPrice * 0.05;
   const { showModal } = useCommonNoification();
+  const { showConfirm } = useConfirmModal();
   const [isPaySuccess, setIsPaySuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
@@ -42,6 +45,10 @@ const PaymentLongterm = () => {
     React.createRef(),
     React.createRef(),
   ]).current;
+  const pin = pinValues.join("");
+
+  const [showBalance, setShowBalance] = useState(false);
+  const toggleBalance = () => setShowBalance((prev) => !prev);
 
   useEffect(() => {
     checkWalletPassword();
@@ -79,6 +86,7 @@ const PaymentLongterm = () => {
   };
 
   const accessWallet = async () => {
+    console.log("voo")
     if (pin.length !== 4) {
       setError(t("pinMustBe4Digits"));
       return;
@@ -162,6 +170,7 @@ const PaymentLongterm = () => {
       const response = await axiosInstance.post(
         `/bookings/${bookingId}/deposit`
       );
+      console.log("dat coc reponse", response.data)
       if (response.status === 200 || response.status === 201) {
         await fetchBalanceInWallet();
         showModal(t("modal.success"), t("depositSuccess"));
@@ -208,19 +217,30 @@ const PaymentLongterm = () => {
     <GestureHandlerRootView>
       <SafeAreaView style={commonStyles.container}>
         <Header title={t("depositPayment")} onLeftPress={() => handleBack()} />
-        <ScrollView style={commonStyles.containerContent}>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoLabel}>{t("bookingInfo")}:</Text>
-            <Text style={styles.infoValue}>{t("location")}: {location || "N/A"}</Text>
-            <Text style={styles.infoValue}>
-              {t("numberOfDays")}: {selectedDates?.length || 0}
+
+        <View style={styles.content}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.priceLabel}>
+              {t("balance")}: {showBalance ? balance : "***"}
             </Text>
+            <TouchableOpacity onPress={toggleBalance} style={{ marginLeft: 8 }}>
+              <MaterialIcons
+                name={showBalance ? "visibility" : "visibility-off"}
+                size={20}
+                color="#555"
+              />
+            </TouchableOpacity>
           </View>
-          {/* <Text style={styles.title}>{t("confirmDeposit")}</Text> */}
-          <View style={styles.summaryContainer}>
+          <View style={{ alignItems: 'center' }}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t("totalBookingAmount")}:</Text>
-              <Text style={styles.summaryValue}>${totalPrice.toFixed(2)}</Text>
+              <Text style={[styles.summaryValue, styles.depositValue]}>
+                {totalPrice &&
+                  totalPrice.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  })}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t("depositAmount")}:</Text>
@@ -228,17 +248,50 @@ const PaymentLongterm = () => {
                 ${depositAmount.toFixed(2)}
               </Text>
             </View>
-            <View style={styles.summaryRow}>
+            <View style={[styles.summaryRow, { marginBottom: 10 }]}>
               <Text style={styles.summaryLabel}>{t("remainingAmount")}:</Text>
               <Text style={styles.summaryValue}>
                 ${(totalPrice - depositAmount).toFixed(2)}
               </Text>
             </View>
           </View>
-          <View style={styles.spacer} />
-        </ScrollView>
 
-        <View style={styles.buttonArea}>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isPaySuccess ? styles.paymentButton : styles.backButton,
+              ]}
+              onPress={() => router.replace("/(tabs)/home")}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>{t("backHome")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isPaySuccess ? styles.backButton : styles.paymentButton,
+              ]}
+              onPress={() =>
+                showConfirm(
+                  t("confirmDepositTitle"),
+                  t("confirmDepositMessage"),
+                  () => (hasPassword ? handleOpenPinModal() : handleConfirmDeposit())
+                )
+              }
+              disabled={loading || isPaySuccess}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.buttonText}>{t(`confirmDepositButton`)}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* <View style={styles.buttonArea}>
           <TouchableOpacity
             style={styles.confirmButton}
             onPress={() => router.replace("/(tabs)/home")}
@@ -259,7 +312,7 @@ const PaymentLongterm = () => {
           >
             <Text style={styles.confirmButtonText}>{t("confirmDepositButton")}</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         <Modalize
           ref={modalizeRef}
@@ -313,6 +366,7 @@ const PaymentLongterm = () => {
                 paddingVertical: 10,
                 backgroundColor: "#A64B2A",
                 borderRadius: 20,
+                marginBottom:20
               }}
               onPress={() => accessWallet()}
             >
@@ -352,8 +406,9 @@ const styles = StyleSheet.create({
   },
   summaryRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    gap: 10,
+    // justifyContent: "space-evenly",
+    // marginBottom: 10,
   },
   summaryLabel: {
     fontSize: 16,
@@ -483,6 +538,66 @@ const styles = StyleSheet.create({
     color: "#FF69B4",
     fontSize: 16,
     textDecorationLine: "underline",
+  },
+  content: {
+    padding: 20,
+    paddingTop: 40,
+    justifyContent: "flex-start",
+    paddingTop: 40,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    margin: 10,
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: "nunito-bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  priceContainer: {
+    flexDirection: "row",
+    gap: 10,
+    // justifyContent: "space-around",
+    alignItems: "center",
+    width: "100%",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  priceLabel: {
+    fontSize: 18,
+    color: "#555",
+    fontFamily: "nunito-regular"
+  },
+  priceValue: {
+    fontSize: 20,
+    fontFamily: "nunito-bold",
+    color: "#A64B2A",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  backButton: {
+    backgroundColor: "#6C757D",
+  },
+  paymentButton: {
+    backgroundColor: "#A64B2A",
+  },
+  buttonText: {
+    color: "white",
+    fontFamily: "nunito-bold",
+    fontSize: 16,
+    textAlign: "center",
   },
 });
 

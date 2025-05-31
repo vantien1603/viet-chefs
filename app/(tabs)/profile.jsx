@@ -51,16 +51,16 @@ const Profile = () => {
   };
 
   const menuItems = isGuest
-    ? [{ id: "1", icon: "settings", title: t("setting") }]
+    ? [{ id: "1", icon: "settings", title: t("settings") }]
     : [
-        { id: "1", icon: "wallet", title: t("myWallet") },
-        { id: "2", icon: "briefcase", title: t("createChefAccount") },
-        { id: "3", icon: "heart", title: t("favoriteChef") },
-        { id: "4", icon: "lock-closed", title: t("changePassword") },
-        { id: "5", icon: "star", title: t("allReview") },
-        { id: "6", icon: "help-circle", title: t("helpCentre") },
-        { id: "7", icon: "settings", title: t("settings") },
-      ];
+      { id: "1", icon: "wallet", title: t("myWallet") },
+      { id: "2", icon: "briefcase", title: t("createChefAccount") },
+      { id: "3", icon: "heart", title: t("favoriteChef") },
+      { id: "4", icon: "lock-closed", title: t("changePassword") },
+      { id: "5", icon: "star", title: t("allReview") },
+      { id: "6", icon: "help-circle", title: t("helpCentre") },
+      { id: "7", icon: "settings", title: t("settings") },
+    ];
   return (
     <ScrollView style={[commonStyles.container]}>
       <View style={styles.card}>
@@ -74,7 +74,7 @@ const Profile = () => {
             style={styles.avatar}
           />
           <View style={{ marginLeft: 12, flex: 1 }}>
-            <Text style={styles.userName}>{user?.fullName || t("guest")}</Text>
+            <Text style={styles.userName}>{user?.fullName || t("guestT")}</Text>
             <TouchableOpacity onPress={() => handleSetting("viewProfile")}>
               <Text style={styles.viewProfile}>
                 {" "}

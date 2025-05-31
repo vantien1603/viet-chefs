@@ -132,7 +132,7 @@ const AddMenu = () => {
     formData.append("description", description);
     formData.append("hasDiscount", hasDiscount);
     formData.append("discountPercentage", discountPercentage);
-    formData.append("totalCookTime", totalCookTime);
+    formData.append("totalCookTime", totalCookTime / 60);
     selectedDishPayload.forEach((item, index) => {
       formData.append(`menuItems[${index}].dishId`, item.dishId);
     });
@@ -243,6 +243,16 @@ const AddMenu = () => {
               />
             )}
           </View>
+
+          <TextInput
+            placeholder={t('totalCookTime')}
+            keyboardType="numeric"
+            value={totalCookTime.toString()}
+            onChangeText={(text) =>
+              setTotalCookTime(text)
+            }
+            style={commonStyles.input}
+          />
 
           <TextInput
             style={[commonStyles.inputDes, { fontFamily: "nunito-regular" }]}

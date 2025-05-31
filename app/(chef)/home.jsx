@@ -23,7 +23,7 @@ const Home = () => {
     const [schedules, setSchedules] = useState([]);
     const [pendings, setPendings] = useState([]);
     const axiosInstance = useAxios();
-    const { registerNotificationCallback } = useContext(SocketContext);
+    const { lastMessage } = useContext(SocketContext);
     const [unreadCount, setUnreadCount] = useState(0);
 
 
@@ -37,12 +37,10 @@ const Home = () => {
 
     useEffect(() => {
         if (!isGuest) {
-            registerNotificationCallback(() => {
-                fetchUnreadCount();
-            });
+            fetchUnreadCount();
         }
 
-    }, []);
+    }, [lastMessage]);
 
 
     const fetchUnreadCount = async () => {

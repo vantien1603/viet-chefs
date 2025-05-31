@@ -219,7 +219,7 @@ const MenuDetails = () => {
                 {loading ? (
                     <ActivityIndicator size="large" color="white" />
                 ) : (
-                    <View style={commonStyles.containerContent}>
+                    <ScrollView style={commonStyles.containerContent} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} >
                         <View style={styles.imageMenuContainer}>
                             {isEditing ? (
                                 <TouchableOpacity onPress={() => pickImage()}>
@@ -323,19 +323,24 @@ const MenuDetails = () => {
                             </Text>
                         </TouchableOpacity>
 
-                        {isEditing && (
-                            <TextInput
-                                placeholder="Total cook time (minutes)"
-                                keyboardType="numeric"
-                                value={editedMenu.totalCookTime?.toString()}
-                                onChangeText={(text) =>
-                                    setEditedMenu((prev) => ({ ...prev, totalCookTime: parseInt(text) || 0 }))
-                                }
-                                style={commonStyles.input}
-                            />
-                        )}
                         <View>
-
+                            <Text style={styles.itemContentLabel}> {isEditing ? t('totalCookTime') : t('totalCookTimeDis')}:</Text>
+                            {isEditing ? (
+                                <TextInput
+                                    placeholder={t('totalCookTime')}
+                                    keyboardType="numeric"
+                                    value={Math.floor(editedMenu.totalCookTime * 60).toString()}
+                                    onChangeText={(text) =>
+                                        setEditedMenu((prev) => ({
+                                            ...prev,
+                                            totalCookTime: parseInt(text) ? parseInt(text) / 60 : 0,
+                                        }))
+                                    }
+                                    style={commonStyles.input}
+                                />
+                            ) : (
+                                <Text style={styles.itemContent}>{menu.description}</Text>
+                            )}
                         </View>
                         {/* <Text style={styles.itemContentLabel}>Total cook time :</Text>
                         {isEditing ? (
@@ -368,54 +373,55 @@ const MenuDetails = () => {
                                 <Text style={styles.itemContent}>{menu.description}</Text>
                             )}
                         </View>
-                        {!isEditing ? (
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity
-                                    style={styles.updateButton}
-                                    onPress={() => setIsEditing(true)}
-                                >
-                                    {loadingAction ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <Text style={styles.buttonText}>{t('update')}</Text>
-                                    )}
-                                </TouchableOpacity>
 
-                                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete()}>
-                                    {loadingAction ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <Text style={styles.buttonText}>{t('delete')}</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={{
-                                    position: "absolute",
-                                    bottom: 20,
-                                    left: 20,
-                                    right: 20,
-                                    backgroundColor: "#A64B2A",
-                                    padding: 15,
-                                    borderRadius: 10,
-                                    alignItems: "center",
-                                    elevation: 5,
-                                }}
-                                onPress={() => handleUpdate()}
-                                disabled={loadingAction}
-                            >
-                                {loadingAction ? (
-                                    <ActivityIndicator size="small" color="white" />
-                                ) : (
-                                    <Text style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}>
-                                        {t('save')}
-                                    </Text>
-                                )}
-                            </TouchableOpacity>
-                        )}
+                    </ScrollView>
+                )}
 
+                {!isEditing ? (
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity
+                            style={styles.updateButton}
+                            onPress={() => setIsEditing(true)}
+                        >
+                            {loadingAction ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>{t('update')}</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete()}>
+                            {loadingAction ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>{t('delete')}</Text>
+                            )}
+                        </TouchableOpacity>
                     </View>
+                ) : (
+                    <TouchableOpacity
+                        style={{
+                            position: "absolute",
+                            bottom: 20,
+                            left: 20,
+                            right: 20,
+                            backgroundColor: "#A64B2A",
+                            padding: 15,
+                            borderRadius: 10,
+                            alignItems: "center",
+                            elevation: 5,
+                        }}
+                        onPress={() => handleUpdate()}
+                        disabled={loadingAction}
+                    >
+                        {loadingAction ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <Text style={{ color: "white", fontFamily: "nunito-bold", fontSize: 16 }}>
+                                {t('save')}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
                 )}
             </SafeAreaView>
 

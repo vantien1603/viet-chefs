@@ -83,7 +83,7 @@ export default function ChefReviews() {
         setLoading(true);
         try {
             const response = await axiosInstance.post(`reviews/${id}/reply`, replyTexts[id]);
-            if (response.status === 200) {
+            if (response.status === 200 || response.status===201) {
                 setReplyTexts((prev) => ({ ...prev, [id]: "" }))
             }
         } catch (error) {

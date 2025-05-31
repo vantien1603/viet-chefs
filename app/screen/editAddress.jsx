@@ -223,8 +223,7 @@ const EditAddress = () => {
 
       if (reverseGeocode.length > 0) {
         let addr = reverseGeocode[0];
-        let fullAddress = `${addr.name || ""}, ${addr.street || ""}, ${addr.city || ""
-          }, ${addr.region || ""}, ${addr.country || ""}`;
+        let fullAddress = `${addr.formattedAddress}`;
 
         const existingCurrentLocation = addresses.find(
           (addr) => addr.title === t("currentLocation")

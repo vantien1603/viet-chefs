@@ -99,6 +99,8 @@ const ReviewBookingScreen = () => {
         bookingDetails,
       };
 
+      console.log("payload lpad", payload);
+
       const response = await axiosInstance.post(
         "/bookings/calculate-long-term-booking",
         payload

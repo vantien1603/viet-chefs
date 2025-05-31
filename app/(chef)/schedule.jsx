@@ -114,7 +114,7 @@ const Schedule = () => {
   const navigation = useNavigation();
   const [totalPages, setTotalPages] = useState(0);
   const { showModal } = useCommonNoification();
-  const [routes] = useState(dayInWeek.map((day) => ({ key: day.id.toString(), title: day.full })));
+  const [routes] = useState(dayInWeek.map((day) => ({ key: day.full, title: day.full })));
 
   const PAGE_SIZE = 20;
 
@@ -142,7 +142,7 @@ const Schedule = () => {
 
       const response = await Promise.all(requests);
       const mergedData = response.flatMap(res => res.data?.content || []);
-
+      // console.log(mergedData.length);
       const totalPages = Math.max(...response.map(res => res.data?.totalPages || 0));
       setTotalPages(totalPages);
 
@@ -193,6 +193,8 @@ const Schedule = () => {
     }
   };
 
+
+
   const handleRefresh = async () => {
     setRefresh(true);
     setPage(0);
@@ -201,6 +203,7 @@ const Schedule = () => {
 
   const renderScene = ({ route }) => {
     const bookingsOfDay = schedules[route.key] || [];
+    console.log(bookingsOfDay);
     const currentDate = new Date();
     const today = new Date(currentDate.setHours(0, 0, 0, 0));
 
@@ -214,7 +217,7 @@ const Schedule = () => {
 
     return (
       <ScheduleRender
-        bookings={pastBookings}
+        bookings={schedules[route.key]}
         onLoadMore={loadMoreData}
         refreshing={refresh}
         onRefresh={handleRefresh}

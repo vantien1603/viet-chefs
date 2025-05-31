@@ -59,8 +59,8 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
       <View key={item.id} style={styles.section}>
         <TouchableOpacity onPress={() => onViewDetail(item.id)} >
           <View style={{ flexDirection: 'row', padding: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, fontFamily: "nunito-bold" }}>{t("sessionDate")}: {sessionDateDisplay}</Text>
-            <Text style={[styles.itemContentLabel, { textAlign: 'right', fontSize: 20 }]}>${item.totalPrice}</Text>
+            <Text style={{ fontSize: 14, fontFamily: "nunito-bold" }}>{t("sessionDate")}: <Text style={{ fontSize: 12 }}> {sessionDateDisplay}</Text></Text>
+            <Text style={[styles.itemContentLabel, { textAlign: 'right', fontSize: 18 }]}>${item.totalPrice}</Text>
           </View>
           <Text numberOfLines={1} ellipsizeMode="tail">
             <Text style={styles.itemContentLabel}>{t("customer")}: </Text>
@@ -119,7 +119,7 @@ const BookingHistories = ({ bookings, onLoadMore, refreshing, onRefresh, onAccep
         onEndReachedThreshold={0.4}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, fontFamily: "nunito-regular" }}>{t("noPendingOrders")}</Text>}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 16, marginTop: 20, fontFamily: "nunito-regular" }}>{t("noPendingOrders")}</Text>}
         ListFooterComponent={() => <View style={{ height: 100 }} />}
       />
     </View>

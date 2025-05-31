@@ -23,7 +23,8 @@ import axios from "axios";
 
 const Chat = () => {
   const { user, isGuest } = useContext(AuthContext);
-  const { registerNotificationCallback } = useContext(SocketContext);
+  // const { registerNotificationCallback } = useContext(SocketContext);
+  const { lastMessage } = useContext(SocketContext);
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState([]);
   const navigation = useNavigation();
@@ -146,14 +147,14 @@ const Chat = () => {
       if (!isGuest) {
         fetchConversations();
       }
-    }, [shouldRefetch])
+    }, [lastMessage])
   );
 
-  useEffect(() => {
-    registerNotificationCallback(() => {
-      setShouldRefetch((prev) => prev + 1);
-    });
-  }, []);
+  // useEffect(() => {
+  //   registerNotificationCallback(() => {
+  //     setShouldRefetch((prev) => prev + 1);
+  //   });
+  // }, []);
 
   const handleSearch = (text) => {
     setSearchQuery(text);

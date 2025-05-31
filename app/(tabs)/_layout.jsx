@@ -5,19 +5,17 @@ import { LinearGradient } from "expo-linear-gradient";
 
 function CustomTabBar({ state, descriptors, navigation }) {
   const { showModalLogin } = useModalLogin();
-  const { isGuest } = useContext(AuthContext);
+  const { isGuest, user } = useContext(AuthContext);
   const { showModal } = useGlobalModal();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const axiosInstance = useAxios();
-  const { registerNotificationCallback } = useContext(SocketContext);
+  const { lastMessage } = useContext(SocketContext);
 
   useEffect(() => {
     if (!isGuest) {
-      registerNotificationCallback(() => {
-        fetchUnreadMessageCount();
-      });
+      fetchUnreadMessageCount();
     }
-  }, []);
+  }, [lastMessage]);
 
   const fetchUnreadMessageCount = async () => {
     try {
@@ -87,12 +85,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
                     route.name === "home"
                       ? "home"
                       : route.name === "chat"
-                      ? "chatbubble-outline"
-                      : route.name === "schedule"
-                      ? "calendar-outline"
-                      : route.name === "bag"
-                      ? "briefcase-outline"
-                      : "person-outline"
+                        ? "chatbubble-outline"
+                        : route.name === "schedule"
+                          ? "calendar-outline"
+                          : route.name === "bag"
+                            ? "briefcase-outline"
+                            : "person-outline"
                   }
                   size={24}
                   color={isFocused ? "white" : "#B0BEC5"}

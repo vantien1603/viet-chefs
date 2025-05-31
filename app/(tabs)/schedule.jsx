@@ -62,8 +62,8 @@ const CustomerSchedule = () => {
             status,
             pageNo: pageNum,
             pageSize: 10,
-            sortBy: 'id',
-            sortDir: 'desc',
+            sortBy: 'sessionDate',
+            sortDir: 'asc',
           },
         })
       );
@@ -86,6 +86,14 @@ const CustomerSchedule = () => {
       if (isRefresh) setRefresh(false);
     }
   }
+
+  const formatStatus = (status) => {
+    if (!status) return "";
+    return status
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
 
   const loadMoreData = async () => {
     if (!loading && page + 1 <= totalPages - 1) {
@@ -258,7 +266,8 @@ const CustomerSchedule = () => {
                 },
               ]}
             >
-              {detail.status.replace("_", " ")}
+              {/* {detail.status.replace("_", " ")} */}
+              {formatStatus(detail.status)}
               {detail.status === "COMPLETED" && (
                 <Ionicons name="checkmark-done" size={20} color="green" />
               )}
